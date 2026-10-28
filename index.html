@@ -697,6 +697,16 @@ body{background:var(--p-bg)}
 .cpf input,.cpf textarea{margin-top:0;width:100%;box-sizing:border-box}
 .flash{animation:cpflash .6s ease-out}@keyframes cpflash{from{background:color-mix(in srgb,var(--p-accent) 16%,var(--p-field))}}
 .genl{display:grid;gap:12px;margin-top:14px}
+.vcic{color:#ff9f6e}.fprev.vcic svg{color:#ff9f6e}
+.soonc{display:grid;gap:4px;text-align:left;width:100%;margin-top:12px;padding:16px;border-radius:20px;border:1px dashed color-mix(in srgb,#a9b4ff 45%,transparent);background:color-mix(in srgb,#7d8cff 8%,transparent);color:inherit;font:inherit;cursor:pointer}
+.soonc small{font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#a9b4ff}.soonc b{font-size:17px}.soonc span{font-size:13.5px;color:var(--p-muted)}.soonc i{font-style:normal;font-size:13px;color:#a9b4ff;margin-top:4px}
+.uioff{opacity:.45;outline:1px dashed rgba(255,255,255,.25);outline-offset:3px}.uihid{font-style:normal;font-size:10.5px;margin-left:8px;padding:2px 7px;border-radius:999px;background:rgba(255,255,255,.12)}
+.uifl{display:grid;gap:4px;margin-top:8px}.uift{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid rgba(255,255,255,.08);font-size:14.5px}.uift input{width:22px;height:22px;flex:none}
+.iddes{font-size:13px;color:var(--p-muted);margin:4px 0 0}.ids.pd{background:color-mix(in srgb,#e8a33d 18%,transparent);color:#e8a33d}
+.idnew{margin-bottom:12px}.idnew summary{cursor:pointer;font-weight:600}.idnew .cpd{margin-top:8px}.admq.idpend{border-color:color-mix(in srgb,#e8a33d 55%,transparent)}.admq .cpd{margin-top:6px;min-height:0;padding:8px 10px;font-size:14px}.admqt small{display:block;font-size:11.5px;opacity:.7}
+.idadm{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.vtr{display:grid;gap:10px;margin-top:14px}.vtr audio{width:100%}
+
 /* «Збери своє відео» — майстер */
 .ow .owst button{flex:none;font:600 12px/1 var(--body);padding:7px 11px;border-radius:999px;background:#1b2029;color:#7a8394;border:1px solid var(--p-line)}.ow .owst button.on{background:#2c3a55;color:#dbe5f7;border-color:rgba(122,156,214,.35)}
 .owp{color:#a9b2c2;font-size:14.5px;line-height:1.5;margin:0 0 12px}
@@ -923,11 +933,13 @@ body{background:radial-gradient(900px 640px at 8% -12%,var(--yv-glow-1),transpar
   <div class="fmts">
     <div class="freebox"><div class="freehd"><div><b>Безкоштовні інструменти</b><small>Без підписки — потрібна лише реєстрація</small></div><span class="ffree">Безкоштовно</span></div><button class="frow" type="button" id="hookfmt"><span class="fric"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M13 3L5 13.5h6L10 21l9-11.5h-6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="frt"><b>Генератор хуків</b><small>Перша фраза, яка зупиняє скрол</small></span><span class="chev" aria-hidden="true">›</span></button><button class="frow" type="button" id="freeideas"><span class="fric"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.9V16h5v-.2c0-.8.4-1.5 1-1.9A6 6 0 0 0 12 3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="frt"><b>Ідеї для відео</b><small>Що зняти — з готовим хуком</small></span><span class="chev" aria-hidden="true">›</span></button><button class="frow" type="button" id="freecheck"><span class="fric"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="frt"><b>Перевірка хука</b><small>Оцінка і сильніші варіанти</small></span><span class="chev" aria-hidden="true">›</span></button><button class="frow" type="button" id="freecap"><span class="fric"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M5 9h14M5 15h14M10 4l-2 16M16 4l-2 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="frt"><b>Підпис і хештеги</b><small>Текст під відео і заклик до дії</small></span><span class="chev" aria-hidden="true">›</span></button></div>
     <button class="fmt on" type="button" id="ownfmt"><span class="fprev qq" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26"><rect x="3" y="6" width="13" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 10.5l5-3v9l-5-3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span><span class="fi"><span class="fn">Збери своє відео</span><span class="fs">Сценарій → зйомка → автомонтаж</span><span class="fdev fst">Студія · beta</span></span><span class="chev" aria-hidden="true">›</span></button>
+    <button class="fmt on" type="button" id="voicefmt"><span class="fprev qq vcic" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><span class="fi"><span class="fn">Озвучка твоїм голосом</span><span class="fs">Пишеш текст — він звучить твоїм голосом</span><span class="ffree">3 хв безкоштовно</span></span><span class="chev" aria-hidden="true">›</span></button>
     <div class="fmtlab">Готові формати</div>
     <button class="fmt on" type="button" data-open="studio"><canvas class="fprev" id="fprev" width="108" height="192" aria-hidden="true"></canvas><span class="fi"><span class="fn">Почати заробляти</span><span class="fs" id="fresume">Конструктор «Рілс маркером»</span></span><span class="chev" aria-hidden="true">›</span></button>
     <button class="fmt on" type="button" id="testfmt"><span class="fprev qq" aria-hidden="true">₴</span><span class="fi"><span class="fn">Тестовий інструмент</span><span class="fs">Перевірка оплати</span></span><span class="chev" aria-hidden="true">›</span></button>
     <div class="fmt q" style="opacity:.14" aria-hidden="true"><span class="fprev qq">?</span><span class="fi"><span class="fn">?</span></span></div>
   </div>
+  <button class="soonc" type="button" id="sooncard" hidden><small>Скоро в YuVi</small><b id="soont"></b><span id="soond"></span><i>Голосувати й пропонувати ідеї →</i></button>
   <div class="soon">З часом з'являться нові інструменти…</div>
   <button class="ideacard" type="button" id="ideacard"><span class="idi" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="idt"><b>Чого тобі не вистачає?</b><small id="ideasub">Запропонуй ідею або проголосуй за чужі</small></span><span class="chev2" aria-hidden="true">›</span></button>
   <div class="legal"><a href="#" data-doc="offer">Публічна оферта</a> · <a href="#" data-doc="rules">Правила партнерської програми</a> · <a href="#" data-doc="privacy">Політика конфіденційності</a></div>
@@ -985,7 +997,7 @@ document.body.appendChild(g);var f=g.querySelector("form"),i=g.querySelector("in
 f.addEventListener("submit",function(ev){ev.preventDefault();sha(i.value).then(function(h){if(h===H)pass();else{L("gate_fail");e.textContent="Невірний код";i.select()}})})})})();</script>
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="server.js?v=db4f4043"></script>
+<script src="server.js?v=4c913b80"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.min.js"></script>
 <script>
@@ -2566,15 +2578,15 @@ function openDrawer(){ const n=PROF.nick, logged=PROF.logged, srv=!!window.SRV;
   const who=n||(PROF.email?PROF.email.split("@")[0]:"")||"Гість";
   drw.innerHTML=`<div class="drwme"><span class="ava" aria-hidden="true">${esc((who[0]||"?").toUpperCase())}</span><div style="min-width:0"><b>${esc(n?"@"+n.replace(/^@/,""):who)}</b><small>${logged?esc(PROF.email):srv?"Ти не увійшов":"Тестовий режим"}</small></div></div>
     ${srv&&!logged?`<button class="drwlogin" type="button" data-d="login">Увійти</button>`:""}
-    <button class="drwi" type="button" data-d="lib">${ICON.lib}Бібліотека відео<span class="cnt">${LIB.items.length||""}</span></button>
-    <button class="drwi" type="button" data-d="ana">${ICON.chart}Аналітика</button>
+    ${uiOn("ui_library")?`<button class="drwi" type="button" data-d="lib">${ICON.lib}Бібліотека відео<span class="cnt">${LIB.items.length||""}</span>${uiOwnHid("ui_library")}</button>`:""}
+    ${uiOn("ui_analytics")?`<button class="drwi" type="button" data-d="ana">${ICON.chart}Аналітика${uiOwnHid("ui_analytics")}</button>`:""}
     <button class="drwi" type="button" data-d="wallet">${ICON.money}Заробіток<span class="cnt">${money(WL.balance)}</span></button>
     <button class="drwi" type="button" data-d="earn">${ICON.help}Як заробити?</button>
-    <button class="drwi" type="button" data-d="rating">${ICON.trophy}Рейтинг</button>
+    ${uiOn("ui_rating")?`<button class="drwi" type="button" data-d="rating">${ICON.trophy}Рейтинг${uiOwnHid("ui_rating")}</button>`:""}
     <button class="drwi" type="button" data-d="settings">${ICON.gear}Налаштування</button>
     <button class="drwi" type="button" data-d="plans">${ICON.money}Тарифи і ліміти</button>
-    <button class="drwi" type="button" data-d="how">${ICON.help}Як це працює</button>
-    <button class="drwi" type="button" data-d="ideas">${ICON.help}Ідеї та голосування</button>
+    ${uiOn("ui_how")?`<button class="drwi" type="button" data-d="how">${ICON.help}Як це працює${uiOwnHid("ui_how")}</button>`:""}
+    ${uiOn("ui_ideas")?`<button class="drwi" type="button" data-d="ideas">${ICON.help}Ідеї та голосування${uiOwnHid("ui_ideas")}</button>`:""}
     ${(window.SRV?SRV.isAdmin:true)?`<button class="drwi" type="button" data-d="adm">${ICON.chart}Панель власника</button>`:""}
     ${logged?`<button class="drwi" type="button" data-d="out">${ICON.out}Вийти</button>`:window.YV_DEMO?`<button class="drwi" type="button" data-d="exitdemo">${ICON.out}Вийти з тестового показу</button>`:""}
     <div class="drwfoot">YuVi Studio · інструменти для контенту</div>`;
@@ -2848,7 +2860,7 @@ async function openRating(period){ period=period||ymKey(new Date());
   BS.querySelector("#rkearn")?.addEventListener("click",()=>{ uiSnd("tap"); openEarn(); });
   BS.querySelector("#rkh").onchange=async e=>{ const hide=!e.target.checked; try{ if(window.SRV) await SRV.setHideRating(hide); else LS.set("rilsHideRating",hide); toast(hide?"Тебе сховано з рейтингу":"Тебе видно в рейтингу"); openRating(R.period); }catch(x){ toast("Не вдалося. Спробуй ще раз."); e.target.checked=!e.target.checked; } }; }
 /* ===== Ідеї та голосування: люди пропонують, що додати; власник обирає найкращі ===== */
-const IDEA_ST={new:["Нова",""],review:["Розглядаємо","rv"],planned:["Робимо","pl"],done:["Готово","dn"],hidden:["Приховано","hd"]};
+const IDEA_ST={pending:["На перевірці","pd"],new:["Голосування",""],review:["Розглядаємо","rv"],planned:["Скоро","pl"],done:["Готово","dn"],hidden:["Приховано","hd"]};
 const IDL={ get(){ let a=LS.get("probkaIdeas"); if(!a){ const t=Date.now(); a=[
     {id:"i1",text:"Формат під рибалку: свої теми, хуки й картинки",status:"planned",owner_note:"Беремо в роботу першим",votes:23,my_vote:false,created_at:new Date(t-6*864e5).toISOString()},
     {id:"i2",text:"Щоб можна було озвучити відео готовим голосом, без запису",status:"review",votes:17,my_vote:false,created_at:new Date(t-4*864e5).toISOString()},
@@ -3571,20 +3583,20 @@ async function openIdeas(){
   if(window.SRV&&!SRV.session) return SRV.login("Щоб пропонувати ідеї й голосувати, увійди або зареєструйся.");
   let tab="top";
   const draw=async()=>{ let list=[]; try{ list=(await ideasLoad())||[]; }catch(e){ toast("Не вдалося завантажити ідеї"); }
-    const shown=tab==="done"?list.filter(i=>i.status==="done"):list.filter(i=>i.status!=="done");
+    const shown=tab==="done"?list.filter(i=>i.status==="done"):tab==="soon"?list.filter(i=>i.status==="planned"):list.filter(i=>!["done","planned"].includes(i.status));
     if(tab==="new") shown.sort((a,b)=>b.created_at.localeCompare(a.created_at));
     openSheet(`<div class="pshead"><h3>Що додати в YuVi Studio?</h3></div>
-      <p class="hint" style="display:block">Пиши, чого тобі не вистачає. Голосуй за ідеї інших — найпопулярніші ми беремо в роботу.</p>
+      <p class="hint" style="display:block">Пиши, чого тобі не вистачає. Ідею спершу перегляне команда — і вона з'явиться для голосування. Найпопулярніші ми беремо в роботу.</p>
       <textarea id="idtx" class="cpd" rows="2" maxlength="400" placeholder="Наприклад: формат під рибалку, озвучка готовим голосом…"></textarea>
       <div class="cprow"><span id="idn">0 / 400</span><button class="pill2 ok" type="button" id="idgo">Запропонувати</button></div>
-      <div class="atabs idtabs"><button type="button" data-it="top" aria-pressed="${tab==="top"}">Популярні</button><button type="button" data-it="new" aria-pressed="${tab==="new"}">Нові</button><button type="button" data-it="done" aria-pressed="${tab==="done"}">Готово</button></div>
-      <div class="idlist">${shown.map(i=>{ const st=IDEA_ST[i.status]||IDEA_ST.new; return `<div class="idr"><button class="idv ${i.my_vote?"on":""}" type="button" data-iv="${esc(i.id)}" ${i.status==="done"?"disabled":""} aria-pressed="${!!i.my_vote}" aria-label="Голосувати"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><b>${i.votes}</b></button>
-        <div class="idb"><p>${esc(i.text)}</p><div class="idm">${st[1]||i.status!=="new"?`<span class="ids ${st[1]}">${st[0]}</span>`:""}${i.mine?`<span class="idme">твоя ідея</span>`:i.author?`<span class="idme">@${esc(i.author)}</span>`:""}</div>${i.owner_note?`<p class="idnote">${esc(i.owner_note)}</p>`:""}</div></div>`; }).join("")||`<p class="anote">${tab==="done"?"Ще нічого не готово — але скоро буде.":"Ще немає ідей. Будь першим!"}</p>`}</div>`,"plat");
+      <div class="atabs idtabs"><button type="button" data-it="top" aria-pressed="${tab==="top"}">Голосування</button><button type="button" data-it="soon" aria-pressed="${tab==="soon"}">Скоро</button><button type="button" data-it="done" aria-pressed="${tab==="done"}">Готово</button></div>
+      <div class="idlist">${shown.map(i=>{ const st=IDEA_ST[i.status]||IDEA_ST.new; return `<div class="idr"><button class="idv ${i.my_vote?"on":""}" type="button" data-iv="${esc(i.id)}" ${["done","pending"].includes(i.status)?"disabled":""} aria-pressed="${!!i.my_vote}" aria-label="Голосувати"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><b>${i.votes}</b></button>
+        <div class="idb"><p>${esc(i.text)}</p>${i.descr?`<p class="iddes">${esc(i.descr)}</p>`:""}<div class="idm">${st[1]||i.status!=="new"?`<span class="ids ${st[1]}">${st[0]}</span>`:""}${i.mine?`<span class="idme">твоя ідея</span>`:i.author?`<span class="idme">@${esc(i.author)}</span>`:""}</div>${i.owner_note?`<p class="idnote">${esc(i.owner_note)}</p>`:""}</div></div>`; }).join("")||`<p class="anote">${tab==="done"?"Ще нічого не готово — але скоро буде.":"Ще немає ідей. Будь першим!"}</p>`}</div>`,"plat");
     const tx=BS.querySelector("#idtx"), n=BS.querySelector("#idn"); tx.addEventListener("input",()=>{ n.textContent=`${tx.value.length} / 400`; });
     BS.querySelectorAll("[data-it]").forEach(b=>b.onclick=()=>{ uiSnd("tap"); tab=b.dataset.it; draw(); });
     BS.querySelector("#idgo").onclick=async e=>{ const t=tx.value.trim(); if(t.length<5) return toast("Опиши ідею трохи детальніше"); const b=e.currentTarget; b.disabled=true;
       try{ if(window.SRV) await SRV.ideaAdd(t); else { const a=IDL.get(); a.unshift({id:"l"+Date.now(),text:t,status:"new",votes:1,my_vote:true,mine:true,created_at:new Date().toISOString()}); IDL.save(a); }
-        uiSnd("ok"); toast("Дякуємо! Ідею додано"); tab="new"; draw(); ideaSub(); }
+        uiSnd("ok"); toast("Дякуємо! Після перевірки ідея з'явиться для голосування"); tab="top"; draw(); ideaSub(); }
       catch(x){ b.disabled=false; toast({too_many:"Сьогодні вже досить ідей — завтра можна ще",too_long:"Занадто довго — до 400 символів"}[x.message]||"Не вдалося додати. Спробуй ще раз."); } };
     BS.querySelectorAll("[data-iv]").forEach(b=>b.onclick=async()=>{ uiSnd("tap"); const id=b.dataset.iv;
       try{ if(window.SRV) await SRV.ideaVote(id); else { const a=IDL.get(), i=a.find(x=>x.id===id); i.my_vote=!i.my_vote; i.votes+=i.my_vote?1:-1; IDL.save(a); } draw(); }catch(x){ toast("Не вдалося проголосувати"); } }); };
@@ -3638,7 +3650,7 @@ async function renderAdmin(){ const body=document.getElementById("admbody");
       <div class="admfr">${esc(f.name||"")} · ${f.is_fop?"ФОП":"картка"} •••• ${esc(f.last4||"")} · не пройшла ${f.days||0} дн. тому · на балансі ${k(f.available_kop)}</div>
       <div class="admfc">${f.email?`<a href="mailto:${esc(f.email)}?subject=${encodeURIComponent("YuVi Studio: виплата не пройшла")}">${esc(f.email)}</a>`:""}${f.phone?` · <a href="tel:${tel(f.phone)}">${esc(f.phone)}</a> · <a href="viber://chat?number=${encodeURIComponent(tel(f.phone))}">Viber</a> · <a href="https://t.me/${tel(f.phone)}" target="_blank" rel="noopener">Telegram</a>`:" · телефону немає"}</div></div>`).join("")}</div>`:"";
   body.innerHTML=`${A.demo?`<p class="anote">Це приклад з вигаданими цифрами. На сайті тут будуть справжні дані.</p>`:""}${failedHTML}${(!window.SRV||SRV.isOwner)?`<div class="ana" id="oana"><div class="anah"><b>Аналітика</b><small>бачиш лише ти</small></div><div class="anap">${[7,30,90].map(d=>`<button class="pill2${d===ANA_D?" ok":""}" type="button" data-anad="${d}">${d} днів</button>`).join("")}</div><div id="oanab"><p class="anote">Завантажую…</p></div></div><div class="ana" id="otools"><div class="anah"><b>Інструменти засновника</b><small>бачиш лише ти</small></div>
-      <div class="otl"><button type="button" data-ot="kb">🧠 Навчання агента</button><button type="button" data-ot="voices">🎙 Голоси для озвучки</button><button type="button" data-ot="svc">💸 Витрати й сервіси<i id="otalert" hidden></i></button><button type="button" data-ot="calc">🧮 Калькулятор цін</button></div></div>`:""}
+      <div class="otl"><button type="button" data-ot="kb">🧠 Навчання агента</button><button type="button" data-ot="voices">🎙 Голоси для озвучки</button><button type="button" data-ot="svc">💸 Витрати й сервіси<i id="otalert" hidden></i></button><button type="button" data-ot="calc">🧮 Калькулятор цін</button><button type="button" data-ot="uif">👁 Що бачать люди</button><button type="button" data-ot="ideas">💡 Ідеї людей</button></div></div>`:""}
     <div class="admres"><small>На рахунку для виплат має бути</small><b>${k(R.total_kop)}</b>
       <div class="admrr"><span>Можуть вивести зараз</span><i>${k(R.available_kop)}</i></div>
       <div class="admrr"><span>200 грн, що чекають 14 днів</span><i>${k(R.pending_kop)}</i></div>
@@ -3685,7 +3697,7 @@ async function renderAdmin(){ const body=document.getElementById("admbody");
   body.querySelectorAll("[data-anad]").forEach(b=>b.onclick=()=>{ uiSnd("tap"); ANA_D=+b.dataset.anad; body.querySelectorAll("[data-anad]").forEach(x=>x.classList.toggle("ok",x===b)); anaLoad(); });
   anaLoad();
   body.querySelectorAll("[data-ot]").forEach(b=>b.onclick=()=>{ try{ uiSnd("tap"); }catch(e){} if(!window.SRV){ toast("На сайті тут відкриється інструмент"); return; }
-    const k=b.dataset.ot; if(k==="kb") openKB(); else if(k==="voices") openVoicesAdmin(); else if(k==="svc") openServices(); else if(k==="calc") openCalc(); });
+    const k=b.dataset.ot; if(k==="kb") openKB(); else if(k==="voices") openVoicesAdmin(); else if(k==="svc") openServices(); else if(k==="calc") openCalc(); else if(k==="uif") openUIFlags(); else if(k==="ideas"){ openSheet(`<div class="pshead"><h3>Ідеї людей</h3></div><div id="idmod"><p class="status">Завантажую…</p></div>`,"plat"); admIdeas(BS.querySelector("#idmod")); } });
   if(window.SRV&&SRV.isOwner) SRV.services(1).then(D=>{ const n=(D?.alerts||[]).length, e=body.querySelector("#otalert"); if(n&&e){ e.hidden=false; e.textContent=n; }
     const key="yvSvcToast"+new Date().toDateString(); if(n&&!localStorage.getItem(key)){ try{ localStorage.setItem(key,"1"); }catch(x){} toast(`⚠ Сервіси: помилки за добу (${n}). Відкрий «Витрати й сервіси».`); } }).catch(()=>{});
   const audit=async back=>{ uiSnd("tap"); if(!window.SRV){ toast("На сайті тут завантажиться журнал"); return; }
@@ -3729,14 +3741,51 @@ async function admVisits(box){ let V;
     <div class="kpi"><small>Бачили екран коду</small><b>${n(T.gate)}</b><i>${n(T.fails)} раз ввели невірно</i></div></div>
     ${R.length?`<div class="libtable"><table class="lt"><thead><tr><th>Коли</th><th>Що</th><th>Хто / пристрій</th><th>Звідки</th></tr></thead><tbody>${R.map(v=>`<tr><td>${fmtDate(v.at)}</td><td class="${(VK[v.kind]||[])[1]||""}">${(VK[v.kind]||[v.kind])[0]}</td><td>${v.who?`<b>${esc(v.who)}</b><br>`:""}${esc(uaShort(v.ua))}${v.ref?`<br><small>від ${esc(v.ref)}</small>`:""}</td><td>${esc(v.country||"")}${v.ip?`<br><small>${esc(v.ip)}</small>`:""}</td></tr>`).join("")}</tbody></table></div>`:`<p class="anote">Поки ніхто не заходив.</p>`}`; }
 async function admIdeas(box){ let a=[]; try{ a=window.SRV?await SRV.adminIdeas():IDL.get().slice().sort((x,y)=>y.created_at.localeCompare(x.created_at)); }catch(e){ box.innerHTML=`<p class="anote">Не вдалося завантажити. Перевір, що на сервері запущено крок «Ідеї та голосування».</p>`; return; }
-  if(!a.length){ box.innerHTML=`<p class="anote">Поки що ідей немає.</p>`; return; }
-  box.innerHTML=`<div class="admreq">${a.map(i=>`<div class="admq"><div class="admqt"><b>${esc(i.text)}</b><span>${i.votes} голосів${i.email?` · ${esc(i.email)}`:""} · ${fmtDate(i.created_at)}</span></div>
-    <div class="idadm"><select data-ist="${esc(i.id)}" aria-label="Статус ідеї">${Object.entries(IDEA_ST).map(([k,v])=>`<option value="${k}" ${k===i.status?"selected":""}>${v[0]}</option>`).join("")}</select>
-    <input type="text" data-inote="${esc(i.id)}" placeholder="Коментар для людей (необов'язково)" value="${esc(i.owner_note||"")}"></div></div>`).join("")}</div>`;
-  const save=async(id)=>{ const st=box.querySelector(`[data-ist="${id}"]`).value, note=box.querySelector(`[data-inote="${id}"]`).value.trim();
-    try{ if(window.SRV) await SRV.adminIdeaSet(id,st,note); else { const L=IDL.get(), x=L.find(z=>z.id===id); x.status=st; x.owner_note=note; IDL.save(L); } toast("Збережено"); ideaSub(); }catch(e){ toast("Не вдалося зберегти"); } };
-  box.querySelectorAll("[data-ist]").forEach(sel=>sel.onchange=()=>save(sel.dataset.ist));
-  box.querySelectorAll("[data-inote]").forEach(inp=>inp.onchange=()=>save(inp.dataset.inote)); }
+  const pend=a.filter(i=>i.status==="pending").length;
+  box.innerHTML=`<details class="idnew"><summary>+ Анонс від тебе («Скоро» або на голосування)</summary><input class="cpd" id="ianT" placeholder="Назва: напр. «Обкладинка для відео в 1 клік»"><textarea class="cpd" id="ianD" rows="2" placeholder="Коротко суть для людей"></textarea>
+      <div class="row"><select id="ianS" class="cpd" style="width:auto"><option value="planned">Скоро</option><option value="new">На голосування</option></select><button class="pill2 ok" type="button" id="ianGo">Опублікувати</button></div></details>
+    ${pend?`<p class="anote"><b>${pend}</b> на перевірці — переформулюй гарно і опублікуй або сховай.</p>`:""}
+    <div class="admreq">${a.map(i=>`<div class="admq ${i.status==="pending"?"idpend":""}" data-iq="${esc(i.id)}"><div class="admqt"><small>Оригінал${i.email?` · ${esc(i.email)}`:""} · ${fmtDate(i.created_at)} · ${i.votes} голосів</small><span>${esc(i.text)}</span></div>
+      <input class="cpd" data-if="title" placeholder="Гарна назва для людей (порожньо — як в оригіналі)" value="${esc(i.title||"")}"><textarea class="cpd" rows="2" data-if="descr" placeholder="Суть простими словами (необов'язково)">${esc(i.descr||"")}</textarea>
+      <input class="cpd" data-if="note" placeholder="Коментар від команди (необов'язково)" value="${esc(i.owner_note||"")}">
+      <div class="idadm">${["new","planned","done","hidden"].map(k=>`<button class="pill2 ${i.status===k?"ok":""}" type="button" data-ib="${k}">${k==="new"?"На голосування":IDEA_ST[k][0]}</button>`).join("")}</div></div>`).join("")||`<p class="anote">Поки що ідей немає.</p>`}</div>`;
+  box.querySelector("#ianGo").onclick=async()=>{ const t=box.querySelector("#ianT").value.trim(); if(t.length<3) return toast("Напиши назву"); try{ await SRV.adminIdeaCreate({title:t,descr:box.querySelector("#ianD").value.trim(),status:box.querySelector("#ianS").value}); toast("Опубліковано"); admIdeas(box); loadSoon(); }catch(x){ toast("Не вдалося. Запусти в Supabase крок «Простий інтерфейс і модерація ідей»."); } };
+  box.querySelectorAll("[data-ib]").forEach(b=>b.onclick=async()=>{ const q=b.closest("[data-iq]"), id=q.dataset.iq, o={status:b.dataset.ib}; q.querySelectorAll("[data-if]").forEach(f=>o[f.dataset.if]=f.value.trim());
+    try{ if(window.SRV) await SRV.adminIdeaSave(id,o); else { const L=IDL.get(), x=L.find(z=>z.id===id); Object.assign(x,o,{owner_note:o.note}); IDL.save(L); } toast("Збережено"); ideaSub(); loadSoon(); admIdeas(box); }catch(e){ toast("Не вдалося. Запусти в Supabase крок «Простий інтерфейс і модерація ідей»."); } }); }
+
+/* ===== Що бачать люди (вмикає власник) ===== */
+const UIF_DEF={ui_own:true,ui_voice:true,ui_marker:true,ui_free:true,ui_test:false,ui_library:true,ui_analytics:false,ui_rating:false,ui_how:true,ui_ideas:true,ui_soon:true};
+const UIF=Object.assign({},UIF_DEF,(()=>{ try{ return JSON.parse(localStorage.getItem("yvUIF"))||{}; }catch(e){ return {}; } })());
+const uiOwner=()=>!!(window.SRV?SRV.isOwner:true);
+function uiOn(k){ return UIF[k]!==false||uiOwner(); }
+function uiOwnHid(k){ return UIF[k]===false&&uiOwner()?`<em class="uihid">приховано</em>`:""; }
+const UI_NAMES={ui_free:"Безкоштовні інструменти",ui_own:"«Збери своє відео»",ui_voice:"«Озвучка твоїм голосом»",ui_marker:"Готові формати («Рілс маркером»)",ui_test:"Тестовий інструмент (перевірка оплати)",ui_soon:"Картка «Скоро в YuVi»",ui_library:"Меню: Бібліотека відео",ui_analytics:"Меню: Аналітика",ui_rating:"Меню: Рейтинг",ui_how:"Меню: Як це працює",ui_ideas:"Меню й картка: Ідеї та голосування"};
+function applyUIF(){ const set=(el,k)=>{ if(!el) return; const on=UIF[k]!==false; el.hidden=!on&&!uiOwner(); el.classList.toggle("uioff",!on&&uiOwner()); };
+  set(document.querySelector(".freebox"),"ui_free"); set(document.getElementById("ownfmt"),"ui_own"); set(document.getElementById("voicefmt"),"ui_voice");
+  set(document.querySelector('.fmts [data-open="studio"]'),"ui_marker"); set(document.querySelector(".fmtlab"),"ui_marker"); set(document.getElementById("testfmt"),"ui_test");
+  set(document.getElementById("ideacard"),"ui_ideas"); const sc=document.getElementById("sooncard"); if(sc&&!sc.dataset.has) sc.hidden=true; else set(sc,"ui_soon"); }
+window.applyUIF=applyUIF;
+async function loadUIF(){ if(!window.SRV?.uiFlags) { applyUIF(); return; } const f=await SRV.uiFlags(); if(f){ Object.assign(UIF,UIF_DEF,f); try{ localStorage.setItem("yvUIF",JSON.stringify(f)); }catch(e){} } applyUIF(); }
+async function openUIFlags(){ openSheet(`<div class="pshead"><h3>Що бачать люди</h3></div><p class="hint" style="display:block">Вимкнене люди не бачать. Ти бачиш усе, приховане — з позначкою «приховано». Починай з мінімуму, нові функції вмикай як «вихід новинки».</p>
+    <div class="uifl">${Object.keys(UI_NAMES).map(k=>`<label class="uift"><span>${UI_NAMES[k]}</span><input type="checkbox" data-uif="${k}" ${UIF[k]!==false?"checked":""}></label>`).join("")}</div>`,"plat");
+  BS.querySelectorAll("[data-uif]").forEach(c=>c.onchange=async()=>{ const k=c.dataset.uif; try{ await SRV.setFlag(k,c.checked); UIF[k]=c.checked; try{ localStorage.setItem("yvUIF",JSON.stringify(UIF)); }catch(e){} applyUIF(); toast(c.checked?"Показано людям":"Приховано від людей"); }catch(x){ c.checked=!c.checked; toast("Не вдалося. Запусти в Supabase крок «Простий інтерфейс і модерація ідей»."); } }); }
+
+/* ===== «Скоро в YuVi» ===== */
+async function loadSoon(){ const c=document.getElementById("sooncard"); if(!c) return; let L=[]; try{ L=window.SRV?.soon?await SRV.soon():[]; }catch(e){}
+  if(!L.length){ c.dataset.has=""; c.hidden=true; return; } const x=L[0]; c.dataset.has="1"; c.querySelector("#soont").textContent=x.title+(L.length>1?` і ще ${L.length-1}`:""); c.querySelector("#soond").textContent=x.descr||""; applyUIF(); }
+document.getElementById("sooncard")?.addEventListener("click",()=>{ try{ uiSnd("tap"); }catch(e){} openIdeas(); });
+
+/* ===== Озвучка твоїм голосом — окремий інструмент ===== */
+function openVoiceTool(){ try{ uiSnd("tap"); }catch(e){} let txt=""; try{ txt=localStorage.getItem("yvVoiceTxt")||""; }catch(e){}
+  openSheet(`<div class="pshead"><h3>Озвучка твоїм голосом</h3></div><p class="hint" style="display:block">Напиши або встав текст — і отримай озвучку твоїм голосом або одним з голосів студії. Готове аудіо можна зберегти й додати до будь-якого відео.</p>
+    <textarea id="vtt" class="cpd" rows="5" maxlength="5000" placeholder="Текст для озвучки…">${esc(txt)}</textarea><div id="vtb" style="margin-top:12px"></div><div id="vtres"></div>`,"plat");
+  const ta=BS.querySelector("#vtt"), res=BS.querySelector("#vtres"); ta.oninput=()=>{ try{ localStorage.setItem("yvVoiceTxt",ta.value); }catch(e){} };
+  voicePicker(BS.querySelector("#vtb"),{getText:()=>ta.value,onAudio:async(buf,name,type)=>{ const blob=new Blob([buf],{type:type||"audio/mpeg"}), url=URL.createObjectURL(blob), ext=/wav/.test(type||"")?"wav":"mp3";
+    res.innerHTML=`<div class="vtr"><audio src="${url}" controls></audio><button class="big" type="button" id="vtsave">Зберегти аудіо</button></div>`;
+    res.querySelector("#vtsave").onclick=()=>{ const n=`озвучка_${new Date().toISOString().slice(0,10)}.${ext}`; if(typeof downloads!=="undefined"&&downloads) sendSheet(blob,n,""); else { const l=document.createElement("a"); l.href=url; l.download=n; document.body.appendChild(l); l.click(); l.remove(); } }; }}); }
+document.getElementById("voicefmt")?.addEventListener("click",openVoiceTool);
+try{ applyUIF(); }catch(e){}
+setTimeout(()=>{ loadUIF(); loadSoon(); },400);
 
 /* ===== Платформа: оплата (кнопки як у справжніх платіжних систем, преміальний успіх, звуки) ===== */
 const sndOn=()=>LS.get("rilsCoinSnd")!==false;

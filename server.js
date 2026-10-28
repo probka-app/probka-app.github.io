@@ -97,7 +97,7 @@
       SRV.me = me;
       WL.balance = kop(me.available_kop); WL.pending = kop(me.pending_kop); WL.total = kop(me.earned_kop); WL.refs = me.refs_total;
       WL.unlocked = me.active ? { marker: true } : {};
-      sb.rpc("is_owner").then(({ data }) => { SRV.isOwner = !!data; });
+      sb.rpc("is_owner").then(({ data }) => { SRV.isOwner = !!data; window.applyUIF?.(); });
       sb.rpc("is_admin").then(async ({ data }) => { SRV.isAdmin = !!data;
         if (data) { try { const f = await SRV.adminFailed(); const day = new Date().toDateString(); if (f.length && ls.get("yvFailSeen") !== day) { ls.set("yvFailSeen", day); setTimeout(() => toast(`⚠ Виплати не пройшли: ${f.length}. Деталі — у панелі власника`), 1500); } } catch (e) {} } });
       sb.rpc("test_paid").then(({ data, error }) => { SRV.testReady = !error; if (typeof TEST !== "undefined" && data != null) { TEST.paid = !!data; localStorage.setItem("rilsTestPaid", JSON.stringify(!!data)); window.renderTest?.(); } });
@@ -175,6 +175,11 @@
   SRV.ideaAdd = async (t) => rpc("idea_add", { p_text: t });
   SRV.ideaVote = async (id) => rpc("idea_vote", { p_id: id });
   SRV.adminIdeas = async () => (await rpc("admin_ideas")) || [];
+  SRV.adminIdeaSave = async (id, o) => rpc("admin_idea_save", { p_id: id, p_status: o.status, p_title: o.title ?? null, p_descr: o.descr ?? null, p_note: o.note ?? null });
+  SRV.adminIdeaCreate = async (o) => rpc("admin_idea_create", { p_title: o.title, p_descr: o.descr || "", p_status: o.status || "planned" });
+  SRV.uiFlags = async () => { try { const { data } = await sb.rpc("ui_flags"); return data || null; } catch (e) { return null; } };
+  SRV.setFlag = async (k, on) => rpc("owner_set_flag", { p_key: k, p_on: !!on });
+  SRV.soon = async () => { try { const { data } = await sb.rpc("ideas_soon"); return data || []; } catch (e) { return []; } };
   SRV.adminVisits = async () => rpc("admin_visits", { p_limit: 100 });
   SRV.adminPayoutFailed = async (id) => rpc("admin_payout_failed", { p_id: id });
   SRV.adminMonthly = async () => rpc("admin_monthly_payouts");
