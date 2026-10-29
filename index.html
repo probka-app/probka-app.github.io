@@ -1105,11 +1105,25 @@ function toggleMusic(){ ac(); musicOn=!musicOn; document.getElementById("music")
 function click(){ if(!AC) return; C=AC; OUT=master; tone(1200,AC.currentTime+.01,"sine",.06,.05,900); }
 
 /* ---------- my style ---------- */
-const BGS={white:{n:"Білий",c:"#ffffff"},cream:{n:"Кремовий папір",c:"#f6efdf"},blue:{n:"Блакитний",c:"#e8f1f8"},grid:{n:"Зошит у клітинку",c:"#fdfdfb",grid:"#cfdcec"},board:{n:"Шкільна дошка",c:"#2e3d36",dark:true},black:{n:"Чорний",c:"#1c1c1c",dark:true}};
+const BGS={white:{n:"Білий",c:"#ffffff"},cream:{n:"Кремовий папір",c:"#f6efdf"},blue:{n:"Блакитний",c:"#e8f1f8"},grid:{n:"Зошит у клітинку",c:"#fdfdfb",grid:"#cfdcec"},board:{n:"Шкільна дошка",c:"#2e3d36",dark:true},black:{n:"Чорний",c:"#1c1c1c",dark:true},navy:{n:"Темно-синій",c:"#0f1d3a",dark:true},plum:{n:"Темно-фіолетовий",c:"#221637",dark:true},graphite:{n:"Графіт",c:"#2a2d33",dark:true}};
 const TOOLS={marker:"Маркер",felt:"Фломастер",pen:"Ручка",pencil:"Олівець",chalk:"Крейда"};
 const THICK={s:{n:"Тонка",w:2},m:{n:"Середня",w:3.5},l:{n:"Товста",w:6}};
 const INTEN={soft:{n:"Ніжні",red:"#fbe0dc",green:"#e0f2d6",yellow:"#fff3c4",blue:"#dbe9fb",purple:"#ebdff7",orange:"#ffe4cc",pink:"#fde0ee",gray:"#ececec"},mid:{n:"Середні",red:"#f8c4be",green:"#c4e8b0",yellow:"#ffe58a",blue:"#b9d6f7",purple:"#d7c2f0",orange:"#ffc999",pink:"#f9c1dc",gray:"#d9d9d9"},bright:{n:"Яскраві",red:"#f2877b",green:"#8fd46b",yellow:"#ffd23f",blue:"#7fb3f0",purple:"#b48ce6",orange:"#ff9f4d",pink:"#f28cbc",gray:"#b5b5b5"}};
-const ST=(()=>{ let o={}; try{ o=JSON.parse(localStorage.getItem("rilsStyle"))||{}; }catch(e){} return Object.assign({bg:"white",tool:"marker",thick:"m",inten:"mid"},o); })();
+const ST=(()=>{ let o={}; try{ o=JSON.parse(localStorage.getItem("rilsStyle"))||{}; }catch(e){} return Object.assign({bg:"white",tool:"marker",thick:"m",inten:"mid",plInk:"auto",plSize:"m"},o); })();
+const PLINK={auto:"Авто",black:"Чорні",white:"Білі"}, PLSIZE={s:"Маленький",m:"Середній",l:"Великий"}, PLSZK={s:.82,m:1,l:1.2};
+function hex2hsl(h){ h=h.replace("#",""); const r=parseInt(h.slice(0,2),16)/255,g=parseInt(h.slice(2,4),16)/255,b=parseInt(h.slice(4,6),16)/255, mx=Math.max(r,g,b), mn=Math.min(r,g,b), l=(mx+mn)/2; let H=0,S=0;
+  if(mx!==mn){ const d=mx-mn; S=l>.5?d/(2-mx-mn):d/(mx+mn); H=mx===r?((g-b)/d+(g<b?6:0)):mx===g?((b-r)/d+2):((r-g)/d+4); H*=60; } return [H,S,l]; }
+function hsl2hex(H,S,L){ const f=n=>{ const k=(n+H/30)%12, a=S*Math.min(L,1-L); const c=L-a*Math.max(-1,Math.min(k-3,9-k,1)); return Math.round(c*255).toString(16).padStart(2,"0"); }; return "#"+f(0)+f(8)+f(4); }
+function relLum(h){ const c=[1,3,5].map(i=>{ const v=parseInt(h.slice(i,i+2),16)/255; return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4); }); return .2126*c[0]+.7152*c[1]+.0722*c[2]; }
+const contrast=(a,b)=>{ const x=relLum(a), y=relLum(b); return (Math.max(x,y)+.05)/(Math.min(x,y)+.05); };
+// Плашка: яскрава заливка (червона/зелена), відтінок відштовхується від кольору фону по колу; текст і рамка — білі або чорні
+const PL_HUE={red:4,green:138,yellow:48,blue:212,purple:272,orange:26,pink:330,gray:0};
+function plaqueStyle(col){ const bg=BGS[ST.bg]||BGS.white, dark=!!bg.dark, ink=ST.plInk==="white"?"#ffffff":ST.plInk==="black"?"#171717":(dark?"#ffffff":"#171717");
+  const [bh,bs,bl]=hex2hsl(bg.c), base=PL_HUE[col]??4, chroma=bs*(1-Math.abs(2*bl-1)), lim=col==="red"?10:14; let H=base;
+  if(chroma>.12){ let best=-1; for(let o=-lim;o<=lim;o+=2){ const hh=(base+o+360)%360, d=Math.min(Math.abs(hh-bh),360-Math.abs(hh-bh)); if(d>best){ best=d; H=hh; } } }
+  const S=col==="gray"?0:col==="green"?.72:.88; let L=ink==="#ffffff"?.44:.6;
+  for(let k=0;k<12&&contrast(hsl2hex(H,S,L),ink)<4.2;k++) L+=ink==="#ffffff"?-.025:.025;
+  return {fill:hsl2hex(H,S,L),ink}; }
 function persistStyle(){ try{ localStorage.setItem("rilsStyle",JSON.stringify(ST)); }catch(e){} }
 const isDark=()=>!!BGS[ST.bg]?.dark;
 function hasGrid(){ return ST.bg==="grid"||!!ST.grid; }
@@ -1118,7 +1132,7 @@ function styleSuffix(){
   const d=isDark();
   const tool={felt:(d?"white":"black")+" felt-tip pen sketch with thin even lines",marker:(d?"white":"black")+" marker sketch",pen:d?"white gel pen sketch":"blue ballpoint pen sketch",pencil:d?"white pencil sketch":"graphite pencil sketch",chalk:d?"white chalk drawing":"dusty dark chalk drawing"}[ST.tool];
   const th={s:"thin lines",m:"medium lines",l:"thick bold lines"}[ST.thick];
-  const bg={white:"pure white background",cream:"cream paper background",blue:"light blue paper background",grid:"squared notebook paper background",board:"dark green school chalkboard background",black:"plain black background"}[ST.bg];
+  const bg={white:"pure white background",cream:"cream paper background",blue:"light blue paper background",grid:"squared notebook paper background",board:"dark green school chalkboard background",black:"plain black background",navy:"plain dark navy blue background",plum:"plain dark purple background",graphite:"plain dark graphite gray background"}[ST.bg];
   return `hand-drawn ${tool} with ${th} on ${bg}, simple stick figures, minimal lines, no text, no letters, no words, whiteboard animation style`;
 }
 function rnd(seed){ let s=(Math.floor(seed*9973)%2147483646)+1; return ()=>((s=s*16807%2147483647)-1)/2147483646; }
@@ -1137,41 +1151,41 @@ function paintBg(x,w,h,step,oy=0){ const b=BGS[ST.bg]; x.fillStyle=b.c; x.fillRe
 function rrPts(x0,y0,x1,y1,r,seed,amp){ const P=[]; const arc=(cx,cy,a0)=>{ for(let k=0;k<=8;k++){ const a=a0+k/8*Math.PI/2; P.push([cx+r*Math.cos(a),cy+r*Math.sin(a)]); } };
   arc(x1-r,y0+r,-Math.PI/2); arc(x1-r,y1-r,0); arc(x0+r,y1-r,Math.PI/2); arc(x0+r,y0+r,Math.PI); P.push(P[0]);
   const D=dens(P,3); return D.map(([px,py],i)=>{ const t=i/D.length*Math.PI*2, d=amp*(Math.sin(3*t+seed)*.6+Math.sin(7*t+2*seed)*.4); return [px+d,py+d*.6]; }); }
-function drawPlaque(x,x0,y0,w,h,fill,lw,seed){ const r=Math.min(h/3,w/6);
+function drawPlaque(x,x0,y0,w,h,fill,lw,seed,inkC="#171717"){ const r=Math.min(h/3,w/6);
   const shape=(pts)=>{ x.beginPath(); pts.forEach(([a,b],i)=>i?x.lineTo(a,b):x.moveTo(a,b)); x.closePath(); };
-  x.save(); x.lineJoin="round"; x.strokeStyle="#171717";
+  x.save(); x.lineJoin="round"; x.strokeStyle=inkC;
   shape(rrPts(x0,y0,x0+w,y0+h,r,seed,lw*.28)); x.fillStyle=fill; x.fill(); x.lineWidth=lw; x.stroke();
   shape(rrPts(x0+lw*.25,y0+lw*.12,x0+w-lw*.12,y0+h-lw*.25,r,seed+1.7,lw*.33)); x.lineWidth=lw*.38; x.stroke(); x.restore(); }
 function fitText(x,txt,x0,y0,w,h,maxPx,color="#171717"){ const lines=String(txt).split("\n"); let fs=maxPx; const set=()=>x.font=vfont(fs); set();
   while(fs>8&&(Math.max(...lines.map(l=>x.measureText(l).width))>w*.82||lines.length*fs*1.15>h*.72)){ fs-=1; set(); }
   x.fillStyle=color; x.textAlign="center"; x.textBaseline="middle"; lines.forEach((l,i)=>x.fillText(l,x0+w/2,y0+h/2+(i-(lines.length-1)/2)*fs*1.15)); }
-function drawPlaqueCanvas(cv,w,h,col,txt){ cv.width=w; cv.height=h; const x=cv.getContext("2d"); x.clearRect(0,0,w,h); drawPlaque(x,10,10,w-20,h-20,INTEN[ST.inten][col],8,col==="red"?1.3:2.9); if(txt) fitText(x,txt,10,10,w-20,h-20,90); }
+function drawPlaqueCanvas(cv,w,h,col,txt){ const k=PLSZK[ST.plSize]||1; w=Math.min(1040,Math.round(w*k)); h=Math.round(h*k); cv.width=w; cv.height=h; const x=cv.getContext("2d"); x.clearRect(0,0,w,h); const P=plaqueStyle(col); drawPlaque(x,10,10,w-20,h-20,P.fill,8,col==="red"?1.3:2.9,P.ink); if(txt) fitText(x,txt,10,10,w-20,h-20,Math.round(90*k),P.ink); }
 async function plaqueBlob(w,h,col,txt){ try{ await document.fonts.load('80px "Pangolin"'); }catch(e){} const c=document.createElement("canvas"); drawPlaqueCanvas(c,w,h,col,txt); return await new Promise(r=>c.toBlob(r,"image/png")); }
 function drawPreview(cv){ if(!cv) return; cv.width=540; cv.height=960; const x=cv.getContext("2d"); x.setTransform(2,0,0,2,0,0);
   paintBg(x,270,480,13.5); const w=THICK[ST.thick].w;
-  drawPlaque(x,35,38,200,46,INTEN[ST.inten].red,2.2,1.3); fitText(x,"Зона комфорту",35,38,200,46,22);
+  { const P=plaqueStyle("red"); drawPlaque(x,35,38,200,46,P.fill,2.2,1.3,P.ink); fitText(x,"Зона комфорту",35,38,200,46,Math.round(22*(PLSZK[ST.plSize]||1)),P.ink); }
   inkStroke(x,circlePts(135,220,72),w,1); inkStroke(x,circlePts(135,180,14,0,40),w,2);
   inkStroke(x,[[135,194],[135,240]],w,3); inkStroke(x,[[135,206],[115,226]],w,4); inkStroke(x,[[135,206],[155,226]],w,5);
   inkStroke(x,[[135,240],[121,268]],w,6); inkStroke(x,[[135,240],[149,268]],w,7);
   inkStroke(x,[[197,175],[240,148]],w,8); inkStroke(x,[[225,147],[240,148],[233,161]],w,9);
-  drawPlaque(x,50,318,170,40,INTEN[ST.inten].green,2.2,2.9); fitText(x,"Пробуй нове",50,318,170,40,20);
+  { const P=plaqueStyle("green"); drawPlaque(x,50,318,170,40,P.fill,2.2,2.9,P.ink); fitText(x,"Пробуй нове",50,318,170,40,Math.round(20*(PLSZK[ST.plSize]||1)),P.ink); }
   const ink=isDark()?"#f2f2ec":"#171717"; x.save(); x.strokeStyle=ink; x.fillStyle=ink; x.lineCap="round";
   x.lineWidth=1; x.beginPath(); x.moveTo(28,410); x.lineTo(242,410); x.stroke(); x.lineWidth=3.5; x.beginPath(); x.moveTo(28,410); x.lineTo(156,410); x.stroke();
   [[28,3.2],[242,3.2],[156,1.9]].forEach(([cx,r])=>{ x.beginPath(); x.arc(cx,410,r,0,Math.PI*2); x.fill(); });
   x.font='15px Pangolin, "Comic Neue", cursive'; x.textAlign="center"; x.textBaseline="middle"; x.fillText("60%",135,428); x.restore(); }
 function optRow(key,map,label){ return `<div class="sgrp"><div class="gl">${label}</div><div class="chips">${Object.entries(map).map(([k,v])=>{ const n=typeof v==="string"?v:v.n; const sw= key==="bg"?`<span class="swatch" style="background:${v.c};${v.grid?`background-image:linear-gradient(${v.grid} 1px,transparent 1px),linear-gradient(90deg,${v.grid} 1px,transparent 1px);background-size:5px 5px;`:""}"></span>`: key==="inten"?`<span class="swatch" style="background:${v.red}"></span><span class="swatch" style="background:${v.green};margin-left:-6px"></span>`:""; return `<button class="chip" type="button" data-sk="${key}" data-sv="${k}" aria-pressed="${ST[key]===k}">${sw}${n}</button>`; }).join("")}</div></div>`; }
 function stStyle(el){
-  el.innerHTML+=`<div class="stylegrid"><div>${optRow("bg",BGS,"Фон")}${optRow("tool",TOOLS,"Чим малюєш")}${optRow("thick",THICK,"Товщина лінії")}${optRow("inten",INTEN,"Плашки")}</div>
+  el.innerHTML+=`<div class="stylegrid"><div>${optRow("bg",BGS,"Фон")}${optRow("tool",TOOLS,"Чим малюєш")}${optRow("thick",THICK,"Товщина лінії")}${optRow("plInk",PLINK,"Текст і рамка плашки")}${optRow("plSize",PLSIZE,"Розмір тексту на плашці")}</div>
   <div class="sprev"><canvas id="sprev" role="img" aria-label="Прев'ю твого стилю"></canvas></div></div>
   <h4>Промпт стилю для картинок</h4><p>Змінюється разом з твоїм вибором. Встав його в ChatGPT або Gemini першим повідомленням.</p>${P(styleSuffix())}`;
   const cv=el.querySelector("#sprev"), sp=el.querySelector(".prompt span");
   drawPreview(cv); document.fonts.load('20px "Pangolin"').then(()=>drawPreview(cv)).catch(()=>{});
   el.querySelectorAll("[data-sk]").forEach(b=>b.addEventListener("click",()=>{ const k=b.dataset.sk; ST[k]=b.dataset.sv; persistStyle();
     el.querySelectorAll(`[data-sk="${k}"]`).forEach(o=>o.setAttribute("aria-pressed",o===b)); drawPreview(cv); sp.textContent=styleSuffix();
-    if(k==="tool"&&b.dataset.sv==="chalk"&&!isDark()) toast("Крейда найкраще виглядає на дошці або чорному фоні"); playSfx(k==="inten"?"Поява плашки":"Маркер по паперу",k==="inten"?1:0); }));
+    if(k==="tool"&&b.dataset.sv==="chalk"&&!isDark()) toast("Крейда найкраще виглядає на дошці або чорному фоні"); playSfx(k.startsWith("pl")?"Поява плашки":"Маркер по паперу",k.startsWith("pl")?1:0); }));
 }
 function stStyleFiles(el){
-  el.innerHTML+=`<p>Зараз обрано: <b>${BGS[ST.bg].n}</b>, ${TOOLS[ST.tool].toLowerCase()}, ${THICK[ST.thick].n.toLowerCase()} лінія, ${INTEN[ST.inten].n.toLowerCase()} плашки.</p>
+  el.innerHTML+=`<p>Зараз обрано: <b>${BGS[ST.bg].n}</b>, ${TOOLS[ST.tool].toLowerCase()}, ${THICK[ST.thick].n.toLowerCase()} лінія, плашки з текстом розміру «${PLSIZE[ST.plSize||"m"].toLowerCase()}».</p>
   <h4>Таймлайн під твій фон</h4><p>Фон уже потрібного кольору, лінія й відсотки ${isDark()?"білі":"чорні"}. Став його основною доріжкою в CapCut.</p>
   <div class="row"><label for="st-dur" class="sr">Тривалість</label><select id="st-dur">${DURS.map(d=>`<option value="${d}" ${d===45?"selected":""}>${d} секунд</option>`).join("")}</select>${DL("Завантажити таймлайн","styletl")}</div>
   <h4>Фон картинкою</h4><p>PNG 1080×1920 без таймлайну, якщо таймлайн не потрібен.</p>${DL("Завантажити фон (PNG)","bgpng")}
@@ -1412,7 +1426,7 @@ function drawParts(x,P,w,h,f,lt,amp){ x.drawImage(P.st,-w/2,-h/2,w,h);
     else { const k=1+.09*amp*Math.sin(ph); x.translate(cx,cy); x.scale(k,k); x.rotate(.03*amp*Math.sin(ph*.7)); x.drawImage(m.cv,-mw/2,-mh/2,mw,mh); }
     x.restore(); } }
 function warmInks(){ Object.keys(IMGS).forEach((i,n)=>setTimeout(()=>inkOf(+i),n*30)); }
-function plaqueFor(txt,col){ const key=`${col}|${ST.inten}|${S.mon?.font||""}|${txt}`; if(PLQ.has(key)) return PLQ.get(key);
+function plaqueFor(txt,col){ const key=`${col}|${ST.bg}|${ST.plInk}|${ST.plSize}|${S.mon?.font||""}|${txt}`; if(PLQ.has(key)) return PLQ.get(key);
   const two=txt.includes("/"); const t=txt.split("/").map(s=>s.trim()).join("\n"); const len=Math.max(...t.split("\n").map(s=>s.length));
   const sz=two?"x":len<=12?"s":len<=22?"m":"l"; const c=document.createElement("canvas"); drawPlaqueCanvas(c,PDIM[sz][0],PDIM[sz][1],col,t); PLQ.set(key,c); return c; }
 function drawTimeline(x,prog){ if(S.tlPos==="none") return; const st={top:S.tlPos==="top",pct:S.tlPct!==false,thick:14,head:7,dot:13}; const ly=(st.top?230:1470)+90, ink=isDark()?"#f2f2ec":"#171717";
@@ -1516,7 +1530,7 @@ function stAssemble(el){
     <div class="epanel" data-panel="scenes">
       <div class="row" style="margin-top:0"><label class="chip" for="imgsf">Завантажити картинки</label><input type="file" id="imgsf" accept="image/*" multiple class="sr"><button class="chip" type="button" data-redist="1">Розподілити час за словами</button></div>
       <div class="ascenes" id="ascenes"></div></div>
-    <div class="epanel" data-panel="look" hidden>${optRow("bg",Object.fromEntries(Object.entries(BGS).filter(([k])=>k!=="grid")),"Фон")}<div class="sgrp"><div class="gl">Клітинки</div><div class="chips"><button class="chip" type="button" data-grid="0" aria-pressed="${!hasGrid()}">Без клітинок</button><button class="chip" type="button" data-grid="1" aria-pressed="${hasGrid()}">З клітинками</button></div></div>${optRow("tool",TOOLS,"Чим малює")}${optRow("thick",THICK,"Товщина ліній")}${optRow("inten",INTEN,"Плашки")}${pickRow("Шрифт на плашках і субтитрах",curFont().n,"font",`font:${vfont(22)}`)}
+    <div class="epanel" data-panel="look" hidden>${optRow("bg",Object.fromEntries(Object.entries(BGS).filter(([k])=>k!=="grid")),"Фон")}<div class="sgrp"><div class="gl">Клітинки</div><div class="chips"><button class="chip" type="button" data-grid="0" aria-pressed="${!hasGrid()}">Без клітинок</button><button class="chip" type="button" data-grid="1" aria-pressed="${hasGrid()}">З клітинками</button></div></div>${optRow("tool",TOOLS,"Чим малює")}${optRow("thick",THICK,"Товщина ліній")}${optRow("plInk",PLINK,"Текст і рамка плашки")}${optRow("plSize",PLSIZE,"Розмір тексту на плашці")}${pickRow("Шрифт на плашках і субтитрах",curFont().n,"font",`font:${vfont(22)}`)}
       <div class="sgrp"><div class="gl">Анімація</div><div class="chips">${chip("mon","boil","Живі лінії",S.mon.boil)}${chip("mon","parts","Рухомі елементи",S.mon.parts!==false)}</div></div></div>
     <div class="epanel" data-panel="tl" hidden><div class="sgrp"><div class="gl">Де</div><div class="chips">${chip("tlpos","bottom","Внизу",S.tlPos==="bottom")}${chip("tlpos","top","Вгорі",S.tlPos==="top")}${chip("tlpos","none","Без таймлайну",S.tlPos==="none")}</div></div><div class="sgrp"><div class="gl">Відсотки</div><div class="chips">${chip("tlpct","1","З відсотками",S.tlPct!==false)}${chip("tlpct","0","Без відсотків",S.tlPct===false)}</div></div></div>
     <div class="epanel" data-panel="subs" hidden><div class="sgrp"><div class="gl">Де показувати</div><div class="chips">${Object.entries(SUBPOS).map(([k,v])=>chip("subpos",k,v,S.mon.subs===k)).join("")}</div></div>
@@ -1548,7 +1562,7 @@ function stAssemble(el){
   const rows=()=>{ list.innerHTML=S.scenes.map((s,i)=>`<div class="arow">${s.ad?`<span class="athumb adth">Реклама</span>`:`<label class="athumb" for="af-${i}" aria-label="Картинка до сцени ${i+1}">${IMGS[i]?`<img src="${IMGS[i].url}" alt="">`:"+"}</label><input type="file" id="af-${i}" data-i="${i}" accept="image/*" class="sr">`}
     <div style="min-width:0"><div class="n">Сцена ${i+1}${s.draw?` · ${esc(s.draw)}`:""}</div><div class="ph">${esc(s.phrase)}</div>
     <div class="row" style="margin-top:6px"><label class="status" style="margin:0">с <input type="number" step="0.1" min="0.8" data-dur="${i}" value="${(+s.dur||3).toFixed(1)}" aria-label="Тривалість сцени ${i+1}"></label>
-    <button class="chip" type="button" data-anim="${i}" aria-label="Як з'являється картинка сцени ${i+1}">${esc(SANIM[s.anim]||ANIMS[s.anim]||SANIM.auto)}</button>${s.ad?"":`<button class="chip" type="button" data-pad="${i}">✎ Намалювати</button><label class="chip" for="afs-${i}">📷 Фото малюнка</label><input type="file" id="afs-${i}" data-i="${i}" data-sk="1" accept="image/*" class="sr">`}${s.plaque?`<span class="pill r" style="font-size:13px;background:${INTEN[ST.inten][colOf(s)]};color:#171717">${esc(s.plaque)}</span>`:""}</div></div></div>`).join("");
+    <button class="chip" type="button" data-anim="${i}" aria-label="Як з'являється картинка сцени ${i+1}">${esc(SANIM[s.anim]||ANIMS[s.anim]||SANIM.auto)}</button>${s.ad?"":`<button class="chip" type="button" data-pad="${i}">✎ Намалювати</button><label class="chip" for="afs-${i}">📷 Фото малюнка</label><input type="file" id="afs-${i}" data-i="${i}" data-sk="1" accept="image/*" class="sr">`}${s.plaque?`<span class="pill r" style="font-size:13px;background:${plaqueStyle(colOf(s)).fill};color:${plaqueStyle(colOf(s)).ink}">${esc(s.plaque)}</span>`:""}</div></div></div>`).join("");
     list.querySelectorAll("input[type=file]").forEach(f=>f.addEventListener("change",async()=>{ const file=f.files[0]; if(!file) return; const i=+f.dataset.i; if(f.dataset.sk){ await setSketch(i,file); } else { if(S.scenes[i].sketch){ S.scenes[i].sketch=false; persist(); } await loadImage(i,file); } rows(); jump(i); }));
     list.querySelectorAll("[data-pad]").forEach(b=>b.addEventListener("click",()=>{ const i=+b.dataset.pad; openDrawPad(i,async bl=>{ await setSketch(i,bl); rows(); jump(i); }); }));
     list.querySelectorAll("[data-dur]").forEach(n=>n.addEventListener("change",()=>{ S.scenes[+n.dataset.dur].dur=Math.max(.8,+n.value||3); persist(); show(Math.min(pos,totalDur())); }));
@@ -1895,7 +1909,7 @@ function stScript(el){
     }catch(err){ if(err?.text) { ta.value=err.text; S.script=err.text; persist(); } const m=errText(err); st.textContent=m; st.className=m?"status err":"status"; }
     stop.hidden=true; busy(b,false,S.script?"↻ Інший текст":"Згенерувати"); count(); });
 }
-function colorHTML(sc){ return `<div class="f"><span>Колір плашки</span><div class="colr">${Object.entries(PCOLS).map(([k,n])=>`<button type="button" class="sw" data-c="${k}" aria-pressed="${colOf(sc)===k}" aria-label="${n}" title="${n}" style="background:${INTEN[ST.inten][k]}"></button>`).join("")}</div></div>`; }
+function colorHTML(sc){ return `<div class="f"><span>Колір плашки</span><div class="colr">${[["red","Червона — проблема, помилка"],["green","Зелена — рішення, порада"]].map(([k,n])=>`<button type="button" class="sw" data-c="${k}" aria-pressed="${colOf(sc)===k}" aria-label="${n}" title="${n}" style="background:${plaqueStyle(k).fill}"></button>`).join("")}</div></div>`; }
 function sceneHTML(sc,i){ const F=FIELDS[S.format]||FIELDS.marker;
   return `<div class="scene" data-i="${i}"><div class="n">Сцена ${i+1}${sc.sec?` · ${esc(sc.sec)} с`:""}</div>${F.some(f=>f[0]==="phrase")?"":`<div class="ph">${esc(sc.phrase)}</div>`}
   ${F.map(([k,l])=>`<div class="f"><span>${l}</span><textarea class="grow" rows="1" data-k="${k}" aria-label="${l}, сцена ${i+1}">${esc(sc[k])}</textarea></div>`+(k==="plaque"?colorHTML(sc):"")).join("")}
