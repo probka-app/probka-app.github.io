@@ -1487,6 +1487,12 @@ function drawScene(x,i,lt,d,alpha,t){ if(S.scenes[i]?.ad){ drawAd(x,lt,alpha); d
   if(sc.plaque){ const k=clamp((lt-.15)/.3); if(k>0){ const c=plaqueFor(sc.plaque,colOf(sc)); const s=(.6+.4*backOut(k))*.95;
     x.save(); x.globalAlpha=alpha*clamp(k*3); x.translate(540,plY); x.scale(s,s); x.drawImage(c,-c.width/2,-c.height/2); x.restore(); } }
   drawSubs(x,subChunk(i,lt,d),alpha); }
+// Позначка на перегляді (лише поки відео не оплачено): навскісні рядки по всьому кадру, що повільно рухаються — запис екрана виходить з позначкою. У збереженому відео її немає.
+function drawPreviewMark(x,t){ x.save(); x.setTransform(.5,0,0,.5,0,0); const dark=isDark(); x.fillStyle=dark?"rgba(255,255,255,.17)":"rgba(0,0,0,.13)";
+  x.font='800 50px "Inter","Manrope",system-ui,sans-serif'; x.textAlign="left"; x.textBaseline="middle"; const txt="YuVi Studio · ПРЕВ'Ю · зберегти без позначки — 399 грн · ";
+  const tw=x.measureText(txt).width, sh=(t*36)%tw; x.translate(540,960); x.rotate(-.42);
+  for(let r=-6;r<=6;r++){ const y=r*190, off=(r%2?sh:-sh)-tw*2+(r*137)%tw; for(let k=0;k<5;k++) x.fillText(txt,off+k*tw-700,y); }
+  x.restore(); }
 function drawFrame(x,t,scale){ x.setTransform(scale,0,0,scale,0,0); paintBg(x,VW,VH,54); const T=timings(), total=totalDur();
   if(T.length){ let i=T.findIndex(o=>t<o.e); if(i<0) i=T.length-1; const lt=t-T[i].s, d=T[i].e-T[i].s;
     if(i>0&&lt<.25){ const p=T[i-1]; drawScene(x,i-1,p.e-p.s,p.e-p.s,1-lt/.25,t); }
@@ -1567,13 +1573,13 @@ function stAssemble(el){
   </div>
   <div class="sprev"><div class="vwrap"><div class="vside">${[["scenes","🖼","Сцени"],["look","🎨","Вигляд"],["tl","⏱","Таймлайн"],["subs","💬","Субтитри"]].map(([k,i,n])=>`<button type="button" class="vsb" data-vside="${k}"><span aria-hidden="true">${i}</span>${n}</button>`).join("")}</div><canvas id="vprev" role="img" aria-label="Прев'ю ролика"></canvas><div class="vside">${[["voice","🎙","Озвучити"],["music","🎵","Музика"],["sfx","🔊","Звуки"]].map(([k,i,n])=>`<button type="button" class="vsb" data-vside="${k}"><span aria-hidden="true">${i}</span>${n}</button>`).join("")}</div></div>
     <div class="vctl"><button class="chip ink" type="button" id="vplay">▶ Дивитись</button><span class="status" id="vtime"></span></div>
-    <input type="range" id="vseek" min="0" max="1000" value="0" aria-label="Перемотка"><button class="vsave" type="button" id="vsave">Зберегти відео</button><p class="vtip">Натисни на плашку, малюнок, субтитри чи таймлайн у відео — і одразу перейдеш до їх налаштувань</p></div></div>
+    <input type="range" id="vseek" min="0" max="1000" value="0" aria-label="Перемотка"><button class="vsave" type="button" id="vsave">Зберегти відео</button><p class="vtip">Натисни на плашку, малюнок, субтитри чи таймлайн у відео — і одразу перейдеш до їх налаштувань.${WL.unlocked?.marker?"":" Позначка «прев'ю» є лише в перегляді — у збереженому відео її немає."}</p></div></div>
   <div class="row" style="margin-top:22px">${DL("Зберегти відео","vexp")}</div><div class="status" id="vst"></div>`;
   const cv=el.querySelector("#vprev"); cv.width=540; cv.height=960; const x=cv.getContext("2d");
   const seek=el.querySelector("#vseek"), vt=el.querySelector("#vtime"), list=el.querySelector("#ascenes"), sfxList=el.querySelector("#asfx"), playB=el.querySelector("#vplay");
   let pos=0;
   const fmt=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,"0")}`;
-  const show=t=>{ pos=t; drawFrame(x,t,.5); const tot=totalDur(); vt.textContent=`${fmt(t)} / ${fmt(tot)}`; seek.value=tot?Math.round(t/tot*1000):0; };
+  const show=t=>{ pos=t; drawFrame(x,t,.5); if(!WL.unlocked?.marker) drawPreviewMark(x,t); const tot=totalDur(); vt.textContent=`${fmt(t)} / ${fmt(tot)}`; seek.value=tot?Math.round(t/tot*1000):0; };
   const refresh=()=>{ if(PLAY){ const p=pos; stopPlay(); show(p); playB.click(); } else show(pos); };
   const jump=i=>{ stopPlay(); const T=timings(); show(T[i].s+Math.min(1.2,(T[i].e-T[i].s)*.6)); };
   const rows=()=>{ list.innerHTML=S.scenes.map((s,i)=>`<div class="arow">${s.ad?`<span class="athumb adth">Реклама</span>`:`<label class="athumb" for="af-${i}" aria-label="Картинка до сцени ${i+1}">${IMGS[i]?`<img src="${IMGS[i].url}" alt="">`:"+"}</label><input type="file" id="af-${i}" data-i="${i}" accept="image/*" class="sr">`}
@@ -3141,7 +3147,7 @@ async function openPlans(){ try{ uiSnd("tap"); }catch(e){}
   const cur=t=>tier===t?`<span class="plcur">Твій тариф</span>`:"";
   openSheet(`<div class="pshead"><h3>Тарифи і ліміти</h3></div>${left}
     <div class="plan"><div class="plh"><b>Безкоштовно</b><span>0 грн</span></div>${cur("free")}
-      <ul><li>Безкоштовні інструменти: хуки, ідеї, перевірка хука, підпис і хештеги</li><li>Озвучка своїм голосом — запис прямо тут</li><li>Свої малюнки й фото в стилі відео</li><li>Перше відео повністю: до 15 AI-картинок і 3 хв AI-озвучки. Платиш лише тоді, коли захочеш зберегти відео</li></ul></div>
+      <ul><li>Безкоштовні інструменти: хуки, ідеї, перевірка хука, підпис і хештеги</li><li>Озвучка своїм голосом — запис прямо тут</li><li>Свої малюнки й фото в стилі відео</li><li>Роби відео без поспіху: 50 AI-картинок і 3 хв AI-озвучки безкоштовно. Платиш лише тоді, коли захочеш зберегти відео</li></ul></div>
     <div class="plan"><div class="plh"><b>Базовий</b><span>${g(P.base)}<small>/міс</small></span></div>${cur("base")}
       <ul><li>Конструктор «Рілс маркером» — збереження відео без обмежень</li><li>30 AI-картинок щомісяця</li><li>Партнерська програма: 25% з підписок людей, яких ти привів</li></ul>
       ${tier==="free"?`<button class="big" type="button" data-plan="base">Оформити за ${g(P.base)}</button>`:""}</div>
