@@ -1728,8 +1728,7 @@ function stAssemble(el){ const ER=document.getElementById("reader")||el;
   const openTab=k=>{ const b=ER.querySelector(`[data-etab="${k}"]`); ER.querySelectorAll("[data-etab]").forEach(o=>o.setAttribute("aria-pressed",o===b)); ER.querySelectorAll(".epanel").forEach(p=>p.hidden=p.dataset.panel!==k); };
   ER.querySelector('[data-etab="scenes"]')?.remove(); openTab("look");   // сцени (картинки, тривалість) — на попередньому кроці; тут усе автоматично
   const flash=n=>{ if(!n) return; n.classList.remove("eflash"); void n.offsetWidth; n.classList.add("eflash"); };
-  cv.style.cursor="pointer";
-  cv.addEventListener("click",e=>{ const r=cv.getBoundingClientRect(), y=(e.clientY-r.top)/r.height*1920, T=timings(); let i=T.findIndex(o=>pos<o.e); if(i<0) i=T.length-1; const sc=S.scenes[i]||{};
+  cv.addEventListener("click",e=>{ if(true) return; const r=cv.getBoundingClientRect(), y=(e.clientY-r.top)/r.height*1920, T=timings(); let i=T.findIndex(o=>pos<o.e); if(i<0) i=T.length-1; const sc=S.scenes[i]||{};
     const top=S.tlPos==="top", tlY=(top?230:1400)+90, plY=top?560:330, cy=top?1060:930, tlTop=S.tlPos==="top", noTl=S.tlPos==="none", subY={top:tlTop?470:190,mid:1000,bottom:(tlTop||noTl)?1440:1280}[S.mon.subs];
     let d="bg";
     if(S.tlPos!=="none"&&Math.abs(y-tlY)<95) d="tl";
