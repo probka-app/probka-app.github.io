@@ -1128,6 +1128,19 @@ function drawScratch(t,dur,tool){ if((S?.mon?.drawSnd||"soft")!=="crisp") return
   G.linearRampToValueAtTime(0.0001,t+dur);
   s.connect(hp).connect(pk).connect(lp).connect(g).connect(OUT); s.start(t); s.stop(t+dur+.15); }
 const DSND={soft:"М'який (маркер по паперу)",crisp:"Чіткий (олівець)",none:"Без звуку"};
+// Звуки підбираються автоматично під появу елементів; для кожного відео — своя комбінація (залежить від відео)
+function autoSfx(T){ let h=7; for(const ch of String(PID||"x")) h=(h*31+ch.charCodeAt(0))%100003; const R=rnd(h+1), pick=a=>a[Math.floor(R()*a.length)];
+  const play=(name,v,t,vol=1)=>{ const S2=SFX[name]; if(!S2||t<0) return; const pO=OUT, g=C.createGain(); g.gain.value=vol; g.connect(pO); OUT=g; try{ S2.v[Math.min(v,S2.v.length-1)](t); }finally{ OUT=pO; } };
+  const kit={ plq:pick([0,1]), pop:pick([0,1,5]), cut:pick([0,1]), whoosh:pick([0,1]), tl:pick([2,6]), end:pick([0,1]) };
+  const total=T.length?T[T.length-1].e:0;
+  S.scenes.forEach((sc,i)=>{ const t0=T[i].s; if(sc.ad) return;
+    if(isHook(i)){ play("Акцент на думці",pick([0,1,2]),t0+.12,.8); play("Перехід кадру",kit.whoosh,t0+HOOK_HOLD-.05,.9);
+      if(IMGS[i]) play("Ефекти",kit.pop,t0+HOOK_HOLD+HOOK_FLY*.6,.55); return; }
+    if(i>0) play("Шелест аркуша",kit.cut,t0,.45);
+    if(sc.plaque) play("Поява плашки",kit.plq,t0+.15,.8);
+    if(IMGS[i]&&R()<.6) play("Ефекти",kit.pop,t0+.05,.4); });
+  if(S.tlPos!=="none"){ const tl0=isHook(0)?HOOK_HOLD+HOOK_FLY+.5:.3; play("Ефекти",kit.tl,tl0,.35); }
+  if(T.length>1) play("Фінал",kit.end,Math.max(0,total-1.1),.7); }
 const SFX={
  "Поява плашки":{len:.4,v:[t=>tone(880,t,"sine",.35,.12,440), t=>{tone(660,t,"sine",.28,.09,500);tone(990,t+.07,"sine",.22,.1,700)}, t=>hiss(t,.05,2500,1800,1,.5)]},
  "Маркер по паперу":{len:1.1,v:[t=>scribble(t,.45,11), t=>scribble(t,.9,8), t=>{scribble(t,.25,13);scribble(t+.32,.3,13)}]},
@@ -1392,7 +1405,7 @@ function voiceInfoText(){ const v=VOICE_INFO; if(!v) return ""; const parts=[`З
 const IMGS={}; let VOICE=null, VOICE_NAME="", PLAY=null, MIX=null, MIXKEY="";
 const PLQ=new Map();
 function monDefaults(){ if(!S.tlPos){ const o=S.tl||"A"; S.tlPos=o==="none"?"none":o==="C"?"top":"bottom"; S.tlPct=o!=="B"; } S.tlPct ??= true; const m=S.mon||{};
-  S.mon={boil:m.boil??true, parts:m.parts??true, sfxOn:m.sfxOn??m.sfx??true, sfxVol:m.sfxVol??70, music:m.musicSet?m.music:"none", musicSet:m.musicSet, musicVol:m.musicVol??40, voiceVol:m.voiceVol??100, enhance:m.enhance??true,
+  S.mon={boil:m.boil??true, parts:m.parts??true, sfxOn:true, sfxVol:m.sfxVol??70, music:m.musicSet?m.music:"none", musicSet:m.musicSet, musicVol:m.musicVol??40, voiceVol:m.voiceVol??100, enhance:m.enhance??true,
     subs:typeof m.subs==="string"?m.subs:(m.subs?"bottom":"none"), subSize:m.subSize??"m", cutPauses:m.cutPauses??true, fitVoice:m.fitVoice??true,
     font:m.font??"pangolin", anim:m.anim??"auto", drawer:m.drawerSet?m.drawer:"tool", drawerSet:m.drawerSet, drawSnd:(!m.drawSnd||m.drawSnd==="on")?"soft":m.drawSnd, drawVol:m.drawVol??10, sfxPlaque:m.sfxPlaque??"auto", sfxCut:m.sfxCut??"Шелест аркуша|0", sfxEnd:m.sfxEnd??"Фінал|0"}; }
 const wcount=t=>(String(t||"").trim().match(/\S+/g)||[]).length||1;
@@ -1623,7 +1636,7 @@ async function buildMix(){ const total=totalDur(), key=JSON.stringify([total,S.m
     if(S.mon.music==="mine"&&S.mon.musicVol>0&&await loadMyMusic()){ const g=oc.createGain(), v=(S.mon.musicVol/100)*(VOICE?.45:.9); g.gain.setValueAtTime(0.0001,0); g.gain.linearRampToValueAtTime(v,.6); g.gain.setValueAtTime(v,Math.max(.7,total-1.5)); g.gain.linearRampToValueAtTime(0.0001,total); g.connect(oc.destination); const src=oc.createBufferSource(); src.buffer=MYMUS; src.loop=true; src.connect(g); src.start(0); }
     else if(S.mon.music!=="none"&&S.mon.music!=="mine"&&S.mon.musicVol>0){ const g=oc.createGain(); const v=(S.mon.musicVol/100)*(VOICE?.6:1); g.gain.setValueAtTime(v,0); g.gain.setValueAtTime(v,Math.max(0,total-1.5)); g.gain.linearRampToValueAtTime(0.0001,total); g.connect(oc.destination); C=oc; OUT=g; genMusic(S.mon.music,total); }
     if(S.mon.sfxOn&&S.mon.sfxVol>0){ const g=oc.createGain(); g.gain.value=(S.mon.sfxVol/100)*.9; g.connect(oc.destination); C=oc; OUT=g; const T=timings();
-      S.scenes.forEach((sc,i)=>{ const f=sfxFor(i); if(f) SFX[f[0]].v[Math.min(f[1],SFX[f[0]].v.length-1)](T[i].s+(sc.plaque?.15:0)); });
+      autoSfx(T);
     }
     if((S.mon.drawSnd||"on")!=="none"&&S.mon.drawVol>0){ const g=oc.createGain(); g.gain.value=S.mon.drawVol/100*1.6; g.connect(oc.destination); C=oc; OUT=g; const T=timings();
       S.scenes.forEach((sc,i)=>{ if(sc.ad||!IMGS[i]||!["draw","wobble"].includes(animOf(i))) return; drawScratch(T[i].s,revTime(T[i].e-T[i].s),ST.tool); }); }
@@ -1639,7 +1652,7 @@ function sfxOptions(cur){ let o=`<option value="auto" ${cur==="auto"?"selected":
 const DASHGO={ scenes:["Сцени","scenes",null], bg:["Стиль","look",'[data-sk="bg"]'], grid:["Клітинки","look","[data-grid]"], tool:["Малює","look",'[data-sk="tool"]'], thick:["Лінія","look",'[data-sk="thick"]'],
   font:["Шрифт","look",'[data-pick="font"]'], plInk:["Плашка","look",'[data-sk="plInk"]'], plSize:["Текст","look",'[data-sk="plSize"]'], moves:["Рух","look",'[data-mon="parts"]'],
   tl:["Знизу","tl",null], subs:["Субтитри","subs",null], voice:["Голос","voice",null], music:["Музика","music",'[data-pick="music"]'], drawSnd:["Звук ліній","sfx",'[data-pick="drawSnd"]'], sfx:["Звуки","sfx",null] };
-const DASH_L=["bg","plSize","moves"], DASH_R=["tl","voice","music","sfx"];
+const DASH_L=["bg","plSize","moves"], DASH_R=["tl","voice","music"];
 function stAssemble(el){ const ER=document.getElementById("reader")||el;
   if(S.format==="film"){ el.innerHTML+=`<p>Автоматичне збирання з власних кадрів з'явиться пізніше. Поки змонтуй ролик у CapCut за списком кадрів або віддай файли Claude (розділ «Монтаж з Claude»).</p>`; return; }
   if(!S.scenes.length){ el.innerHTML+=`<p class="status">Сцен ще немає. Повернись на крок «Що малювати» і розбий сценарій.</p>`; return; }
