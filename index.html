@@ -1401,7 +1401,7 @@ function totalDur(){ const T=timings(); return T.length?T[T.length-1].e:0; }
 const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
 const backOut=k=>1+2.7*Math.pow(k-1,3)+1.7*Math.pow(k-1,2);
 function revTime(d){ return Math.min(1.6,d*.5); }
-function animOf(i){ let a=S.scenes[i].anim||"auto"; if(a==="hand"||a==="tool"||a==="self") return "draw"; if(a!=="auto") return a; const g=S.mon?.anim||"auto"; return g!=="auto"?g:["pop","draw","wobble","draw","zoom"][i%5]; }
+function animOf(i){ return "pop"; /* промальовування вимкнено: картинка просто з'являється */  let a=S.scenes[i].anim||"auto"; if(a==="hand"||a==="tool"||a==="self") return "draw"; if(a!=="auto") return a; const g=S.mon?.anim||"auto"; return g!=="auto"?g:["pop","draw","wobble","draw","zoom"][i%5]; }
 function drawTool(x,kind,hand){ const O="#171717", SK="#f2cfae"; x.save(); x.lineJoin="round"; x.lineCap="round"; x.strokeStyle=O; x.lineWidth=5;
   const body=(x0,x1,hh,fill,r)=>{ x.beginPath(); x.roundRect(x0,-hh/2,x1-x0,hh,r??hh*.25); x.fillStyle=fill; x.fill(); x.stroke(); };
   const cone=(l,hh,fill)=>{ x.beginPath(); x.moveTo(0,0); x.lineTo(l,-hh/2); x.lineTo(l,hh/2); x.closePath(); x.fillStyle=fill; x.fill(); x.stroke(); };
@@ -1634,7 +1634,7 @@ function sfxOptions(cur){ let o=`<option value="auto" ${cur==="auto"?"selected":
 const DASHGO={ scenes:["Сцени","scenes",null], bg:["Фон","look",'[data-sk="bg"]'], grid:["Клітинки","look","[data-grid]"], tool:["Малює","look",'[data-sk="tool"]'], thick:["Лінія","look",'[data-sk="thick"]'],
   font:["Шрифт","look",'[data-pick="font"]'], plInk:["Плашка","look",'[data-sk="plInk"]'], plSize:["Текст","look",'[data-sk="plSize"]'], moves:["Рух","look",'[data-mon="parts"]'],
   tl:["Таймлайн","tl",null], subs:["Субтитри","subs",null], voice:["Голос","voice",null], music:["Музика","music",'[data-pick="music"]'], drawSnd:["Звук ліній","sfx",'[data-pick="drawSnd"]'], sfx:["Звуки","sfx",null] };
-const DASH_L=["bg","grid","tool","thick","font","plSize","moves"], DASH_R=["tl","subs","voice","music","drawSnd","sfx"];
+const DASH_L=["bg","grid","tool","thick","font","plSize","moves"], DASH_R=["tl","subs","voice","music","sfx"];
 function stAssemble(el){ const ER=document.getElementById("reader")||el;
   if(S.format==="film"){ el.innerHTML+=`<p>Автоматичне збирання з власних кадрів з'явиться пізніше. Поки змонтуй ролик у CapCut за списком кадрів або віддай файли Claude (розділ «Монтаж з Claude»).</p>`; return; }
   if(!S.scenes.length){ el.innerHTML+=`<p class="status">Сцен ще немає. Повернись на крок «Що малювати» і розбий сценарій.</p>`; return; }
@@ -1662,7 +1662,7 @@ function stAssemble(el){ const ER=document.getElementById("reader")||el;
       <h4>Текст для озвучки</h4><div class="prompt" style="font-family:var(--body);font-size:17px;line-height:1.7"><button class="copy" type="button" id="vcopy" style="margin:0 0 10px">Скопіювати</button><div id="voicetext">${esc(S.script||S.scenes.map(s=>s.phrase).join("\n"))}</div></div></div>
     <div class="epanel" data-panel="music" hidden><p class="hint" style="display:block;margin:0 0 10px">💡 Найкраще — додати <b>трендовий звук</b> прямо в Instagram чи TikTok під час публікації: так відео ще й частіше показують. Або вибери свою музику з телефону.</p>${pickRow("Фонова мелодія",S.mon.music==="mine"&&MYMUS_NAME?"🎵 "+MYMUS_NAME:(MUSICS[S.mon.music]||MUSICS.none),"music")}
       ${slider("musicvol","Гучність музики",S.mon.musicVol)}</div>
-    <div class="epanel" data-panel="sfx" hidden><div class="sgrp"><div class="chips">${chip("mon","sfxOn","Звуки увімкнені",S.mon.sfxOn)}</div></div>${pickRow("Звук малювання",DSND[S.mon.drawSnd]||DSND.soft,"drawSnd")}${slider("drawvol","Гучність малювання",S.mon.drawVol)}${pickRow("Поява плашки",soundName(S.mon.sfxPlaque),"sfxPlaque")}${pickRow("Зміна кадру",soundName(S.mon.sfxCut),"sfxCut")}${pickRow("Фінал",soundName(S.mon.sfxEnd),"sfxEnd")}<div class="gl" style="margin-top:16px">Окремо для сцен</div>${slider("sfxvol","Гучність звуків",S.mon.sfxVol)}<div class="ascenes" id="asfx"></div></div>
+    <div class="epanel" data-panel="sfx" hidden><div class="sgrp"><div class="chips">${chip("mon","sfxOn","Звуки увімкнені",S.mon.sfxOn)}</div></div>${pickRow("Поява плашки",soundName(S.mon.sfxPlaque),"sfxPlaque")}${pickRow("Зміна кадру",soundName(S.mon.sfxCut),"sfxCut")}${pickRow("Фінал",soundName(S.mon.sfxEnd),"sfxEnd")}<div class="gl" style="margin-top:16px">Окремо для сцен</div>${slider("sfxvol","Гучність звуків",S.mon.sfxVol)}<div class="ascenes" id="asfx"></div></div>
   </div>
   <div class="sprev"><div class="vwrap"><canvas id="vprev" role="img" aria-label="Прев'ю ролика"></canvas>
     <div class="vbelow"><div class="vctl"><button class="chip ink" type="button" id="vplay">▶ Дивитись</button><span class="status" id="vtime"></span></div>
@@ -1780,7 +1780,7 @@ function stAssemble(el){ const ER=document.getElementById("reader")||el;
   ER.querySelectorAll("[data-grid]").forEach(b=>b.addEventListener("click",()=>{ const on=b.dataset.grid!=="0"; if(ST.bg==="grid"){ ST.bg="white"; } ST.grid=on; ST.gridWave=b.dataset.grid==="2"; persistStyle(); ER.querySelectorAll("[data-grid]").forEach(o=>o.setAttribute("aria-pressed",o===b)); ER.querySelectorAll('[data-sk="bg"]').forEach(o=>o.setAttribute("aria-pressed",o.dataset.sv===ST.bg)); show(pos); }));
   ER.querySelectorAll("[data-sk]").forEach(b=>b.addEventListener("click",()=>{ const k=b.dataset.sk; ST[k]=b.dataset.sv; persistStyle(); PLQ.clear();
     ER.querySelectorAll(`[data-sk="${k}"]`).forEach(o=>o.setAttribute("aria-pressed",o===b)); show(pos); warmInks(); }));
-  [["voicevol","voiceVol"],["musicvol","musicVol"],["sfxvol","sfxVol"],["drawvol","drawVol"]].forEach(([id,k])=>{ const r=ER.querySelector("#"+id); r.addEventListener("input",()=>{ S.mon[k]=+r.value; ER.querySelector(`#${id}-v`).textContent=r.value+"%"; }); r.addEventListener("change",()=>{ persist(); refresh(); }); });
+  [["voicevol","voiceVol"],["musicvol","musicVol"],["sfxvol","sfxVol"]].forEach(([id,k])=>{ const r=ER.querySelector("#"+id); if(!r) return; r.addEventListener("input",()=>{ S.mon[k]=+r.value; ER.querySelector(`#${id}-v`).textContent=r.value+"%"; }); r.addEventListener("change",()=>{ persist(); refresh(); }); });
   ER.querySelector("#imgsf").addEventListener("change",async e=>{ const files=[...e.target.files]; let j=0; for(let i=0;i<S.scenes.length&&j<files.length;i++){ if(!IMGS[i]&&!S.scenes[i].ad) await loadImage(i,files[j++]); } if(j===0) for(let i=0;i<S.scenes.length&&j<files.length;i++){ if(!S.scenes[i].ad) await loadImage(i,files[j++]); } rows(); show(pos); e.target.value=""; });
   const vi=ER.querySelector("#vinfo"), vdel=ER.querySelector("#voicedel");
   const decode=buf=>new Promise((res,rej)=>{ try{ const pr=ac().decodeAudioData(buf,res,rej); if(pr&&pr.then) pr.then(res,rej); }catch(e){ rej(e); } });
