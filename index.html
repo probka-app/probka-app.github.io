@@ -197,8 +197,8 @@ input[type=range]{width:100%;max-width:270px;accent-color:#171717;margin-top:8px
  .vsb b{font-weight:700;overflow:hidden;text-overflow:ellipsis}.vsb i{font-style:normal;font-weight:500;font-size:9px;color:var(--p-muted,#a1a1aa);overflow:hidden;text-overflow:ellipsis}.vsb i:empty{display:none}
  .vsb:active{transform:scale(.96)}.dbar{display:none}
 @media (max-width:620px){.reader.dash .page{padding-block:10px 12px}.reader.dash .cvw{position:relative;width:max-content;margin:0 auto}.reader.dash #vst:empty{display:none}.reader.dash .page{padding-bottom:12px!important}.reader.dash .asm{margin-bottom:0!important;padding-bottom:0}.reader.dash .vwrap canvas{max-width:none}
- .reader.dash #vseek{position:absolute;left:10%;right:10%;width:80%!important;bottom:8px;margin:0;height:14px;opacity:.55;z-index:2}.reader.dash #vtime{display:none}
- .reader.dash .vbelow .vctl{margin-top:8px}.reader.dash .vsave{margin-top:8px}}
+ .reader.dash #vseek{display:block;width:100%!important;margin:12px 0 2px}.reader.dash #vtime{display:none}
+ .reader.dash .vbelow .vctl{margin-top:8px}.reader.dash #vplay{padding:7px 18px;font-size:15px}.reader.dash .vsave{margin-top:10px;padding:11px 16px;font-size:15px}}
 @media (max-width:620px){.reader.dash .vexprow{display:none!important}.reader.dash .asm>div:first-child{display:none}.reader.dash .vjump{display:none!important}.reader.dash .asm{margin-bottom:0}}
 .dpop{position:absolute;left:8px;right:8px;z-index:31;max-height:38vh;display:flex;flex-direction:column;border-radius:20px;border:1px solid rgba(255,255,255,.16);background:rgba(22,22,26,.94);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 -14px 40px -12px rgba(0,0,0,.7);animation:dpin .25s cubic-bezier(.3,.9,.3,1)}
 @keyframes dpin{from{transform:translateY(30px);opacity:0}}
@@ -1712,7 +1712,7 @@ function stAssemble(el){ const ER=document.getElementById("reader")||el;
   // вмістити все на один екран (без прокрутки): за потреби трохи зменшуємо відео
   const fitOne=()=>{ if(!cv.isConnected||POP||!matchMedia("(max-width:620px)").matches) return; const RB=document.getElementById("rbody"), bw=document.querySelector(".dbar.l")?.offsetWidth||62, maxW=Math.min(cv.closest(".vwrap").clientWidth, innerWidth-2*(bw+6));
     for(let k=0;k<3;k++){ const w=cv.getBoundingClientRect().width, over=RB.scrollHeight-RB.clientHeight; const nw=Math.max(150,Math.min(maxW,w-(over+2)*9/16)); if(Math.abs(nw-w)<1) break; cv.style.width=nw+"px"; } };
-  if(matchMedia("(max-width:620px)").matches){ const sk=ER.querySelector("#vseek"); if(sk){ const cw=document.createElement("div"); cw.className="cvw"; cv.before(cw); cw.append(cv,sk); } }
+  if(matchMedia("(max-width:620px)").matches){ const sk=ER.querySelector("#vseek"); if(sk){ const vb=ER.querySelector(".vbelow"); vb?.prepend(sk); } }
   setTimeout(fitOne,80); setTimeout(()=>{ const RB=document.getElementById("rbody"); const o=RB.scrollHeight-RB.clientHeight; if(o>0&&!POP) cv.style.width=Math.max(150,cv.getBoundingClientRect().width-(o+4)*9/16)+"px"; },300); addEventListener("resize",fitOne); const _pc=popClose; popCloseHook=()=>setTimeout(fitOne,30);
   { const R=document.getElementById("reader"); R.querySelectorAll(".vjump").forEach(n=>n.remove()); let editPos=null;
     const up=document.createElement("button"); up.type="button"; up.className="vjump up"; up.textContent="▲ Переглянути відео";
