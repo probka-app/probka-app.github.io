@@ -2430,7 +2430,11 @@ if(window.YV_DEMO){
     const h=root.querySelector(".pshead")||root.querySelector("h3"); if(h) h.after(b); else root.prepend(b); };
   new MutationObserver(()=>mount(BS)).observe(BS,{childList:true});
 }
-function openSheet(html,cls=""){ BS.className="bs "+cls; BS.innerHTML=`<button class="bsx" type="button" aria-label="Закрити">×</button>`+html; OV.hidden=false; BS.querySelector(".bsx").onclick=closeSheet; requestAnimationFrame(()=>OV.classList.add("in")); const f=BS.querySelector("button:not(.bsx),input"); try{ f?.focus({preventScroll:true}); }catch(e){} BS.scrollTop=0; OV.scrollTop=0; }
+// Клавіатура телефона не має закривати вікно: вікно завжди в межах видимої частини екрана (над клавіатурою)
+function kbFit(){ const vv=window.visualViewport; if(!vv||OV.hidden) return; OV.style.top=Math.max(0,vv.offsetTop)+"px"; OV.style.height=vv.height+"px"; OV.style.bottom="auto"; BS.style.maxHeight=Math.max(200,vv.height-8)+"px"; }
+if(window.visualViewport){ visualViewport.addEventListener("resize",kbFit); visualViewport.addEventListener("scroll",kbFit); }
+document.addEventListener("focusin",e=>{ const t=e.target; if(!BS.contains(t)||!/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return; setTimeout(()=>{ kbFit(); try{ t.scrollIntoView({block:"center",behavior:"smooth"}); }catch(x){} },320); });
+function openSheet(html,cls=""){ BS.className="bs "+cls; BS.innerHTML=`<button class="bsx" type="button" aria-label="Закрити">×</button>`+html; OV.hidden=false; BS.querySelector(".bsx").onclick=closeSheet; requestAnimationFrame(()=>OV.classList.add("in")); const f=BS.querySelector("button:not(.bsx),input"); try{ f?.focus({preventScroll:true}); }catch(e){} BS.scrollTop=0; OV.scrollTop=0; kbFit(); setTimeout(kbFit,350); }
 function closeSheet(){ try{ stopPrev(); }catch(e){} OV.classList.remove("in"); OV.hidden=true; BS.innerHTML=""; }
 OV.addEventListener("click",e=>{ if(e.target===OV) closeSheet(); });
 addEventListener("keydown",e=>{ if(e.key==="Escape"&&!OV.hidden) closeSheet(); });
