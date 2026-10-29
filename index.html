@@ -188,6 +188,10 @@ input[type=range]{width:100%;max-width:270px;accent-color:#171717;margin-top:8px
 .vjump{position:absolute;left:50%;transform:translate(-50%,8px);z-index:30;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:10px 18px;font:600 14px var(--pfont,system-ui);color:#fff;background:rgba(20,20,22,.82);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 10px 30px -10px rgba(0,0,0,.6);white-space:nowrap}
 .vjump.on{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
 .vsave{display:block;width:100%;margin:12px 0 0;border:0;border-radius:14px;padding:13px 16px;background:linear-gradient(180deg,#fff,#e6e6eb);color:#0b0b0d;font:700 16px var(--pfont,system-ui);cursor:pointer}
+.vwrap{display:block}.vside{display:none}
+@media (max-width:620px){.asm .sprev{width:100%}.vwrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,206px) minmax(0,1fr);gap:6px;align-items:center}.vwrap canvas{width:100%}
+ .vside{display:grid;gap:8px;align-content:center}.vsb{display:grid;justify-items:center;gap:3px;padding:8px 2px;border:1px solid rgba(255,255,255,.14);border-radius:14px;background:rgba(255,255,255,.06);color:var(--p-text,#f5f5f7);font:600 10.5px var(--pfont,system-ui);cursor:pointer;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .vsb span{font-size:20px;line-height:1}.vsb:active{transform:scale(.96)}}
 .vtip{margin:8px 2px 0;font-size:12.5px;line-height:1.4;color:var(--p-muted,#a1a1aa);text-align:center}
 .eflash{animation:eflash 1.4s ease}@keyframes eflash{0%,60%{box-shadow:0 0 0 3px rgba(255,159,10,.85);border-radius:14px}100%{box-shadow:0 0 0 3px rgba(255,159,10,0)}}
 .vedit{display:block;margin:10px auto 0;border:1px solid var(--rule,rgba(255,255,255,.2));border-radius:999px;padding:9px 16px;background:transparent;color:inherit;font:600 14px var(--pfont,system-ui);cursor:pointer}
@@ -1561,9 +1565,9 @@ function stAssemble(el){
       ${slider("musicvol","Гучність музики",S.mon.musicVol)}</div>
     <div class="epanel" data-panel="sfx" hidden><div class="sgrp"><div class="chips">${chip("mon","sfxOn","Звуки увімкнені",S.mon.sfxOn)}</div></div>${pickRow("Звук малювання",DSND[S.mon.drawSnd]||DSND.soft,"drawSnd")}${slider("drawvol","Гучність малювання",S.mon.drawVol)}${pickRow("Поява плашки",soundName(S.mon.sfxPlaque),"sfxPlaque")}${pickRow("Зміна кадру",soundName(S.mon.sfxCut),"sfxCut")}${pickRow("Фінал",soundName(S.mon.sfxEnd),"sfxEnd")}<div class="gl" style="margin-top:16px">Окремо для сцен</div>${slider("sfxvol","Гучність звуків",S.mon.sfxVol)}<div class="ascenes" id="asfx"></div></div>
   </div>
-  <div class="sprev"><canvas id="vprev" role="img" aria-label="Прев'ю ролика"></canvas>
+  <div class="sprev"><div class="vwrap"><div class="vside">${[["scenes","🖼","Сцени"],["look","🎨","Вигляд"],["tl","⏱","Таймлайн"],["subs","💬","Субтитри"]].map(([k,i,n])=>`<button type="button" class="vsb" data-vside="${k}"><span aria-hidden="true">${i}</span>${n}</button>`).join("")}</div><canvas id="vprev" role="img" aria-label="Прев'ю ролика"></canvas><div class="vside">${[["voice","🎙","Озвучити"],["music","🎵","Музика"],["sfx","🔊","Звуки"]].map(([k,i,n])=>`<button type="button" class="vsb" data-vside="${k}"><span aria-hidden="true">${i}</span>${n}</button>`).join("")}</div></div>
     <div class="vctl"><button class="chip ink" type="button" id="vplay">▶ Дивитись</button><span class="status" id="vtime"></span></div>
-    <input type="range" id="vseek" min="0" max="1000" value="0" aria-label="Перемотка"><button class="vsave" type="button" id="vsave">Зберегти відео</button><p class="vtip">Натисни на плашку, малюнок, субтитри чи таймлайн у відео — і одразу перейдеш до їх налаштувань</p><button class="vedit" type="button" id="vedit">✎ Налаштувати відео ↓</button></div></div>
+    <input type="range" id="vseek" min="0" max="1000" value="0" aria-label="Перемотка"><button class="vsave" type="button" id="vsave">Зберегти відео</button><p class="vtip">Натисни на плашку, малюнок, субтитри чи таймлайн у відео — і одразу перейдеш до їх налаштувань</p></div></div>
   <div class="row" style="margin-top:22px">${DL("Зберегти відео","vexp")}</div><div class="status" id="vst"></div>`;
   const cv=el.querySelector("#vprev"); cv.width=540; cv.height=960; const x=cv.getContext("2d");
   const seek=el.querySelector("#vseek"), vt=el.querySelector("#vtime"), list=el.querySelector("#ascenes"), sfxList=el.querySelector("#asfx"), playB=el.querySelector("#vplay");
@@ -1607,14 +1611,14 @@ function stAssemble(el){
     openTab(k); if(k==="scenes") node=list.children[i]; const generic=!node; if(!node) node=el.querySelector(`.epanel[data-panel="${k}"] .sgrp`)||el.querySelector(`.epanel[data-panel="${k}"]`);
     setTimeout(()=>{ scrollToEl(generic?tabsEl:node,generic?62:72); flash(node); },30); });
   // «Переглянути відео» / «Повернутись до редагування»: прокрутка між переглядом і налаштуваннями
-  el.querySelector("#vedit")?.addEventListener("click",()=>scrollToEl(tabsEl,62));
+  el.querySelectorAll("[data-vside]").forEach(b=>b.addEventListener("click",()=>{ openTab(b.dataset.vside); setTimeout(()=>{ scrollToEl(tabsEl,62); flash(el.querySelector(`.epanel[data-panel="${b.dataset.vside}"]`)); },30); }));
   { const R=document.getElementById("reader"); R.querySelectorAll(".vjump").forEach(n=>n.remove()); let editPos=null;
     const up=document.createElement("button"); up.type="button"; up.className="vjump up"; up.textContent="▲ Переглянути відео";
     const dn=document.createElement("button"); dn.type="button"; dn.className="vjump dn"; dn.textContent="▼ Повернутись до редагування";
     R.append(up,dn); const pv=el.querySelector(".sprev");
     const place=()=>{ if(!el.isConnected){ up.remove(); dn.remove(); RB?.removeEventListener("scroll",upd); clearInterval(gc); return; } up.style.top=(RB.offsetTop+10)+"px"; dn.style.bottom=(R.clientHeight-RB.offsetTop-RB.clientHeight+14)+"px"; };
     const gc=setInterval(()=>{ if(!el.isConnected) place(); },800);
-    const upd=()=>{ place(); if(!el.isConnected) return; const r=pv.getBoundingClientRect(), rb=RB.getBoundingClientRect(), vis=r.bottom>rb.top+80&&r.top<rb.bottom-80;
+    const upd=()=>{ place(); if(!el.isConnected) return; const r=cv.getBoundingClientRect(), rb=RB.getBoundingClientRect(), vis=r.bottom>rb.top+r.height*.5&&r.top<rb.bottom-120;
       up.classList.toggle("on",!vis); dn.classList.toggle("on",vis&&editPos!=null&&Math.abs(RB.scrollTop-editPos)>60); };
     up.onclick=()=>{ editPos=RB.scrollTop; scrollToEl(pv,8); };
     dn.onclick=()=>{ if(editPos!=null) RB.scrollTo({top:editPos,behavior:"smooth"}); };
