@@ -1401,7 +1401,10 @@ function inkOf(i){ const im=IMGS[i]; if(!im) return null; const sk=!!S.scenes[i]
   const b=im.bmp, sc=Math.min(1,(sk?800:1100)/Math.max(b.width,b.height)), W0=Math.round(b.width*sc), H0=Math.round(b.height*sc);
   const c0=document.createElement("canvas"); c0.width=W0; c0.height=H0; const x0c=c0.getContext("2d",{willReadFrequently:true}); x0c.fillStyle="#fff"; x0c.fillRect(0,0,W0,H0); x0c.drawImage(b,0,0,W0,H0);
   const src=x0c.getImageData(0,0,W0,H0).data; let bx0=W0,by0=H0,bx1=0,by1=0; const A0=sk?sketchInk(src,W0,H0):new Float32Array(W0*H0);
-  for(let k=0,p=0;k<src.length;k+=4,p++){ const a=sk?A0[p]:clamp((235-(src[k]*.299+src[k+1]*.587+src[k+2]*.114))/165); A0[p]=a; if(a>.15){ const px=p%W0, py=(p/W0)|0; if(px<bx0)bx0=px; if(px>bx1)bx1=px; if(py<by0)by0=py; if(py>by1)by1=py; } }
+  // рівень «паперу» цієї картинки: якщо фон не чисто білий (сіруватий, кремовий), він не має ставати прозорою плямою
+  let paper=235; if(!sk){ const hist=new Uint32Array(256); for(let k=0;k<src.length;k+=16) hist[Math.round(src[k]*.299+src[k+1]*.587+src[k+2]*.114)]++; let n=0, tot=src.length/16; for(let v=255;v>=0;v--){ n+=hist[v]; if(n>=tot*.35){ paper=Math.min(240,Math.max(150,v-12)); break; } } }
+  const span=Math.max(60,paper-70);
+  for(let k=0,p=0;k<src.length;k+=4,p++){ let a=sk?A0[p]:clamp((paper-(src[k]*.299+src[k+1]*.587+src[k+2]*.114))/span); if(!sk) a=a<.22?0:Math.min(1,(a-.22)/.7); A0[p]=a; if(a>.15){ const px=p%W0, py=(p/W0)|0; if(px<bx0)bx0=px; if(px>bx1)bx1=px; if(py<by0)by0=py; if(py>by1)by1=py; } }
   if(bx1<=bx0){ bx0=0;by0=0;bx1=W0-1;by1=H0-1; }
   const pad=18; bx0=Math.max(0,bx0-pad); by0=Math.max(0,by0-pad); bx1=Math.min(W0-1,bx1+pad); by1=Math.min(H0-1,by1+pad);
   const w=bx1-bx0+1, h=by1-by0+1; let A=new Float32Array(w*h); for(let y=0;y<h;y++) A.set(A0.subarray((y+by0)*W0+bx0,(y+by0)*W0+bx0+w),y*w);
@@ -1449,7 +1452,7 @@ function warmInks(){ Object.keys(IMGS).forEach((i,n)=>setTimeout(()=>inkOf(+i),n
 function plaqueFor(txt,col){ const key=`${col}|${ST.bg}|${ST.plInk}|${ST.plSize}|${S.mon?.font||""}|${txt}`; if(PLQ.has(key)) return PLQ.get(key);
   const two=txt.includes("/"); const t=txt.split("/").map(s=>s.trim()).join("\n"); const len=Math.max(...t.split("\n").map(s=>s.length));
   const sz=two?"x":len<=12?"s":len<=22?"m":"l"; const c=document.createElement("canvas"); drawPlaqueCanvas(c,PDIM[sz][0],PDIM[sz][1],col,t); PLQ.set(key,c); return c; }
-function drawTimeline(x,prog){ if(S.tlPos==="none") return; const st={top:S.tlPos==="top",pct:S.tlPct!==false,thick:14,head:7,dot:13}; const ly=(st.top?230:1290)+90, ink=isDark()?"#f2f2ec":"#171717";
+function drawTimeline(x,prog){ if(S.tlPos==="none") return; const st={top:S.tlPos==="top",pct:S.tlPct!==false,thick:14,head:7,dot:13}; const ly=(st.top?230:1400)+90, ink=isDark()?"#f2f2ec":"#171717";
   const wy=xx=>1.2*(Math.sin(xx/37+.7)*.6+Math.sin(xx/13+2.1)*.4);
   const line=(a,b,lw)=>{ x.beginPath(); x.moveTo(a,ly+wy(a)); for(let xx=a+6;xx<b;xx+=6) x.lineTo(xx,ly+wy(xx)); x.lineTo(b,ly+wy(b)); x.lineWidth=lw; x.stroke(); };
   x.save(); x.strokeStyle=ink; x.fillStyle=ink; x.lineCap="round"; x.lineJoin="round"; line(150,930,4);
@@ -1625,7 +1628,7 @@ function stAssemble(el){
   const flash=n=>{ if(!n) return; n.classList.remove("eflash"); void n.offsetWidth; n.classList.add("eflash"); };
   cv.style.cursor="pointer";
   cv.addEventListener("click",e=>{ const r=cv.getBoundingClientRect(), y=(e.clientY-r.top)/r.height*1920, T=timings(); let i=T.findIndex(o=>pos<o.e); if(i<0) i=T.length-1; const sc=S.scenes[i]||{};
-    const top=S.tlPos==="top", tlY=(top?230:1290)+90, plY=top?560:330, cy=top?1060:930, tlTop=S.tlPos==="top", noTl=S.tlPos==="none", subY={top:tlTop?470:190,mid:1000,bottom:(tlTop||noTl)?1440:1280}[S.mon.subs];
+    const top=S.tlPos==="top", tlY=(top?230:1400)+90, plY=top?560:330, cy=top?1060:930, tlTop=S.tlPos==="top", noTl=S.tlPos==="none", subY={top:tlTop?470:190,mid:1000,bottom:(tlTop||noTl)?1440:1280}[S.mon.subs];
     let k="look", node=null;
     if(S.tlPos!=="none"&&Math.abs(y-tlY)<95){ k="tl"; }
     else if(sc.plaque&&Math.abs(y-plY)<120){ k="look"; node=el.querySelector('[data-sk="plInk"]')?.closest(".sgrp"); }
