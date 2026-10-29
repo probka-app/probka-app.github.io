@@ -1167,7 +1167,7 @@ function relLum(h){ const c=[1,3,5].map(i=>{ const v=parseInt(h.slice(i,i+2),16)
 const contrast=(a,b)=>{ const x=relLum(a), y=relLum(b); return (Math.max(x,y)+.05)/(Math.min(x,y)+.05); };
 // Плашка: яскрава заливка (червона/зелена), відтінок відштовхується від кольору фону по колу; текст і рамка — білі або чорні
 const PL_HUE={red:4,green:138,yellow:48,blue:212,purple:272,orange:26,pink:330,gray:0};
-function plaqueStyle(col){ const bg=BGS[ST.bg]||BGS.white, dark=!!bg.dark, ink=ST.plInk==="white"?"#ffffff":ST.plInk==="black"?"#171717":(dark?"#ffffff":"#171717");
+function plaqueStyleAuto(col){ const bg=BGS[ST.bg]||BGS.white, dark=!!bg.dark, ink=ST.plInk==="white"?"#ffffff":ST.plInk==="black"?"#171717":(dark?"#ffffff":"#171717");
   const [bh,bs,bl]=hex2hsl(bg.c), base=PL_HUE[col]??4, chroma=bs*(1-Math.abs(2*bl-1)), lim=col==="red"?10:14; let H=base;
   if(chroma>.12){ let best=-1; for(let o=-lim;o<=lim;o+=2){ const hh=(base+o+360)%360, d=Math.min(Math.abs(hh-bh),360-Math.abs(hh-bh)); if(d>best){ best=d; H=hh; } } }
   const S=col==="gray"?0:col==="green"?.72:.88; let L=ink==="#ffffff"?.44:.6;
@@ -1213,7 +1213,36 @@ function drawPlaque(x,x0,y0,w,h,fill,lw,seed,inkC="#171717"){ const r=Math.min(h
 function fitText(x,txt,x0,y0,w,h,maxPx,color="#171717"){ const lines=String(txt).split("\n"); let fs=maxPx; const set=()=>x.font=vfont(fs); set();
   while(fs>8&&(Math.max(...lines.map(l=>x.measureText(l).width))>w*.82||lines.length*fs*1.15>h*.72)){ fs-=1; set(); }
   x.fillStyle=color; x.textAlign="center"; x.textBaseline="middle"; lines.forEach((l,i)=>x.fillText(l,x0+w/2,y0+h/2+(i-(lines.length-1)/2)*fs*1.15)); }
-function drawPlaqueCanvas(cv,w,h,col,txt){ const k=PLSZK[ST.plSize]||1; w=Math.min(1040,Math.round(w*k)); h=Math.round(h*k); cv.width=w; cv.height=h; const x=cv.getContext("2d"); x.clearRect(0,0,w,h); const P=plaqueStyle(col); drawPlaque(x,10,10,w-20,h-20,P.fill,8,col==="red"?1.3:2.9,P.ink); if(txt) fitText(x,txt,10,10,w-20,h-20,Math.round(90*k),P.ink); }
+// Стиль плашок підбирається під фон автоматично: червона — проблема, зелена — рішення
+const PTHEME={
+  white:{k:"hand",red:"#FF5A4E",green:"#34D07A",ink:"#141414"},
+  grid:{k:"hand",red:"#FF5A4E",green:"#34D07A",ink:"#141414"},
+  cream:{k:"hand",red:"#E4643F",green:"#7DB35C",ink:"#2B2118"},
+  blue:{k:"hl",red:"#FF7A7A",green:"#4FE39A",ink:"#0F1D3A"},
+  board:{k:"chalk",red:"#FF9A8F",green:"#BDF5CF",ink:"#F4F1E8"},
+  black:{k:"neon",red:"#FF453A",green:"#30D158",ink:"#FFFFFF"},
+  navy:{k:"solid",red:"#FF6A55",green:"#2FBF71",ink:"#FFFFFF"},
+  plum:{k:"solid",red:"#FF4F7E",green:"#1FAF78",ink:"#FFFFFF"},
+  graphite:{k:"bar",red:"#FF5F57",green:"#3DDC84",ink:"#FFFFFF"} };
+function fitFs(x,lines,w,h,maxPx){ let fs=maxPx; x.font=vfont(fs); while(fs>8&&(Math.max(...lines.map(l=>x.measureText(l).width))>w*.82||lines.length*fs*1.15>h*.72)){ fs--; x.font=vfont(fs); } return fs; }
+function rrect(x,x0,y0,w,h,r){ x.beginPath(); x.roundRect(x0,y0,w,h,r); }
+function drawPlaqueCanvas(cv,w,h,col,txt){ const k=PLSZK[ST.plSize]||1; w=Math.min(1040,Math.round(w*k)); h=Math.round(h*k); cv.width=w; cv.height=h; const x=cv.getContext("2d"); x.clearRect(0,0,w,h);
+  const T=PTHEME[ST.bg]||PTHEME.white, c=col==="green"?T.green:T.red, lines=String(txt||"").split("\n"), mx=Math.round(90*k);
+  if(T.k==="hand"){ drawPlaque(x,10,10,w-20,h-20,c,8,col==="red"?1.3:2.9,T.ink); if(txt) fitText(x,txt,10,10,w-20,h-20,mx,T.ink); return; }
+  const fs=fitFs(x,lines,w-20,h-20,mx), lw=Math.max(...lines.map(l=>x.measureText(l).width)), th=lines.length*fs*1.15, cx=w/2, cy=h/2;
+  const bx=Math.max(14,cx-lw/2-fs*.55), bw=Math.min(w-28,lw+fs*1.1), by=Math.max(12,cy-th/2-fs*.28), bh=Math.min(h-24,th+fs*.56);
+  x.save();
+  if(T.k==="hl"){ const R=rnd(txt.length+(col==="red"?3:9)); x.fillStyle=c; x.globalAlpha=.9; lines.forEach((l,i)=>{ const lw2=x.measureText(l).width, yy=cy+(i-(lines.length-1)/2)*fs*1.15; x.beginPath(); const x0=cx-lw2/2-fs*.35, x1=cx+lw2/2+fs*.35, t=fs*.42;
+      x.moveTo(x0+R()*6,yy-t+R()*5); x.lineTo(x1+R()*6,yy-t-R()*5); x.lineTo(x1-R()*4,yy+t+R()*6); x.lineTo(x0-R()*4,yy+t-R()*3); x.closePath(); x.fill(); }); x.globalAlpha=1; }
+  else if(T.k==="chalk"){ x.strokeStyle=c; x.lineCap="round"; x.globalAlpha=.9; const R=rnd(txt.length+5); for(let p=0;p<2;p++){ x.lineWidth=fs*.09; x.beginPath(); const yy=cy+th/2+fs*.12+p*fs*.11, x0=cx-lw/2-fs*.2, x1=cx+lw/2+fs*.2; x.moveTo(x0,yy+R()*4); for(let xx=x0;xx<=x1;xx+=18) x.lineTo(xx,yy+Math.sin(xx/40+p)*3+R()*3); x.stroke(); } x.globalAlpha=1; }
+  else if(T.k==="neon"){ rrect(x,bx,by,bw,bh,bh/2); x.fillStyle=c+"22"; x.fill(); x.shadowColor=c; x.shadowBlur=26; x.lineWidth=6; x.strokeStyle=c; x.stroke(); x.shadowBlur=0; }
+  else if(T.k==="solid"){ x.shadowColor="rgba(0,0,0,.35)"; x.shadowBlur=24; x.shadowOffsetY=8; rrect(x,bx,by,bw,bh,Math.min(28,bh/2.6)); x.fillStyle=c; x.fill(); x.shadowColor="transparent"; const g=x.createLinearGradient(0,by,0,by+bh); g.addColorStop(0,"rgba(255,255,255,.18)"); g.addColorStop(.6,"rgba(255,255,255,0)"); x.fillStyle=g; x.fill(); }
+  else if(T.k==="bar"){ rrect(x,bx,by,bw,bh,18); x.fillStyle="rgba(255,255,255,.09)"; x.fill(); x.lineWidth=2; x.strokeStyle="rgba(255,255,255,.14)"; x.stroke(); rrect(x,bx+10,by+bh*.18,10,bh*.64,5); x.fillStyle=c; x.fill(); }
+  x.restore();
+  x.font=vfont(fs); x.fillStyle=T.ink; x.textAlign="center"; x.textBaseline="middle"; if(T.k==="neon"){ x.shadowColor=c; x.shadowBlur=14; }
+  lines.forEach((l,i)=>x.fillText(l,cx+(T.k==="bar"?8:0),cy+(i-(lines.length-1)/2)*fs*1.15)); x.shadowBlur=0; }
+function plaqueStyle(col){ const T=PTHEME[ST.bg]||PTHEME.white; return {fill:col==="green"?T.green:T.red, ink:["hl","chalk"].includes(T.k)?"#141414":T.ink}; }
+
 async function plaqueBlob(w,h,col,txt){ try{ await document.fonts.load('80px "Pangolin"'); }catch(e){} const c=document.createElement("canvas"); drawPlaqueCanvas(c,w,h,col,txt); return await new Promise(r=>c.toBlob(r,"image/png")); }
 function drawPreview(cv){ if(!cv) return; cv.width=540; cv.height=960; const x=cv.getContext("2d"); x.setTransform(2,0,0,2,0,0);
   paintBg(x,270,480,13.5); const w=THICK[ST.thick].w;
@@ -1605,7 +1634,7 @@ function sfxOptions(cur){ let o=`<option value="auto" ${cur==="auto"?"selected":
 const DASHGO={ scenes:["Сцени","scenes",null], bg:["Фон","look",'[data-sk="bg"]'], grid:["Клітинки","look","[data-grid]"], tool:["Малює","look",'[data-sk="tool"]'], thick:["Лінія","look",'[data-sk="thick"]'],
   font:["Шрифт","look",'[data-pick="font"]'], plInk:["Плашка","look",'[data-sk="plInk"]'], plSize:["Текст","look",'[data-sk="plSize"]'], moves:["Рух","look",'[data-mon="parts"]'],
   tl:["Таймлайн","tl",null], subs:["Субтитри","subs",null], voice:["Голос","voice",null], music:["Музика","music",'[data-pick="music"]'], drawSnd:["Звук ліній","sfx",'[data-pick="drawSnd"]'], sfx:["Звуки","sfx",null] };
-const DASH_L=["bg","grid","tool","thick","font","plInk","plSize","moves"], DASH_R=["tl","subs","voice","music","drawSnd","sfx"];
+const DASH_L=["bg","grid","tool","thick","font","plSize","moves"], DASH_R=["tl","subs","voice","music","drawSnd","sfx"];
 function stAssemble(el){ const ER=document.getElementById("reader")||el;
   if(S.format==="film"){ el.innerHTML+=`<p>Автоматичне збирання з власних кадрів з'явиться пізніше. Поки змонтуй ролик у CapCut за списком кадрів або віддай файли Claude (розділ «Монтаж з Claude»).</p>`; return; }
   if(!S.scenes.length){ el.innerHTML+=`<p class="status">Сцен ще немає. Повернись на крок «Що малювати» і розбий сценарій.</p>`; return; }
