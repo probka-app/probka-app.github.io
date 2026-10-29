@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="uk">
 <head>
+<meta name="robots" content="noindex,nofollow">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark">
@@ -974,27 +975,6 @@ body{background:radial-gradient(900px 640px at 8% -12%,var(--yv-glow-1),transpar
   <div class="rfoot"><button class="pbtn" id="prev" type="button">← Назад</button><button class="pbtn next" id="next" type="button">Далі →</button></div>
 </div>
 
-<meta name="robots" content="noindex,nofollow">
-<style>html.gate body>*:not(#yvgate){display:none!important}
-#yvgate{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;padding:24px;background:#f6f4ee;color:#151512;font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-#yvgate .bx{width:100%;max-width:340px;display:grid;gap:12px;text-align:center}#yvgate b{font-size:26px;letter-spacing:-.02em}#yvgate p{margin:0;opacity:.65;font-size:15px}
-#yvgate input{font:inherit;padding:14px 16px;border-radius:14px;border:1px solid #d9d6cc;background:#fff;color:#151512;text-align:center;font-size:17px}
-#yvgate button{font:inherit;font-weight:600;padding:14px;border:0;border-radius:14px;background:#151512;color:#f6f4ee;font-size:17px}#yvgate .er{color:#d8443c;font-size:14px;min-height:20px}
-#yvgate{background:radial-gradient(800px 560px at 10% -10%,rgba(10,132,255,.2),transparent 60%),#050507;color:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",Inter,Roboto,sans-serif}#yvgate input{background:rgba(255,255,255,.08);color:#f5f5f7;border-color:rgba(255,255,255,.14)}#yvgate button{background:#fff;color:#0b0b0d}</style>
-<script>(function(){var K="yuviAccess",H="5bc3c1b63fe0033da30b67368fbdb87f7db194ce736f7f00733d0b93a50e901c",d=document.documentElement;
-function ok(){try{return localStorage.getItem(K)===H}catch(e){return false}}
-function sha2(m){function r(n,x){return(x>>>n)|(x<<(32-n))}var K=[1116352408,1899447441,3049323471,3921009573,961987163,1508970993,2453635748,2870763221,3624381080,310598401,607225278,1426881987,1925078388,2162078206,2614888103,3248222580,3835390401,4022224774,264347078,604807628,770255983,1249150122,1555081692,1996064986,2554220882,2821834349,2952996808,3210313671,3336571891,3584528711,113926993,338241895,666307205,773529912,1294757372,1396182291,1695183700,1986661051,2177026350,2456956037,2730485921,2820302411,3259730800,3345764771,3516065817,3600352804,4094571909,275423344,430227734,506948616,659060556,883997877,958139571,1322822218,1537002063,1747873779,1955562222,2024104815,2227730452,2361852424,2428436474,2756734187,3204031479,3329325298],H=[1779033703,3144134277,1013904242,2773480762,1359893119,2600822924,528734635,1541459225],b=Array.from(new TextEncoder().encode(m)),l=b.length*8;b.push(128);while(b.length%64!==56)b.push(0);for(var i=7;i>=0;i--)b.push((l/Math.pow(2,i*8))&255);for(var o=0;o<b.length;o+=64){var w=[];for(i=0;i<16;i++)w[i]=(b[o+i*4]<<24)|(b[o+i*4+1]<<16)|(b[o+i*4+2]<<8)|b[o+i*4+3];for(i=16;i<64;i++){var s0=r(7,w[i-15])^r(18,w[i-15])^(w[i-15]>>>3),s1=r(17,w[i-2])^r(19,w[i-2])^(w[i-2]>>>10);w[i]=(w[i-16]+s0+w[i-7]+s1)|0}var a=H[0],c=H[1],d=H[2],e=H[3],f=H[4],g=H[5],h=H[6],k=H[7];for(i=0;i<64;i++){var S1=r(6,f)^r(11,f)^r(25,f),ch=(f&g)^(~f&h),t1=(k+S1+ch+K[i]+w[i])|0,S0=r(2,a)^r(13,a)^r(22,a),mj=(a&c)^(a&d)^(c&d),t2=(S0+mj)|0;k=h;h=g;g=f;f=(e+t1)|0;e=d;d=c;c=a;a=(t1+t2)|0}H[0]=(H[0]+a)|0;H[1]=(H[1]+c)|0;H[2]=(H[2]+d)|0;H[3]=(H[3]+e)|0;H[4]=(H[4]+f)|0;H[5]=(H[5]+g)|0;H[6]=(H[6]+h)|0;H[7]=(H[7]+k)|0}return H.map(function(x){return(x>>>0).toString(16).padStart(8,"0")}).join("")}
-async function sha(t){t=t.trim();try{if(window.crypto&&crypto.subtle){var b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t));return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,"0")}).join("")}}catch(e){}return sha2(t)}
-function vid(){try{var v=localStorage.getItem("yvVid");if(!v){v=Math.random().toString(36).slice(2,12);localStorage.setItem("yvVid",v)}return v}catch(e){return null}}
-function L(k){try{var r=null;try{r=new URLSearchParams(location.search).get("ref")}catch(e){}fetch("https://zgkrtlpgozqjrmxbksld.supabase.co/rest/v1/rpc/log_visit",{method:"POST",keepalive:true,headers:{"apikey":"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm","Content-Type":"application/json"},body:JSON.stringify({p_kind:k,p_visitor:vid(),p_ref:r,p_ua:navigator.userAgent})}).catch(function(){})}catch(e){}}
-function pass(){try{localStorage.setItem(K,H)}catch(e){}L("gate_pass");d.classList.remove("gate");var g=document.getElementById("yvgate");if(g)g.remove()}
-if(ok())return;d.classList.add("gate");L("gate");
-var q=null;try{q=new URLSearchParams(location.search).get("access")}catch(e){}
-if(q){sha(q).then(function(h){if(h===H){pass();try{var u=new URL(location.href);u.searchParams.delete("access");history.replaceState(null,"",u)}catch(e){}}})}
-document.addEventListener("DOMContentLoaded",function(){if(ok())return;var g=document.createElement("div");g.id="yvgate";
-g.innerHTML='<form class="bx"><b>YuVi Studio</b><p>Закрите тестування. Введи код доступу.</p><input type="password" autocomplete="off" placeholder="Код доступу" aria-label="Код доступу"><button type="submit">Увійти</button><div class="er"></div></form>';
-document.body.appendChild(g);var f=g.querySelector("form"),i=g.querySelector("input"),e=g.querySelector(".er");
-f.addEventListener("submit",function(ev){ev.preventDefault();sha(i.value).then(function(h){if(h===H)pass();else{L("gate_fail");e.textContent="Невірний код";i.select()}})})})})();</script>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
