@@ -1275,12 +1275,12 @@ async function musicPreview(kind){ if(kind==="none") return null;
   src.onended=()=>{ if(PREV&&PREV.src===src){ PREV=null; document.querySelectorAll(".pplay.on").forEach(b=>{ b.classList.remove("on"); b.textContent="▶"; }); } };
   return {src,stop:()=>src.stop()}; }
 function pickSheet({title,items,cur,onPick,play,font}){ stopPrev();
-  openSheet(`<h3>${title}</h3><div class="plist">${items.map(([k,n])=>`<div class="prow${k===cur?" sel":""}" data-k="${esc(k)}">${play?`<button class="pplay" type="button" aria-label="Послухати: ${esc(n)}">▶</button>`:""}<button class="pname" type="button">${font?`<span class="fnm">${esc(n)}</span><span class="fsm" style="font:${vfont(26,FONTS[k])}">Зона комфорту</span>`:esc(n)}</button><span class="pchk" aria-hidden="true">✓</span></div>`).join("")}</div>`);
+  openSheet(`<h3>${title}</h3><div class="plist">${items.map(([k,n])=>`<div class="prow${k===cur?" sel":""}" data-k="${esc(k)}">${play?`<button class="pplay" type="button" aria-label="Послухати: ${esc(n)}">▶</button>`:""}<button class="pname" type="button">${font?`<span class="fnm">${esc(n)}</span><span class="fsm" style='font:${vfont(26,FONTS[k])}'>Зона комфорту</span>`:esc(n)}</button><span class="pchk" aria-hidden="true">✓</span></div>`).join("")}</div>`);
   BS.querySelectorAll(".prow").forEach(r=>{ const k=r.dataset.k;
     r.querySelector(".pname").onclick=()=>{ stopPrev(); BS.querySelectorAll(".prow").forEach(o=>o.classList.toggle("sel",o===r)); onPick(k); setTimeout(closeSheet,220); };
     const pb=r.querySelector(".pplay"); if(pb) pb.onclick=async()=>{ const was=pb.classList.contains("on"); stopPrev(); if(was) return; pb.classList.add("on"); pb.textContent="■";
       const tok=PREVTOK; const h=await play(k); if(tok!==PREVTOK&&!h) return; if(h){ PREV=h; } else setTimeout(()=>{ pb.classList.remove("on"); pb.textContent="▶"; },500); }; }); }
-function pickRow(label,val,id,style=""){ return `<div class="pick"><div style="min-width:0"><div class="gl">${label}</div><div class="pv" data-pv="${id}"${style?` style="${style}"`:""}>${esc(val)}</div></div><button class="chip" type="button" data-pick="${id}">Змінити</button></div>`; }
+function pickRow(label,val,id,style=""){ return `<div class="pick"><div style="min-width:0"><div class="gl">${label}</div><div class="pv" data-pv="${id}"${style?` style='${style}'`:""}>${esc(val)}</div></div><button class="chip" type="button" data-pick="${id}">Змінити</button></div>`; }
 const SUBPOS={none:"Без субтитрів",top:"Зверху",mid:"По центру",bottom:"Внизу"};
 const SUBSIZE={s:{n:"Малі",px:46},m:{n:"Середні",px:58},l:{n:"Великі",px:72}};
 let VOICE_RAW=null, VOICE_INFO=null;
