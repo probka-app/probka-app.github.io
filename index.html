@@ -1674,9 +1674,9 @@ function stAssemble(el){
     const bl=mk(DASH_L,"l"), br=mk(DASH_R,"r",`<button type="button" class="vuit" id="vuit" aria-pressed="${UIOV!=="none"}" aria-label="Показати інтерфейс соцмереж поверх відео" title="Інтерфейс соцмереж"><svg viewBox="0 0 66 20" width="40" height="12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="16" height="16" rx="5"/><circle cx="10" cy="10" r="3.6"/><rect x="25" y="4" width="17" height="12" rx="4"/><path d="M31.5 7.2v5.6l4.6-2.8z" fill="currentColor" stroke="none"/><path d="M55 3v10.5a3 3 0 1 1-3-3M55 3c1 2.6 3 4 5.5 4" stroke-linecap="round"/></svg></button>`);
     br.querySelector("#vuit").onclick=e=>{ UIOV=UIOV==="none"?"ui":"none"; try{ localStorage.setItem("yvUIOV",UIOV); }catch(x){} e.currentTarget.setAttribute("aria-pressed",UIOV!=="none"); if(!PLAY) show(pos); };
     R.append(up,dn,bl,br); R.classList.add("dash"); const pv=el.querySelector(".sprev");
-    const place=()=>{ if(!el.isConnected){ up.remove(); dn.remove(); bl.remove(); br.remove(); R.classList.remove("dash"); RB?.removeEventListener("scroll",upd); clearInterval(gc); return; } up.style.top=(RB.offsetTop+10)+"px"; R.style.setProperty("--dbt",(RB.offsetTop+Math.max(70,RB.clientHeight*.09))+"px"); dn.style.bottom=(R.clientHeight-RB.offsetTop-RB.clientHeight+14)+"px"; };
-    const gc=setInterval(()=>{ if(!el.isConnected) place(); },800);
-    const upd=()=>{ place(); if(!el.isConnected) return; const r=cv.getBoundingClientRect(), rb=RB.getBoundingClientRect(), vis=r.bottom>rb.top+r.height*.5&&r.top<rb.bottom-120;
+    const place=()=>{ if(!cv.isConnected){ up.remove(); dn.remove(); bl.remove(); br.remove(); R.classList.remove("dash"); RB?.removeEventListener("scroll",upd); clearInterval(gc); return; } up.style.top=(RB.offsetTop+10)+"px"; R.style.setProperty("--dbt",(RB.offsetTop+Math.max(70,RB.clientHeight*.09))+"px"); dn.style.bottom=(R.clientHeight-RB.offsetTop-RB.clientHeight+14)+"px"; };
+    const gc=setInterval(()=>{ if(!cv.isConnected) place(); },800);
+    const upd=()=>{ place(); if(!cv.isConnected) return; const r=cv.getBoundingClientRect(), rb=RB.getBoundingClientRect(), vis=r.bottom>rb.top+r.height*.5&&r.top<rb.bottom-120;
       up.classList.toggle("on",!vis); dn.classList.toggle("on",vis&&editPos!=null&&Math.abs(RB.scrollTop-editPos)>60); };
     up.onclick=()=>{ editPos=RB.scrollTop; scrollToEl(pv,8); };
     dn.onclick=()=>{ if(editPos!=null) RB.scrollTo({top:editPos,behavior:"smooth"}); };
