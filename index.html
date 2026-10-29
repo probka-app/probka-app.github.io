@@ -196,6 +196,9 @@ input[type=range]{width:100%;max-width:270px;accent-color:#171717;margin-top:8px
  .vside{display:grid;gap:5px;align-content:center;justify-items:center}.vsb{width:62px;display:grid;gap:1px;padding:5px 2px;border:1px solid rgba(255,255,255,.14);border-radius:11px;background:rgba(255,255,255,.06);color:var(--p-text,#f5f5f7);font:600 9.5px/1.15 var(--pfont,system-ui);letter-spacing:-.2px;cursor:pointer;min-width:0;overflow:hidden;white-space:nowrap}
  .vsb b{font-weight:700;overflow:hidden;text-overflow:ellipsis}.vsb i{font-style:normal;font-weight:500;font-size:9px;color:var(--p-muted,#a1a1aa);overflow:hidden;text-overflow:ellipsis}.vsb i:empty{display:none}
  .vsb:active{transform:scale(.96)}.dbar{display:none}
+@media (max-width:620px){.reader.dash .page{padding-block:10px 12px}.reader.dash .cvw{position:relative;width:max-content;margin:0 auto}.reader.dash .page{min-height:calc(100% - 20px);display:flex;flex-direction:column;justify-content:center}.reader.dash .vwrap canvas{max-width:none}
+ .reader.dash #vseek{position:absolute;left:10%;right:10%;width:80%!important;bottom:8px;margin:0;height:14px;opacity:.55;z-index:2}.reader.dash #vtime{display:none}
+ .reader.dash .vbelow .vctl{margin-top:8px}.reader.dash .vsave{margin-top:8px}}
 @media (max-width:620px){.reader.dash .vexprow{display:none!important}.reader.dash .asm>div:first-child{display:none}.reader.dash .vjump{display:none!important}.reader.dash .asm{margin-bottom:0}}
 .dpop{position:absolute;left:8px;right:8px;z-index:31;max-height:38vh;display:flex;flex-direction:column;border-radius:20px;border:1px solid rgba(255,255,255,.16);background:rgba(22,22,26,.94);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 -14px 40px -12px rgba(0,0,0,.7);animation:dpin .25s cubic-bezier(.3,.9,.3,1)}
 @keyframes dpin{from{transform:translateY(30px);opacity:0}}
@@ -1689,7 +1692,7 @@ function stAssemble(el){ const ER=document.getElementById("reader")||el;
   // Панель знизу: налаштування відкривається поруч із відео, відео не зникає з екрана й одразу показує зміни
   const WHOLE={tl:1,subs:1,voice:1,sfx:1,music:1};
   let POP=null;
-  let popCloseHook=null; const popClose=()=>{ if(!POP) return; setTimeout(()=>popCloseHook?.(),0); POP.moved.forEach(([n,ph])=>{ ph.replaceWith(n); }); POP.box.remove(); document.querySelectorAll(".dbar [data-dgo]").forEach(b=>b.classList.remove("on")); cv.style.width=""; document.getElementById("reader").classList.remove("popon"); POP=null; };
+  let popCloseHook=null; const popClose=()=>{ if(!POP) return; setTimeout(()=>popCloseHook?.(),40); POP.moved.forEach(([n,ph])=>{ ph.replaceWith(n); }); POP.box.remove(); document.querySelectorAll(".dbar [data-dgo]").forEach(b=>b.classList.remove("on")); cv.style.width=""; document.getElementById("reader").classList.remove("popon"); POP=null; };
   const dashGo=k=>{ try{ uiSnd("tap"); }catch(e){} const was=POP?.k; popClose(); if(was===k) return;
     const [title,tab,sel]=DASHGO[k], panel=ER.querySelector(`.epanel[data-panel="${tab}"]`); if(!panel) return;
     let nodes=[]; if(WHOLE[k]||!sel) nodes=[...panel.children]; else { const n=panel.querySelector(sel)?.closest(".sgrp,.pick"); if(n) nodes=[n]; if(k==="drawSnd"){ const sl=panel.querySelector("#drawvol"); if(sl) nodes.push(sl.previousElementSibling,sl); } }
@@ -1707,7 +1710,9 @@ function stAssemble(el){ const ER=document.getElementById("reader")||el;
     box.classList.add("in"); };
   window.__dashGo=dashGo;
   // вмістити все на один екран (без прокрутки): за потреби трохи зменшуємо відео
-  const fitOne=()=>{ if(!cv.isConnected||POP||!matchMedia("(max-width:620px)").matches) return; const RB=document.getElementById("rbody"); cv.style.width=""; const over=RB.scrollHeight-RB.clientHeight; if(over>0){ const w=cv.getBoundingClientRect().width; cv.style.width=Math.max(150,w-(over+4)*9/16)+"px"; } };
+  const fitOne=()=>{ if(!cv.isConnected||POP||!matchMedia("(max-width:620px)").matches) return; const RB=document.getElementById("rbody"), bw=document.querySelector(".dbar.l")?.offsetWidth||62, maxW=Math.min(cv.closest(".vwrap").clientWidth, innerWidth-2*(bw+14));
+    for(let k=0;k<3;k++){ const w=cv.getBoundingClientRect().width, over=RB.scrollHeight-RB.clientHeight; const nw=Math.max(150,Math.min(maxW,w-(over+2)*9/16)); if(Math.abs(nw-w)<1) break; cv.style.width=nw+"px"; } };
+  if(matchMedia("(max-width:620px)").matches){ const sk=ER.querySelector("#vseek"); if(sk){ const cw=document.createElement("div"); cw.className="cvw"; cv.before(cw); cw.append(cv,sk); } }
   setTimeout(fitOne,80); setTimeout(()=>{ const RB=document.getElementById("rbody"); const o=RB.scrollHeight-RB.clientHeight; if(o>0&&!POP) cv.style.width=Math.max(150,cv.getBoundingClientRect().width-(o+4)*9/16)+"px"; },300); addEventListener("resize",fitOne); const _pc=popClose; popCloseHook=()=>setTimeout(fitOne,30);
   { const R=document.getElementById("reader"); R.querySelectorAll(".vjump").forEach(n=>n.remove()); let editPos=null;
     const up=document.createElement("button"); up.type="button"; up.className="vjump up"; up.textContent="▲ Переглянути відео";
