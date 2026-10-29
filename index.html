@@ -1577,7 +1577,7 @@ function sfxOptions(cur){ let o=`<option value="auto" ${cur==="auto"?"selected":
 const DASHGO={ scenes:["Сцени","scenes",null], bg:["Фон","look",'[data-sk="bg"]'], grid:["Клітинки","look","[data-grid]"], tool:["Малює","look",'[data-sk="tool"]'], thick:["Лінія","look",'[data-sk="thick"]'],
   font:["Шрифт","look",'[data-pick="font"]'], plInk:["Плашка","look",'[data-sk="plInk"]'], plSize:["Текст","look",'[data-sk="plSize"]'], moves:["Рух","look",'[data-mon="parts"]'],
   tl:["Таймлайн","tl",null], subs:["Субтитри","subs",null], voice:["Голос","voice",null], music:["Музика","music",'[data-pick="music"]'], drawSnd:["Звук ліній","sfx",'[data-pick="drawSnd"]'], sfx:["Звуки","sfx",null] };
-const DASH_L=["scenes","bg","grid","tool","thick","font","plInk","plSize","moves"], DASH_R=["tl","subs","voice","music","drawSnd","sfx"];
+const DASH_L=["bg","grid","tool","thick","font","plInk","plSize","moves"], DASH_R=["tl","subs","voice","music","drawSnd","sfx"];
 function stAssemble(el){
   if(S.format==="film"){ el.innerHTML+=`<p>Автоматичне збирання з власних кадрів з'явиться пізніше. Поки змонтуй ролик у CapCut за списком кадрів або віддай файли Claude (розділ «Монтаж з Claude»).</p>`; return; }
   if(!S.scenes.length){ el.innerHTML+=`<p class="status">Сцен ще немає. Повернись на крок «Що малювати» і розбий сценарій.</p>`; return; }
@@ -1642,6 +1642,7 @@ function stAssemble(el){
   el.querySelector("#vsave")?.addEventListener("click",()=>{ const b=el.querySelector("[data-dl=vexp]"); if(b) b.click(); });
   // натиснув на елемент у відео — переходиш до його налаштувань
   const openTab=k=>{ const b=el.querySelector(`[data-etab="${k}"]`); el.querySelectorAll("[data-etab]").forEach(o=>o.setAttribute("aria-pressed",o===b)); el.querySelectorAll(".epanel").forEach(p=>p.hidden=p.dataset.panel!==k); };
+  el.querySelector('[data-etab="scenes"]')?.remove(); openTab("look");   // сцени (картинки, тривалість) — на попередньому кроці; тут усе автоматично
   const flash=n=>{ if(!n) return; n.classList.remove("eflash"); void n.offsetWidth; n.classList.add("eflash"); };
   cv.style.cursor="pointer";
   cv.addEventListener("click",e=>{ const r=cv.getBoundingClientRect(), y=(e.clientY-r.top)/r.height*1920, T=timings(); let i=T.findIndex(o=>pos<o.e); if(i<0) i=T.length-1; const sc=S.scenes[i]||{};
@@ -1650,7 +1651,7 @@ function stAssemble(el){
     if(S.tlPos!=="none"&&Math.abs(y-tlY)<95){ k="tl"; }
     else if(sc.plaque&&Math.abs(y-plY)<120){ k="look"; node=el.querySelector('[data-sk="plInk"]')?.closest(".sgrp"); }
     else if(S.mon.subs!=="none"&&subY&&Math.abs(y-subY)<90){ k="subs"; }
-    else if(Math.abs(y-cy)<460){ k="scenes"; }
+    else if(Math.abs(y-cy)<460){ k="look"; node=el.querySelector('[data-sk="tool"]')?.closest(".sgrp"); }
     openTab(k); if(k==="scenes") node=list.children[i]; const generic=!node; if(!node) node=el.querySelector(`.epanel[data-panel="${k}"] .sgrp`)||el.querySelector(`.epanel[data-panel="${k}"]`);
     setTimeout(()=>{ scrollToEl(generic?tabsEl:node,generic?62:72); flash(node); },30); });
   // «Переглянути відео» / «Повернутись до редагування»: прокрутка між переглядом і налаштуваннями
