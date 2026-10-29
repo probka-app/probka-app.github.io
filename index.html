@@ -189,9 +189,12 @@ input[type=range]{width:100%;max-width:270px;accent-color:#171717;margin-top:8px
 .vjump.on{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
 .vsave{display:block;width:100%;margin:12px 0 0;border:0;border-radius:14px;padding:13px 16px;background:linear-gradient(180deg,#fff,#e6e6eb);color:#0b0b0d;font:700 16px var(--pfont,system-ui);cursor:pointer}
 .vwrap{display:block}.vside{display:none}
-@media (max-width:620px){.asm .sprev{width:100%}.vwrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,206px) minmax(0,1fr);gap:6px;align-items:center}.vwrap canvas{width:100%}
- .vside{display:grid;gap:8px;align-content:center}.vsb{display:grid;justify-items:center;gap:3px;padding:8px 2px;border:1px solid rgba(255,255,255,.14);border-radius:14px;background:rgba(255,255,255,.06);color:var(--p-text,#f5f5f7);font:600 10.5px var(--pfont,system-ui);cursor:pointer;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
- .vsb span{font-size:20px;line-height:1}.vsb:active{transform:scale(.96)}}
+.vui{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;margin-top:10px;font:600 12px var(--pfont,system-ui);color:var(--p-muted,#a1a1aa)}
+.vui button{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:inherit;border-radius:999px;padding:5px 10px;font:inherit;cursor:pointer}
+.vui button[aria-pressed="true"]{background:rgba(255,255,255,.9);color:#0b0b0d;border-color:transparent}
+@media (max-width:620px){.asm .sprev{width:100%}.vwrap{display:grid;grid-template-columns:58px minmax(0,1fr) 58px;gap:6px;align-items:center}.vwrap canvas{width:100%;grid-column:2}
+ .vside{display:grid;gap:8px;align-content:center}.vsb{padding:10px 2px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:rgba(255,255,255,.06);color:var(--p-text,#f5f5f7);font:600 10px var(--pfont,system-ui);letter-spacing:-.2px;cursor:pointer;min-width:0;overflow:hidden;text-overflow:clip;white-space:nowrap}
+ .vsb:active{transform:scale(.96)}.vbelow{grid-column:2}.vbelow .vctl{justify-content:center}.vbelow input[type=range]{width:100%}}
 .vtip{margin:8px 2px 0;font-size:12.5px;line-height:1.4;color:var(--p-muted,#a1a1aa);text-align:center}
 .eflash{animation:eflash 1.4s ease}@keyframes eflash{0%,60%{box-shadow:0 0 0 3px rgba(255,159,10,.85);border-radius:14px}100%{box-shadow:0 0 0 3px rgba(255,159,10,0)}}
 .vedit{display:block;margin:10px auto 0;border:1px solid var(--rule,rgba(255,255,255,.2));border-radius:999px;padding:9px 16px;background:transparent;color:inherit;font:600 14px var(--pfont,system-ui);cursor:pointer}
@@ -1446,17 +1449,17 @@ function warmInks(){ Object.keys(IMGS).forEach((i,n)=>setTimeout(()=>inkOf(+i),n
 function plaqueFor(txt,col){ const key=`${col}|${ST.bg}|${ST.plInk}|${ST.plSize}|${S.mon?.font||""}|${txt}`; if(PLQ.has(key)) return PLQ.get(key);
   const two=txt.includes("/"); const t=txt.split("/").map(s=>s.trim()).join("\n"); const len=Math.max(...t.split("\n").map(s=>s.length));
   const sz=two?"x":len<=12?"s":len<=22?"m":"l"; const c=document.createElement("canvas"); drawPlaqueCanvas(c,PDIM[sz][0],PDIM[sz][1],col,t); PLQ.set(key,c); return c; }
-function drawTimeline(x,prog){ if(S.tlPos==="none") return; const st={top:S.tlPos==="top",pct:S.tlPct!==false,thick:14,head:7,dot:13}; const ly=(st.top?230:1470)+90, ink=isDark()?"#f2f2ec":"#171717";
+function drawTimeline(x,prog){ if(S.tlPos==="none") return; const st={top:S.tlPos==="top",pct:S.tlPct!==false,thick:14,head:7,dot:13}; const ly=(st.top?230:1290)+90, ink=isDark()?"#f2f2ec":"#171717";
   const wy=xx=>1.2*(Math.sin(xx/37+.7)*.6+Math.sin(xx/13+2.1)*.4);
   const line=(a,b,lw)=>{ x.beginPath(); x.moveTo(a,ly+wy(a)); for(let xx=a+6;xx<b;xx+=6) x.lineTo(xx,ly+wy(xx)); x.lineTo(b,ly+wy(b)); x.lineWidth=lw; x.stroke(); };
-  x.save(); x.strokeStyle=ink; x.fillStyle=ink; x.lineCap="round"; x.lineJoin="round"; line(110,970,4);
-  const hx=110+860*clamp(prog); if(hx>111){ line(110,hx,st.thick); x.beginPath(); x.arc(hx,ly+wy(hx),st.head,0,7); x.fill(); }
-  [110,970].forEach(cx=>{ x.beginPath(); x.arc(cx,ly+wy(cx),st.dot,0,7); x.fill(); });
+  x.save(); x.strokeStyle=ink; x.fillStyle=ink; x.lineCap="round"; x.lineJoin="round"; line(150,930,4);
+  const hx=150+780*clamp(prog); if(hx>151){ line(150,hx,st.thick); x.beginPath(); x.arc(hx,ly+wy(hx),st.head,0,7); x.fill(); }
+  [150,930].forEach(cx=>{ x.beginPath(); x.arc(cx,ly+wy(cx),st.dot,0,7); x.fill(); });
   if(st.pct){ x.font=vfont(62); x.textAlign="center"; x.textBaseline="middle"; x.fillText(Math.max(1,Math.min(100,Math.ceil(prog*100)))+"%",540,ly+62); }
   x.restore(); }
 function subChunk(i,lt,d){ const w=String(S.scenes[i].phrase||"").trim().split(/\s+/).filter(Boolean); if(!w.length) return ""; const n=Math.ceil(w.length/6), per=Math.ceil(w.length/n), k=Math.min(n-1,Math.floor(clamp(lt/d,0,.999)*n)); return w.slice(k*per,(k+1)*per).join(" "); }
 function drawSubs(x,txt,alpha){ if(!txt||S.mon.subs==="none") return; const px=SUBSIZE[S.mon.subSize].px, tlTop=S.tlPos==="top", noTl=S.tlPos==="none";
-  const y={top:tlTop?470:190,mid:1000,bottom:(tlTop||noTl)?1500:1360}[S.mon.subs];
+  const y={top:tlTop?470:190,mid:1000,bottom:(tlTop||noTl)?1440:1280}[S.mon.subs];
   x.save(); x.globalAlpha=alpha; x.font=vfont(px); x.textAlign="center"; x.textBaseline="middle";
   const words=txt.split(" "); let lines=[txt]; if(x.measureText(txt).width>920){ let best=1,bd=1e9; for(let k=1;k<words.length;k++){ const a=x.measureText(words.slice(0,k).join(" ")).width,b=x.measureText(words.slice(k).join(" ")).width; const m=Math.max(a,b); if(m<bd){bd=m;best=k;} } lines=[words.slice(0,best).join(" "),words.slice(best).join(" ")]; }
   const ink=isDark()?"#f2f2ec":"#171717"; x.lineJoin="round"; x.lineWidth=px*.24; x.strokeStyle=BGS[ST.bg].c; x.fillStyle=ink;
@@ -1488,6 +1491,20 @@ function drawScene(x,i,lt,d,alpha,t){ if(S.scenes[i]?.ad){ drawAd(x,lt,alpha); d
     x.save(); x.globalAlpha=alpha*clamp(k*3); x.translate(540,plY); x.scale(s,s); x.drawImage(c,-c.width/2,-c.height/2); x.restore(); } }
   drawSubs(x,subChunk(i,lt,d),alpha); }
 // Позначка на перегляді (лише поки відео не оплачено): навскісні рядки по всьому кадру, що повільно рухаються — запис екрана виходить з позначкою. У збереженому відео її немає.
+let UIOV=(()=>{ try{ return localStorage.getItem("yvUIOV")||"none"; }catch(e){ return "none"; } })();
+// Інтерфейс соцмережі поверх перегляду (лише для перевірки, у відео не потрапляє): верх, кнопки справа, підпис знизу
+function drawUIOverlay(x,kind){ if(!kind||kind==="none") return; x.save(); x.setTransform(.5,0,0,.5,0,0);
+  const g=x.createLinearGradient(0,1300,0,1920); g.addColorStop(0,"rgba(0,0,0,0)"); g.addColorStop(1,"rgba(0,0,0,.55)"); x.fillStyle=g; x.fillRect(0,1300,1080,620);
+  const tg=x.createLinearGradient(0,0,0,260); tg.addColorStop(0,"rgba(0,0,0,.45)"); tg.addColorStop(1,"rgba(0,0,0,0)"); x.fillStyle=tg; x.fillRect(0,0,1080,260);
+  x.fillStyle="rgba(255,255,255,.92)"; x.strokeStyle="rgba(255,255,255,.92)"; x.lineWidth=7; x.textBaseline="middle"; x.font='700 46px system-ui,-apple-system,sans-serif';
+  const L={ig:{top:"Reels",right:1730,n:4,cap:1650,nameY:1720},tt:{top:"Підписки   Для тебе",right:1640,n:5,cap:1640,nameY:1700},yt:{top:"Shorts",right:1640,n:5,cap:1700,nameY:1760}}[kind];
+  x.textAlign=kind==="tt"?"center":"left"; x.fillText(L.top,kind==="tt"?540:50,120);
+  for(let k=0;k<L.n;k++){ const cy=L.right-k*150; x.beginPath(); x.arc(990,cy-30,40,0,7); x.stroke(); x.font='600 30px system-ui,sans-serif'; x.textAlign="center"; x.fillText(["12K","345","678","1.2K","↗"][k]||"",990,cy+38); }
+  x.font='700 40px system-ui,sans-serif'; x.textAlign="left"; x.beginPath(); x.arc(85,L.nameY-L.cap+L.cap,34,0,7); x.stroke(); x.fillText("@your_name",140,L.nameY);
+  x.font='500 36px system-ui,sans-serif'; x.fillText("Текст опису під відео…",50,L.nameY+70); if(kind!=="yt") x.fillText("♫ Оригінальний звук",50,L.nameY+130);
+  x.setLineDash([16,14]); x.lineWidth=4; x.strokeStyle="rgba(255,214,10,.9)"; x.strokeRect(40,{ig:220,tt:200,yt:200}[kind],1080-40-150,{ig:1480,tt:1450,yt:1480}[kind]-{ig:220,tt:200,yt:200}[kind]);
+  x.setLineDash([]); x.font='700 30px system-ui,sans-serif'; x.fillStyle="rgba(255,214,10,.95)"; x.fillText("безпечна зона",52,{ig:250,tt:230,yt:230}[kind]);
+  x.restore(); }
 function drawPreviewMark(x,t){ x.save(); x.setTransform(.5,0,0,.5,0,0); const dark=isDark(); x.fillStyle=dark?"rgba(255,255,255,.17)":"rgba(0,0,0,.13)";
   x.font='800 58px "Inter","Manrope",system-ui,sans-serif'; x.textAlign="left"; x.textBaseline="middle"; const txt="Відео зроблено на studio.yuvi.life   ·   ";
   const tw=x.measureText(txt).width, sh=(t*36)%tw; x.translate(540,960); x.rotate(-.42);
@@ -1571,15 +1588,17 @@ function stAssemble(el){
       ${slider("musicvol","Гучність музики",S.mon.musicVol)}</div>
     <div class="epanel" data-panel="sfx" hidden><div class="sgrp"><div class="chips">${chip("mon","sfxOn","Звуки увімкнені",S.mon.sfxOn)}</div></div>${pickRow("Звук малювання",DSND[S.mon.drawSnd]||DSND.soft,"drawSnd")}${slider("drawvol","Гучність малювання",S.mon.drawVol)}${pickRow("Поява плашки",soundName(S.mon.sfxPlaque),"sfxPlaque")}${pickRow("Зміна кадру",soundName(S.mon.sfxCut),"sfxCut")}${pickRow("Фінал",soundName(S.mon.sfxEnd),"sfxEnd")}<div class="gl" style="margin-top:16px">Окремо для сцен</div>${slider("sfxvol","Гучність звуків",S.mon.sfxVol)}<div class="ascenes" id="asfx"></div></div>
   </div>
-  <div class="sprev"><div class="vwrap"><div class="vside">${[["scenes","🖼","Сцени"],["look","🎨","Вигляд"],["tl","⏱","Таймлайн"],["subs","💬","Субтитри"]].map(([k,i,n])=>`<button type="button" class="vsb" data-vside="${k}"><span aria-hidden="true">${i}</span>${n}</button>`).join("")}</div><canvas id="vprev" role="img" aria-label="Прев'ю ролика"></canvas><div class="vside">${[["voice","🎙","Озвучити"],["music","🎵","Музика"],["sfx","🔊","Звуки"]].map(([k,i,n])=>`<button type="button" class="vsb" data-vside="${k}"><span aria-hidden="true">${i}</span>${n}</button>`).join("")}</div></div>
-    <div class="vctl"><button class="chip ink" type="button" id="vplay">▶ Дивитись</button><span class="status" id="vtime"></span></div>
-    <input type="range" id="vseek" min="0" max="1000" value="0" aria-label="Перемотка"><button class="vsave" type="button" id="vsave">Зберегти відео</button><p class="vtip">Натисни на плашку, малюнок, субтитри чи таймлайн у відео — і одразу перейдеш до їх налаштувань.${WL.unlocked?.marker?"":" Напис «зроблено на studio.yuvi.life» є лише в перегляді — у збереженому відео його немає."}</p></div></div>
+  <div class="sprev"><div class="vwrap"><div class="vside">${[["scenes","Сцени"],["look","Вигляд"],["tl","Таймлайн"],["subs","Субтитри"]].map(([k,n])=>`<button type="button" class="vsb" data-vside="${k}">${n}</button>`).join("")}</div><canvas id="vprev" role="img" aria-label="Прев'ю ролика"></canvas><div class="vside">${[["voice","Озвучити"],["music","Музика"],["sfx","Звуки"]].map(([k,n])=>`<button type="button" class="vsb" data-vside="${k}">${n}</button>`).join("")}</div>
+    <div class="vbelow"><div class="vctl"><button class="chip ink" type="button" id="vplay">▶ Дивитись</button><span class="status" id="vtime"></span></div>
+    <input type="range" id="vseek" min="0" max="1000" value="0" aria-label="Перемотка">
+    <div class="vui" role="group" aria-label="Показати інтерфейс соцмережі"><span>Інтерфейс:</span>${[["none","Без"],["ig","Instagram"],["tt","TikTok"],["yt","Shorts"]].map(([k,n])=>`<button type="button" data-vui="${k}" aria-pressed="${(UIOV||"none")===k}">${n}</button>`).join("")}</div></div></div>
+    <button class="vsave" type="button" id="vsave">Зберегти відео</button><p class="vtip">Натисни на плашку, малюнок, субтитри чи таймлайн у відео — і одразу перейдеш до їх налаштувань.${WL.unlocked?.marker?"":" Напис «зроблено на studio.yuvi.life» є лише в перегляді — у збереженому відео його немає."}</p></div></div>
   <div class="row" style="margin-top:22px">${DL("Зберегти відео","vexp")}</div><div class="status" id="vst"></div>`;
   const cv=el.querySelector("#vprev"); cv.width=540; cv.height=960; const x=cv.getContext("2d");
   const seek=el.querySelector("#vseek"), vt=el.querySelector("#vtime"), list=el.querySelector("#ascenes"), sfxList=el.querySelector("#asfx"), playB=el.querySelector("#vplay");
   let pos=0;
   const fmt=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,"0")}`;
-  const show=t=>{ pos=t; drawFrame(x,t,.5); if(!WL.unlocked?.marker) drawPreviewMark(x,t); const tot=totalDur(); vt.textContent=`${fmt(t)} / ${fmt(tot)}`; seek.value=tot?Math.round(t/tot*1000):0; };
+  const show=t=>{ pos=t; drawFrame(x,t,.5); if(!WL.unlocked?.marker) drawPreviewMark(x,t); drawUIOverlay(x,UIOV); const tot=totalDur(); vt.textContent=`${fmt(t)} / ${fmt(tot)}`; seek.value=tot?Math.round(t/tot*1000):0; };
   const refresh=()=>{ if(PLAY){ const p=pos; stopPlay(); show(p); playB.click(); } else show(pos); };
   const jump=i=>{ stopPlay(); const T=timings(); show(T[i].s+Math.min(1.2,(T[i].e-T[i].s)*.6)); };
   const rows=()=>{ list.innerHTML=S.scenes.map((s,i)=>`<div class="arow">${s.ad?`<span class="athumb adth">Реклама</span>`:`<label class="athumb" for="af-${i}" aria-label="Картинка до сцени ${i+1}">${IMGS[i]?`<img src="${IMGS[i].url}" alt="">`:"+"}</label><input type="file" id="af-${i}" data-i="${i}" accept="image/*" class="sr">`}
@@ -1602,13 +1621,14 @@ function stAssemble(el){
   const scrollToEl=(node,off=10)=>{ if(!RB||!node) return; RB.scrollTo({top:RB.scrollTop+node.getBoundingClientRect().top-RB.getBoundingClientRect().top-off,behavior:"smooth"}); };
   el.querySelectorAll("[data-etab]").forEach(b=>b.addEventListener("click",()=>{ el.querySelectorAll("[data-etab]").forEach(o=>o.setAttribute("aria-pressed",o===b)); el.querySelectorAll(".epanel").forEach(p=>p.hidden=p.dataset.panel!==b.dataset.etab); setTimeout(()=>scrollToEl(tabsEl,62),30); }));
   // зберегти — одразу під переглядом
+  el.querySelectorAll("[data-vui]").forEach(b=>b.addEventListener("click",()=>{ UIOV=b.dataset.vui; try{ localStorage.setItem("yvUIOV",UIOV); }catch(e){} el.querySelectorAll("[data-vui]").forEach(o=>o.setAttribute("aria-pressed",o===b)); if(!PLAY) show(pos); }));
   el.querySelector("#vsave")?.addEventListener("click",()=>{ const b=el.querySelector("[data-dl=vexp]"); if(b) b.click(); });
   // натиснув на елемент у відео — переходиш до його налаштувань
   const openTab=k=>{ const b=el.querySelector(`[data-etab="${k}"]`); el.querySelectorAll("[data-etab]").forEach(o=>o.setAttribute("aria-pressed",o===b)); el.querySelectorAll(".epanel").forEach(p=>p.hidden=p.dataset.panel!==k); };
   const flash=n=>{ if(!n) return; n.classList.remove("eflash"); void n.offsetWidth; n.classList.add("eflash"); };
   cv.style.cursor="pointer";
   cv.addEventListener("click",e=>{ const r=cv.getBoundingClientRect(), y=(e.clientY-r.top)/r.height*1920, T=timings(); let i=T.findIndex(o=>pos<o.e); if(i<0) i=T.length-1; const sc=S.scenes[i]||{};
-    const top=S.tlPos==="top", tlY=(top?230:1470)+90, plY=top?560:330, cy=top?1060:930, tlTop=S.tlPos==="top", noTl=S.tlPos==="none", subY={top:tlTop?470:190,mid:1000,bottom:(tlTop||noTl)?1500:1360}[S.mon.subs];
+    const top=S.tlPos==="top", tlY=(top?230:1290)+90, plY=top?560:330, cy=top?1060:930, tlTop=S.tlPos==="top", noTl=S.tlPos==="none", subY={top:tlTop?470:190,mid:1000,bottom:(tlTop||noTl)?1440:1280}[S.mon.subs];
     let k="look", node=null;
     if(S.tlPos!=="none"&&Math.abs(y-tlY)<95){ k="tl"; }
     else if(sc.plaque&&Math.abs(y-plY)<120){ k="look"; node=el.querySelector('[data-sk="plInk"]')?.closest(".sgrp"); }
