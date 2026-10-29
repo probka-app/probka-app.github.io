@@ -662,8 +662,9 @@ body{background:var(--p-bg)}
 .fkick{font-family:var(--pfont);font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--p-muted);margin:-6px 4px 10px}
 .colw{display:grid;grid-template-rows:0fr;transition:grid-template-rows .38s cubic-bezier(.3,.8,.3,1)}.colw.open{grid-template-rows:1fr}.colw>div{overflow:hidden;min-height:0}
 .colt{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:10px;padding:11px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:var(--p-text,#f5f5f7);font:600 14.5px var(--pfont,system-ui);cursor:pointer}
-.colt.soft{width:auto;margin:12px auto 2px;padding:7px 14px;border-radius:999px;border-color:color-mix(in srgb,#5fd39a 30%,transparent);background:color-mix(in srgb,#5fd39a 10%,transparent);color:#7fe0ad;font-size:13px}
-.freebox:has(.colt.soft){display:flex;flex-direction:column}.frics{display:flex;gap:8px;flex-wrap:wrap}.frics .fric{width:38px;height:38px}
+.freehd:has(.colt.soft){display:flex;align-items:center;justify-content:space-between;gap:10px}.freebox .colw.open{margin-top:6px}
+.colt.soft{width:auto;margin:0;flex:none;padding:7px 14px;border-radius:999px;border-color:color-mix(in srgb,#5fd39a 30%,transparent);background:color-mix(in srgb,#5fd39a 10%,transparent);color:#7fe0ad;font-size:13px}
+.freebox:has(.colt.soft){display:flex;flex-direction:column;padding:12px 14px}.frics{display:flex;gap:6px;flex-wrap:nowrap;min-width:0}.frics .fric{width:34px;height:34px;border-radius:10px}.frics .fric svg{width:18px;height:18px}
 .colt svg{transition:transform .3s}.colt[aria-expanded="true"] svg{transform:rotate(180deg)}
 .fhh{display:flex;align-items:center;gap:8px}.fhh .q{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.12);font-size:13px;font-weight:800}
 .fhow{font-family:var(--pfont);color:var(--p-text);background:var(--p-surface);border:1px solid var(--p-line);border-radius:22px;padding:16px 16px 14px;margin:4px 0 14px;box-shadow:var(--p-shadow)}
@@ -686,8 +687,11 @@ body{background:var(--p-bg)}
 .fmt.on .chev.lk{background:color-mix(in srgb,var(--p-red) 13%,transparent);color:var(--p-red)}
 /* компактніша картка заробітку */
 .htitle{margin-top:20px}
-.wallet{padding:16px 16px 12px}
-.wallet .wtop{margin-bottom:4px}
+.wallet{padding:14px 16px 6px}
+.wallet .wtop{margin-bottom:2px}
+.wallet .wrow{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;row-gap:8px}.wallet .wrow .wv{flex-basis:auto}.wallet .wrow .wout{margin-left:auto}
+.wallet:not(.wopen) .wrf{display:none}.wallet.wopen .wrf{flex-basis:100%;flex-direction:row;justify-content:space-between;align-items:baseline;margin:2px 0 0}
+.wallet .wmore{margin-top:2px}
 .wallet .wv{font-size:38px}
 .wst{margin-top:10px;padding-top:0;column-gap:12px}
 .wst>div{padding:8px 0 0;gap:1px}
@@ -4000,7 +4004,7 @@ async function loadUIF(){ if(!window.SRV?.uiFlags) { applyUIF(); return; } const
   const run=()=>{ const fh=document.querySelector(".fhow"); if(fh){ const h=fh.querySelector(".fhh"); if(h&&!h.querySelector(".q")) h.insertAdjacentHTML("beforeend",'<span class="q" aria-hidden="true">?</span>'); collapsible(fh,h,"Детальніше","Згорнути","yvColHow"); }
     const fb=document.querySelector(".freebox"); if(fb){ const hd=fb.querySelector(".freehd"), t=hd?.firstElementChild;
       if(t&&!t.classList.contains("frics")){ const ic=[...fb.querySelectorAll(".frow .fric")].map(n=>n.outerHTML).join(""); const d=document.createElement("div"); d.className="frics"; d.setAttribute("role","img"); d.setAttribute("aria-label","Безкоштовні інструменти: генератор хуків, ідеї для відео, перевірка хука, підпис і хештеги"); d.innerHTML=ic; t.replaceWith(d); }
-      collapsible(fb,hd,"Вибрати інструмент","Згорнути","yvColFree"); fb.querySelector(".colt")?.classList.add("soft"); } };
+      collapsible(fb,hd,"Безкоштовно","Згорнути","yvColFree"); const ct=fb.querySelector(".colt"); if(ct){ ct.classList.add("soft"); hd.querySelector(".ffree")?.remove(); hd.appendChild(ct); } } };
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",run); else run();
 })();
 /* ===== Завантаження під час генерації: розмитий фон, кільце з відсотками (ривками) ===== */
