@@ -36,8 +36,12 @@
     },
   };
   // --- генерація текстів поза Claude: той самий інтерфейс sample(), але через функцію ai-text на сервері ---
+  const busy = (kind, fn, quiet) => { if (quiet || !window.yvBusy) return fn(); window.yvBusy.start(kind); let ok = false; return Promise.resolve().then(fn).then((v) => { ok = true; return v; }).finally(() => window.yvBusy.end(ok)); };
   async function aiText(prompt, opts, asJson) {
     if (!SRV.session) { loginSheet("Щоб генерувати тексти, увійди або зареєструйся."); throw { code: "login" }; }
+    return busy("text", () => aiTextRaw(prompt, opts, asJson), opts?.quiet);
+  }
+  async function aiTextRaw(prompt, opts, asJson) {
     let r;
     try {
       r = await fetch(`${FN}/ai-text`, { method: "POST", signal: opts?.signal,
@@ -205,7 +209,7 @@
   // --- генерація картинок (функція image-gen, ключ Gemini у секретах Supabase) ---
   SRV.genImage = async (o) => {
     if (!SRV.session) { loginSheet("Щоб створювати картинки, увійди або зареєструйся."); throw new Error("login"); }
-    return call("image-gen", o);
+    return busy("image", () => call("image-gen", o), o?.quiet);
   };
   SRV.imgLeft = async () => { try { return SRV.session ? await rpc("img_left") : null; } catch (e) { return null; } };
   // --- тарифи, ліміти, пакети ---
@@ -214,7 +218,7 @@
   SRV.voices = async () => { try { const { data } = await sb.rpc("voices_list"); return data || []; } catch (e) { return []; } };
   SRV.tts = async (o) => {
     if (!SRV.session) { loginSheet("Щоб озвучувати, увійди або зареєструйся."); throw new Error("login"); }
-    return call("tts", o);
+    return busy("voice", () => call("tts", o), o?.quiet);
   };
   // --- обробка на сервері: сховище і завдання ---
   SRV.upload = async (rel, blob) => {
@@ -242,7 +246,7 @@
   SRV.kbList = async () => (await rpc("kb_list")) || [];
   SRV.kbSet = async (id, o) => rpc("kb_set", { p_id: id, p_status: o.status ?? null, p_title: o.title ?? null, p_body: o.body ?? null, p_why: o.why ?? null, p_how: o.how ?? null, p_kind: o.kind ?? null, p_niche: o.niche ?? null });
   SRV.kbChatList = async () => (await rpc("kb_chat_list", { p_limit: 60 })) || [];
-  SRV.kbChat = async (message) => call("kb-chat", { message });
+  SRV.kbChat = async (message) => busy("text", () => call("kb-chat", { message }));
 
   // --- вхід посиланням на пошту ---
   // --- вхід: пошта або телефон + пароль; реєстрація з ніком; «забули пароль» — посилання на пошту ---
