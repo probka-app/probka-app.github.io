@@ -2123,7 +2123,7 @@ const OV=document.getElementById("ov"), BS=document.getElementById("bs");
 /* ===== Юридичні документи: оферта, правила партнерської програми, політика конфіденційності =====
    Дані ФОП заповнюються в LEGAL.data; поки поле порожнє — у тексті видно жовту позначку «буде заповнено». */
 const LEGAL={ ver:"2026-10-29",
-  data:{ pib:"Юськова Ірина Сергіївна", rnokpp:"3937204723", addr:"35068, Рівненська обл., Рівненський р-н, с. Збуж, вул. Лугова, 17", iban:"", email:"yuvi.studio.help@gmail.com", phone:"", regDate:"26.10.2026" } };
+  data:{ pib:"Юськова Ірина Сергіївна", rnokpp:"3937204723", addr:"35068, Рівненська обл., Рівненський р-н, с. Збуж, вул. Лугова, 17", iban:"UA553220010000026008380100508", email:"yuvi.studio.help@gmail.com", phone:"", regDate:"26.10.2026" } };
 const LF=(k,label)=>LEGAL.data[k]?esc(LEGAL.data[k]):`<mark class="lgph">[${label} — буде заповнено]</mark>`;
 const LFOP=()=>`ФОП ${LF("pib","ПІБ")}, РНОКПП ${LF("rnokpp","РНОКПП")}`;
 const LDOCS={
