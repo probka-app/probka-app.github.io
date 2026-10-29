@@ -2123,7 +2123,7 @@ const OV=document.getElementById("ov"), BS=document.getElementById("bs");
 /* ===== Юридичні документи: оферта, правила партнерської програми, політика конфіденційності =====
    Дані ФОП заповнюються в LEGAL.data; поки поле порожнє — у тексті видно жовту позначку «буде заповнено». */
 const LEGAL={ ver:"2026-10-29",
-  data:{ pib:"Юськова Ірина Сергіївна", rnokpp:"", iban:"", email:"yuvi.studio.help@gmail.com", phone:"", regDate:"26.10.2026" } };
+  data:{ pib:"Юськова Ірина Сергіївна", rnokpp:"3937204723", addr:"35068, Рівненська обл., Рівненський р-н, с. Збуж, вул. Лугова, 17", iban:"", email:"yuvi.studio.help@gmail.com", phone:"", regDate:"26.10.2026" } };
 const LF=(k,label)=>LEGAL.data[k]?esc(LEGAL.data[k]):`<mark class="lgph">[${label} — буде заповнено]</mark>`;
 const LFOP=()=>`ФОП ${LF("pib","ПІБ")}, РНОКПП ${LF("rnokpp","РНОКПП")}`;
 const LDOCS={
@@ -2160,7 +2160,7 @@ const LDOCS={
   <li>Нова редакція оферти публікується на сайті за 7 днів до набрання чинності і не змінює умов уже оплаченого періоду.</li>
   <li>Права і обов'язки Виконавця за цією офертою можуть бути передані іншій особі (правонаступнику) з повідомленням Користувачів за 30 днів.</li></ol>
   <h4>8. Реквізити Виконавця</h4>
-  <p>${LFOP()}<br>IBAN ${LF("iban","IBAN")}<br>Пошта: ${LF("email","пошта")}${LEGAL.data.phone?`<br>Телефон: ${esc(LEGAL.data.phone)}`:""}<br>Сайт: studio.yuvi.life</p>` },
+  <p>${LFOP()}<br>Місцезнаходження: ${LF("addr","адреса")}<br>Запис в ЄДР від ${LF("regDate","дата")}<br>IBAN ${LF("iban","IBAN")}<br>Пошта: ${LF("email","пошта")}${LEGAL.data.phone?`<br>Телефон: ${esc(LEGAL.data.phone)}`:""}<br>Сайт: studio.yuvi.life</p>` },
 
  rules:{ t:"Правила партнерської програми", h:()=>`
   <p class="lgv">Редакція від ${LEGAL.ver.split("-").reverse().join(".")}. Виконавець — ${LFOP()}.</p>
