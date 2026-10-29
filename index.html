@@ -192,10 +192,18 @@ input[type=range]{width:100%;max-width:270px;accent-color:#171717;margin-top:8px
 .vui{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;margin-top:10px;font:600 12px var(--pfont,system-ui);color:var(--p-muted,#a1a1aa)}
 .vui button{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:inherit;border-radius:999px;padding:5px 10px;font:inherit;cursor:pointer}
 .vui button[aria-pressed="true"]{background:rgba(255,255,255,.9);color:#0b0b0d;border-color:transparent}
-@media (max-width:620px){.asm .sprev{width:100%}.vwrap{display:grid;grid-template-columns:minmax(62px,1fr) minmax(0,226px) minmax(62px,1fr);gap:4px;align-items:center}.vwrap canvas{width:100%;grid-column:2}
+@media (max-width:620px){.asm .sprev{width:100%}.vwrap{display:block}.vwrap canvas{width:100%;max-width:300px;display:block;margin:0 auto}
  .vside{display:grid;gap:5px;align-content:center;justify-items:center}.vsb{width:62px;display:grid;gap:1px;padding:5px 2px;border:1px solid rgba(255,255,255,.14);border-radius:11px;background:rgba(255,255,255,.06);color:var(--p-text,#f5f5f7);font:600 9.5px/1.15 var(--pfont,system-ui);letter-spacing:-.2px;cursor:pointer;min-width:0;overflow:hidden;white-space:nowrap}
  .vsb b{font-weight:700;overflow:hidden;text-overflow:ellipsis}.vsb i{font-style:normal;font-weight:500;font-size:9px;color:var(--p-muted,#a1a1aa);overflow:hidden;text-overflow:ellipsis}.vsb i:empty{display:none}
- .vsb:active{transform:scale(.96)}.vuit{display:grid;place-items:center;padding:12px 2px}.vuit[aria-pressed="true"]{background:rgba(255,255,255,.9)!important;color:#0b0b0d!important}.vbelow{grid-column:2}.vbelow .vctl{justify-content:center}.vbelow input[type=range]{width:100%}}
+ .vsb:active{transform:scale(.96)}.dbar{display:none}
+@media (max-width:620px){
+ .reader .dbar{display:flex;flex-direction:column;gap:clamp(4px,.8vh,8px);position:absolute;top:50%;transform:translateY(-38%);z-index:29;width:clamp(54px,15vw,66px)}
+ .dbar.l{left:max(6px,env(safe-area-inset-left,0px))}.dbar.r{right:max(6px,env(safe-area-inset-right,0px))}
+ .dbar button{width:100%;padding:clamp(7px,1.2vh,11px) 2px;border:1px solid rgba(255,255,255,.16);border-radius:12px;background:rgba(28,28,32,.78);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);color:#f5f5f7;font:600 clamp(9.5px,2.6vw,11px)/1.1 var(--pfont,system-ui);letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+ .dbar button:active{transform:scale(.95)}
+ .reader.dash .asm{margin-inline:calc(clamp(54px,15vw,66px) - 6px)}
+}
+.vuit{display:grid;place-items:center;padding:12px 2px}.vuit[aria-pressed="true"]{background:rgba(255,255,255,.9)!important;color:#0b0b0d!important}.vbelow{max-width:300px;margin:0 auto}.vbelow .vctl{justify-content:center}.vbelow input[type=range]{width:100%}}
 .vtip{margin:8px 2px 0;font-size:12.5px;line-height:1.4;color:var(--p-muted,#a1a1aa);text-align:center}
 .eflash{animation:eflash 1.4s ease}@keyframes eflash{0%,60%{box-shadow:0 0 0 3px rgba(255,159,10,.85);border-radius:14px}100%{box-shadow:0 0 0 3px rgba(255,159,10,0)}}
 .vedit{display:block;margin:10px auto 0;border:1px solid var(--rule,rgba(255,255,255,.2));border-radius:999px;padding:9px 16px;background:transparent;color:inherit;font:600 14px var(--pfont,system-ui);cursor:pointer}
@@ -1561,26 +1569,11 @@ function stopPlay(){ if(!PLAY) return; try{ PLAY.src.stop(); }catch(e){} cancelA
 const ETABS={scenes:"Сцени",look:"Вигляд",tl:"Таймлайн",subs:"Субтитри",voice:"Озвучити",music:"Музика",sfx:"Звуки"};
 function sfxOptions(cur){ let o=`<option value="auto" ${cur==="auto"?"selected":""}>Авто</option><option value="none" ${cur==="none"?"selected":""}>Без звуку</option>`;
   Object.entries(SFX).forEach(([n,v])=>v.v.forEach((_,k)=>{ const val=`${n}|${k}`; o+=`<option value="${val}" ${cur===val?"selected":""}>${n} ${k+1}</option>`; })); return o; }
-// Панель навколо перегляду: усе, що можна змінити, — одним натиском, без прокрутки
-const DASH={
-  scenes:{t:"Сцени",v:()=>`${S.scenes.length} шт.`,go:"scenes"},
-  bg:{t:"Фон",v:()=>BGS[ST.bg]?.n,items:()=>Object.entries(BGS).filter(([k])=>k!=="grid").map(([k,v])=>[k,v.n]),cur:()=>ST.bg,sel:v=>`[data-sk="bg"][data-sv="${v}"]`},
-  grid:{t:"Клітинки",v:()=>!hasGrid()?"Без":ST.gridWave?"Хвилі":"Рівні",items:()=>[["0","Без клітинок"],["1","Рівні"],["2","Хвилясті"]],cur:()=>!hasGrid()?"0":ST.gridWave?"2":"1",sel:v=>`[data-grid="${v}"]`},
-  tool:{t:"Чим малює",v:()=>TOOLS[ST.tool],items:()=>Object.entries(TOOLS),cur:()=>ST.tool,sel:v=>`[data-sk="tool"][data-sv="${v}"]`},
-  thick:{t:"Лінія",v:()=>THICK[ST.thick]?.n,items:()=>Object.entries(THICK).map(([k,v])=>[k,v.n]),cur:()=>ST.thick,sel:v=>`[data-sk="thick"][data-sv="${v}"]`},
-  font:{t:"Шрифт",v:()=>FONTS[S.mon.font]?.n,pick:"font"},
-  plInk:{t:"Плашка",v:()=>PLINK[ST.plInk||"auto"],items:()=>Object.entries(PLINK).map(([k,v])=>[k,k==="auto"?"Авто (під фон)":v+" текст і рамка"]),cur:()=>ST.plInk||"auto",sel:v=>`[data-sk="plInk"][data-sv="${v}"]`},
-  plSize:{t:"Текст",v:()=>PLSIZE[ST.plSize||"m"],items:()=>Object.entries(PLSIZE),cur:()=>ST.plSize||"m",sel:v=>`[data-sk="plSize"][data-sv="${v}"]`},
-  anim:{t:"Поява",v:()=>(typeof ANIM_ALL!=="undefined"&&ANIM_ALL[S.mon.anim])||"Авто",pick:"anim"},
-  tl:{t:"Таймлайн",v:()=>({bottom:"Внизу",top:"Вгорі",none:"Без"})[S.tlPos],items:()=>[["bottom","Внизу"],["top","Вгорі"],["none","Без таймлайну"]],cur:()=>S.tlPos,sel:v=>`[data-tlpos="${v}"]`},
-  subs:{t:"Субтитри",v:()=>SUBPOS[S.mon.subs]||"Без",items:()=>Object.entries(SUBPOS),cur:()=>S.mon.subs,sel:v=>`[data-subpos="${v}"]`},
-  voice:{t:"Голос",v:()=>VOICE?"є":"немає",go:"voice"},
-  music:{t:"Музика",v:()=>S.mon.music==="mine"&&MYMUS_NAME?"своя":(MUSICS[S.mon.music]||"Без"),pick:"music"},
-  drawSnd:{t:"Звук ліній",v:()=>({soft:"М'який",crisp:"Чіткий",none:"Без"})[S.mon.drawSnd]||"М'який",pick:"drawSnd"},
-  sfx:{t:"Звуки",v:()=>S.mon.sfxOn?"увімк.":"вимк.",go:"sfx"},
-  moves:{t:"Рух",v:()=>S.mon.boil&&S.mon.parts!==false?"Все":S.mon.boil?"Лінії":S.mon.parts!==false?"Елементи":"Без",items:()=>[["all","Живі лінії + рухомі елементи"],["lines","Лише живі лінії"],["parts","Лише рухомі елементи"],["none","Без руху"]],cur:()=>S.mon.boil&&S.mon.parts!==false?"all":S.mon.boil?"lines":S.mon.parts!==false?"parts":"none"},
-  drawer:{t:"Хто малює",v:()=>DRAWERS[S.mon.drawer]||"",pick:"drawer"} };
-const DASH_L=["scenes","bg","grid","tool","thick","font","plInk","plSize","anim"], DASH_R=["tl","subs","voice","music","drawSnd","sfx","moves","drawer"];
+// Кнопки по краях екрана (крок «Збери ролик»): кожна веде до свого налаштування нижче
+const DASHGO={ scenes:["Сцени","scenes",null], bg:["Фон","look",'[data-sk="bg"]'], grid:["Клітинки","look","[data-grid]"], tool:["Малює","look",'[data-sk="tool"]'], thick:["Лінія","look",'[data-sk="thick"]'],
+  font:["Шрифт","look",'[data-pick="font"]'], plInk:["Плашка","look",'[data-sk="plInk"]'], plSize:["Текст","look",'[data-sk="plSize"]'], moves:["Рух","look",'[data-mon="parts"]'],
+  tl:["Таймлайн","tl",null], subs:["Субтитри","subs",null], voice:["Голос","voice",null], music:["Музика","music",'[data-pick="music"]'], drawSnd:["Звук ліній","sfx",'[data-pick="drawSnd"]'], sfx:["Звуки","sfx",null] };
+const DASH_L=["scenes","bg","grid","tool","thick","font","plInk","plSize","moves"], DASH_R=["tl","subs","voice","music","drawSnd","sfx"];
 function stAssemble(el){
   if(S.format==="film"){ el.innerHTML+=`<p>Автоматичне збирання з власних кадрів з'явиться пізніше. Поки змонтуй ролик у CapCut за списком кадрів або віддай файли Claude (розділ «Монтаж з Claude»).</p>`; return; }
   if(!S.scenes.length){ el.innerHTML+=`<p class="status">Сцен ще немає. Повернись на крок «Що малювати» і розбий сценарій.</p>`; return; }
@@ -1610,7 +1603,7 @@ function stAssemble(el){
       ${slider("musicvol","Гучність музики",S.mon.musicVol)}</div>
     <div class="epanel" data-panel="sfx" hidden><div class="sgrp"><div class="chips">${chip("mon","sfxOn","Звуки увімкнені",S.mon.sfxOn)}</div></div>${pickRow("Звук малювання",DSND[S.mon.drawSnd]||DSND.soft,"drawSnd")}${slider("drawvol","Гучність малювання",S.mon.drawVol)}${pickRow("Поява плашки",soundName(S.mon.sfxPlaque),"sfxPlaque")}${pickRow("Зміна кадру",soundName(S.mon.sfxCut),"sfxCut")}${pickRow("Фінал",soundName(S.mon.sfxEnd),"sfxEnd")}<div class="gl" style="margin-top:16px">Окремо для сцен</div>${slider("sfxvol","Гучність звуків",S.mon.sfxVol)}<div class="ascenes" id="asfx"></div></div>
   </div>
-  <div class="sprev"><div class="vwrap"><div class="vside">${DASH_L.map(k=>`<button type="button" class="vsb" data-dash="${k}"><b>${DASH[k].t}</b><i></i></button>`).join("")}</div><canvas id="vprev" role="img" aria-label="Прев'ю ролика"></canvas><div class="vside">${DASH_R.map(k=>`<button type="button" class="vsb" data-dash="${k}"><b>${DASH[k].t}</b><i></i></button>`).join("")}<button type="button" class="vsb vuit" id="vuit" aria-pressed="${UIOV!=="none"}" aria-label="Показати інтерфейс соцмереж поверх відео" title="Інтерфейс соцмереж"><svg viewBox="0 0 66 20" width="46" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="16" height="16" rx="5"/><circle cx="10" cy="10" r="3.6"/><rect x="25" y="4" width="17" height="12" rx="4"/><path d="M31.5 7.2v5.6l4.6-2.8z" fill="currentColor" stroke="none"/><path d="M55 3v10.5a3 3 0 1 1-3-3M55 3c1 2.6 3 4 5.5 4" stroke-linecap="round"/></svg></button></div>
+  <div class="sprev"><div class="vwrap"><canvas id="vprev" role="img" aria-label="Прев'ю ролика"></canvas>
     <div class="vbelow"><div class="vctl"><button class="chip ink" type="button" id="vplay">▶ Дивитись</button><span class="status" id="vtime"></span></div>
     <input type="range" id="vseek" min="0" max="1000" value="0" aria-label="Перемотка"></div></div>
     <button class="vsave" type="button" id="vsave">Зберегти відео</button><p class="vtip">Натисни на плашку, малюнок, субтитри чи таймлайн у відео — і одразу перейдеш до їх налаштувань.${WL.unlocked?.marker?"":" Напис «зроблено на studio.yuvi.life» є лише в перегляді — у збереженому відео його немає."}</p></div></div>
@@ -1642,7 +1635,6 @@ function stAssemble(el){
   const scrollToEl=(node,off=10)=>{ if(!RB||!node) return; RB.scrollTo({top:RB.scrollTop+node.getBoundingClientRect().top-RB.getBoundingClientRect().top-off,behavior:"smooth"}); };
   el.querySelectorAll("[data-etab]").forEach(b=>b.addEventListener("click",()=>{ el.querySelectorAll("[data-etab]").forEach(o=>o.setAttribute("aria-pressed",o===b)); el.querySelectorAll(".epanel").forEach(p=>p.hidden=p.dataset.panel!==b.dataset.etab); setTimeout(()=>scrollToEl(tabsEl,62),30); }));
   // зберегти — одразу під переглядом
-  el.querySelector("#vuit")?.addEventListener("click",e=>{ UIOV=UIOV==="none"?"ui":"none"; try{ localStorage.setItem("yvUIOV",UIOV); }catch(x){} e.currentTarget.setAttribute("aria-pressed",UIOV!=="none"); if(!PLAY) show(pos); });
   el.querySelector("#vsave")?.addEventListener("click",()=>{ const b=el.querySelector("[data-dl=vexp]"); if(b) b.click(); });
   // натиснув на елемент у відео — переходиш до його налаштувань
   const openTab=k=>{ const b=el.querySelector(`[data-etab="${k}"]`); el.querySelectorAll("[data-etab]").forEach(o=>o.setAttribute("aria-pressed",o===b)); el.querySelectorAll(".epanel").forEach(p=>p.hidden=p.dataset.panel!==k); };
@@ -1658,20 +1650,18 @@ function stAssemble(el){
     openTab(k); if(k==="scenes") node=list.children[i]; const generic=!node; if(!node) node=el.querySelector(`.epanel[data-panel="${k}"] .sgrp`)||el.querySelector(`.epanel[data-panel="${k}"]`);
     setTimeout(()=>{ scrollToEl(generic?tabsEl:node,generic?62:72); flash(node); },30); });
   // «Переглянути відео» / «Повернутись до редагування»: прокрутка між переглядом і налаштуваннями
-  const dashUpd=()=>{ el.querySelectorAll("[data-dash]").forEach(b=>{ try{ b.querySelector("i").textContent=DASH[b.dataset.dash].v()||""; }catch(e){} }); };
-  el.querySelectorAll("[data-dash]").forEach(b=>b.addEventListener("click",()=>{ const k=b.dataset.dash, D=DASH[k]; try{ uiSnd("tap"); }catch(e){}
-    if(D.go){ openTab(D.go); setTimeout(()=>{ scrollToEl(D.go==="scenes"?tabsEl:tabsEl,62); flash(el.querySelector(`.epanel[data-panel="${D.go}"]`)); },30); return; }
-    if(D.pick){ el.querySelector(`[data-pick="${D.pick}"]`)?.click(); return; }
-    pickSheet({title:D.t,items:D.items(),cur:D.cur(),onPick:v=>{
-      if(k==="moves"){ const want={all:[1,1],lines:[1,0],parts:[0,1],none:[0,0]}[v]; [["boil",0],["parts",1]].forEach(([m,ix])=>{ const on=m==="parts"?S.mon.parts!==false:!!S.mon.boil; if(on!==!!want[ix]) el.querySelector(`[data-mon="${m}"]`)?.click(); }); }
-      else el.querySelector(D.sel(v))?.click();
-      setTimeout(dashUpd,60); }}); }));
-  dashUpd(); { const iv=setInterval(()=>{ if(!el.isConnected) return clearInterval(iv); dashUpd(); },900); }
+  const dashGo=k=>{ const [,tab,sel]=DASHGO[k]; try{ uiSnd("tap"); }catch(e){} openTab(tab); const panel=el.querySelector(`.epanel[data-panel="${tab}"]`);
+    let node=sel?panel?.querySelector(sel)?.closest(".sgrp,.pick"):null; const gen=!node; if(!node) node=panel;
+    setTimeout(()=>{ scrollToEl(gen?tabsEl:node,gen?62:80); flash(node); },30); };
   { const R=document.getElementById("reader"); R.querySelectorAll(".vjump").forEach(n=>n.remove()); let editPos=null;
     const up=document.createElement("button"); up.type="button"; up.className="vjump up"; up.textContent="▲ Переглянути відео";
     const dn=document.createElement("button"); dn.type="button"; dn.className="vjump dn"; dn.textContent="▼ Повернутись до редагування";
-    R.append(up,dn); const pv=el.querySelector(".sprev");
-    const place=()=>{ if(!el.isConnected){ up.remove(); dn.remove(); RB?.removeEventListener("scroll",upd); clearInterval(gc); return; } up.style.top=(RB.offsetTop+10)+"px"; dn.style.bottom=(R.clientHeight-RB.offsetTop-RB.clientHeight+14)+"px"; };
+    R.querySelectorAll(".dbar").forEach(n=>n.remove());
+    const mk=(keys,side,extra="")=>{ const d=document.createElement("div"); d.className="dbar "+side; d.innerHTML=keys.map(k=>`<button type="button" data-dgo="${k}">${DASHGO[k][0]}</button>`).join("")+extra; d.querySelectorAll("[data-dgo]").forEach(b=>b.onclick=()=>dashGo(b.dataset.dgo)); return d; };
+    const bl=mk(DASH_L,"l"), br=mk(DASH_R,"r",`<button type="button" class="vuit" id="vuit" aria-pressed="${UIOV!=="none"}" aria-label="Показати інтерфейс соцмереж поверх відео" title="Інтерфейс соцмереж"><svg viewBox="0 0 66 20" width="40" height="12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="16" height="16" rx="5"/><circle cx="10" cy="10" r="3.6"/><rect x="25" y="4" width="17" height="12" rx="4"/><path d="M31.5 7.2v5.6l4.6-2.8z" fill="currentColor" stroke="none"/><path d="M55 3v10.5a3 3 0 1 1-3-3M55 3c1 2.6 3 4 5.5 4" stroke-linecap="round"/></svg></button>`);
+    br.querySelector("#vuit").onclick=e=>{ UIOV=UIOV==="none"?"ui":"none"; try{ localStorage.setItem("yvUIOV",UIOV); }catch(x){} e.currentTarget.setAttribute("aria-pressed",UIOV!=="none"); if(!PLAY) show(pos); };
+    R.append(up,dn,bl,br); R.classList.add("dash"); const pv=el.querySelector(".sprev");
+    const place=()=>{ if(!el.isConnected){ up.remove(); dn.remove(); bl.remove(); br.remove(); R.classList.remove("dash"); RB?.removeEventListener("scroll",upd); clearInterval(gc); return; } up.style.top=(RB.offsetTop+10)+"px"; dn.style.bottom=(R.clientHeight-RB.offsetTop-RB.clientHeight+14)+"px"; };
     const gc=setInterval(()=>{ if(!el.isConnected) place(); },800);
     const upd=()=>{ place(); if(!el.isConnected) return; const r=cv.getBoundingClientRect(), rb=RB.getBoundingClientRect(), vis=r.bottom>rb.top+r.height*.5&&r.top<rb.bottom-120;
       up.classList.toggle("on",!vis); dn.classList.toggle("on",vis&&editPos!=null&&Math.abs(RB.scrollTop-editPos)>60); };
