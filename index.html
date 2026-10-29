@@ -1538,9 +1538,11 @@ function drawSubs(x,txt,alpha){ if(!txt||S.mon.subs==="none") return; const px=S
   const words=txt.split(" "); let lines=[txt]; if(x.measureText(txt).width>920){ let best=1,bd=1e9; for(let k=1;k<words.length;k++){ const a=x.measureText(words.slice(0,k).join(" ")).width,b=x.measureText(words.slice(k).join(" ")).width; const m=Math.max(a,b); if(m<bd){bd=m;best=k;} } lines=[words.slice(0,best).join(" "),words.slice(best).join(" ")]; }
   const ink=isDark()?"#f2f2ec":"#171717"; x.lineJoin="round"; x.lineWidth=px*.24; x.strokeStyle=BGS[ST.bg].c; x.fillStyle=ink;
   lines.forEach((l,k)=>{ const yy=y+(k-(lines.length-1)/2)*px*1.15; x.strokeText(l,540,yy); x.fillText(l,540,yy); }); x.restore(); }
+const HOOK_HOLD=1.3, HOOK_FLY=.38;   // хук: плашка по центру ~1.3 с, потім швидко вилітає вгору
+const isHook=i=>i===0&&!!S.scenes[0]?.plaque&&!S.scenes[0]?.ad;
 function drawScene(x,i,lt,d,alpha,t){ if(S.scenes[i]?.ad){ drawAd(x,lt,alpha); drawSubs(x,subChunk(i,lt,d),alpha); return; } const sc=S.scenes[i], top=S.tlPos==="top", plY=top?560:330, cy=top?1060:930, boxW=960, boxH=top?820:900;
-  const ink=inkOf(i);
-  if(ink){ const a=animOf(i); const f=Math.min(boxW/ink.width,boxH/ink.height); const w=ink.width*f, h=ink.height*f;
+  const ink=inkOf(i); const lt0=lt; if(isHook(i)) lt=lt-(HOOK_HOLD+HOOK_FLY*.6);
+  if(ink&&lt>0){ const a=animOf(i); const f=Math.min(boxW/ink.width,boxH/ink.height); const w=ink.width*f, h=ink.height*f;
     let s=1, rot=0, op=alpha, reveal=1;
     let revT=0; if(a==="draw"){ revT=revTime(d); reveal=clamp(lt/revT); s=1+.04*lt/d; }
     else if(a==="pop"){ const k=clamp(lt/.35); s=(.7+.3*backOut(k))*(1+.015*Math.sin(lt*2.5)); op*=clamp(lt/.12); }
@@ -1561,8 +1563,10 @@ function drawScene(x,i,lt,d,alpha,t){ if(S.scenes[i]?.ad){ drawAd(x,lt,alpha); d
         if(tipX!==null){ fx=tipX+2*Math.sin(lt*53); fy=tipY+2*Math.cos(lt*47); } else if(ink._lastTip&&reveal>=1){ [fx,fy]=ink._lastTip; } if(tipX!==null) ink._lastTip=[fx,fy];
         x.save(); x.globalAlpha=op*(1-out); x.translate(fx+out*520,fy+out*620); x.rotate(.95+.05*Math.sin(lt*7)); x.scale(1/s,1/s); drawTool(x,ST.tool,dr==="hand"); x.restore(); } }
     x.restore(); }
-  if(sc.plaque){ const k=clamp((lt-.15)/.3); if(k>0){ const c=plaqueFor(sc.plaque,colOf(sc)); const s=(.6+.4*backOut(k))*.95;
-    x.save(); x.globalAlpha=alpha*clamp(k*3); x.translate(540,plY); x.scale(s,s); x.drawImage(c,-c.width/2,-c.height/2); x.restore(); } }
+  lt=lt0;
+  if(sc.plaque){ const k=clamp((lt-.15)/.3); if(k>0){ const c=plaqueFor(sc.plaque,colOf(sc)); let s=(.6+.4*backOut(k))*.95, py=plY;
+    if(isHook(i)){ const f=clamp((lt-HOOK_HOLD)/HOOK_FLY), e=f<1?1-Math.pow(1-f,3):1; s=(.6+.4*backOut(k))*(1.25-.3*e); py=960+(plY-960)*e; }
+    x.save(); x.globalAlpha=alpha*clamp(k*3); x.translate(540,py); x.scale(s,s); x.drawImage(c,-c.width/2,-c.height/2); x.restore(); } }
   drawSubs(x,subChunk(i,lt,d),alpha); }
 // Позначка на перегляді (лише поки відео не оплачено): навскісні рядки по всьому кадру, що повільно рухаються — запис екрана виходить з позначкою. У збереженому відео її немає.
 let UIOV=(()=>{ try{ return localStorage.getItem("yvUIOV")||"none"; }catch(e){ return "none"; } })();
@@ -1586,7 +1590,7 @@ function drawFrame(x,t,scale){ x.setTransform(scale,0,0,scale,0,0); { let ox=0,o
   if(T.length){ let i=T.findIndex(o=>t<o.e); if(i<0) i=T.length-1; const lt=t-T[i].s, d=T[i].e-T[i].s;
     if(i>0&&lt<.25){ const p=T[i-1]; drawScene(x,i-1,p.e-p.s,p.e-p.s,1-lt/.25,t); }
     drawScene(x,i,lt,d,1,t); }
-  drawTimeline(x,total?t/total:0); }
+  { const tl0=isHook(0)?HOOK_HOLD+HOOK_FLY+.5:0, ta=clamp((t-tl0)/.4); if(ta>0){ x.save(); x.globalAlpha=ta; x.translate(0,(1-ta)*30); drawTimeline(x,total?t/total:0); x.restore(); } } }
 
 /* audio */
 function sfxFor(i){ const s=S.scenes[i], v=s.sfx||"auto"; if(v==="none") return null; if(v==="auto"&&s.ad) return ["Акцент на думці",1];
