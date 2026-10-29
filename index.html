@@ -196,6 +196,7 @@ input[type=range]{width:100%;max-width:270px;accent-color:#171717;margin-top:8px
  .vside{display:grid;gap:5px;align-content:center;justify-items:center}.vsb{width:62px;display:grid;gap:1px;padding:5px 2px;border:1px solid rgba(255,255,255,.14);border-radius:11px;background:rgba(255,255,255,.06);color:var(--p-text,#f5f5f7);font:600 9.5px/1.15 var(--pfont,system-ui);letter-spacing:-.2px;cursor:pointer;min-width:0;overflow:hidden;white-space:nowrap}
  .vsb b{font-weight:700;overflow:hidden;text-overflow:ellipsis}.vsb i{font-style:normal;font-weight:500;font-size:9px;color:var(--p-muted,#a1a1aa);overflow:hidden;text-overflow:ellipsis}.vsb i:empty{display:none}
  .vsb:active{transform:scale(.96)}.dbar{display:none}
+@media (max-width:620px){.reader.dash .asm>div:first-child{display:none}.reader.dash .vjump{display:none!important}.reader.dash .asm{margin-bottom:0}}
 .dpop{position:absolute;left:8px;right:8px;z-index:31;max-height:38vh;display:flex;flex-direction:column;border-radius:20px;border:1px solid rgba(255,255,255,.16);background:rgba(22,22,26,.94);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 -14px 40px -12px rgba(0,0,0,.7);animation:dpin .25s cubic-bezier(.3,.9,.3,1)}
 @keyframes dpin{from{transform:translateY(30px);opacity:0}}
 .dph{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 4px 16px}.dph b{font:700 15px var(--pfont,system-ui);color:#f5f5f7}
@@ -1663,13 +1664,14 @@ function stAssemble(el){ const ER=document.getElementById("reader")||el;
   cv.style.cursor="pointer";
   cv.addEventListener("click",e=>{ const r=cv.getBoundingClientRect(), y=(e.clientY-r.top)/r.height*1920, T=timings(); let i=T.findIndex(o=>pos<o.e); if(i<0) i=T.length-1; const sc=S.scenes[i]||{};
     const top=S.tlPos==="top", tlY=(top?230:1400)+90, plY=top?560:330, cy=top?1060:930, tlTop=S.tlPos==="top", noTl=S.tlPos==="none", subY={top:tlTop?470:190,mid:1000,bottom:(tlTop||noTl)?1440:1280}[S.mon.subs];
-    let k="look", node=null;
-    if(S.tlPos!=="none"&&Math.abs(y-tlY)<95){ k="tl"; }
-    else if(sc.plaque&&Math.abs(y-plY)<120){ k="look"; node=ER.querySelector('[data-sk="plInk"]')?.closest(".sgrp"); }
-    else if(S.mon.subs!=="none"&&subY&&Math.abs(y-subY)<90){ k="subs"; }
-    else if(Math.abs(y-cy)<460){ k="look"; node=ER.querySelector('[data-sk="tool"]')?.closest(".sgrp"); }
-    openTab(k); if(k==="scenes") node=list.children[i]; const generic=!node; if(!node) node=ER.querySelector(`.epanel[data-panel="${k}"] .sgrp`)||ER.querySelector(`.epanel[data-panel="${k}"]`);
-    setTimeout(()=>{ scrollToEl(generic?tabsEl:node,generic?62:72); flash(node); },30); });
+    let d="bg";
+    if(S.tlPos!=="none"&&Math.abs(y-tlY)<95) d="tl";
+    else if(sc.plaque&&Math.abs(y-plY)<120) d="plInk";
+    else if(S.mon.subs!=="none"&&subY&&Math.abs(y-subY)<90) d="subs";
+    else if(Math.abs(y-cy)<460) d="tool";
+    if(matchMedia("(max-width:620px)").matches&&window.__dashGo) return window.__dashGo(d);
+    const [,k,sel]=DASHGO[d]; openTab(k); const node=sel?ER.querySelector(`.epanel[data-panel="${k}"] ${sel}`)?.closest(".sgrp,.pick"):null;
+    setTimeout(()=>{ scrollToEl(node||tabsEl,node?72:62); flash(node||ER.querySelector(`.epanel[data-panel="${k}"]`)); },30); });
   // «Переглянути відео» / «Повернутись до редагування»: прокрутка між переглядом і налаштуваннями
   ER.querySelector("#gridsc")?.addEventListener("input",e=>{ ST.gridSc=+e.target.value; ER.querySelector("#gridsc-v").textContent=ST.gridSc+"%"; if(!hasGrid()){ ST.grid=true; ER.querySelectorAll("[data-grid]").forEach(o=>o.setAttribute("aria-pressed",o.dataset.grid==="1")); } persistStyle(); if(!PLAY) show(pos); });
 
@@ -1679,7 +1681,7 @@ function stAssemble(el){ const ER=document.getElementById("reader")||el;
   // Панель знизу: налаштування відкривається поруч із відео, відео не зникає з екрана й одразу показує зміни
   const WHOLE={tl:1,subs:1,voice:1,sfx:1,music:1};
   let POP=null;
-  const popClose=()=>{ if(!POP) return; POP.moved.forEach(([n,ph])=>{ ph.replaceWith(n); }); POP.box.remove(); document.querySelectorAll(".dbar [data-dgo]").forEach(b=>b.classList.remove("on")); cv.style.width=""; document.getElementById("reader").classList.remove("popon"); POP=null; };
+  let popCloseHook=null; const popClose=()=>{ if(!POP) return; setTimeout(()=>popCloseHook?.(),0); POP.moved.forEach(([n,ph])=>{ ph.replaceWith(n); }); POP.box.remove(); document.querySelectorAll(".dbar [data-dgo]").forEach(b=>b.classList.remove("on")); cv.style.width=""; document.getElementById("reader").classList.remove("popon"); POP=null; };
   const dashGo=k=>{ try{ uiSnd("tap"); }catch(e){} const was=POP?.k; popClose(); if(was===k) return;
     const [title,tab,sel]=DASHGO[k], panel=ER.querySelector(`.epanel[data-panel="${tab}"]`); if(!panel) return;
     let nodes=[]; if(WHOLE[k]||!sel) nodes=[...panel.children]; else { const n=panel.querySelector(sel)?.closest(".sgrp,.pick"); if(n) nodes=[n]; if(k==="drawSnd"){ const sl=panel.querySelector("#drawvol"); if(sl) nodes.push(sl.previousElementSibling,sl); } }
@@ -1695,6 +1697,10 @@ function stAssemble(el){ const ER=document.getElementById("reader")||el;
       requestAnimationFrame(()=>{ RB.scrollTo({top:RB.scrollTop+cv.getBoundingClientRect().top-RB.getBoundingClientRect().top-8,behavior:"smooth"});
         setTimeout(()=>{ if(!box.isConnected) return; const gap=box.getBoundingClientRect().top-cv.getBoundingClientRect().top-12; if(gap>100) cv.style.width=Math.min(300,gap*9/16)+"px"; },480); }); });
     box.classList.add("in"); };
+  window.__dashGo=dashGo;
+  // вмістити все на один екран (без прокрутки): за потреби трохи зменшуємо відео
+  const fitOne=()=>{ if(!cv.isConnected||POP||!matchMedia("(max-width:620px)").matches) return; const RB=document.getElementById("rbody"); cv.style.width=""; const over=RB.scrollHeight-RB.clientHeight; if(over>0){ const w=cv.getBoundingClientRect().width; cv.style.width=Math.max(150,w-(over+4)*9/16)+"px"; } };
+  setTimeout(fitOne,80); setTimeout(()=>{ const RB=document.getElementById("rbody"); const o=RB.scrollHeight-RB.clientHeight; if(o>0&&!POP) cv.style.width=Math.max(150,cv.getBoundingClientRect().width-(o+4)*9/16)+"px"; },300); addEventListener("resize",fitOne); const _pc=popClose; popCloseHook=()=>setTimeout(fitOne,30);
   { const R=document.getElementById("reader"); R.querySelectorAll(".vjump").forEach(n=>n.remove()); let editPos=null;
     const up=document.createElement("button"); up.type="button"; up.className="vjump up"; up.textContent="▲ Переглянути відео";
     const dn=document.createElement("button"); dn.type="button"; dn.className="vjump dn"; dn.textContent="▼ Повернутись до редагування";
