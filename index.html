@@ -196,7 +196,7 @@ input[type=range]{width:100%;max-width:270px;accent-color:#171717;margin-top:8px
  .vside{display:grid;gap:5px;align-content:center;justify-items:center}.vsb{width:62px;display:grid;gap:1px;padding:5px 2px;border:1px solid rgba(255,255,255,.14);border-radius:11px;background:rgba(255,255,255,.06);color:var(--p-text,#f5f5f7);font:600 9.5px/1.15 var(--pfont,system-ui);letter-spacing:-.2px;cursor:pointer;min-width:0;overflow:hidden;white-space:nowrap}
  .vsb b{font-weight:700;overflow:hidden;text-overflow:ellipsis}.vsb i{font-style:normal;font-weight:500;font-size:9px;color:var(--p-muted,#a1a1aa);overflow:hidden;text-overflow:ellipsis}.vsb i:empty{display:none}
  .vsb:active{transform:scale(.96)}.dbar{display:none}
-@media (max-width:620px){.reader.dash .page{padding-block:10px 12px}.reader.dash .cvw{position:relative;width:max-content;margin:0 auto}.reader.dash .page{min-height:calc(100% - 20px);display:flex;flex-direction:column;justify-content:center}.reader.dash .vwrap canvas{max-width:none}
+@media (max-width:620px){.reader.dash .page{padding-block:10px 12px}.reader.dash .cvw{position:relative;width:max-content;margin:0 auto}.reader.dash #vst:empty{display:none}.reader.dash .page{padding-bottom:12px!important}.reader.dash .asm{margin-bottom:0!important;padding-bottom:0}.reader.dash .vwrap canvas{max-width:none}
  .reader.dash #vseek{position:absolute;left:10%;right:10%;width:80%!important;bottom:8px;margin:0;height:14px;opacity:.55;z-index:2}.reader.dash #vtime{display:none}
  .reader.dash .vbelow .vctl{margin-top:8px}.reader.dash .vsave{margin-top:8px}}
 @media (max-width:620px){.reader.dash .vexprow{display:none!important}.reader.dash .asm>div:first-child{display:none}.reader.dash .vjump{display:none!important}.reader.dash .asm{margin-bottom:0}}
@@ -210,11 +210,11 @@ input[type=range]{width:100%;max-width:270px;accent-color:#171717;margin-top:8px
 .reader.popon .vjump{display:none}
 .reader.popon .vwrap canvas{margin:0 auto;transition:width .25s}
 @media (max-width:620px){
- .reader .dbar{display:flex;flex-direction:column;gap:clamp(4px,.8vh,8px);position:absolute;top:var(--dbt,160px);z-index:29;width:clamp(54px,15vw,66px)}
+ .reader .dbar{display:flex;flex-direction:column;gap:clamp(4px,.8vh,8px);position:absolute;top:var(--dbt,160px);z-index:29;width:clamp(52px,14vw,62px)}
  .dbar.l{left:max(6px,env(safe-area-inset-left,0px))}.dbar.r{right:max(6px,env(safe-area-inset-right,0px))}
- .dbar button{width:100%;padding:clamp(7px,1.2vh,11px) 2px;border:1px solid rgba(255,255,255,.16);border-radius:12px;background:rgba(28,28,32,.78);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);color:#f5f5f7;font:600 clamp(9.5px,2.6vw,11px)/1.1 var(--pfont,system-ui);letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+ .dbar button{width:100%;padding:clamp(7px,1.2vh,11px) 2px;border:1px solid rgba(255,255,255,.16);border-radius:12px;background:rgba(28,28,32,.78);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);color:#f5f5f7;font:600 clamp(9px,2.35vw,10.5px)/1.1 var(--pfont,system-ui);letter-spacing:-.35px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
  .dbar button:active{transform:scale(.95)}
- .reader.dash .asm{margin-inline:calc(clamp(54px,15vw,66px) - 6px)}
+ .reader.dash .asm{margin-inline:calc(clamp(52px,14vw,62px) - 10px)}
 }
 .vuit{display:grid;place-items:center;padding:12px 2px}.vuit[aria-pressed="true"]{background:rgba(255,255,255,.9)!important;color:#0b0b0d!important}.vbelow{max-width:300px;margin:0 auto}.vbelow .vctl{justify-content:center;position:relative}.vbelow .vctl .status{position:absolute;right:2px;top:calc(100% + 28px);font-size:11.5px;opacity:.7}.vbelow input[type=range]{margin-bottom:14px}.vbelow input[type=range]{width:100%}}
 .vtip{margin:8px 2px 0;font-size:12.5px;line-height:1.4;color:var(--p-muted,#a1a1aa);text-align:center}
@@ -1710,7 +1710,7 @@ function stAssemble(el){ const ER=document.getElementById("reader")||el;
     box.classList.add("in"); };
   window.__dashGo=dashGo;
   // вмістити все на один екран (без прокрутки): за потреби трохи зменшуємо відео
-  const fitOne=()=>{ if(!cv.isConnected||POP||!matchMedia("(max-width:620px)").matches) return; const RB=document.getElementById("rbody"), bw=document.querySelector(".dbar.l")?.offsetWidth||62, maxW=Math.min(cv.closest(".vwrap").clientWidth, innerWidth-2*(bw+14));
+  const fitOne=()=>{ if(!cv.isConnected||POP||!matchMedia("(max-width:620px)").matches) return; const RB=document.getElementById("rbody"), bw=document.querySelector(".dbar.l")?.offsetWidth||62, maxW=Math.min(cv.closest(".vwrap").clientWidth, innerWidth-2*(bw+6));
     for(let k=0;k<3;k++){ const w=cv.getBoundingClientRect().width, over=RB.scrollHeight-RB.clientHeight; const nw=Math.max(150,Math.min(maxW,w-(over+2)*9/16)); if(Math.abs(nw-w)<1) break; cv.style.width=nw+"px"; } };
   if(matchMedia("(max-width:620px)").matches){ const sk=ER.querySelector("#vseek"); if(sk){ const cw=document.createElement("div"); cw.className="cvw"; cv.before(cw); cw.append(cv,sk); } }
   setTimeout(fitOne,80); setTimeout(()=>{ const RB=document.getElementById("rbody"); const o=RB.scrollHeight-RB.clientHeight; if(o>0&&!POP) cv.style.width=Math.max(150,cv.getBoundingClientRect().width-(o+4)*9/16)+"px"; },300); addEventListener("resize",fitOne); const _pc=popClose; popCloseHook=()=>setTimeout(fitOne,30);
