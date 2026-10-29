@@ -1631,10 +1631,10 @@ const ETABS={scenes:"Сцени",look:"Вигляд",tl:"Таймлайн",subs:
 function sfxOptions(cur){ let o=`<option value="auto" ${cur==="auto"?"selected":""}>Авто</option><option value="none" ${cur==="none"?"selected":""}>Без звуку</option>`;
   Object.entries(SFX).forEach(([n,v])=>v.v.forEach((_,k)=>{ const val=`${n}|${k}`; o+=`<option value="${val}" ${cur===val?"selected":""}>${n} ${k+1}</option>`; })); return o; }
 // Кнопки по краях екрана (крок «Збери ролик»): кожна веде до свого налаштування нижче
-const DASHGO={ scenes:["Сцени","scenes",null], bg:["Фон","look",'[data-sk="bg"]'], grid:["Клітинки","look","[data-grid]"], tool:["Малює","look",'[data-sk="tool"]'], thick:["Лінія","look",'[data-sk="thick"]'],
+const DASHGO={ scenes:["Сцени","scenes",null], bg:["Стиль","look",'[data-sk="bg"]'], grid:["Клітинки","look","[data-grid]"], tool:["Малює","look",'[data-sk="tool"]'], thick:["Лінія","look",'[data-sk="thick"]'],
   font:["Шрифт","look",'[data-pick="font"]'], plInk:["Плашка","look",'[data-sk="plInk"]'], plSize:["Текст","look",'[data-sk="plSize"]'], moves:["Рух","look",'[data-mon="parts"]'],
   tl:["Таймлайн","tl",null], subs:["Субтитри","subs",null], voice:["Голос","voice",null], music:["Музика","music",'[data-pick="music"]'], drawSnd:["Звук ліній","sfx",'[data-pick="drawSnd"]'], sfx:["Звуки","sfx",null] };
-const DASH_L=["bg","grid","tool","thick","font","plSize","moves"], DASH_R=["tl","subs","voice","music","sfx"];
+const DASH_L=["bg","tool","thick","font","plSize","moves"], DASH_R=["tl","subs","voice","music","sfx"];
 function stAssemble(el){ const ER=document.getElementById("reader")||el;
   if(S.format==="film"){ el.innerHTML+=`<p>Автоматичне збирання з власних кадрів з'явиться пізніше. Поки змонтуй ролик у CapCut за списком кадрів або віддай файли Claude (розділ «Монтаж з Claude»).</p>`; return; }
   if(!S.scenes.length){ el.innerHTML+=`<p class="status">Сцен ще немає. Повернись на крок «Що малювати» і розбий сценарій.</p>`; return; }
@@ -1727,7 +1727,7 @@ function stAssemble(el){ const ER=document.getElementById("reader")||el;
   let popCloseHook=null; const popClose=()=>{ if(!POP) return; setTimeout(()=>popCloseHook?.(),40); POP.moved.forEach(([n,ph])=>{ ph.replaceWith(n); }); POP.box.remove(); document.querySelectorAll(".dbar [data-dgo]").forEach(b=>b.classList.remove("on")); cv.style.width=""; document.getElementById("reader").classList.remove("popon"); POP=null; };
   const dashGo=k=>{ try{ uiSnd("tap"); }catch(e){} const was=POP?.k; popClose(); if(was===k) return;
     const [title,tab,sel]=DASHGO[k], panel=ER.querySelector(`.epanel[data-panel="${tab}"]`); if(!panel) return;
-    let nodes=[]; if(WHOLE[k]||!sel) nodes=[...panel.children]; else { const n=panel.querySelector(sel)?.closest(".sgrp,.pick"); if(n) nodes=[n]; if(k==="drawSnd"){ const sl=panel.querySelector("#drawvol"); if(sl) nodes.push(sl.previousElementSibling,sl); } }
+    let nodes=[]; if(WHOLE[k]||!sel) nodes=[...panel.children]; else { const n=panel.querySelector(sel)?.closest(".sgrp,.pick"); if(n) nodes=[n]; if(k==="bg"){ const g=panel.querySelector("[data-grid]")?.closest(".sgrp"); if(g) nodes.push(g); } if(k==="drawSnd"){ const sl=panel.querySelector("#drawvol"); if(sl) nodes.push(sl.previousElementSibling,sl); } }
     if(!nodes.length) return dashGoOld(k);
     const R=document.getElementById("reader"), RB=document.getElementById("rbody"), box=document.createElement("div"); box.className="dpop";
     box.innerHTML=`<div class="dph"><b>${title}</b><button type="button" class="dpx" aria-label="Згорнути"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><div class="dpb"></div>`;
@@ -2097,7 +2097,7 @@ function stScript(el){
 function colorHTML(sc){ return `<div class="f"><span>Колір плашки</span><div class="colr">${[["red","Червона — проблема, помилка"],["green","Зелена — рішення, порада"]].map(([k,n])=>`<button type="button" class="sw" data-c="${k}" aria-pressed="${colOf(sc)===k}" aria-label="${n}" title="${n}" style="background:${plaqueStyle(k).fill}"></button>`).join("")}</div></div>`; }
 function sceneHTML(sc,i){ const F=FIELDS[S.format]||FIELDS.marker;
   return `<div class="scene" data-i="${i}"><div class="n">Сцена ${i+1}${sc.sec?` · ${esc(sc.sec)} с`:""}</div>${F.some(f=>f[0]==="phrase")?"":`<div class="ph">${esc(sc.phrase)}</div>`}
-  ${F.map(([k,l])=>`<div class="f"><span>${l}</span><textarea class="grow" rows="1" data-k="${k}" aria-label="${l}, сцена ${i+1}">${esc(sc[k])}</textarea></div>`+(k==="plaque"?colorHTML(sc):"")).join("")}
+  ${F.map(([k,l])=>`<div class="f"><span>${l}</span><textarea class="grow" rows="1" data-k="${k}" aria-label="${l}, сцена ${i+1}">${esc(sc[k])}</textarea></div>`).join("")}
 </div>`; }
 const BOARD_ASK = {
  marker: `Розбий його на сцени по 3–7 секунд (одна-дві фрази), зберігаючи текст дослівно й по порядку. Для кожної сцени дай:
