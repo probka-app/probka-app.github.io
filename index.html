@@ -184,6 +184,10 @@ input[type=range]{width:100%;max-width:270px;accent-color:#171717;margin-top:8px
 .arow select{padding:4px 8px}
 @media (max-width:620px){.asm{grid-template-columns:1fr}.asm .sprev{position:static;order:-1;justify-self:center;width:min(240px,70%)}}
 .l2{display:block;font-family:var(--display);font-size:18px;margin:14px 0 2px}
+.vjump{position:absolute;left:50%;transform:translate(-50%,8px);z-index:30;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:10px 18px;font:600 14px var(--pfont,system-ui);color:#fff;background:rgba(20,20,22,.82);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 10px 30px -10px rgba(0,0,0,.6);white-space:nowrap}
+.vjump.on{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
+.vedit{display:block;margin:10px auto 0;border:1px solid var(--rule,rgba(255,255,255,.2));border-radius:999px;padding:9px 16px;background:transparent;color:inherit;font:600 14px var(--pfont,system-ui);cursor:pointer}
+@media (min-width:621px){.vedit{display:none}}
 .etabs{margin-bottom:16px;padding-bottom:12px;border-bottom:2px dashed var(--rule)}
 a.chip{text-decoration:none;color:inherit}
 .chip.rec{background:#c62828;color:#fff;border-color:#c62828}
@@ -1147,7 +1151,12 @@ function inkStroke(x,pts,w,seed){ const R=rnd(seed), P=dens(pts,1.5), col=inkCol
   else if(ST.tool==="pencil"){ for(let k=0;k<3;k++) path(w*.4,Math.max(.8,w*.38),.38); }
   else { x.globalAlpha=.55; for(const [px,py] of P) for(let k=0;k<3;k++){ const s=w*(.3+R()*.5); x.fillRect(px+(R()-.5)*w,py+(R()-.5)*w,s,s); } }
   x.restore(); }
-function paintBg(x,w,h,step,oy=0){ const b=BGS[ST.bg]; x.fillStyle=b.c; x.fillRect(0,0,w,h); if(hasGrid()){ x.save(); x.strokeStyle=b.grid||(b.dark?"rgba(255,255,255,.16)":"#cfdcec"); x.lineWidth=Math.max(.5,step/54); x.beginPath(); for(let gx=0;gx<=w;gx+=step){ x.moveTo(gx,0); x.lineTo(gx,h); } for(let gy=((-oy)%step+step)%step;gy<=h;gy+=step){ x.moveTo(0,gy); x.lineTo(w,gy); } x.stroke(); x.restore(); } }
+function paintBg(x,w,h,step,oy=0){ const b=BGS[ST.bg]; x.fillStyle=b.c; x.fillRect(0,0,w,h); if(hasGrid()){ x.save(); x.strokeStyle=b.grid||(b.dark?"rgba(255,255,255,.16)":"#cfdcec"); x.lineWidth=Math.max(.5,step/54); x.beginPath();
+  if(ST.gridWave){ const A=step*.16, L=step*3.2, d=Math.max(2,step/9);   // хвилясті клітинки
+    for(let gx=0;gx<=w+step;gx+=step){ for(let y=0;y<=h+d;y+=d){ const xx=gx+A*Math.sin((y+oy)/L*6.283+gx*.013); y?x.lineTo(xx,y):x.moveTo(xx,y); } }
+    for(let gy=((-oy)%step+step)%step;gy<=h+step;gy+=step){ for(let xx=0;xx<=w+d;xx+=d){ const yy=gy+A*Math.sin(xx/L*6.283+(gy+oy)*.013); xx?x.lineTo(xx,yy):x.moveTo(xx,yy); } } }
+  else { for(let gx=0;gx<=w;gx+=step){ x.moveTo(gx,0); x.lineTo(gx,h); } for(let gy=((-oy)%step+step)%step;gy<=h;gy+=step){ x.moveTo(0,gy); x.lineTo(w,gy); } }
+  x.stroke(); x.restore(); } }
 function rrPts(x0,y0,x1,y1,r,seed,amp){ const P=[]; const arc=(cx,cy,a0)=>{ for(let k=0;k<=8;k++){ const a=a0+k/8*Math.PI/2; P.push([cx+r*Math.cos(a),cy+r*Math.sin(a)]); } };
   arc(x1-r,y0+r,-Math.PI/2); arc(x1-r,y1-r,0); arc(x0+r,y1-r,Math.PI/2); arc(x0+r,y0+r,Math.PI); P.push(P[0]);
   const D=dens(P,3); return D.map(([px,py],i)=>{ const t=i/D.length*Math.PI*2, d=amp*(Math.sin(3*t+seed)*.6+Math.sin(7*t+2*seed)*.4); return [px+d,py+d*.6]; }); }
@@ -1530,7 +1539,7 @@ function stAssemble(el){
     <div class="epanel" data-panel="scenes">
       <div class="row" style="margin-top:0"><label class="chip" for="imgsf">Завантажити картинки</label><input type="file" id="imgsf" accept="image/*" multiple class="sr"><button class="chip" type="button" data-redist="1">Розподілити час за словами</button></div>
       <div class="ascenes" id="ascenes"></div></div>
-    <div class="epanel" data-panel="look" hidden>${optRow("bg",Object.fromEntries(Object.entries(BGS).filter(([k])=>k!=="grid")),"Фон")}<div class="sgrp"><div class="gl">Клітинки</div><div class="chips"><button class="chip" type="button" data-grid="0" aria-pressed="${!hasGrid()}">Без клітинок</button><button class="chip" type="button" data-grid="1" aria-pressed="${hasGrid()}">З клітинками</button></div></div>${optRow("tool",TOOLS,"Чим малює")}${optRow("thick",THICK,"Товщина ліній")}${optRow("plInk",PLINK,"Текст і рамка плашки")}${optRow("plSize",PLSIZE,"Розмір тексту на плашці")}${pickRow("Шрифт на плашках і субтитрах",curFont().n,"font",`font:${vfont(22)}`)}
+    <div class="epanel" data-panel="look" hidden>${optRow("bg",Object.fromEntries(Object.entries(BGS).filter(([k])=>k!=="grid")),"Фон")}<div class="sgrp"><div class="gl">Клітинки</div><div class="chips"><button class="chip" type="button" data-grid="0" aria-pressed="${!hasGrid()}">Без клітинок</button><button class="chip" type="button" data-grid="1" aria-pressed="${hasGrid()&&!ST.gridWave}">Рівні клітинки</button><button class="chip" type="button" data-grid="2" aria-pressed="${hasGrid()&&!!ST.gridWave}">Хвилясті клітинки</button></div></div>${optRow("tool",TOOLS,"Чим малює")}${optRow("thick",THICK,"Товщина ліній")}${optRow("plInk",PLINK,"Текст і рамка плашки")}${optRow("plSize",PLSIZE,"Розмір тексту на плашці")}${pickRow("Шрифт на плашках і субтитрах",curFont().n,"font",`font:${vfont(22)}`)}
       <div class="sgrp"><div class="gl">Анімація</div><div class="chips">${chip("mon","boil","Живі лінії",S.mon.boil)}${chip("mon","parts","Рухомі елементи",S.mon.parts!==false)}</div></div></div>
     <div class="epanel" data-panel="tl" hidden><div class="sgrp"><div class="gl">Де</div><div class="chips">${chip("tlpos","bottom","Внизу",S.tlPos==="bottom")}${chip("tlpos","top","Вгорі",S.tlPos==="top")}${chip("tlpos","none","Без таймлайну",S.tlPos==="none")}</div></div><div class="sgrp"><div class="gl">Відсотки</div><div class="chips">${chip("tlpct","1","З відсотками",S.tlPct!==false)}${chip("tlpct","0","Без відсотків",S.tlPct===false)}</div></div></div>
     <div class="epanel" data-panel="subs" hidden><div class="sgrp"><div class="gl">Де показувати</div><div class="chips">${Object.entries(SUBPOS).map(([k,v])=>chip("subpos",k,v,S.mon.subs===k)).join("")}</div></div>
@@ -1550,7 +1559,7 @@ function stAssemble(el){
   </div>
   <div class="sprev"><canvas id="vprev" role="img" aria-label="Прев'ю ролика"></canvas>
     <div class="vctl"><button class="chip ink" type="button" id="vplay">▶ Дивитись</button><span class="status" id="vtime"></span></div>
-    <input type="range" id="vseek" min="0" max="1000" value="0" aria-label="Перемотка"></div></div>
+    <input type="range" id="vseek" min="0" max="1000" value="0" aria-label="Перемотка"><button class="vedit" type="button" id="vedit">✎ Налаштувати відео ↓</button></div></div>
   <div class="row" style="margin-top:22px">${DL("Зберегти відео","vexp")}</div><div class="status" id="vst"></div>`;
   const cv=el.querySelector("#vprev"); cv.width=540; cv.height=960; const x=cv.getContext("2d");
   const seek=el.querySelector("#vseek"), vt=el.querySelector("#vtime"), list=el.querySelector("#ascenes"), sfxList=el.querySelector("#asfx"), playB=el.querySelector("#vplay");
@@ -1575,7 +1584,22 @@ function stAssemble(el){
     sfxList.querySelectorAll("[data-try]").forEach(b=>b.addEventListener("click",()=>{ const f=sfxFor(+b.dataset.try); if(f) playSfx(f[0],f[1],b); else toast("У цієї сцени без звуку"); })); };
   onMediaReady=()=>{ rows(); show(pos); if(VOICE){ vi.textContent=`${VOICE_NAME} · ${VOICE.duration.toFixed(1)} с`; vdel.hidden=false; el.querySelector("#vfit").textContent=voiceInfoText(); } }; ensureMedia();
   rows(); show(Math.min(1.2,totalDur())); fontReady().then(()=>{ PLQ.clear(); show(pos); });
-  el.querySelectorAll("[data-etab]").forEach(b=>b.addEventListener("click",()=>{ el.querySelectorAll("[data-etab]").forEach(o=>o.setAttribute("aria-pressed",o===b)); el.querySelectorAll(".epanel").forEach(p=>p.hidden=p.dataset.panel!==b.dataset.etab); }));
+  const RB=document.getElementById("rbody"), tabsEl=el.querySelector(".etabs");
+  const scrollToEl=(node,off=10)=>{ if(!RB||!node) return; RB.scrollTo({top:RB.scrollTop+node.getBoundingClientRect().top-RB.getBoundingClientRect().top-off,behavior:"smooth"}); };
+  el.querySelectorAll("[data-etab]").forEach(b=>b.addEventListener("click",()=>{ el.querySelectorAll("[data-etab]").forEach(o=>o.setAttribute("aria-pressed",o===b)); el.querySelectorAll(".epanel").forEach(p=>p.hidden=p.dataset.panel!==b.dataset.etab); setTimeout(()=>scrollToEl(tabsEl,62),30); }));
+  // «Переглянути відео» / «Повернутись до редагування»: прокрутка між переглядом і налаштуваннями
+  el.querySelector("#vedit")?.addEventListener("click",()=>scrollToEl(tabsEl,62));
+  { const R=document.getElementById("reader"); R.querySelectorAll(".vjump").forEach(n=>n.remove()); let editPos=null;
+    const up=document.createElement("button"); up.type="button"; up.className="vjump up"; up.textContent="▲ Переглянути відео";
+    const dn=document.createElement("button"); dn.type="button"; dn.className="vjump dn"; dn.textContent="▼ Повернутись до редагування";
+    R.append(up,dn); const pv=el.querySelector(".sprev");
+    const place=()=>{ if(!el.isConnected){ up.remove(); dn.remove(); RB?.removeEventListener("scroll",upd); clearInterval(gc); return; } up.style.top=(RB.offsetTop+10)+"px"; dn.style.bottom=(R.clientHeight-RB.offsetTop-RB.clientHeight+14)+"px"; };
+    const gc=setInterval(()=>{ if(!el.isConnected) place(); },800);
+    const upd=()=>{ place(); if(!el.isConnected) return; const r=pv.getBoundingClientRect(), rb=RB.getBoundingClientRect(), vis=r.bottom>rb.top+80&&r.top<rb.bottom-80;
+      up.classList.toggle("on",!vis); dn.classList.toggle("on",vis&&editPos!=null&&Math.abs(RB.scrollTop-editPos)>60); };
+    up.onclick=()=>{ editPos=RB.scrollTop; scrollToEl(pv,8); };
+    dn.onclick=()=>{ if(editPos!=null) RB.scrollTo({top:editPos,behavior:"smooth"}); };
+    RB?.addEventListener("scroll",upd,{passive:true}); setTimeout(upd,60); }
   const group=(attr,apply)=>el.querySelectorAll(`[data-${attr}]`).forEach(b=>b.addEventListener("click",()=>{ apply(b.dataset[attr]); el.querySelectorAll(`[data-${attr}]`).forEach(o=>o.setAttribute("aria-pressed",o===b)); persist(); refresh(); }));
   const setPv=(id,t)=>{ const e=el.querySelector(`[data-pv="${id}"]`); if(e) e.textContent=t; };
   el.querySelectorAll("[data-pick]").forEach(b=>b.addEventListener("click",()=>{ const id=b.dataset.pick;
@@ -1592,7 +1616,7 @@ function stAssemble(el){
   el.querySelectorAll("[data-mon]").forEach(b=>b.addEventListener("click",async()=>{ const k=b.dataset.mon; S.mon[k]=!S.mon[k]; b.setAttribute("aria-pressed",S.mon[k]);
     if((k==="cutPauses"||k==="fitVoice")&&VOICE_RAW){ stopPlay(); el.querySelector("#vfit").textContent="Обробляю голос…"; await new Promise(r=>setTimeout(r,30)); processVoice(); distribute(VOICE.duration); rows(); show(0); el.querySelector("#vfit").textContent=voiceInfoText(); vi.textContent=`${VOICE_NAME} · ${VOICE.duration.toFixed(1)} с`; }
     persist(); refresh(); }));
-  el.querySelectorAll("[data-grid]").forEach(b=>b.addEventListener("click",()=>{ const on=b.dataset.grid==="1"; if(ST.bg==="grid"){ ST.bg="white"; } ST.grid=on; persistStyle(); el.querySelectorAll("[data-grid]").forEach(o=>o.setAttribute("aria-pressed",o===b)); el.querySelectorAll('[data-sk="bg"]').forEach(o=>o.setAttribute("aria-pressed",o.dataset.sv===ST.bg)); show(pos); }));
+  el.querySelectorAll("[data-grid]").forEach(b=>b.addEventListener("click",()=>{ const on=b.dataset.grid!=="0"; if(ST.bg==="grid"){ ST.bg="white"; } ST.grid=on; ST.gridWave=b.dataset.grid==="2"; persistStyle(); el.querySelectorAll("[data-grid]").forEach(o=>o.setAttribute("aria-pressed",o===b)); el.querySelectorAll('[data-sk="bg"]').forEach(o=>o.setAttribute("aria-pressed",o.dataset.sv===ST.bg)); show(pos); }));
   el.querySelectorAll("[data-sk]").forEach(b=>b.addEventListener("click",()=>{ const k=b.dataset.sk; ST[k]=b.dataset.sv; persistStyle(); PLQ.clear();
     el.querySelectorAll(`[data-sk="${k}"]`).forEach(o=>o.setAttribute("aria-pressed",o===b)); show(pos); warmInks(); }));
   [["voicevol","voiceVol"],["musicvol","musicVol"],["sfxvol","sfxVol"],["drawvol","drawVol"]].forEach(([id,k])=>{ const r=el.querySelector("#"+id); r.addEventListener("input",()=>{ S.mon[k]=+r.value; el.querySelector(`#${id}-v`).textContent=r.value+"%"; }); r.addEventListener("change",()=>{ persist(); refresh(); }); });
