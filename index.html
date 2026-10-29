@@ -26,6 +26,7 @@
 .pick{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line,#e4e2da)}
 .pick .pv{font-size:18px;margin-top:2px}
 .plist{display:grid;gap:6px;margin-top:6px}
+.prow .pname:has(.fsm){display:flex;align-items:center;justify-content:space-between;gap:12px}.prow .fnm{font-size:15px;opacity:.75;flex:none}.prow .fsm{text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .prow{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:12px;border:1.5px solid transparent}
 .prow.sel{border-color:var(--ink);background:var(--hi,#fff6c8)}
 .prow .pname{flex:1;min-width:0;text-align:left;background:none;border:0;padding:8px 2px;font:inherit;font-size:17px;color:inherit;cursor:pointer}
@@ -1274,7 +1275,7 @@ async function musicPreview(kind){ if(kind==="none") return null;
   src.onended=()=>{ if(PREV&&PREV.src===src){ PREV=null; document.querySelectorAll(".pplay.on").forEach(b=>{ b.classList.remove("on"); b.textContent="▶"; }); } };
   return {src,stop:()=>src.stop()}; }
 function pickSheet({title,items,cur,onPick,play,font}){ stopPrev();
-  openSheet(`<h3>${title}</h3><div class="plist">${items.map(([k,n])=>`<div class="prow${k===cur?" sel":""}" data-k="${esc(k)}">${play?`<button class="pplay" type="button" aria-label="Послухати: ${esc(n)}">▶</button>`:""}<button class="pname" type="button"${font?` style="font:${vfont(24,FONTS[k])}"`:""}>${esc(n)}</button><span class="pchk" aria-hidden="true">✓</span></div>`).join("")}</div>`);
+  openSheet(`<h3>${title}</h3><div class="plist">${items.map(([k,n])=>`<div class="prow${k===cur?" sel":""}" data-k="${esc(k)}">${play?`<button class="pplay" type="button" aria-label="Послухати: ${esc(n)}">▶</button>`:""}<button class="pname" type="button">${font?`<span class="fnm">${esc(n)}</span><span class="fsm" style="font:${vfont(26,FONTS[k])}">Зона комфорту</span>`:esc(n)}</button><span class="pchk" aria-hidden="true">✓</span></div>`).join("")}</div>`);
   BS.querySelectorAll(".prow").forEach(r=>{ const k=r.dataset.k;
     r.querySelector(".pname").onclick=()=>{ stopPrev(); BS.querySelectorAll(".prow").forEach(o=>o.classList.toggle("sel",o===r)); onPick(k); setTimeout(closeSheet,220); };
     const pb=r.querySelector(".pplay"); if(pb) pb.onclick=async()=>{ const was=pb.classList.contains("on"); stopPrev(); if(was) return; pb.classList.add("on"); pb.textContent="■";
