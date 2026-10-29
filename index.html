@@ -1329,7 +1329,8 @@ const SOUND_LIB=[["Поява плашки|0","Дзвіночок"],["Поява
 function soundName(v){ if(v==="auto") return "Авто (дзвіночок)"; if(v==="none") return "Без звуку"; const f=SOUND_LIB.find(x=>x[0]===v); return f?f[1]:v; }
 function sfxParse(v){ if(!v||v==="none") return null; const [n,k]=v.split("|"); return SFX[n]?[n,Math.min(+k||0,SFX[n].v.length-1)]:null; }
 const FONTS={pangolin:{n:"Маркер",css:'"Pangolin"'},caveat:{n:"Рукописний",css:'"Caveat"',w:600},neucha:{n:"Шкільний",css:'"Neucha"'},badscript:{n:"Каліграфія",css:'"Bad Script"'},marck:{n:"Пензлик",css:'"Marck Script"'},comfortaa:{n:"Округлий",css:'"Comfortaa"',w:700},amatic:{n:"Вузький",css:'"Amatic SC"',w:700},lobster:{n:"Ретро",css:'"Lobster"'},kurale:{n:"Книжковий",css:'"Kurale"'},rubik:{n:"Звичайний",css:'"Rubik"',w:500},unbounded:{n:"Жирний",css:'"Unbounded"',w:600}};
-function curFont(){ return FONTS[S.mon?.font]||FONTS.pangolin; }
+const STYLEFONT={white:"pangolin",grid:"neucha",cream:"caveat",blue:"pangolin",board:"neucha",black:"comfortaa",navy:"rubik",plum:"comfortaa",graphite:"rubik"};
+function curFont(){ return FONTS[STYLEFONT[ST.bg]]||FONTS.pangolin; }   // шрифт іде разом зі стилем
 function vfont(px,f){ f=f||curFont(); return `${f.w||400} ${px}px ${f.css}, "Comic Neue", cursive`; }
 function fontReady(f){ return document.fonts.load(vfont(60,f),"Зона комфорту ЇїЄєҐґІі 0123456789%").catch(()=>{}); }
 const PCOLS={red:"Червона",green:"Зелена",yellow:"Жовта",blue:"Синя",purple:"Фіолетова",orange:"Помаранчева",pink:"Рожева",gray:"Сіра"};
@@ -1634,7 +1635,7 @@ function sfxOptions(cur){ let o=`<option value="auto" ${cur==="auto"?"selected":
 const DASHGO={ scenes:["Сцени","scenes",null], bg:["Стиль","look",'[data-sk="bg"]'], grid:["Клітинки","look","[data-grid]"], tool:["Малює","look",'[data-sk="tool"]'], thick:["Лінія","look",'[data-sk="thick"]'],
   font:["Шрифт","look",'[data-pick="font"]'], plInk:["Плашка","look",'[data-sk="plInk"]'], plSize:["Текст","look",'[data-sk="plSize"]'], moves:["Рух","look",'[data-mon="parts"]'],
   tl:["Таймлайн","tl",null], subs:["Субтитри","subs",null], voice:["Голос","voice",null], music:["Музика","music",'[data-pick="music"]'], drawSnd:["Звук ліній","sfx",'[data-pick="drawSnd"]'], sfx:["Звуки","sfx",null] };
-const DASH_L=["bg","tool","thick","font","plSize","moves"], DASH_R=["tl","subs","voice","music","sfx"];
+const DASH_L=["bg","plSize","moves"], DASH_R=["tl","subs","voice","music","sfx"];
 function stAssemble(el){ const ER=document.getElementById("reader")||el;
   if(S.format==="film"){ el.innerHTML+=`<p>Автоматичне збирання з власних кадрів з'явиться пізніше. Поки змонтуй ролик у CapCut за списком кадрів або віддай файли Claude (розділ «Монтаж з Claude»).</p>`; return; }
   if(!S.scenes.length){ el.innerHTML+=`<p class="status">Сцен ще немає. Повернись на крок «Що малювати» і розбий сценарій.</p>`; return; }
@@ -1983,7 +1984,7 @@ function randomLook(){ let i=0, last=-1; try{ last=+(localStorage.getItem("yvLoo
 const MYSTYLE={ get(){ try{ return JSON.parse(localStorage.getItem("yvMyStyle"))||null; }catch(e){ return null; } },
   save(){ const m=S.mon||{}; const o={st:{...ST},mon:{font:m.font,parts:m.parts,boil:m.boil,subs:m.subs,subSize:m.subSize,music:m.music,musicSet:m.musicSet,sfxOn:m.sfxOn},tlPos:S.tlPos,tlPct:S.tlPct}; try{ localStorage.setItem("yvMyStyle",JSON.stringify(o)); }catch(e){} },
   clear(){ try{ localStorage.removeItem("yvMyStyle"); }catch(e){} } };
-function newProject(){ const MY=MYSTYLE.get(); if(MY){ Object.assign(ST,MY.st); persistStyle(); } else randomLook(); flush(); stopPlay(); const keep={interests:S.interests,topics:S.topics,dur:S.dur,ad:S.ad,vtype:S.vtype}; PID="p"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+function newProject(){ const MY=MYSTYLE.get(); if(MY){ Object.assign(ST,MY.st); } else randomLook(); ST.tool="marker"; ST.thick="m"; persistStyle(); flush(); stopPlay(); const keep={interests:S.interests,topics:S.topics,dur:S.dur,ad:S.ad,vtype:S.vtype}; PID="p"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   loadInto({...keep,created:Date.now(),activeMs:0,...(MY?{mon:{...MY.mon},tlPos:MY.tlPos,tlPct:MY.tlPct}:{})},PID); resetMedia(); setSaveState(""); persist(); openSec("studio",0); }
 async function deleteProject(id){ const o=id===PID?S:await readProject(id); INDEX=INDEX.filter(x=>x.id!==id); saveIndex(); LS.del("rilsP_"+id); idb.del("p_"+id);
   for(let i=0;i<50;i++) idb.del(`img_${id}_${i}`); idb.del("voice_"+id);
