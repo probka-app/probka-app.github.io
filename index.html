@@ -40,6 +40,7 @@
 body{background:var(--desk);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6}
 .wrap{max-width:1040px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 56px}
 .top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.shqr{width:min(240px,70vw);aspect-ratio:1;margin:8px auto 0;border-radius:18px;overflow:hidden;background:#fff;display:grid;place-items:center;padding:6px}
 .brand{font-family:var(--display);font-size:20px}
 .tools{display:flex;gap:8px;flex-wrap:wrap}
 button{font:inherit;color:inherit;cursor:pointer}
@@ -994,6 +995,14 @@ document.addEventListener("DOMContentLoaded",function(){if(ok())return;var g=doc
 g.innerHTML='<form class="bx"><b>YuVi Studio</b><p>Закрите тестування. Введи код доступу.</p><input type="password" autocomplete="off" placeholder="Код доступу" aria-label="Код доступу"><button type="submit">Увійти</button><div class="er"></div></form>';
 document.body.appendChild(g);var f=g.querySelector("form"),i=g.querySelector("input"),e=g.querySelector(".er");
 f.addEventListener("submit",function(ev){ev.preventDefault();sha(i.value).then(function(h){if(h===H)pass();else{L("gate_fail");e.textContent="Невірний код";i.select()}})})})})();</script>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#050507">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="YuVi">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="server.js?v=4c913b80"></script>
@@ -2570,7 +2579,48 @@ const ICON={trophy:'<svg viewBox="0 0 24 24" width="22" height="22"><path d="M8 
   help:'<svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5v.4M12 17h.01" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
   gear:'<svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
   out:'<svg viewBox="0 0 24 24" width="22" height="22"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'};
+ICON.share='<svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 15V4M8 8l4-4 4 4M6 12v6a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'; ICON.phone='<svg viewBox="0 0 24 24" width="22" height="22"><rect x="7" y="3" width="10" height="18" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M11 18h2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
 const PROF={ get nick(){ return (window.SRV?.me?.nickname)||LS.get("rilsNick")||""; }, get email(){ return window.SRV?.me?.email||""; }, get phone(){ return window.SRV?.me?.phone||LS.get("rilsPhone")||""; }, get logged(){ return !!window.SRV?.session; } };
+
+/* ===== Поділитися YuVi (QR, AirDrop, Quick Share, месенджери) і встановлення на телефон ===== */
+function yuviLink(){ const base=location.origin+"/"; const partner=window.SRV?!!(SRV.session&&SRV.me?.phone&&earnOn()):earnOn(); if(!partner) return {url:base,partner:false}; const code=window.SRV?.refCode?.()||refCode(); return {url:base+"?ref="+code,partner:true}; }
+let QRLIB=null; function loadQR(){ return QRLIB||(QRLIB=new Promise((ok,no)=>{ if(window.qrcode) return ok(window.qrcode); const sc=document.createElement("script"); sc.src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"; sc.onload=()=>ok(window.qrcode); sc.onerror=()=>{ QRLIB=null; no(); }; document.head.appendChild(sc); })); }
+async function qrSVG(text){ const q=(await loadQR())(0,"M"); q.addData(text); q.make(); const n=q.getModuleCount(), m=2; let d=""; for(let r=0;r<n;r++) for(let c=0;c<n;c++) if(q.isDark(r,c)) d+=`M${c+m} ${r+m}h1v1h-1z`;
+  return `<svg viewBox="0 0 ${n+m*2} ${n+m*2}" width="100%" height="100%" shape-rendering="crispEdges" role="img" aria-label="QR-код посилання"><rect width="100%" height="100%" fill="#fff"/><path d="${d}" fill="#0b0b0d"/></svg>`; }
+const SHARE_TXT2="Я роблю відео в YuVi Studio. Спробуй і ти:";
+async function shareYuvi(){ try{ uiSnd("tap"); }catch(e){} const L=yuviLink();
+  openSheet(`<h3>Поділитися YuVi</h3>
+   <p class="hint" style="display:block">${L.partner?"Друг відкриє YuVi за твоїм посиланням — і закріпиться за тобою як партнером.":"Покажи QR другу або надішли посилання."}</p>
+   <div class="shqr" id="shqr"><span class="hint" style="display:block">Готую QR…</span></div>
+   <p class="hint" style="display:block;text-align:center;margin-top:6px">Друг наводить камеру телефону на код — і YuVi відкривається.</p>
+   <div class="reflink"><span id="shurl">${esc(L.url)}</span><button class="pill2" type="button" id="shcp">Скопіювати</button></div>
+   ${navigator.share?`<button class="big" type="button" id="shgo" style="margin-top:10px">Надіслати: AirDrop, Telegram, Viber…</button>`:""}
+   ${L.partner?"":`<button class="lnk" type="button" id="shearn" style="margin-top:8px">Стань партнером — і посилання приноситиме тобі гроші →</button>`}
+   <button class="lnk" type="button" id="shinst" style="margin-top:4px">Як встановити YuVi на телефон →</button>`,"plat");
+  qrSVG(L.url).then(svg=>{ const b=BS.querySelector("#shqr"); if(b) b.innerHTML=svg; }).catch(()=>{ const b=BS.querySelector("#shqr"); if(b) b.innerHTML=`<span class="hint" style="display:block">QR не завантажився — скопіюй посилання нижче.</span>`; });
+  BS.querySelector("#shcp").onclick=e=>{ const b=e.currentTarget; navigator.clipboard?.writeText(L.url).then(()=>{ b.textContent="Скопійовано"; setTimeout(()=>b.textContent="Скопіювати",1400); }).catch(()=>{}); };
+  BS.querySelector("#shgo")?.addEventListener("click",async()=>{ try{ await navigator.share({title:"YuVi Studio",text:SHARE_TXT2,url:L.url}); }catch(x){} });
+  BS.querySelector("#shearn")?.addEventListener("click",()=>openEarn());
+  BS.querySelector("#shinst").onclick=()=>installSheet(shareYuvi); }
+let INSTALL_EVT=null; addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); INSTALL_EVT=e; });
+const IS_APP=()=>matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+function installSheet(back){ const ua=navigator.userAgent, ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&"ontouchend" in document), inApp=/Instagram|FBAN|FBAV|TikTok|Telegram/i.test(ua);
+  openSheet(`<h3>YuVi на телефоні</h3>
+   ${IS_APP()?`<p class="hint" style="display:block">YuVi вже встановлено — ти зараз у застосунку.</p>`:
+   inApp?`<p class="hint" style="display:block">Відкрий цю сторінку в ${ios?"Safari":"Chrome"}: натисни ⋯ вгорі → «Відкрити в браузері». Потім повернись сюди.</p>`:
+   INSTALL_EVT?`<p class="hint" style="display:block">Іконка YuVi з'явиться на екрані телефону, відкриватиметься як звичайний застосунок.</p><button class="big" type="button" id="instgo">Встановити</button>`:
+   ios?`<ol class="steps"><li>Відкрий сайт у <b>Safari</b>.</li><li>Натисни <b>Поділитися</b> (квадрат зі стрілкою вгору).</li><li>Обери <b>«На початковий екран»</b> → <b>Додати</b>.</li></ol>`:
+   `<ol class="steps"><li>Відкрий сайт у <b>Chrome</b>.</li><li>Натисни <b>⋮</b> вгорі справа.</li><li>Обери <b>«Встановити застосунок»</b> або <b>«Додати на головний екран»</b>.</li></ol>`}
+   <p class="hint" style="display:block">${ios?"Порада: щоб поділитися YuVi, відкрий застосунок → меню → «Поділитися YuVi» → AirDrop.":"Порада: затисни іконку YuVi — там є «Поділитися YuVi»: Quick Share, Bluetooth, месенджери."}</p>
+   <button class="big" type="button" id="instok">${back?"Назад":"Зрозуміло"}</button>`,"plat");
+  BS.querySelector("#instgo")?.addEventListener("click",async()=>{ const e=INSTALL_EVT; INSTALL_EVT=null; try{ await e.prompt(); await e.userChoice; }catch(x){} closeSheet(); });
+  BS.querySelector("#instok").onclick=()=>back?back():closeSheet(); }
+// ярлики з іконки (затиснути іконку на Android): ?do=share | qr | own
+(function(){ let d=null; try{ d=new URLSearchParams(location.search).get("do"); }catch(e){} if(!d) return;
+  try{ const u=new URL(location.href); u.searchParams.delete("do"); history.replaceState(null,"",u); }catch(e){}
+  const run=()=>{ if(d==="share"||d==="qr") shareYuvi(); else if(d==="own") openOwn(); };
+  if(window.SRV) setTimeout(run,900); else setTimeout(run,200); })();
+if("serviceWorker" in navigator && location.protocol==="https:") addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));
 const drwov=document.getElementById("drwov"), drw=document.getElementById("drw"), burger=document.getElementById("burger");
 function renderTop(){ const n=PROF.nick; const h=document.getElementById("hnick"); if(h) h.textContent=n?("@"+n.replace(/^@/,"")):""; }
 function openDrawer(){ const n=PROF.nick, logged=PROF.logged, srv=!!window.SRV;
@@ -2582,6 +2632,8 @@ function openDrawer(){ const n=PROF.nick, logged=PROF.logged, srv=!!window.SRV;
     <button class="drwi" type="button" data-d="wallet">${ICON.money}Заробіток<span class="cnt">${money(WL.balance)}</span></button>
     <button class="drwi" type="button" data-d="earn">${ICON.help}Як заробити?</button>
     ${uiOn("ui_rating")?`<button class="drwi" type="button" data-d="rating">${ICON.trophy}Рейтинг${uiOwnHid("ui_rating")}</button>`:""}
+    <button class="drwi" type="button" data-d="share">${ICON.share}Поділитися YuVi</button>
+    ${IS_APP()?"":`<button class="drwi" type="button" data-d="install">${ICON.phone}Встановити на телефон</button>`}
     <button class="drwi" type="button" data-d="settings">${ICON.gear}Налаштування</button>
     <button class="drwi" type="button" data-d="plans">${ICON.money}Тарифи і ліміти</button>
     ${uiOn("ui_how")?`<button class="drwi" type="button" data-d="how">${ICON.help}Як це працює${uiOwnHid("ui_how")}</button>`:""}
@@ -2592,7 +2644,7 @@ function openDrawer(){ const n=PROF.nick, logged=PROF.logged, srv=!!window.SRV;
   drwov.hidden=false; burger.setAttribute("aria-expanded","true");
   drw.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{ const d=b.dataset.d; closeDrawer();
     if(d==="login") window.SRV?.login();
-    else if(d==="lib") openLib(); else if(d==="ana") openAnalytics(); else if(d==="wallet") openWallet(); else if(d==="earn") openEarn(); else if(d==="settings") openSettings(); else if(d==="adm") openAdmin(); else if(d==="ideas") openIdeas(); else if(d==="rating") openRating(); else if(d==="how") openHow(); else if(d==="plans") openPlans(); else if(d==="out") window.SRV?.signOut(); else if(d==="exitdemo") location.replace(location.pathname+"?live"); });
+    else if(d==="lib") openLib(); else if(d==="ana") openAnalytics(); else if(d==="wallet") openWallet(); else if(d==="earn") openEarn(); else if(d==="settings") openSettings(); else if(d==="adm") openAdmin(); else if(d==="ideas") openIdeas(); else if(d==="rating") openRating(); else if(d==="how") openHow(); else if(d==="plans") openPlans(); else if(d==="share") shareYuvi(); else if(d==="install") installSheet(); else if(d==="out") window.SRV?.signOut(); else if(d==="exitdemo") location.replace(location.pathname+"?live"); });
   drw.querySelector("button")?.focus(); }
 function closeDrawer(){ drwov.hidden=true; burger.setAttribute("aria-expanded","false"); burger.focus(); }
 burger.addEventListener("click",openDrawer);
