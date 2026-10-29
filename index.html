@@ -1287,7 +1287,7 @@ function voiceInfoText(){ const v=VOICE_INFO; if(!v) return ""; const parts=[`З
 const IMGS={}; let VOICE=null, VOICE_NAME="", PLAY=null, MIX=null, MIXKEY="";
 const PLQ=new Map();
 function monDefaults(){ if(!S.tlPos){ const o=S.tl||"A"; S.tlPos=o==="none"?"none":o==="C"?"top":"bottom"; S.tlPct=o!=="B"; } S.tlPct ??= true; const m=S.mon||{};
-  S.mon={boil:m.boil??true, sfxOn:m.sfxOn??m.sfx??true, sfxVol:m.sfxVol??70, music:m.musicSet?m.music:"none", musicSet:m.musicSet, musicVol:m.musicVol??40, voiceVol:m.voiceVol??100, enhance:m.enhance??true,
+  S.mon={boil:m.boil??true, parts:m.parts??true, sfxOn:m.sfxOn??m.sfx??true, sfxVol:m.sfxVol??70, music:m.musicSet?m.music:"none", musicSet:m.musicSet, musicVol:m.musicVol??40, voiceVol:m.voiceVol??100, enhance:m.enhance??true,
     subs:typeof m.subs==="string"?m.subs:(m.subs?"bottom":"none"), subSize:m.subSize??"m", cutPauses:m.cutPauses??true, fitVoice:m.fitVoice??true,
     font:m.font??"pangolin", anim:m.anim??"auto", drawer:m.drawerSet?m.drawer:"tool", drawerSet:m.drawerSet, drawSnd:(!m.drawSnd||m.drawSnd==="on")?"soft":m.drawSnd, drawVol:m.drawVol??10, sfxPlaque:m.sfxPlaque??"auto", sfxCut:m.sfxCut??"Шелест аркуша|0", sfxEnd:m.sfxEnd??"Фінал|0"}; }
 const wcount=t=>(String(t||"").trim().match(/\S+/g)||[]).length||1;
@@ -1385,8 +1385,32 @@ function inkOf(i){ const im=IMGS[i]; if(!im) return null; const sk=!!S.scenes[i]
     while(rem>0){ let nx=-1; if(cur>=0){ const cx=cur%gw, cy=cur/gw|0; let bs=-1e9; for(let r=1;r<=2&&nx<0;r++) for(let oy=-r;oy<=r;oy++) for(let ox2=-r;ox2<=r;ox2++){ if(Math.max(Math.abs(ox2),Math.abs(oy))!==r) continue; const x1=cx+ox2, y1=cy+oy; if(x1<0||y1<0||x1>=gw||y1>=gh) continue; const k=y1*gw+x1; if(!on[k]||seen[k]) continue; const l=Math.hypot(ox2,oy), sc=(ox2*dx+oy*dy)/l-(r-1)*.5; if(sc>bs){bs=sc;nx=k;} } }
       if(nx<0){ nx=pickStart(); if(nx<0) break; lifts.push(path.length); dx=1; dy=0; } else { const ndx=nx%gw-cur%gw, ndy=(nx/gw|0)-(cur/gw|0), l=Math.hypot(ndx,ndy)||1; dx=ndx/l; dy=ndy/l; }
       seen[nx]=1; rem--; path.push(nx); cur=nx; }
-    out._path=path; out._gw=gw; out._cs=cs; }
-  ox.putImageData(id,0,0); im.ink=out; im.inkKey=key; return out; }
+    out._path=path; out._gw=gw; out._cs=cs; out._on=on; out._gh=gh; }
+  ox.putImageData(id,0,0); try{ out._parts=splitParts(out,i); }catch(e){ out._parts=null; } im.ink=out; im.inkKey=key; return out; }
+// Рухомі елементи: ділимо малюнок на окремі частини (зв'язні групи штрихів), 1–3 невеликі частини ворушаться, решта стоїть
+function splitParts(ink,i){ const on=ink._on, gw=ink._gw, gh=ink._gh, cs=ink._cs; if(!on) return null; const N=gw*gh, lab=new Int32Array(N).fill(-1), comps=[];
+  for(let k=0;k<N;k++){ if(!on[k]||lab[k]>=0) continue; const id=comps.length, st=[k], cells=[]; lab[k]=id; let x0=gw,y0=gh,x1=0,y1=0;
+    while(st.length){ const c=st.pop(); cells.push(c); const cx=c%gw, cy=c/gw|0; if(cx<x0)x0=cx; if(cx>x1)x1=cx; if(cy<y0)y0=cy; if(cy>y1)y1=cy;
+      for(let oy=-2;oy<=2;oy++) for(let ox=-2;ox<=2;ox++){ const nx=cx+ox, ny=cy+oy; if(nx<0||ny<0||nx>=gw||ny>=gh) continue; const q=ny*gw+nx; if(on[q]&&lab[q]<0){ lab[q]=id; st.push(q); } } }
+    comps.push({cells,x0,y0,x1,y1}); }
+  const total=comps.reduce((a,c)=>a+c.cells.length,0); if(comps.length<2||total<12) return null;
+  const R=rnd(i*17+5), cand=comps.filter(c=>{ const f=c.cells.length/total; return f>=.025&&f<=.4&&c.cells.length>=4; }).sort((a,b)=>b.cells.length-a.cells.length).slice(0,3);
+  if(!cand.length) return null;
+  const st=document.createElement("canvas"); st.width=ink.width; st.height=ink.height; const sx=st.getContext("2d"); sx.drawImage(ink,0,0);
+  const movers=cand.map((c,n)=>{ const bx=c.x0*cs, by=c.y0*cs, bw=Math.min(ink.width,(c.x1+1)*cs)-bx, bh=Math.min(ink.height,(c.y1+1)*cs)-by;
+    const cv=document.createElement("canvas"); cv.width=bw; cv.height=bh; const cx=cv.getContext("2d");
+    for(const k of c.cells){ const px=(k%gw)*cs, py=(k/gw|0)*cs, w=Math.min(cs,ink.width-px), h=Math.min(cs,ink.height-py); if(w<=0||h<=0) continue; cx.drawImage(ink,px,py,w,h,px-bx,py-by,w,h); sx.clearRect(px,py,w,h); }
+    const tall=bh>bw*1.5, wide=bw>bh*1.6, kind=tall?"sway":wide?"nudge":["pulse","spin","bob"][(n+Math.floor(R()*3))%3];
+    return {cv,bx,by,bw,bh,kind,ph:R()*6.28,sp:2.2+R()*1.4}; });
+  return {st,movers}; }
+function drawParts(x,P,w,h,f,lt,amp){ x.drawImage(P.st,-w/2,-h/2,w,h);
+  for(const m of P.movers){ const cx=-w/2+(m.bx+m.bw/2)*f, cy=-h/2+(m.by+m.bh/2)*f, mw=m.bw*f, mh=m.bh*f, ph=lt*m.sp+m.ph; x.save();
+    if(m.kind==="sway"){ x.translate(cx,cy+mh/2); x.rotate(.09*amp*Math.sin(ph)); x.drawImage(m.cv,-mw/2,-mh,mw,mh); }
+    else if(m.kind==="bob"){ x.translate(cx,cy-amp*Math.max(10,mh*.12)*(.5-.5*Math.cos(ph))); x.drawImage(m.cv,-mw/2,-mh/2,mw,mh); }
+    else if(m.kind==="nudge"){ const k=Math.sin(ph); x.translate(cx+amp*Math.max(8,mw*.06)*(k>0?k*k:k*.4),cy); x.drawImage(m.cv,-mw/2,-mh/2,mw,mh); }
+    else if(m.kind==="spin"){ x.translate(cx,cy); x.rotate(.16*amp*Math.sin(ph)); x.drawImage(m.cv,-mw/2,-mh/2,mw,mh); }
+    else { const k=1+.09*amp*Math.sin(ph); x.translate(cx,cy); x.scale(k,k); x.rotate(.03*amp*Math.sin(ph*.7)); x.drawImage(m.cv,-mw/2,-mh/2,mw,mh); }
+    x.restore(); } }
 function warmInks(){ Object.keys(IMGS).forEach((i,n)=>setTimeout(()=>inkOf(+i),n*30)); }
 function plaqueFor(txt,col){ const key=`${col}|${ST.inten}|${S.mon?.font||""}|${txt}`; if(PLQ.has(key)) return PLQ.get(key);
   const two=txt.includes("/"); const t=txt.split("/").map(s=>s.trim()).join("\n"); const len=Math.max(...t.split("\n").map(s=>s.length));
@@ -1422,6 +1446,7 @@ function drawScene(x,i,lt,d,alpha,t){ if(S.scenes[i]?.ad){ drawAd(x,lt,alpha); d
       const rv=ink._rv, rx=rv.getContext("2d"); if(k<ink._rk){ rx.clearRect(0,0,rv.width,rv.height); ink._rk=0; }
       for(let j=ink._rk;j<k;j++){ const c=PA[j], sx=(c%gw)*cs, sy=(c/gw|0)*cs, cw=Math.min(cs,ink.width-sx), ch=Math.min(cs,ink.height-sy); if(cw>0&&ch>0) rx.drawImage(ink,sx,sy,cw,ch,sx,sy,cw,ch); } ink._rk=k;
       x.drawImage(rv,-w/2,-h/2,w,h); const c=PA[Math.max(0,k-1)]; tipX=-w/2+((c%gw)+.5)*cs*f; tipY=-h/2+((c/gw|0)+.5)*cs*f; }
+    else if(S.mon.parts!==false&&ink._parts){ const t0=revT?revT+.15:.3; const amp=clamp((lt-t0)/.5); if(amp>0) drawParts(x,ink._parts,w,h,f,lt-t0,amp); else x.drawImage(ink,-w/2,-h/2,w,h); }
     else x.drawImage(ink,-w/2,-h/2,w,h);
     const dr=drawerOf(i); if(revT&&dr!=="none"){ const out=clamp((lt-revT)/.45); if(out<1){ const C2=ink._cols||[], NC=C2.length||1; let ci=Math.min(NC-1,Math.floor(reveal*NC)), cc=C2[ci]; for(let k=1;!cc&&k<NC;k++) cc=C2[ci-k]||C2[ci+k];
         const [t0,b0]=cc||[.4,.6], z=.5+.5*Math.sin(lt*19); let fx=-w/2+w*reveal, fy=-h/2+h*(t0+(b0-t0)*z);
@@ -1492,7 +1517,7 @@ function stAssemble(el){
       <div class="row" style="margin-top:0"><label class="chip" for="imgsf">Завантажити картинки</label><input type="file" id="imgsf" accept="image/*" multiple class="sr"><button class="chip" type="button" data-redist="1">Розподілити час за словами</button></div>
       <div class="ascenes" id="ascenes"></div></div>
     <div class="epanel" data-panel="look" hidden>${optRow("bg",Object.fromEntries(Object.entries(BGS).filter(([k])=>k!=="grid")),"Фон")}<div class="sgrp"><div class="gl">Клітинки</div><div class="chips"><button class="chip" type="button" data-grid="0" aria-pressed="${!hasGrid()}">Без клітинок</button><button class="chip" type="button" data-grid="1" aria-pressed="${hasGrid()}">З клітинками</button></div></div>${optRow("tool",TOOLS,"Чим малює")}${optRow("thick",THICK,"Товщина ліній")}${optRow("inten",INTEN,"Плашки")}${pickRow("Шрифт на плашках і субтитрах",curFont().n,"font",`font:${vfont(22)}`)}
-      <div class="sgrp"><div class="gl">Анімація</div><div class="chips">${chip("mon","boil","Живі лінії",S.mon.boil)}</div></div></div>
+      <div class="sgrp"><div class="gl">Анімація</div><div class="chips">${chip("mon","boil","Живі лінії",S.mon.boil)}${chip("mon","parts","Рухомі елементи",S.mon.parts!==false)}</div></div></div>
     <div class="epanel" data-panel="tl" hidden><div class="sgrp"><div class="gl">Де</div><div class="chips">${chip("tlpos","bottom","Внизу",S.tlPos==="bottom")}${chip("tlpos","top","Вгорі",S.tlPos==="top")}${chip("tlpos","none","Без таймлайну",S.tlPos==="none")}</div></div><div class="sgrp"><div class="gl">Відсотки</div><div class="chips">${chip("tlpct","1","З відсотками",S.tlPct!==false)}${chip("tlpct","0","Без відсотків",S.tlPct===false)}</div></div></div>
     <div class="epanel" data-panel="subs" hidden><div class="sgrp"><div class="gl">Де показувати</div><div class="chips">${Object.entries(SUBPOS).map(([k,v])=>chip("subpos",k,v,S.mon.subs===k)).join("")}</div></div>
       <div class="sgrp"><div class="gl">Розмір</div><div class="chips">${Object.entries(SUBSIZE).map(([k,v])=>chip("subsize",k,v.n,S.mon.subSize===k)).join("")}</div></div></div>
