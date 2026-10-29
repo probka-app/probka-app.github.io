@@ -1489,7 +1489,7 @@ function drawScene(x,i,lt,d,alpha,t){ if(S.scenes[i]?.ad){ drawAd(x,lt,alpha); d
   drawSubs(x,subChunk(i,lt,d),alpha); }
 // Позначка на перегляді (лише поки відео не оплачено): навскісні рядки по всьому кадру, що повільно рухаються — запис екрана виходить з позначкою. У збереженому відео її немає.
 function drawPreviewMark(x,t){ x.save(); x.setTransform(.5,0,0,.5,0,0); const dark=isDark(); x.fillStyle=dark?"rgba(255,255,255,.17)":"rgba(0,0,0,.13)";
-  x.font='800 58px "Inter","Manrope",system-ui,sans-serif'; x.textAlign="left"; x.textBaseline="middle"; const txt="studio.yuvi.life · ПРЕВ'Ю · ";
+  x.font='800 58px "Inter","Manrope",system-ui,sans-serif'; x.textAlign="left"; x.textBaseline="middle"; const txt="Відео зроблено на studio.yuvi.life   ·   ";
   const tw=x.measureText(txt).width, sh=(t*36)%tw; x.translate(540,960); x.rotate(-.42);
   for(let r=-6;r<=6;r++){ const y=r*190, off=(r%2?sh:-sh)-tw*2+(r*137)%tw; for(let k=0;k<5;k++) x.fillText(txt,off+k*tw-700,y); }
   x.restore(); }
