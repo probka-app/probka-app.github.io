@@ -850,6 +850,8 @@ button.big[disabled]{opacity:.5;transform:none}
 .lgbody{overflow:auto;padding:6px 18px 28px;font-size:14px;line-height:1.55}.lgbody h4{margin:16px 0 6px;font-size:15px}.lgbody ol{margin:0;padding-left:20px;display:grid;gap:6px}.lgbody p{margin:6px 0}.lgv{color:var(--p-muted,#6b675e);font-size:13px}
 .lgt{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0}.lgt td,.lgt th{border:1px solid var(--p-line,#e5e2d9);padding:6px;text-align:left;vertical-align:top}
 mark.lgph{background:#fff1b8;color:#5a4500;border-radius:4px;padding:0 3px}
+.pricecard{display:flex;align-items:center;gap:12px;width:100%;margin:14px 0 0;padding:16px 18px;border-radius:20px;background:var(--p-surface);border:1px solid var(--p-line);color:var(--p-text);font-family:var(--pfont);text-align:left;cursor:pointer}.pricecard .pct{flex:1;min-width:0;display:grid;gap:2px}.pricecard b{font-size:16px}.pricecard small{font-size:13px;color:var(--p-muted)}
+.reqs{margin:0 0 24px;text-align:center;font-size:12px;line-height:1.7;color:var(--p-faint)}.reqs a{color:inherit}
 .legal{margin:26px 0 8px;text-align:center;font-size:12.5px;color:var(--p-muted,#6b675e);line-height:1.9}.legal a,.lgagree a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 .tnote a{color:inherit;text-decoration:underline;text-underline-offset:2px}.lgagree{align-items:flex-start}.lgagree span{line-height:1.45}
 .lggate{max-height:88vh}.lggate .lgbody{flex:1}.lgend{color:var(--p-muted,#6b675e);font-size:12.5px;text-align:center;margin:14px 0 0}
@@ -943,7 +945,9 @@ body{background:radial-gradient(900px 640px at 8% -12%,var(--yv-glow-1),transpar
   <button class="soonc" type="button" id="sooncard" hidden><small>Скоро в YuVi</small><b id="soont"></b><span id="soond"></span><i>Голосувати й пропонувати ідеї →</i></button>
   <div class="soon">З часом з'являться нові інструменти…</div>
   <button class="ideacard" type="button" id="ideacard"><span class="idi" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="idt"><b>Чого тобі не вистачає?</b><small id="ideasub">Запропонуй ідею або проголосуй за чужі</small></span><span class="chev2" aria-hidden="true">›</span></button>
+  <button class="ideacard" type="button" id="pricecard" style="margin-top:12px"><span class="idi" aria-hidden="true" style="font-weight:800">₴</span><span class="idt"><b>Тарифи</b><small>Безкоштовно · Базовий 399 грн · Студія від 599 грн за 30 днів</small></span><span class="chev2" aria-hidden="true">›</span></button>
   <div class="legal"><a href="#" data-doc="offer">Публічна оферта</a> · <a href="#" data-doc="rules">Правила партнерської програми</a> · <a href="#" data-doc="privacy">Політика конфіденційності</a></div>
+  <div class="reqs" id="reqs"></div>
 </div>
 <div class="ow" id="ownw" hidden><div class="owbar"><button class="owback" id="owback" type="button">← Інструменти</button><span class="owbrand">Своє відео</span><span class="owbadge">beta</span></div><div class="owbody" id="owbody"></div></div>
 <div class="fworld" id="fworld" hidden>
@@ -2115,6 +2119,8 @@ const LEGAL={ ver:"2026-10-29",
   data:{ pib:"Юськова Ірина Сергіївна", rnokpp:"3937204723", addr:"35068, Рівненська обл., Рівненський р-н, с. Збуж, вул. Лугова, 17", iban:"UA553220010000026008380100508", email:"yuvi.studio.help@gmail.com", phone:"", regDate:"26.10.2026" } };
 const LF=(k,label)=>LEGAL.data[k]?esc(LEGAL.data[k]):`<mark class="lgph">[${label} — буде заповнено]</mark>`;
 const LFOP=()=>`ФОП ${LF("pib","ПІБ")}, РНОКПП ${LF("rnokpp","РНОКПП")}`;
+function renderReqs(){ const r=document.getElementById("reqs"), D=LEGAL.data; if(!r) return; r.innerHTML=`ФОП ${esc(D.pib)} · РНОКПП ${esc(D.rnokpp)}<br>Пошта для звернень: <a href="mailto:${esc(D.email)}">${esc(D.email)}</a>${D.phone?` · ${esc(D.phone)}`:""}<br>Доступ надається онлайн одразу після оплати. Оплата карткою, Apple Pay, Google Pay.`; }
+setTimeout(()=>{ renderReqs(); document.getElementById("pricecard")?.addEventListener("click",()=>openPlans()); },0);
 const LDOCS={
  offer:{ t:"Публічна оферта", h:()=>`
   <p class="lgv">Публічна оферта про надання доступу до онлайн-інструментів YuVi Studio. Редакція від ${LEGAL.ver.split("-").reverse().join(".")}.</p>
@@ -2126,11 +2132,11 @@ const LDOCS={
   <li>Виконавець надає доступ до онлайн-інструментів для створення контенту (далі — Інструменти), а Користувач оплачує доступ. Перелік і опис Інструментів розміщено на сайті.</li>
   <li>Реєстрація, перегляд описів і участь у партнерській програмі — безкоштовні.</li></ol>
   <h4>3. Ціна і оплата</h4><ol>
-  <li>Тарифи: «Базовий» — 399 грн за 30 днів доступу до одного Інструменту; кожен наступний Інструмент — +200 грн за 30 днів. «Студія» — ціна, зазначена на сайті на момент оплати (для перших 100 користувачів діє ціна раннього доступу, яка зберігається, поки Користувач продовжує тариф без перерви). Склад тарифів і ліміти AI-генерацій (картинки, хвилини озвучки) зазначені на сайті в розділі «Тарифи і ліміти». Виконавець не є платником ПДВ.</li>
+  <li>Тарифи: «Безкоштовно» — 0 грн; «Базовий» — 399 грн за 30 днів доступу; «Студія» — ціна, зазначена на сайті на момент оплати (для перших 100 користувачів діє ціна раннього доступу, яка зберігається, поки Користувач продовжує тариф без перерви). Склад тарифів і ліміти AI-генерацій (картинки, хвилини озвучки) зазначені на сайті в розділі «Тарифи і ліміти». Виконавець не є платником ПДВ.</li>
   <li>Пакети (додаткові хвилини AI-озвучки, AI-картинки тощо) — разова оплата за ціною, зазначеною на сайті. Пакет не має строку дії і не продовжується автоматично.</li>
   <li>Оплата — банківською карткою, Apple Pay, Google Pay через платіжний сервіс банку. Дані картки Виконавець не отримує і не зберігає.</li>
   <li>Доступ діє 30 календарних днів з моменту оплати. <b>Автоматичних списань немає</b>: щоб продовжити, Користувач сам оплачує наступні 30 днів, які додаються до поточного строку.</li>
-  <li>Після оплати Користувач отримує електронний чек.</li>
+  <li>Доступ надається онлайн автоматично одразу після успішної оплати. Після оплати Користувач отримує електронний чек.</li>
   <li>Зміна цін не стосується вже оплаченого періоду.</li>
   <li>Функція «Мій голос» (AI-копія голосу) дозволена лише для <b>власного голосу Користувача</b> і лише за його згодою, яку він підтверджує на сайті. Записувати чужий голос заборонено. Користувач може будь-коли видалити свою AI-копію голосу.</li></ol>
   <h4>4. Повернення коштів</h4><ol>
