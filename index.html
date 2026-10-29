@@ -1610,7 +1610,7 @@ function stAssemble(el){
   <div class="sprev"><div class="vwrap"><canvas id="vprev" role="img" aria-label="Прев'ю ролика"></canvas>
     <div class="vbelow"><div class="vctl"><button class="chip ink" type="button" id="vplay">▶ Дивитись</button><span class="status" id="vtime"></span></div>
     <input type="range" id="vseek" min="0" max="1000" value="0" aria-label="Перемотка"></div></div>
-    <button class="vsave" type="button" id="vsave">Зберегти відео</button><p class="vtip">Натисни на плашку, малюнок, субтитри чи таймлайн у відео — і одразу перейдеш до їх налаштувань.${WL.unlocked?.marker?"":" Напис «зроблено на studio.yuvi.life» є лише в перегляді — у збереженому відео його немає."}</p></div></div>
+    <button class="vsave" type="button" id="vsave">Зберегти відео</button></div></div>
   <div class="row" style="margin-top:22px">${DL("Зберегти відео","vexp")}</div><div class="status" id="vst"></div>`;
   const cv=el.querySelector("#vprev"); cv.width=540; cv.height=960; const x=cv.getContext("2d");
   const seek=el.querySelector("#vseek"), vt=el.querySelector("#vtime"), list=el.querySelector("#ascenes"), sfxList=el.querySelector("#asfx"), playB=el.querySelector("#vplay");
@@ -2143,7 +2143,7 @@ function openSec(id,i){ cur=SECTIONS.find(s=>s.id===id); if(!cur) return; idx=i;
 function closeSec(){ ctl?.abort(); stopPlay(); reader.hidden=true; document.body.style.overflow=""; try{history.replaceState(null,"",location.pathname+location.search)}catch(e){} }
 function render(){ stopPlay(); S.lastStep=idx; persist(); const st=cur.steps[idx], n=cur.steps.length, p=Math.round((idx+1)/n*100);
   rfat.style.width=`calc(${p}% - 20px * ${p/100})`; rpct.textContent=p+"%";
-  page.innerHTML=`<div class="kicker">${st.k||("Крок "+(idx+1)+" з "+n)}</div><h3>${typeof st.h==="function"?st.h():st.h}</h3>${st.b||""}`;
+  page.innerHTML=`${st.render===stAssemble?"":`<h3>${typeof st.h==="function"?st.h():st.h}</h3>`}${st.b||""}`;   // без «Крок N з M»: прогрес уже видно зверху
   if(st.render) st.render(page);
   page.classList.remove("page-in"); void page.offsetWidth; page.classList.add("page-in");
   document.getElementById("rbody").scrollTop=0;
