@@ -1060,13 +1060,25 @@ function env(g,t,a,peak,dec){ g.gain.setValueAtTime(0.0001,t); g.gain.exponentia
 function tone(f,t,type,peak,dec,glide){ const o=C.createOscillator(),g=C.createGain(); o.type=type; o.frequency.setValueAtTime(f,t); if(glide) o.frequency.exponentialRampToValueAtTime(glide,t+dec); env(g,t,.005,peak,dec); o.connect(g).connect(OUT); o.start(t); o.stop(t+dec+.05); }
 function hiss(t,dur,f1,f2,q,peak){ const s=noise(dur+.05),bp=C.createBiquadFilter(),g=C.createGain(); bp.type="bandpass"; bp.Q.value=q; bp.frequency.setValueAtTime(f1,t); bp.frequency.exponentialRampToValueAtTime(f2,t+dur); env(g,t,dur*.25,peak,dur*.75); s.connect(bp).connect(g).connect(OUT); s.start(t); s.stop(t+dur+.05); }
 function scribble(t,dur,rate){ const s=noise(dur+.05),bp=C.createBiquadFilter(),g=C.createGain(),lfo=C.createOscillator(),lg=C.createGain(),out=C.createGain(); bp.type="bandpass"; bp.frequency.value=3200; bp.Q.value=1.4; g.gain.value=0; lfo.frequency.value=rate; lg.gain.value=.22; lfo.connect(lg).connect(g.gain); env(out,t,.02,1,dur); s.connect(bp).connect(g).connect(out).connect(OUT); s.start(t); lfo.start(t); s.stop(t+dur+.05); lfo.stop(t+dur+.05); }
-function drawScratch(t,dur,tool){ const R=rnd(Math.floor(t*100)+7), s=noise(dur+.15), hp=C.createBiquadFilter(), pk=C.createBiquadFilter(), lp=C.createBiquadFilter(), g=C.createGain();
+function pinkNoise(dur){ const b=C.createBuffer(1,Math.ceil(C.sampleRate*dur),C.sampleRate), d=b.getChannelData(0); let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0;
+  for(let i=0;i<d.length;i++){ const w=Math.random()*2-1; b0=.99886*b0+w*.0555179; b1=.99332*b1+w*.0750759; b2=.969*b2+w*.153852; b3=.8665*b3+w*.3104856; b4=.55*b4+w*.5329522; b5=-.7616*b5-w*.016898; d[i]=(b0+b1+b2+b3+b4+b5+b6+w*.5362)*.11; b6=w*.115926; }
+  const s=C.createBufferSource(); s.buffer=b; return s; }
+// М'який звук малювання: рожевий шум без різких верхів, плавні штрихи з паузами між ними
+function drawSoft(t,dur,tool){ const R=rnd(Math.floor(t*100)+11), s=pinkNoise(dur+.3), hp=C.createBiquadFilter(), lp=C.createBiquadFilter(), body=C.createBiquadFilter(), g=C.createGain();
+  hp.type="highpass"; hp.frequency.value=tool==="chalk"?220:320; lp.type="lowpass"; lp.frequency.value={pencil:3400,pen:3000,chalk:2300,felt:2600}[tool]||2700; lp.Q.value=.5;
+  body.type="peaking"; body.frequency.value=tool==="chalk"?900:1300; body.Q.value=.8; body.gain.value=3;
+  const G=g.gain; G.setValueAtTime(0.0001,t); let tt=t+.03;
+  while(tt<t+dur-.12){ const len=.22+.3*R(), pk=(.35+.25*R())*2.6; G.setTargetAtTime(pk,tt,.045); G.setTargetAtTime(pk*(.6+.2*R()),tt+len*.5,.08); G.setTargetAtTime(.02,tt+len,.05); tt+=len+.05+.12*R(); }
+  G.setTargetAtTime(0.0001,Math.min(tt,t+dur),.06);
+  s.connect(hp).connect(body).connect(lp).connect(g).connect(OUT); s.start(t); s.stop(t+dur+.3); }
+function drawScratch(t,dur,tool){ if((S?.mon?.drawSnd||"soft")!=="crisp") return drawSoft(t,dur,tool); const R=rnd(Math.floor(t*100)+7), s=noise(dur+.15), hp=C.createBiquadFilter(), pk=C.createBiquadFilter(), lp=C.createBiquadFilter(), g=C.createGain();
   const f={pencil:5200,pen:4300,chalk:2600,felt:3800}[tool]||3600, q={chalk:.7,pencil:1.4}[tool]||1;
   hp.type="highpass"; hp.frequency.value=tool==="chalk"?900:1800; pk.type="peaking"; pk.frequency.value=f; pk.Q.value=q; pk.gain.value=9; lp.type="lowpass"; lp.frequency.value=tool==="chalk"?6500:9500;
   const G=g.gain; G.setValueAtTime(0.0001,t); let tt=t+.01;
   while(tt<t+dur-.05){ const seg=.07+.16*R(), peak=.45+.55*R(); G.linearRampToValueAtTime(peak,tt+seg*.35); G.linearRampToValueAtTime(peak*(.25+.25*R()),tt+seg); tt+=seg; if(R()<.18){ G.linearRampToValueAtTime(.03,tt+.03); tt+=.04+.05*R(); } }
   G.linearRampToValueAtTime(0.0001,t+dur);
   s.connect(hp).connect(pk).connect(lp).connect(g).connect(OUT); s.start(t); s.stop(t+dur+.15); }
+const DSND={soft:"М'який (маркер по паперу)",crisp:"Чіткий (олівець)",none:"Без звуку"};
 const SFX={
  "Поява плашки":{len:.4,v:[t=>tone(880,t,"sine",.35,.12,440), t=>{tone(660,t,"sine",.28,.09,500);tone(990,t+.07,"sine",.22,.1,700)}, t=>hiss(t,.05,2500,1800,1,.5)]},
  "Маркер по паперу":{len:1.1,v:[t=>scribble(t,.45,11), t=>scribble(t,.9,8), t=>{scribble(t,.25,13);scribble(t+.32,.3,13)}]},
@@ -1215,7 +1227,7 @@ const ANIM_ALL={auto:"Різні по черзі",draw:"Промальовуєт
 const DRAWERS={hand:"Рука з інструментом",tool:"Тільки інструмент",none:"Малюється сам"};
 const SANIM={auto:"Різні по черзі",hand:"Малює рука",tool:"Малює інструмент",self:"Малюється сам",pop:"Просто з'являється",wobble:"Малюється й погойдується",zoom:"Наїзд камери"};
 function drawerOf(i){ const a=S.scenes[i]?.anim; return a==="hand"?"hand":a==="tool"?"tool":a==="self"?"none":(S.mon?.drawer||"hand"); }
-const MUSICS={none:"Без музики",calm:"Спокійна",light:"Легка",dream:"Мрійлива",piano:"Піаніно",lofi:"Лоу-фай",inspire:"Надихаюча",upbeat:"Бадьора",tense:"Напружена",mystery:"Таємнича"};
+const MUSICS={none:"Без музики",mine:"🎵 Своя музика (файл з телефону)",calm:"Спокійна",light:"Легка",dream:"Мрійлива",piano:"Піаніно",lofi:"Лоу-фай",inspire:"Надихаюча",upbeat:"Бадьора",tense:"Напружена",mystery:"Таємнича"};
 const SOUND_LIB=[["Поява плашки|0","Дзвіночок"],["Поява плашки|1","Два дзвіночки"],["Поява плашки|2","Тихий клац"],["Ефекти|0","Бульбашка"],["Ефекти|1","Поп"],["Ефекти|2","Клік"],["Ефекти|3","Монетка"],["Ефекти|4","Свуш"],["Ефекти|5","Марімба"],["Ефекти|6","Кришталь"],["Маркер по паперу|0","Маркер по паперу"],["Маркер по паперу|2","Швидкий маркер"],["Закреслення|0","Закреслення"],["Шелест аркуша|0","Шелест аркуша"],["Шелест аркуша|1","Перегорнути аркуш"],["Перехід кадру|0","Перехід вгору"],["Перехід кадру|1","Перехід вниз"],["Перехід кадру|2","Глухий перехід"],["Акцент на думці|0","Акцент"],["Акцент на думці|1","Акцент м'який"],["Фінал|0","Фінал"],["Фінал|1","Фінал яскравий"]];
 function soundName(v){ if(v==="auto") return "Авто (дзвіночок)"; if(v==="none") return "Без звуку"; const f=SOUND_LIB.find(x=>x[0]===v); return f?f[1]:v; }
 function sfxParse(v){ if(!v||v==="none") return null; const [n,k]=v.split("|"); return SFX[n]?[n,Math.min(+k||0,SFX[n].v.length-1)]:null; }
@@ -1227,7 +1239,13 @@ const PCOLS={red:"Червона",green:"Зелена",yellow:"Жовта",blue:
 function colOf(sc){ return PCOLS[sc?.color]?sc.color:"red"; }
 let PREV=null, PREVTOK=0;
 function stopPrev(){ PREVTOK++; if(PREV){ try{ PREV.stop(); }catch(e){} PREV=null; } document.querySelectorAll(".pplay.on").forEach(b=>{ b.classList.remove("on"); b.textContent="▶"; }); }
-async function musicPreview(kind){ if(kind==="none") return null; const tok=++PREVTOK, sr=44100, len=12, oc=new OfflineAudioContext(1,sr*len,sr), pC=C, pO=OUT;
+let MYMUS=null, MYMUS_NAME="";
+async function loadMyMusic(){ if(MYMUS) return MYMUS; try{ const r=await idb.get("music_user"); if(r?.buf){ MYMUS=await decodeAudioBuf(r.buf.slice(0)); MYMUS_NAME=r.name||"моя музика"; } }catch(e){} return MYMUS; }
+function pickMyMusic(done){ const f=document.createElement("input"); f.type="file"; f.accept="audio/*,.mp3,.m4a,.wav,.aac"; f.onchange=async()=>{ const file=f.files?.[0]; if(!file) return;
+    if(file.size>25*1024*1024){ toast("Файл завеликий — до 25 МБ"); return; }
+    try{ const buf=await file.arrayBuffer(); MYMUS=await decodeAudioBuf(buf.slice(0)); MYMUS_NAME=file.name.replace(/\.[^.]+$/,""); idb.set("music_user",{buf,name:MYMUS_NAME}); MIX=null; done?.(); toast("Музику додано"); }catch(e){ toast("Не вдалося відкрити файл. Спробуй mp3 або m4a."); } }; f.click(); }
+async function musicPreview(kind){ if(kind==="none") return null;
+  if(kind==="mine"){ const b=await loadMyMusic(); if(!b){ return null; } const a=ac(), src=a.createBufferSource(), g=a.createGain(); src.buffer=b; g.gain.value=.9; src.connect(g).connect(a.destination); src.start(0,Math.min(20,b.duration*.25),15); return {src,stop:()=>src.stop()}; } const tok=++PREVTOK, sr=44100, len=12, oc=new OfflineAudioContext(1,sr*len,sr), pC=C, pO=OUT;
   try{ C=oc; OUT=oc.createGain(); OUT.gain.value=.8; OUT.connect(oc.destination); genMusic(kind,len); } finally { C=pC; OUT=pO; }
   const buf=await oc.startRendering(); if(tok!==PREVTOK) return null; const a=ac(), src=a.createBufferSource(), g=a.createGain(); src.buffer=buf; g.gain.value=.9; src.connect(g).connect(a.destination); src.start();
   src.onended=()=>{ if(PREV&&PREV.src===src){ PREV=null; document.querySelectorAll(".pplay.on").forEach(b=>{ b.classList.remove("on"); b.textContent="▶"; }); } };
@@ -1269,9 +1287,9 @@ function voiceInfoText(){ const v=VOICE_INFO; if(!v) return ""; const parts=[`З
 const IMGS={}; let VOICE=null, VOICE_NAME="", PLAY=null, MIX=null, MIXKEY="";
 const PLQ=new Map();
 function monDefaults(){ if(!S.tlPos){ const o=S.tl||"A"; S.tlPos=o==="none"?"none":o==="C"?"top":"bottom"; S.tlPct=o!=="B"; } S.tlPct ??= true; const m=S.mon||{};
-  S.mon={boil:m.boil??true, sfxOn:m.sfxOn??m.sfx??true, sfxVol:m.sfxVol??70, music:m.music??"calm", musicVol:m.musicVol??40, voiceVol:m.voiceVol??100, enhance:m.enhance??true,
+  S.mon={boil:m.boil??true, sfxOn:m.sfxOn??m.sfx??true, sfxVol:m.sfxVol??70, music:m.musicSet?m.music:"none", musicSet:m.musicSet, musicVol:m.musicVol??40, voiceVol:m.voiceVol??100, enhance:m.enhance??true,
     subs:typeof m.subs==="string"?m.subs:(m.subs?"bottom":"none"), subSize:m.subSize??"m", cutPauses:m.cutPauses??true, fitVoice:m.fitVoice??true,
-    font:m.font??"pangolin", anim:m.anim??"auto", drawer:m.drawer??"hand", drawSnd:m.drawSnd??"on", drawVol:m.drawVol??10, sfxPlaque:m.sfxPlaque??"auto", sfxCut:m.sfxCut??"Шелест аркуша|0", sfxEnd:m.sfxEnd??"Фінал|0"}; }
+    font:m.font??"pangolin", anim:m.anim??"auto", drawer:m.drawerSet?m.drawer:"tool", drawerSet:m.drawerSet, drawSnd:(!m.drawSnd||m.drawSnd==="on")?"soft":m.drawSnd, drawVol:m.drawVol??10, sfxPlaque:m.sfxPlaque??"auto", sfxCut:m.sfxCut??"Шелест аркуша|0", sfxEnd:m.sfxEnd??"Фінал|0"}; }
 const wcount=t=>(String(t||"").trim().match(/\S+/g)||[]).length||1;
 function distribute(total){ const W=S.scenes.reduce((a,s)=>a+wcount(s.phrase),0); S.scenes.forEach(s=>{ s.dur=Math.max(.8,+(total*wcount(s.phrase)/W).toFixed(1)); }); persist(); }
 function timings(){ let t=0; return S.scenes.map(s=>{ const d=Math.max(.8,+s.dur||3); const o={s:t,e:t+d}; t+=d; return o; }); }
@@ -1442,12 +1460,13 @@ function voiceChain(oc,src){ let node=src; if(!S.mon.enhance) return node;
   const pr=oc.createBiquadFilter(); pr.type="peaking"; pr.frequency.value=3200; pr.Q.value=1; pr.gain.value=3;
   const cp=oc.createDynamicsCompressor(); cp.threshold.value=-24; cp.ratio.value=4; cp.attack.value=.004; cp.release.value=.25;
   const mk=oc.createGain(); mk.gain.value=1.5; node.connect(hp); hp.connect(lo); lo.connect(pr); pr.connect(cp); cp.connect(mk); return mk; }
-async function buildMix(){ const total=totalDur(), key=JSON.stringify([total,S.mon,ST.tool,VOICE_NAME,S.scenes.map((s,i)=>[s.dur,!!s.plaque,s.color,s.sfx,s.anim,!!IMGS[i]])]);
+async function buildMix(){ const total=totalDur(), key=JSON.stringify([total,S.mon,ST.tool,VOICE_NAME,MYMUS_NAME,S.scenes.map((s,i)=>[s.dur,!!s.plaque,s.color,s.sfx,s.anim,!!IMGS[i]])]);
   if(MIX&&MIXKEY===key) return MIX;
   const sr=48000, oc=new OfflineAudioContext(1,Math.ceil(sr*(total+.2)),sr), pC=C, pO=OUT;
   try{
     if(VOICE){ const s=oc.createBufferSource(); s.buffer=VOICE; const g=oc.createGain(); g.gain.value=S.mon.voiceVol/100; voiceChain(oc,s).connect(g); g.connect(oc.destination); s.start(0); }
-    if(S.mon.music!=="none"&&S.mon.musicVol>0){ const g=oc.createGain(); const v=(S.mon.musicVol/100)*(VOICE?.6:1); g.gain.setValueAtTime(v,0); g.gain.setValueAtTime(v,Math.max(0,total-1.5)); g.gain.linearRampToValueAtTime(0.0001,total); g.connect(oc.destination); C=oc; OUT=g; genMusic(S.mon.music,total); }
+    if(S.mon.music==="mine"&&S.mon.musicVol>0&&await loadMyMusic()){ const g=oc.createGain(), v=(S.mon.musicVol/100)*(VOICE?.45:.9); g.gain.setValueAtTime(0.0001,0); g.gain.linearRampToValueAtTime(v,.6); g.gain.setValueAtTime(v,Math.max(.7,total-1.5)); g.gain.linearRampToValueAtTime(0.0001,total); g.connect(oc.destination); const src=oc.createBufferSource(); src.buffer=MYMUS; src.loop=true; src.connect(g); src.start(0); }
+    else if(S.mon.music!=="none"&&S.mon.music!=="mine"&&S.mon.musicVol>0){ const g=oc.createGain(); const v=(S.mon.musicVol/100)*(VOICE?.6:1); g.gain.setValueAtTime(v,0); g.gain.setValueAtTime(v,Math.max(0,total-1.5)); g.gain.linearRampToValueAtTime(0.0001,total); g.connect(oc.destination); C=oc; OUT=g; genMusic(S.mon.music,total); }
     if(S.mon.sfxOn&&S.mon.sfxVol>0){ const g=oc.createGain(); g.gain.value=(S.mon.sfxVol/100)*.9; g.connect(oc.destination); C=oc; OUT=g; const T=timings();
       S.scenes.forEach((sc,i)=>{ const f=sfxFor(i); if(f) SFX[f[0]].v[Math.min(f[1],SFX[f[0]].v.length-1)](T[i].s+(sc.plaque?.15:0)); });
     }
@@ -1486,9 +1505,9 @@ function stAssemble(el){
       ${slider("voicevol","Гучність голосу",S.mon.voiceVol)}
       <div class="sgrp" style="margin-top:12px"><div class="chips">${chip("mon","cutPauses","Прибрати паузи",S.mon.cutPauses)}${chip("mon","fitVoice",`Підігнати під ${S.dur} с`,S.mon.fitVoice)}${chip("mon","enhance","Покращити голос",S.mon.enhance)}</div><div class="status" id="vfit">${esc(voiceInfoText())}</div></div>
       <h4>Текст для озвучки</h4><div class="prompt" style="font-family:var(--body);font-size:17px;line-height:1.7"><button class="copy" type="button" id="vcopy" style="margin:0 0 10px">Скопіювати</button><div id="voicetext">${esc(S.script||S.scenes.map(s=>s.phrase).join("\n"))}</div></div></div>
-    <div class="epanel" data-panel="music" hidden>${pickRow("Фонова мелодія",MUSICS[S.mon.music]||MUSICS.calm,"music")}
+    <div class="epanel" data-panel="music" hidden><p class="hint" style="display:block;margin:0 0 10px">💡 Найкраще — додати <b>трендовий звук</b> прямо в Instagram чи TikTok під час публікації: так відео ще й частіше показують. Або вибери свою музику з телефону.</p>${pickRow("Фонова мелодія",S.mon.music==="mine"&&MYMUS_NAME?"🎵 "+MYMUS_NAME:(MUSICS[S.mon.music]||MUSICS.none),"music")}
       ${slider("musicvol","Гучність музики",S.mon.musicVol)}</div>
-    <div class="epanel" data-panel="sfx" hidden><div class="sgrp"><div class="chips">${chip("mon","sfxOn","Звуки увімкнені",S.mon.sfxOn)}</div></div>${pickRow("Звук малювання",S.mon.drawSnd==="none"?"Без звуку":"Олівець по паперу","drawSnd")}${slider("drawvol","Гучність малювання",S.mon.drawVol)}${pickRow("Поява плашки",soundName(S.mon.sfxPlaque),"sfxPlaque")}${pickRow("Зміна кадру",soundName(S.mon.sfxCut),"sfxCut")}${pickRow("Фінал",soundName(S.mon.sfxEnd),"sfxEnd")}<div class="gl" style="margin-top:16px">Окремо для сцен</div>${slider("sfxvol","Гучність звуків",S.mon.sfxVol)}<div class="ascenes" id="asfx"></div></div>
+    <div class="epanel" data-panel="sfx" hidden><div class="sgrp"><div class="chips">${chip("mon","sfxOn","Звуки увімкнені",S.mon.sfxOn)}</div></div>${pickRow("Звук малювання",DSND[S.mon.drawSnd]||DSND.soft,"drawSnd")}${slider("drawvol","Гучність малювання",S.mon.drawVol)}${pickRow("Поява плашки",soundName(S.mon.sfxPlaque),"sfxPlaque")}${pickRow("Зміна кадру",soundName(S.mon.sfxCut),"sfxCut")}${pickRow("Фінал",soundName(S.mon.sfxEnd),"sfxEnd")}<div class="gl" style="margin-top:16px">Окремо для сцен</div>${slider("sfxvol","Гучність звуків",S.mon.sfxVol)}<div class="ascenes" id="asfx"></div></div>
   </div>
   <div class="sprev"><canvas id="vprev" role="img" aria-label="Прев'ю ролика"></canvas>
     <div class="vctl"><button class="chip ink" type="button" id="vplay">▶ Дивитись</button><span class="status" id="vtime"></span></div>
@@ -1521,10 +1540,10 @@ function stAssemble(el){
   const group=(attr,apply)=>el.querySelectorAll(`[data-${attr}]`).forEach(b=>b.addEventListener("click",()=>{ apply(b.dataset[attr]); el.querySelectorAll(`[data-${attr}]`).forEach(o=>o.setAttribute("aria-pressed",o===b)); persist(); refresh(); }));
   const setPv=(id,t)=>{ const e=el.querySelector(`[data-pv="${id}"]`); if(e) e.textContent=t; };
   el.querySelectorAll("[data-pick]").forEach(b=>b.addEventListener("click",()=>{ const id=b.dataset.pick;
-    if(id==="music") pickSheet({title:"Фонова мелодія",items:Object.entries(MUSICS),cur:S.mon.music,play:k=>musicPreview(k),onPick:k=>{ S.mon.music=k; setPv(id,MUSICS[k]); persist(); refresh(); }});
-    else if(id==="drawSnd") pickSheet({title:"Звук малювання",items:[["on","Олівець по паперу"],["none","Без звуку"]],cur:S.mon.drawSnd,play:k=>{ if(k==="on"){ ac(); const g=AC.createGain(); g.gain.value=Math.max(.15,S.mon.drawVol/100*1.6); g.connect(AC.destination); const pO=OUT; OUT=g; drawScratch(AC.currentTime+.02,1.5,ST.tool); OUT=pO; } return null; },onPick:k=>{ S.mon.drawSnd=k; setPv(id,k==="none"?"Без звуку":"Олівець по паперу"); persist(); refresh(); }});
+    if(id==="music") pickSheet({title:"Фонова мелодія",items:Object.entries(MUSICS),cur:S.mon.music,play:k=>musicPreview(k),onPick:k=>{ const set=()=>{ S.mon.music=k; S.mon.musicSet=true; setPv(id,k==="mine"&&MYMUS_NAME?"🎵 "+MYMUS_NAME:MUSICS[k]); MIX=null; persist(); refresh(); }; if(k==="mine") pickMyMusic(set); else set(); }});
+    else if(id==="drawSnd") pickSheet({title:"Звук малювання",items:[["soft","М'який (маркер по паперу)"],["crisp","Чіткий (олівець)"],["none","Без звуку"]],cur:S.mon.drawSnd,play:k=>{ if(k!=="none"){ ac(); const g=AC.createGain(); g.gain.value=Math.max(.15,S.mon.drawVol/100*1.6); g.connect(AC.destination); const pO=OUT, pv=S.mon.drawSnd; OUT=g; S.mon.drawSnd=k; drawScratch(AC.currentTime+.02,1.8,ST.tool); S.mon.drawSnd=pv; OUT=pO; } return null; },onPick:k=>{ S.mon.drawSnd=k; setPv(id,DSND[k]); persist(); refresh(); }});
     else if(id==="anim") pickSheet({title:"Як з'являється малюнок",items:Object.entries(ANIM_ALL),cur:S.mon.anim,onPick:k=>{ S.mon.anim=k; setPv(id,ANIM_ALL[k]); persist(); const T=timings(); const j=S.scenes.findIndex((sc,i)=>!sc.ad&&IMGS[i]); show(j>=0?T[j].s+.5:pos); }});
-    else if(id==="drawer") pickSheet({title:"Хто малює",items:Object.entries(DRAWERS),cur:S.mon.drawer,onPick:k=>{ S.mon.drawer=k; setPv(id,DRAWERS[k]); persist(); const T=timings(); const j=S.scenes.findIndex((sc,i)=>!sc.ad&&IMGS[i]&&["draw","wobble"].includes(animOf(i))); show(j>=0?T[j].s+.5:pos); }});
+    else if(id==="drawer") pickSheet({title:"Хто малює",items:Object.entries(DRAWERS),cur:S.mon.drawer,onPick:k=>{ S.mon.drawer=k; S.mon.drawerSet=true; setPv(id,DRAWERS[k]); persist(); const T=timings(); const j=S.scenes.findIndex((sc,i)=>!sc.ad&&IMGS[i]&&["draw","wobble"].includes(animOf(i))); show(j>=0?T[j].s+.5:pos); }});
     else if(id==="tool") pickSheet({title:"Чим малює",items:Object.entries(TOOLS),cur:ST.tool,onPick:k=>{ ST.tool=k; persistStyle(); setPv(id,TOOLS[k]); PLQ.clear(); warmInks(); const T=timings(); const j=S.scenes.findIndex((sc,i)=>!sc.ad&&IMGS[i]&&["draw","wobble"].includes(animOf(i))); show(j>=0?T[j].s+.5:pos); if(k==="chalk"&&!isDark()) toast("Крейда найкраще виглядає на дошці або чорному фоні"); }});
     else if(id==="font") pickSheet({title:"Шрифт",items:Object.entries(FONTS).map(([k,f])=>[k,f.n]),cur:S.mon.font,font:true,onPick:async k=>{ S.mon.font=k; const e=el.querySelector('[data-pv="font"]'); if(e){ e.textContent=FONTS[k].n; e.style.font=vfont(22); } persist(); await fontReady(); PLQ.clear(); show(pos); }});
     else { const titles={sfxPlaque:"Звук появи плашки",sfxCut:"Звук зміни кадру",sfxEnd:"Звук фіналу"}; const items=(id==="sfxPlaque"?[["auto",soundName("auto")]]:[]).concat([["none","Без звуку"]],SOUND_LIB);
