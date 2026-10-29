@@ -1461,12 +1461,12 @@ function warmInks(){ Object.keys(IMGS).forEach((i,n)=>setTimeout(()=>inkOf(+i),n
 function plaqueFor(txt,col){ const key=`${col}|${ST.bg}|${ST.plInk}|${ST.plSize}|${S.mon?.font||""}|${txt}`; if(PLQ.has(key)) return PLQ.get(key);
   const two=txt.includes("/"); const t=txt.split("/").map(s=>s.trim()).join("\n"); const len=Math.max(...t.split("\n").map(s=>s.length));
   const sz=two?"x":len<=12?"s":len<=22?"m":"l"; const c=document.createElement("canvas"); drawPlaqueCanvas(c,PDIM[sz][0],PDIM[sz][1],col,t); PLQ.set(key,c); return c; }
-function drawTimeline(x,prog){ if(S.tlPos==="none") return; const st={top:S.tlPos==="top",pct:S.tlPct!==false,thick:14,head:7,dot:13}; const ly=(st.top?230:1400)+90, ink=isDark()?"#f2f2ec":"#171717";
+function drawTimeline(x,prog){ if(S.tlPos==="none") return; const st={top:S.tlPos==="top",pct:S.tlPct!==false,thick:20,head:10,dot:16}; const ly=(st.top?230:1400)+90, ink=isDark()?"#f2f2ec":"#171717";
   const wy=xx=>1.2*(Math.sin(xx/37+.7)*.6+Math.sin(xx/13+2.1)*.4);
   const line=(a,b,lw)=>{ x.beginPath(); x.moveTo(a,ly+wy(a)); for(let xx=a+6;xx<b;xx+=6) x.lineTo(xx,ly+wy(xx)); x.lineTo(b,ly+wy(b)); x.lineWidth=lw; x.stroke(); };
-  x.save(); x.strokeStyle=ink; x.fillStyle=ink; x.lineCap="round"; x.lineJoin="round"; line(150,930,4);
-  const hx=150+780*clamp(prog); if(hx>151){ line(150,hx,st.thick); x.beginPath(); x.arc(hx,ly+wy(hx),st.head,0,7); x.fill(); }
-  [150,930].forEach(cx=>{ x.beginPath(); x.arc(cx,ly+wy(cx),st.dot,0,7); x.fill(); });
+  x.save(); x.strokeStyle=ink; x.fillStyle=ink; x.lineCap="round"; x.lineJoin="round"; line(248,832,6);
+  const hx=248+584*clamp(prog); if(hx>249){ line(248,hx,st.thick); x.beginPath(); x.arc(hx,ly+wy(hx),st.head,0,7); x.fill(); }
+  [248,832].forEach(cx=>{ x.beginPath(); x.arc(cx,ly+wy(cx),st.dot,0,7); x.fill(); });
   if(st.pct){ x.font=vfont(62); x.textAlign="center"; x.textBaseline="middle"; x.fillText(Math.max(1,Math.min(100,Math.ceil(prog*100)))+"%",540,ly+62); }
   x.restore(); }
 function subChunk(i,lt,d){ const w=String(S.scenes[i].phrase||"").trim().split(/\s+/).filter(Boolean); if(!w.length) return ""; const n=Math.ceil(w.length/6), per=Math.ceil(w.length/n), k=Math.min(n-1,Math.floor(clamp(lt/d,0,.999)*n)); return w.slice(k*per,(k+1)*per).join(" "); }
