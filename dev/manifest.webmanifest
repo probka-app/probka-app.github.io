@@ -1,0 +1,21 @@
+{
+  "name": "YuVi Studio",
+  "short_name": "YuVi",
+  "description": "Інструменти для коротких відео: хуки, сценарії, монтаж.",
+  "lang": "uk",
+  "id": "/",
+  "start_url": "/?src=app",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#050507",
+  "theme_color": "#050507",
+  "icons": [
+    {"src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "/icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ],
+  "shortcuts": [
+    {"name": "Поділитися YuVi", "short_name": "Поділитися", "url": "/?do=share", "icons": [{"src": "/icon-192.png", "sizes": "192x192"}]},
+    {"name": "Зібрати своє відео", "short_name": "Своє відео", "url": "/?do=own", "icons": [{"src": "/icon-192.png", "sizes": "192x192"}]}
+  ]
+}
