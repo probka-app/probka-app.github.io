@@ -497,6 +497,7 @@ body{background:var(--p-bg)}
 .hktip ol{margin:10px 0 0;padding-left:20px;display:grid;gap:7px;font-size:14px;line-height:1.45}.hktip p{font-size:13px;color:var(--p-muted);margin:10px 0 0}
 .hknote{font-size:12.5px;color:var(--p-muted);margin:10px 0 0}
 .hkup{margin-top:16px;padding:14px;border-radius:16px;border:1px dashed var(--p-line,rgba(255,255,255,.18));font-size:14px}.hkup .lnk{margin:6px 0 0;padding:0;text-align:left}
+.fwip{align-self:flex-start;margin-top:6px;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.1);color:#d4d4d8}.fmt.wipc .fn,.fmt.wipc .fs,.fmt.wipc .fprev{opacity:.6}
 .fdev{align-self:flex-start;margin-top:6px;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px;background:color-mix(in srgb,#e8a33d 16%,transparent);color:#b5781c}
 .fmt.dev{border-style:dashed}.fdevnote{margin:14px 0 10px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,#e8a33d 12%,transparent);font-size:13.5px;color:var(--p-text)}
 .psprice .psl{display:block;margin:0 0 1px;text-align:right;font-size:11.5px}
@@ -3791,21 +3792,36 @@ async function admIdeas(box){ let a=[]; try{ a=window.SRV?await SRV.adminIdeas()
     try{ if(window.SRV) await SRV.adminIdeaSave(id,o); else { const L=IDL.get(), x=L.find(z=>z.id===id); Object.assign(x,o,{owner_note:o.note}); IDL.save(L); } toast("Збережено"); ideaSub(); loadSoon(); admIdeas(box); }catch(e){ toast("Не вдалося. Запусти в Supabase крок «Простий інтерфейс і модерація ідей»."); } }); }
 
 /* ===== Що бачать люди (вмикає власник) ===== */
-const UIF_DEF={ui_own:true,ui_voice:true,ui_marker:true,ui_free:true,ui_test:false,ui_library:true,ui_analytics:false,ui_rating:false,ui_how:true,ui_ideas:true,ui_soon:true};
+const UIF_DEF={ui_own:true,ui_voice:true,ui_marker:true,ui_free:true,ui_test:false,ui_library:true,ui_analytics:false,ui_rating:false,ui_how:true,ui_ideas:true,ui_soon:true,ui_wip_own:true,ui_wip_voice:true,ui_wip_pay:true};
 const UIF=Object.assign({},UIF_DEF,(()=>{ try{ return JSON.parse(localStorage.getItem("yvUIF"))||{}; }catch(e){ return {}; } })());
 const uiOwner=()=>!!(window.SRV?SRV.isOwner:true);
 function uiOn(k){ return UIF[k]!==false||uiOwner(); }
 function uiOwnHid(k){ return UIF[k]===false&&uiOwner()?`<em class="uihid">приховано</em>`:""; }
-const UI_NAMES={ui_free:"Безкоштовні інструменти",ui_own:"«Збери своє відео»",ui_voice:"«Озвучка твоїм голосом»",ui_marker:"Готові формати («Рілс маркером»)",ui_test:"Тестовий інструмент (перевірка оплати)",ui_soon:"Картка «Скоро в YuVi»",ui_library:"Меню: Бібліотека відео",ui_analytics:"Меню: Аналітика",ui_rating:"Меню: Рейтинг",ui_how:"Меню: Як це працює",ui_ideas:"Меню й картка: Ідеї та голосування"};
+const UI_NAMES={ui_free:"Безкоштовні інструменти",ui_own:"«Збери своє відео»",ui_voice:"«Озвучка твоїм голосом»",ui_marker:"Готові формати («Рілс маркером»)",ui_test:"Тестовий інструмент (перевірка оплати)",ui_soon:"Картка «Скоро в YuVi»",ui_library:"Меню: Бібліотека відео",ui_analytics:"Меню: Аналітика",ui_rating:"Меню: Рейтинг",ui_how:"Меню: Як це працює",ui_ideas:"Меню й картка: Ідеї та голосування",ui_wip_own:"Позначка «Скоро»: «Збери своє відео» (людям поки не відкривається)",ui_wip_voice:"Позначка «Скоро»: «Озвучка твоїм голосом»",ui_wip_pay:"Оплата: «скоро» замість оплати (поки банк не підключив)"};
 function applyUIF(){ const set=(el,k)=>{ if(!el) return; const on=UIF[k]!==false; el.hidden=!on&&!uiOwner(); el.classList.toggle("uioff",!on&&uiOwner()); };
   set(document.querySelector(".freebox"),"ui_free"); set(document.getElementById("ownfmt"),"ui_own"); set(document.getElementById("voicefmt"),"ui_voice");
   set(document.querySelector('.fmts [data-open="studio"]'),"ui_marker"); set(document.querySelector(".fmtlab"),"ui_marker"); set(document.getElementById("testfmt"),"ui_test");
-  set(document.getElementById("ideacard"),"ui_ideas"); const sc=document.getElementById("sooncard"); if(sc&&!sc.dataset.has) sc.hidden=true; else set(sc,"ui_soon"); }
+  set(document.getElementById("ideacard"),"ui_ideas"); const sc=document.getElementById("sooncard"); if(sc&&!sc.dataset.has) sc.hidden=true; else set(sc,"ui_soon");  applyWip(); }
 window.applyUIF=applyUIF;
 async function loadUIF(){ if(!window.SRV?.uiFlags) { applyUIF(); return; } const f=await SRV.uiFlags(); if(f){ Object.assign(UIF,UIF_DEF,f); try{ localStorage.setItem("yvUIF",JSON.stringify(f)); }catch(e){} } applyUIF(); }
+
+/* ===== «Скоро»: функції, які ще не підключені, людям показуються як «скоро» (власник користується як завжди) ===== */
+const wip=k=>UIF[k]!==false;
+const WIP={ own:{k:"ui_wip_own",id:"ownfmt",t:"«Збери своє відео»"}, voice:{k:"ui_wip_voice",id:"voicefmt",t:"«Озвучка твоїм голосом»"} };
+function applyWip(){ Object.values(WIP).forEach(w=>{ const el=document.getElementById(w.id); if(!el) return; const on=wip(w.k), b=el.querySelector(".fdev,.ffree,.fwip");
+    if(b&&!el.dataset.badge) el.dataset.badge=b.outerHTML;
+    el.classList.toggle("wipc",on&&!uiOwner());
+    const nb=on?`<span class="fwip">${uiOwner()?"Скоро · так бачать люди":"Скоро"}</span>`:el.dataset.badge||"";
+    if(b) b.outerHTML=nb; else if(nb) el.querySelector(".fi")?.insertAdjacentHTML("beforeend",nb); }); }
+function wipSheet(what){ try{ uiSnd("tap"); }catch(e){}
+  const T=what==="pay"?{h:"Оплата відкриється найближчим часом",p:"Ми завершуємо підключення оплати. Щойно все буде готово — тут з'явиться кнопка оплати. Поки що користуйся безкоштовними інструментами."}
+    :{h:`${WIP[what].t} — скоро`,p:"Ми завершуємо налаштування цієї функції, вона відкриється найближчим часом. Поки що можна користуватися безкоштовними інструментами: генератор хуків, ідеї для відео, перевірка хука, підпис і хештеги."};
+  openSheet(`<h3>${T.h}</h3><p class="hint" style="display:block">${T.p}</p><button class="big" type="button" id="wipok">Зрозуміло</button>`,"plat"); BS.querySelector("#wipok").onclick=closeSheet; }
+Object.entries(WIP).forEach(([n,w])=>document.getElementById(w.id)?.addEventListener("click",e=>{ if(wip(w.k)&&!uiOwner()){ e.stopImmediatePropagation(); e.preventDefault(); wipSheet(n); } },true));
+if(window.SRV?.pay){ const _pay=SRV.pay; SRV.pay=function(...a){ if(wip("ui_wip_pay")&&!uiOwner()) return wipSheet("pay"); return _pay.apply(this,a); }; }
 async function openUIFlags(){ openSheet(`<div class="pshead"><h3>Що бачать люди</h3></div><p class="hint" style="display:block">Вимкнене люди не бачать. Ти бачиш усе, приховане — з позначкою «приховано». Починай з мінімуму, нові функції вмикай як «вихід новинки».</p>
     <div class="uifl">${Object.keys(UI_NAMES).map(k=>`<label class="uift"><span>${UI_NAMES[k]}</span><input type="checkbox" data-uif="${k}" ${UIF[k]!==false?"checked":""}></label>`).join("")}</div>`,"plat");
-  BS.querySelectorAll("[data-uif]").forEach(c=>c.onchange=async()=>{ const k=c.dataset.uif; try{ await SRV.setFlag(k,c.checked); UIF[k]=c.checked; try{ localStorage.setItem("yvUIF",JSON.stringify(UIF)); }catch(e){} applyUIF(); toast(c.checked?"Показано людям":"Приховано від людей"); }catch(x){ c.checked=!c.checked; toast("Не вдалося. Запусти в Supabase крок «Простий інтерфейс і модерація ідей»."); } }); }
+  BS.querySelectorAll("[data-uif]").forEach(c=>c.onchange=async()=>{ const k=c.dataset.uif; try{ await SRV.setFlag(k,c.checked); UIF[k]=c.checked; try{ localStorage.setItem("yvUIF",JSON.stringify(UIF)); }catch(e){} applyUIF(); toast(k.startsWith("ui_wip_")?(c.checked?"Людям показано «Скоро»":"Відкрито для людей"):(c.checked?"Показано людям":"Приховано від людей")); }catch(x){ c.checked=!c.checked; toast("Не вдалося. Запусти в Supabase крок «Простий інтерфейс і модерація ідей»."); } }); }
 
 /* ===== «Скоро в YuVi» ===== */
 async function loadSoon(){ const c=document.getElementById("sooncard"); if(!c) return; let L=[]; try{ L=window.SRV?.soon?await SRV.soon():[]; }catch(e){}
