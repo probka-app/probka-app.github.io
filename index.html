@@ -196,7 +196,7 @@ input[type=range]{width:100%;max-width:270px;accent-color:#171717;margin-top:8px
  .vside{display:grid;gap:5px;align-content:center;justify-items:center}.vsb{width:62px;display:grid;gap:1px;padding:5px 2px;border:1px solid rgba(255,255,255,.14);border-radius:11px;background:rgba(255,255,255,.06);color:var(--p-text,#f5f5f7);font:600 9.5px/1.15 var(--pfont,system-ui);letter-spacing:-.2px;cursor:pointer;min-width:0;overflow:hidden;white-space:nowrap}
  .vsb b{font-weight:700;overflow:hidden;text-overflow:ellipsis}.vsb i{font-style:normal;font-weight:500;font-size:9px;color:var(--p-muted,#a1a1aa);overflow:hidden;text-overflow:ellipsis}.vsb i:empty{display:none}
  .vsb:active{transform:scale(.96)}.dbar{display:none}
-@media (max-width:620px){.reader.dash .asm>div:first-child{display:none}.reader.dash .vjump{display:none!important}.reader.dash .asm{margin-bottom:0}}
+@media (max-width:620px){.reader.dash .vexprow{display:none!important}.reader.dash .asm>div:first-child{display:none}.reader.dash .vjump{display:none!important}.reader.dash .asm{margin-bottom:0}}
 .dpop{position:absolute;left:8px;right:8px;z-index:31;max-height:38vh;display:flex;flex-direction:column;border-radius:20px;border:1px solid rgba(255,255,255,.16);background:rgba(22,22,26,.94);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 -14px 40px -12px rgba(0,0,0,.7);animation:dpin .25s cubic-bezier(.3,.9,.3,1)}
 @keyframes dpin{from{transform:translateY(30px);opacity:0}}
 .dph{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 4px 16px}.dph b{font:700 15px var(--pfont,system-ui);color:#f5f5f7}
@@ -1636,7 +1636,7 @@ function stAssemble(el){ const ER=document.getElementById("reader")||el;
     <div class="vbelow"><div class="vctl"><button class="chip ink" type="button" id="vplay">▶ Дивитись</button><span class="status" id="vtime"></span></div>
     <input type="range" id="vseek" min="0" max="1000" value="0" aria-label="Перемотка"></div></div>
     <button class="vsave" type="button" id="vsave">Зберегти відео</button></div></div>
-  <div class="row" style="margin-top:22px">${DL("Зберегти відео","vexp")}</div><div class="status" id="vst"></div>`;
+  <div class="row vexprow" style="margin-top:22px">${DL("Зберегти відео","vexp")}</div><div class="status" id="vst"></div>`;
   const cv=ER.querySelector("#vprev"); cv.width=540; cv.height=960; const x=cv.getContext("2d");
   const seek=ER.querySelector("#vseek"), vt=ER.querySelector("#vtime"), list=ER.querySelector("#ascenes"), sfxList=ER.querySelector("#asfx"), playB=ER.querySelector("#vplay");
   let pos=0;
