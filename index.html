@@ -196,6 +196,14 @@ input[type=range]{width:100%;max-width:270px;accent-color:#171717;margin-top:8px
  .vside{display:grid;gap:5px;align-content:center;justify-items:center}.vsb{width:62px;display:grid;gap:1px;padding:5px 2px;border:1px solid rgba(255,255,255,.14);border-radius:11px;background:rgba(255,255,255,.06);color:var(--p-text,#f5f5f7);font:600 9.5px/1.15 var(--pfont,system-ui);letter-spacing:-.2px;cursor:pointer;min-width:0;overflow:hidden;white-space:nowrap}
  .vsb b{font-weight:700;overflow:hidden;text-overflow:ellipsis}.vsb i{font-style:normal;font-weight:500;font-size:9px;color:var(--p-muted,#a1a1aa);overflow:hidden;text-overflow:ellipsis}.vsb i:empty{display:none}
  .vsb:active{transform:scale(.96)}.dbar{display:none}
+.dpop{position:absolute;left:8px;right:8px;z-index:31;max-height:38vh;display:flex;flex-direction:column;border-radius:20px;border:1px solid rgba(255,255,255,.16);background:rgba(22,22,26,.94);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 -14px 40px -12px rgba(0,0,0,.7);animation:dpin .25s cubic-bezier(.3,.9,.3,1)}
+@keyframes dpin{from{transform:translateY(30px);opacity:0}}
+.dph{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 4px 16px}.dph b{font:700 15px var(--pfont,system-ui);color:#f5f5f7}
+.dpx{width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#f5f5f7;display:grid;place-items:center;cursor:pointer}
+.dpb{overflow-y:auto;padding:4px 14px 14px;-webkit-overflow-scrolling:touch}.dpb .sgrp{margin:0 0 8px}.dpb input[type=range]{width:100%}
+.dbar button.on{background:rgba(255,255,255,.92)!important;color:#0b0b0d!important}
+.reader.popon .vjump{display:none}
+.reader.popon .vwrap canvas{margin:0 auto;transition:width .25s}
 @media (max-width:620px){
  .reader .dbar{display:flex;flex-direction:column;gap:clamp(4px,.8vh,8px);position:absolute;top:var(--dbt,160px);z-index:29;width:clamp(54px,15vw,66px)}
  .dbar.l{left:max(6px,env(safe-area-inset-left,0px))}.dbar.r{right:max(6px,env(safe-area-inset-right,0px))}
@@ -1183,7 +1191,7 @@ function inkStroke(x,pts,w,seed){ const R=rnd(seed), P=dens(pts,1.5), col=inkCol
   else if(ST.tool==="pencil"){ for(let k=0;k<3;k++) path(w*.4,Math.max(.8,w*.38),.38); }
   else { x.globalAlpha=.55; for(const [px,py] of P) for(let k=0;k<3;k++){ const s=w*(.3+R()*.5); x.fillRect(px+(R()-.5)*w,py+(R()-.5)*w,s,s); } }
   x.restore(); }
-function paintBg(x,w,h,step,oy=0){ const b=BGS[ST.bg]; x.fillStyle=b.c; x.fillRect(0,0,w,h); if(hasGrid()){ x.save(); x.strokeStyle=b.grid||(b.dark?"rgba(255,255,255,.16)":"#cfdcec"); x.lineWidth=Math.max(.5,step/54); x.beginPath();
+function paintBg(x,w,h,step,oy=0){ step*=(ST.gridSc||100)/100; const b=BGS[ST.bg]; x.fillStyle=b.c; x.fillRect(0,0,w,h); if(hasGrid()){ x.save(); x.strokeStyle=b.grid||(b.dark?"rgba(255,255,255,.16)":"#cfdcec"); x.lineWidth=Math.max(.5,step/54); x.beginPath();
   if(ST.gridWave){ const A=step*.16, L=step*3.2, d=Math.max(2,step/9);   // хвилясті клітинки
     for(let gx=0;gx<=w+step;gx+=step){ for(let y=0;y<=h+d;y+=d){ const xx=gx+A*Math.sin((y+oy)/L*6.283+gx*.013); y?x.lineTo(xx,y):x.moveTo(xx,y); } }
     for(let gy=((-oy)%step+step)%step;gy<=h+step;gy+=step){ for(let xx=0;xx<=w+d;xx+=d){ const yy=gy+A*Math.sin(xx/L*6.283+(gy+oy)*.013); xx?x.lineTo(xx,yy):x.moveTo(xx,yy); } } }
@@ -1586,7 +1594,7 @@ const DASHGO={ scenes:["Сцени","scenes",null], bg:["Фон","look",'[data-s
   font:["Шрифт","look",'[data-pick="font"]'], plInk:["Плашка","look",'[data-sk="plInk"]'], plSize:["Текст","look",'[data-sk="plSize"]'], moves:["Рух","look",'[data-mon="parts"]'],
   tl:["Таймлайн","tl",null], subs:["Субтитри","subs",null], voice:["Голос","voice",null], music:["Музика","music",'[data-pick="music"]'], drawSnd:["Звук ліній","sfx",'[data-pick="drawSnd"]'], sfx:["Звуки","sfx",null] };
 const DASH_L=["bg","grid","tool","thick","font","plInk","plSize","moves"], DASH_R=["tl","subs","voice","music","drawSnd","sfx"];
-function stAssemble(el){
+function stAssemble(el){ const ER=document.getElementById("reader")||el;
   if(S.format==="film"){ el.innerHTML+=`<p>Автоматичне збирання з власних кадрів з'явиться пізніше. Поки змонтуй ролик у CapCut за списком кадрів або віддай файли Claude (розділ «Монтаж з Claude»).</p>`; return; }
   if(!S.scenes.length){ el.innerHTML+=`<p class="status">Сцен ще немає. Повернись на крок «Що малювати» і розбий сценарій.</p>`; return; }
   monDefaults(); if(VOICE_RAW&&VOICE_INFO&&VOICE_INFO.target!==S.dur){ processVoice(); distribute(VOICE.duration); } if(S.scenes.some(s=>!s.dur)) distribute(VOICE?VOICE.duration:S.dur);
@@ -1597,7 +1605,7 @@ function stAssemble(el){
     <div class="epanel" data-panel="scenes">
       <div class="row" style="margin-top:0"><label class="chip" for="imgsf">Завантажити картинки</label><input type="file" id="imgsf" accept="image/*" multiple class="sr"><button class="chip" type="button" data-redist="1">Розподілити час за словами</button></div>
       <div class="ascenes" id="ascenes"></div></div>
-    <div class="epanel" data-panel="look" hidden>${optRow("bg",Object.fromEntries(Object.entries(BGS).filter(([k])=>k!=="grid")),"Фон")}<div class="sgrp"><div class="gl">Клітинки</div><div class="chips"><button class="chip" type="button" data-grid="0" aria-pressed="${!hasGrid()}">Без клітинок</button><button class="chip" type="button" data-grid="1" aria-pressed="${hasGrid()&&!ST.gridWave}">Рівні клітинки</button><button class="chip" type="button" data-grid="2" aria-pressed="${hasGrid()&&!!ST.gridWave}">Хвилясті клітинки</button></div></div>${optRow("tool",TOOLS,"Чим малює")}${optRow("thick",THICK,"Товщина ліній")}${optRow("plInk",PLINK,"Текст і рамка плашки")}${optRow("plSize",PLSIZE,"Розмір тексту на плашці")}${pickRow("Шрифт на плашках і субтитрах",curFont().n,"font",`font:${vfont(22)}`)}
+    <div class="epanel" data-panel="look" hidden>${optRow("bg",Object.fromEntries(Object.entries(BGS).filter(([k])=>k!=="grid")),"Фон")}<div class="sgrp"><div class="gl">Клітинки</div><div class="chips"><button class="chip" type="button" data-grid="0" aria-pressed="${!hasGrid()}">Без клітинок</button><button class="chip" type="button" data-grid="1" aria-pressed="${hasGrid()&&!ST.gridWave}">Рівні клітинки</button><button class="chip" type="button" data-grid="2" aria-pressed="${hasGrid()&&!!ST.gridWave}">Хвилясті клітинки</button></div><label class="l2" for="gridsc">Розмір клітинок <span class="status" id="gridsc-v">${ST.gridSc||100}%</span></label><input type="range" id="gridsc" min="50" max="220" step="5" value="${ST.gridSc||100}"></div>${optRow("tool",TOOLS,"Чим малює")}${optRow("thick",THICK,"Товщина ліній")}${optRow("plInk",PLINK,"Текст і рамка плашки")}${optRow("plSize",PLSIZE,"Розмір тексту на плашці")}${pickRow("Шрифт на плашках і субтитрах",curFont().n,"font",`font:${vfont(22)}`)}
       <div class="sgrp"><div class="gl">Анімація</div><div class="chips">${chip("mon","boil","Живі лінії",S.mon.boil)}${chip("mon","parts","Рухомі елементи",S.mon.parts!==false)}</div></div></div>
     <div class="epanel" data-panel="tl" hidden><div class="sgrp"><div class="gl">Де</div><div class="chips">${chip("tlpos","bottom","Внизу",S.tlPos==="bottom")}${chip("tlpos","top","Вгорі",S.tlPos==="top")}${chip("tlpos","none","Без таймлайну",S.tlPos==="none")}</div></div><div class="sgrp"><div class="gl">Відсотки</div><div class="chips">${chip("tlpct","1","З відсотками",S.tlPct!==false)}${chip("tlpct","0","Без відсотків",S.tlPct===false)}</div></div></div>
     <div class="epanel" data-panel="subs" hidden><div class="sgrp"><div class="gl">Де показувати</div><div class="chips">${Object.entries(SUBPOS).map(([k,v])=>chip("subpos",k,v,S.mon.subs===k)).join("")}</div></div>
@@ -1620,8 +1628,8 @@ function stAssemble(el){
     <input type="range" id="vseek" min="0" max="1000" value="0" aria-label="Перемотка"></div></div>
     <button class="vsave" type="button" id="vsave">Зберегти відео</button></div></div>
   <div class="row" style="margin-top:22px">${DL("Зберегти відео","vexp")}</div><div class="status" id="vst"></div>`;
-  const cv=el.querySelector("#vprev"); cv.width=540; cv.height=960; const x=cv.getContext("2d");
-  const seek=el.querySelector("#vseek"), vt=el.querySelector("#vtime"), list=el.querySelector("#ascenes"), sfxList=el.querySelector("#asfx"), playB=el.querySelector("#vplay");
+  const cv=ER.querySelector("#vprev"); cv.width=540; cv.height=960; const x=cv.getContext("2d");
+  const seek=ER.querySelector("#vseek"), vt=ER.querySelector("#vtime"), list=ER.querySelector("#ascenes"), sfxList=ER.querySelector("#asfx"), playB=ER.querySelector("#vplay");
   let pos=0;
   const fmt=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,"0")}`;
   const show=t=>{ pos=t; drawFrame(x,t,.5); if(!WL.unlocked?.marker) drawPreviewMark(x,t); drawUIOverlay(x,UIOV); const tot=totalDur(); vt.textContent=`${fmt(t)} / ${fmt(tot)}`; seek.value=tot?Math.round(t/tot*1000):0; };
@@ -1641,31 +1649,52 @@ function stAssemble(el){
       pickSheet({title:`Звук сцени ${i+1}`,items:[["auto","Як загалом"],["none","Без звуку"],...SOUND_LIB],cur:S.scenes[i].sfx||"auto",play:k=>{ const f=k==="auto"?(()=>{ const o=S.scenes[i].sfx; S.scenes[i].sfx="auto"; const r=sfxFor(i); S.scenes[i].sfx=o; return r; })():sfxParse(k); if(f) playSfx(f[0],f[1]); return null; },
         onPick:k=>{ S.scenes[i].sfx=k; persist(); n.textContent=k==="auto"?"Як загалом":soundName(k); refresh(); }}); }));
     sfxList.querySelectorAll("[data-try]").forEach(b=>b.addEventListener("click",()=>{ const f=sfxFor(+b.dataset.try); if(f) playSfx(f[0],f[1],b); else toast("У цієї сцени без звуку"); })); };
-  onMediaReady=()=>{ rows(); show(pos); if(VOICE){ vi.textContent=`${VOICE_NAME} · ${VOICE.duration.toFixed(1)} с`; vdel.hidden=false; el.querySelector("#vfit").textContent=voiceInfoText(); } }; ensureMedia();
+  onMediaReady=()=>{ rows(); show(pos); if(VOICE){ vi.textContent=`${VOICE_NAME} · ${VOICE.duration.toFixed(1)} с`; vdel.hidden=false; ER.querySelector("#vfit").textContent=voiceInfoText(); } }; ensureMedia();
   rows(); show(Math.min(1.2,totalDur())); fontReady().then(()=>{ PLQ.clear(); show(pos); });
-  const RB=document.getElementById("rbody"), tabsEl=el.querySelector(".etabs");
+  const RB=document.getElementById("rbody"), tabsEl=ER.querySelector(".etabs");
   const scrollToEl=(node,off=10)=>{ if(!RB||!node) return; RB.scrollTo({top:RB.scrollTop+node.getBoundingClientRect().top-RB.getBoundingClientRect().top-off,behavior:"smooth"}); };
-  el.querySelectorAll("[data-etab]").forEach(b=>b.addEventListener("click",()=>{ el.querySelectorAll("[data-etab]").forEach(o=>o.setAttribute("aria-pressed",o===b)); el.querySelectorAll(".epanel").forEach(p=>p.hidden=p.dataset.panel!==b.dataset.etab); setTimeout(()=>scrollToEl(tabsEl,62),30); }));
+  ER.querySelectorAll("[data-etab]").forEach(b=>b.addEventListener("click",()=>{ ER.querySelectorAll("[data-etab]").forEach(o=>o.setAttribute("aria-pressed",o===b)); ER.querySelectorAll(".epanel").forEach(p=>p.hidden=p.dataset.panel!==b.dataset.etab); setTimeout(()=>scrollToEl(tabsEl,62),30); }));
   // зберегти — одразу під переглядом
-  el.querySelector("#vsave")?.addEventListener("click",()=>{ const b=el.querySelector("[data-dl=vexp]"); if(b) b.click(); });
+  ER.querySelector("#vsave")?.addEventListener("click",()=>{ const b=ER.querySelector("[data-dl=vexp]"); if(b) b.click(); });
   // натиснув на елемент у відео — переходиш до його налаштувань
-  const openTab=k=>{ const b=el.querySelector(`[data-etab="${k}"]`); el.querySelectorAll("[data-etab]").forEach(o=>o.setAttribute("aria-pressed",o===b)); el.querySelectorAll(".epanel").forEach(p=>p.hidden=p.dataset.panel!==k); };
-  el.querySelector('[data-etab="scenes"]')?.remove(); openTab("look");   // сцени (картинки, тривалість) — на попередньому кроці; тут усе автоматично
+  const openTab=k=>{ const b=ER.querySelector(`[data-etab="${k}"]`); ER.querySelectorAll("[data-etab]").forEach(o=>o.setAttribute("aria-pressed",o===b)); ER.querySelectorAll(".epanel").forEach(p=>p.hidden=p.dataset.panel!==k); };
+  ER.querySelector('[data-etab="scenes"]')?.remove(); openTab("look");   // сцени (картинки, тривалість) — на попередньому кроці; тут усе автоматично
   const flash=n=>{ if(!n) return; n.classList.remove("eflash"); void n.offsetWidth; n.classList.add("eflash"); };
   cv.style.cursor="pointer";
   cv.addEventListener("click",e=>{ const r=cv.getBoundingClientRect(), y=(e.clientY-r.top)/r.height*1920, T=timings(); let i=T.findIndex(o=>pos<o.e); if(i<0) i=T.length-1; const sc=S.scenes[i]||{};
     const top=S.tlPos==="top", tlY=(top?230:1400)+90, plY=top?560:330, cy=top?1060:930, tlTop=S.tlPos==="top", noTl=S.tlPos==="none", subY={top:tlTop?470:190,mid:1000,bottom:(tlTop||noTl)?1440:1280}[S.mon.subs];
     let k="look", node=null;
     if(S.tlPos!=="none"&&Math.abs(y-tlY)<95){ k="tl"; }
-    else if(sc.plaque&&Math.abs(y-plY)<120){ k="look"; node=el.querySelector('[data-sk="plInk"]')?.closest(".sgrp"); }
+    else if(sc.plaque&&Math.abs(y-plY)<120){ k="look"; node=ER.querySelector('[data-sk="plInk"]')?.closest(".sgrp"); }
     else if(S.mon.subs!=="none"&&subY&&Math.abs(y-subY)<90){ k="subs"; }
-    else if(Math.abs(y-cy)<460){ k="look"; node=el.querySelector('[data-sk="tool"]')?.closest(".sgrp"); }
-    openTab(k); if(k==="scenes") node=list.children[i]; const generic=!node; if(!node) node=el.querySelector(`.epanel[data-panel="${k}"] .sgrp`)||el.querySelector(`.epanel[data-panel="${k}"]`);
+    else if(Math.abs(y-cy)<460){ k="look"; node=ER.querySelector('[data-sk="tool"]')?.closest(".sgrp"); }
+    openTab(k); if(k==="scenes") node=list.children[i]; const generic=!node; if(!node) node=ER.querySelector(`.epanel[data-panel="${k}"] .sgrp`)||ER.querySelector(`.epanel[data-panel="${k}"]`);
     setTimeout(()=>{ scrollToEl(generic?tabsEl:node,generic?62:72); flash(node); },30); });
   // «Переглянути відео» / «Повернутись до редагування»: прокрутка між переглядом і налаштуваннями
-  const dashGo=k=>{ const [,tab,sel]=DASHGO[k]; try{ uiSnd("tap"); }catch(e){} openTab(tab); const panel=el.querySelector(`.epanel[data-panel="${tab}"]`);
+  ER.querySelector("#gridsc")?.addEventListener("input",e=>{ ST.gridSc=+e.target.value; ER.querySelector("#gridsc-v").textContent=ST.gridSc+"%"; if(!hasGrid()){ ST.grid=true; ER.querySelectorAll("[data-grid]").forEach(o=>o.setAttribute("aria-pressed",o.dataset.grid==="1")); } persistStyle(); if(!PLAY) show(pos); });
+
+  const dashGoOld=k=>{ const [,tab,sel]=DASHGO[k]; try{ uiSnd("tap"); }catch(e){} openTab(tab); const panel=ER.querySelector(`.epanel[data-panel="${tab}"]`);
     let node=sel?panel?.querySelector(sel)?.closest(".sgrp,.pick"):null; const gen=!node; if(!node) node=panel;
     setTimeout(()=>{ scrollToEl(gen?tabsEl:node,gen?62:80); flash(node); },30); };
+  // Панель знизу: налаштування відкривається поруч із відео, відео не зникає з екрана й одразу показує зміни
+  const WHOLE={tl:1,subs:1,voice:1,sfx:1,music:1};
+  let POP=null;
+  const popClose=()=>{ if(!POP) return; POP.moved.forEach(([n,ph])=>{ ph.replaceWith(n); }); POP.box.remove(); document.querySelectorAll(".dbar [data-dgo]").forEach(b=>b.classList.remove("on")); cv.style.width=""; document.getElementById("reader").classList.remove("popon"); POP=null; };
+  const dashGo=k=>{ try{ uiSnd("tap"); }catch(e){} const was=POP?.k; popClose(); if(was===k) return;
+    const [title,tab,sel]=DASHGO[k], panel=ER.querySelector(`.epanel[data-panel="${tab}"]`); if(!panel) return;
+    let nodes=[]; if(WHOLE[k]||!sel) nodes=[...panel.children]; else { const n=panel.querySelector(sel)?.closest(".sgrp,.pick"); if(n) nodes=[n]; if(k==="drawSnd"){ const sl=panel.querySelector("#drawvol"); if(sl) nodes.push(sl.previousElementSibling,sl); } }
+    if(!nodes.length) return dashGoOld(k);
+    const R=document.getElementById("reader"), RB=document.getElementById("rbody"), box=document.createElement("div"); box.className="dpop";
+    box.innerHTML=`<div class="dph"><b>${title}</b><button type="button" class="dpx" aria-label="Згорнути"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><div class="dpb"></div>`;
+    const body=box.querySelector(".dpb"), moved=[]; nodes.forEach(n=>{ const ph=document.createComment("p"); n.replaceWith(ph); body.appendChild(n); moved.push([n,ph]); });
+    box.querySelectorAll(".gl").forEach(g=>{ if(g.textContent.trim()===title||nodes.length===1) g.style.display="none"; });
+    box.querySelector(".dpx").onclick=popClose; R.appendChild(box); R.classList.add("popon"); POP={k,box,moved};
+    document.querySelector(`.dbar [data-dgo="${k}"]`)?.classList.add("on");
+    const fbot=R.clientHeight-(RB.offsetTop+RB.clientHeight); box.style.bottom=(fbot+6)+"px";
+    requestAnimationFrame(()=>{ const ph=box.offsetHeight, avail=RB.clientHeight-ph-24; const w=Math.max(120,Math.min(300,avail*9/16)); cv.style.width=w+"px";
+      requestAnimationFrame(()=>{ RB.scrollTo({top:RB.scrollTop+cv.getBoundingClientRect().top-RB.getBoundingClientRect().top-8,behavior:"smooth"});
+        setTimeout(()=>{ if(!box.isConnected) return; const gap=box.getBoundingClientRect().top-cv.getBoundingClientRect().top-12; if(gap>100) cv.style.width=Math.min(300,gap*9/16)+"px"; },480); }); });
+    box.classList.add("in"); };
   { const R=document.getElementById("reader"); R.querySelectorAll(".vjump").forEach(n=>n.remove()); let editPos=null;
     const up=document.createElement("button"); up.type="button"; up.className="vjump up"; up.textContent="▲ Переглянути відео";
     const dn=document.createElement("button"); dn.type="button"; dn.className="vjump dn"; dn.textContent="▼ Повернутись до редагування";
@@ -1673,36 +1702,36 @@ function stAssemble(el){
     const mk=(keys,side,extra="")=>{ const d=document.createElement("div"); d.className="dbar "+side; d.innerHTML=keys.map(k=>`<button type="button" data-dgo="${k}">${DASHGO[k][0]}</button>`).join("")+extra; d.querySelectorAll("[data-dgo]").forEach(b=>b.onclick=()=>dashGo(b.dataset.dgo)); return d; };
     const bl=mk(DASH_L,"l"), br=mk(DASH_R,"r",`<button type="button" class="vuit" id="vuit" aria-pressed="${UIOV!=="none"}" aria-label="Показати інтерфейс соцмереж поверх відео" title="Інтерфейс соцмереж"><svg viewBox="0 0 66 20" width="40" height="12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="16" height="16" rx="5"/><circle cx="10" cy="10" r="3.6"/><rect x="25" y="4" width="17" height="12" rx="4"/><path d="M31.5 7.2v5.6l4.6-2.8z" fill="currentColor" stroke="none"/><path d="M55 3v10.5a3 3 0 1 1-3-3M55 3c1 2.6 3 4 5.5 4" stroke-linecap="round"/></svg></button>`);
     br.querySelector("#vuit").onclick=e=>{ UIOV=UIOV==="none"?"ui":"none"; try{ localStorage.setItem("yvUIOV",UIOV); }catch(x){} e.currentTarget.setAttribute("aria-pressed",UIOV!=="none"); if(!PLAY) show(pos); };
-    R.append(up,dn,bl,br); R.classList.add("dash"); const pv=el.querySelector(".sprev");
-    const place=()=>{ if(!cv.isConnected){ up.remove(); dn.remove(); bl.remove(); br.remove(); R.classList.remove("dash"); RB?.removeEventListener("scroll",upd); clearInterval(gc); return; } up.style.top=(RB.offsetTop+10)+"px"; R.style.setProperty("--dbt",(RB.offsetTop+Math.max(70,RB.clientHeight*.09))+"px"); dn.style.bottom=(R.clientHeight-RB.offsetTop-RB.clientHeight+14)+"px"; };
+    R.append(up,dn,bl,br); R.classList.add("dash"); const pv=ER.querySelector(".sprev");
+    const place=()=>{ if(!cv.isConnected){ popClose(); up.remove(); dn.remove(); bl.remove(); br.remove(); R.classList.remove("dash"); RB?.removeEventListener("scroll",upd); clearInterval(gc); return; } up.style.top=(RB.offsetTop+10)+"px"; R.style.setProperty("--dbt",(RB.offsetTop+Math.max(70,RB.clientHeight*.09))+"px"); dn.style.bottom=(R.clientHeight-RB.offsetTop-RB.clientHeight+14)+"px"; };
     const gc=setInterval(()=>{ if(!cv.isConnected) place(); },800);
     const upd=()=>{ place(); if(!cv.isConnected) return; const r=cv.getBoundingClientRect(), rb=RB.getBoundingClientRect(), vis=r.bottom>rb.top+r.height*.5&&r.top<rb.bottom-120;
       up.classList.toggle("on",!vis); dn.classList.toggle("on",vis&&editPos!=null&&Math.abs(RB.scrollTop-editPos)>60); };
     up.onclick=()=>{ editPos=RB.scrollTop; scrollToEl(pv,8); };
     dn.onclick=()=>{ if(editPos!=null) RB.scrollTo({top:editPos,behavior:"smooth"}); };
     RB?.addEventListener("scroll",upd,{passive:true}); setTimeout(upd,60); }
-  const group=(attr,apply)=>el.querySelectorAll(`[data-${attr}]`).forEach(b=>b.addEventListener("click",()=>{ apply(b.dataset[attr]); el.querySelectorAll(`[data-${attr}]`).forEach(o=>o.setAttribute("aria-pressed",o===b)); persist(); refresh(); }));
-  const setPv=(id,t)=>{ const e=el.querySelector(`[data-pv="${id}"]`); if(e) e.textContent=t; };
-  el.querySelectorAll("[data-pick]").forEach(b=>b.addEventListener("click",()=>{ const id=b.dataset.pick;
+  const group=(attr,apply)=>ER.querySelectorAll(`[data-${attr}]`).forEach(b=>b.addEventListener("click",()=>{ apply(b.dataset[attr]); ER.querySelectorAll(`[data-${attr}]`).forEach(o=>o.setAttribute("aria-pressed",o===b)); persist(); refresh(); }));
+  const setPv=(id,t)=>{ const e=ER.querySelector(`[data-pv="${id}"]`); if(e) e.textContent=t; };
+  ER.querySelectorAll("[data-pick]").forEach(b=>b.addEventListener("click",()=>{ const id=b.dataset.pick;
     if(id==="music") pickSheet({title:"Фонова мелодія",items:Object.entries(MUSICS),cur:S.mon.music,play:k=>musicPreview(k),onPick:k=>{ const set=()=>{ S.mon.music=k; S.mon.musicSet=true; setPv(id,k==="mine"&&MYMUS_NAME?"🎵 "+MYMUS_NAME:MUSICS[k]); MIX=null; persist(); refresh(); }; if(k==="mine") pickMyMusic(set); else set(); }});
     else if(id==="drawSnd") pickSheet({title:"Звук малювання",items:[["soft","М'який (маркер по паперу)"],["crisp","Чіткий (олівець)"],["none","Без звуку"]],cur:S.mon.drawSnd,play:k=>{ if(k!=="none"){ ac(); const g=AC.createGain(); g.gain.value=Math.max(.15,S.mon.drawVol/100*1.6); g.connect(AC.destination); const pO=OUT, pv=S.mon.drawSnd; OUT=g; S.mon.drawSnd=k; drawScratch(AC.currentTime+.02,1.8,ST.tool); S.mon.drawSnd=pv; OUT=pO; } return null; },onPick:k=>{ S.mon.drawSnd=k; setPv(id,DSND[k]); persist(); refresh(); }});
     else if(id==="anim") pickSheet({title:"Як з'являється малюнок",items:Object.entries(ANIM_ALL),cur:S.mon.anim,onPick:k=>{ S.mon.anim=k; setPv(id,ANIM_ALL[k]); persist(); const T=timings(); const j=S.scenes.findIndex((sc,i)=>!sc.ad&&IMGS[i]); show(j>=0?T[j].s+.5:pos); }});
     else if(id==="drawer") pickSheet({title:"Хто малює",items:Object.entries(DRAWERS),cur:S.mon.drawer,onPick:k=>{ S.mon.drawer=k; S.mon.drawerSet=true; setPv(id,DRAWERS[k]); persist(); const T=timings(); const j=S.scenes.findIndex((sc,i)=>!sc.ad&&IMGS[i]&&["draw","wobble"].includes(animOf(i))); show(j>=0?T[j].s+.5:pos); }});
     else if(id==="tool") pickSheet({title:"Чим малює",items:Object.entries(TOOLS),cur:ST.tool,onPick:k=>{ ST.tool=k; persistStyle(); setPv(id,TOOLS[k]); PLQ.clear(); warmInks(); const T=timings(); const j=S.scenes.findIndex((sc,i)=>!sc.ad&&IMGS[i]&&["draw","wobble"].includes(animOf(i))); show(j>=0?T[j].s+.5:pos); if(k==="chalk"&&!isDark()) toast("Крейда найкраще виглядає на дошці або чорному фоні"); }});
-    else if(id==="font") pickSheet({title:"Шрифт",items:Object.entries(FONTS).map(([k,f])=>[k,f.n]),cur:S.mon.font,font:true,onPick:async k=>{ S.mon.font=k; const e=el.querySelector('[data-pv="font"]'); if(e){ e.textContent=FONTS[k].n; e.style.font=vfont(22); } persist(); await fontReady(); PLQ.clear(); show(pos); }});
+    else if(id==="font") pickSheet({title:"Шрифт",items:Object.entries(FONTS).map(([k,f])=>[k,f.n]),cur:S.mon.font,font:true,onPick:async k=>{ S.mon.font=k; const e=ER.querySelector('[data-pv="font"]'); if(e){ e.textContent=FONTS[k].n; e.style.font=vfont(22); } persist(); await fontReady(); PLQ.clear(); show(pos); }});
     else { const titles={sfxPlaque:"Звук появи плашки",sfxCut:"Звук зміни кадру",sfxEnd:"Звук фіналу"}; const items=(id==="sfxPlaque"?[["auto",soundName("auto")]]:[]).concat([["none","Без звуку"]],SOUND_LIB);
       pickSheet({title:titles[id],items,cur:S.mon[id],play:k=>{ const f=k==="auto"?["Поява плашки",0]:sfxParse(k); if(f) playSfx(f[0],f[1]); return null; },onPick:k=>{ S.mon[id]=k; setPv(id,soundName(k)); persist(); refresh(); }}); } }));
   Object.values(FONTS).forEach(f=>fontReady(f));
   group("tlpos",v=>S.tlPos=v); group("tlpct",v=>S.tlPct=v==="1"); group("subpos",v=>S.mon.subs=v); group("subsize",v=>S.mon.subSize=v); group("music",v=>S.mon.music=v);
-  el.querySelectorAll("[data-mon]").forEach(b=>b.addEventListener("click",async()=>{ const k=b.dataset.mon; S.mon[k]=!S.mon[k]; b.setAttribute("aria-pressed",S.mon[k]);
-    if((k==="cutPauses"||k==="fitVoice")&&VOICE_RAW){ stopPlay(); el.querySelector("#vfit").textContent="Обробляю голос…"; await new Promise(r=>setTimeout(r,30)); processVoice(); distribute(VOICE.duration); rows(); show(0); el.querySelector("#vfit").textContent=voiceInfoText(); vi.textContent=`${VOICE_NAME} · ${VOICE.duration.toFixed(1)} с`; }
+  ER.querySelectorAll("[data-mon]").forEach(b=>b.addEventListener("click",async()=>{ const k=b.dataset.mon; S.mon[k]=!S.mon[k]; b.setAttribute("aria-pressed",S.mon[k]);
+    if((k==="cutPauses"||k==="fitVoice")&&VOICE_RAW){ stopPlay(); ER.querySelector("#vfit").textContent="Обробляю голос…"; await new Promise(r=>setTimeout(r,30)); processVoice(); distribute(VOICE.duration); rows(); show(0); ER.querySelector("#vfit").textContent=voiceInfoText(); vi.textContent=`${VOICE_NAME} · ${VOICE.duration.toFixed(1)} с`; }
     persist(); refresh(); }));
-  el.querySelectorAll("[data-grid]").forEach(b=>b.addEventListener("click",()=>{ const on=b.dataset.grid!=="0"; if(ST.bg==="grid"){ ST.bg="white"; } ST.grid=on; ST.gridWave=b.dataset.grid==="2"; persistStyle(); el.querySelectorAll("[data-grid]").forEach(o=>o.setAttribute("aria-pressed",o===b)); el.querySelectorAll('[data-sk="bg"]').forEach(o=>o.setAttribute("aria-pressed",o.dataset.sv===ST.bg)); show(pos); }));
-  el.querySelectorAll("[data-sk]").forEach(b=>b.addEventListener("click",()=>{ const k=b.dataset.sk; ST[k]=b.dataset.sv; persistStyle(); PLQ.clear();
-    el.querySelectorAll(`[data-sk="${k}"]`).forEach(o=>o.setAttribute("aria-pressed",o===b)); show(pos); warmInks(); }));
-  [["voicevol","voiceVol"],["musicvol","musicVol"],["sfxvol","sfxVol"],["drawvol","drawVol"]].forEach(([id,k])=>{ const r=el.querySelector("#"+id); r.addEventListener("input",()=>{ S.mon[k]=+r.value; el.querySelector(`#${id}-v`).textContent=r.value+"%"; }); r.addEventListener("change",()=>{ persist(); refresh(); }); });
-  el.querySelector("#imgsf").addEventListener("change",async e=>{ const files=[...e.target.files]; let j=0; for(let i=0;i<S.scenes.length&&j<files.length;i++){ if(!IMGS[i]&&!S.scenes[i].ad) await loadImage(i,files[j++]); } if(j===0) for(let i=0;i<S.scenes.length&&j<files.length;i++){ if(!S.scenes[i].ad) await loadImage(i,files[j++]); } rows(); show(pos); e.target.value=""; });
-  const vi=el.querySelector("#vinfo"), vdel=el.querySelector("#voicedel");
+  ER.querySelectorAll("[data-grid]").forEach(b=>b.addEventListener("click",()=>{ const on=b.dataset.grid!=="0"; if(ST.bg==="grid"){ ST.bg="white"; } ST.grid=on; ST.gridWave=b.dataset.grid==="2"; persistStyle(); ER.querySelectorAll("[data-grid]").forEach(o=>o.setAttribute("aria-pressed",o===b)); ER.querySelectorAll('[data-sk="bg"]').forEach(o=>o.setAttribute("aria-pressed",o.dataset.sv===ST.bg)); show(pos); }));
+  ER.querySelectorAll("[data-sk]").forEach(b=>b.addEventListener("click",()=>{ const k=b.dataset.sk; ST[k]=b.dataset.sv; persistStyle(); PLQ.clear();
+    ER.querySelectorAll(`[data-sk="${k}"]`).forEach(o=>o.setAttribute("aria-pressed",o===b)); show(pos); warmInks(); }));
+  [["voicevol","voiceVol"],["musicvol","musicVol"],["sfxvol","sfxVol"],["drawvol","drawVol"]].forEach(([id,k])=>{ const r=ER.querySelector("#"+id); r.addEventListener("input",()=>{ S.mon[k]=+r.value; ER.querySelector(`#${id}-v`).textContent=r.value+"%"; }); r.addEventListener("change",()=>{ persist(); refresh(); }); });
+  ER.querySelector("#imgsf").addEventListener("change",async e=>{ const files=[...e.target.files]; let j=0; for(let i=0;i<S.scenes.length&&j<files.length;i++){ if(!IMGS[i]&&!S.scenes[i].ad) await loadImage(i,files[j++]); } if(j===0) for(let i=0;i<S.scenes.length&&j<files.length;i++){ if(!S.scenes[i].ad) await loadImage(i,files[j++]); } rows(); show(pos); e.target.value=""; });
+  const vi=ER.querySelector("#vinfo"), vdel=ER.querySelector("#voicedel");
   const decode=buf=>new Promise((res,rej)=>{ try{ const pr=ac().decodeAudioData(buf,res,rej); if(pr&&pr.then) pr.then(res,rej); }catch(e){ rej(e); } });
   const viaElement=(blob,prog)=>new Promise((res,rej)=>{ const url=URL.createObjectURL(blob), au=new Audio(), a=ac(); au.preload="auto"; au.src=url;
     au.onerror=()=>rej(new Error("media")); au.onloadedmetadata=()=>{ const dur=au.duration; const src=a.createMediaElementSource(au), sp=a.createScriptProcessor(4096,1,1), mute=a.createGain(); mute.gain.value=0; const ch=[];
@@ -1714,30 +1743,30 @@ function stAssemble(el){
     let out=null; try{ out=await decode(buf.slice(0)); }catch(err){ out=null; }
     if(!out){ try{ out=await viaElement(new Blob([buf],{type:type||""}),p=>vi.textContent=`Перетворюю запис… ${Math.round(clamp(p)*100)}%`); }catch(err){ out=null; } }
     if(!out){ vi.textContent="Цей файл не відкривається тут. Спробуй mp3 або wav."; vi.className="status err"; return; }
-    vi.textContent="Прибираю паузи й підганяю під тривалість…"; await new Promise(r=>setTimeout(r,30)); VOICE_RAW=out; VOICE_NAME=name||"запис"; processVoice(); el.querySelector("#vfit").textContent=voiceInfoText(); storeVoice(buf,VOICE_NAME,type); distribute(VOICE.duration); rows(); show(0); vdel.hidden=false; vi.textContent=`${VOICE_NAME} · ${VOICE.duration.toFixed(1)} с`; };
+    vi.textContent="Прибираю паузи й підганяю під тривалість…"; await new Promise(r=>setTimeout(r,30)); VOICE_RAW=out; VOICE_NAME=name||"запис"; processVoice(); ER.querySelector("#vfit").textContent=voiceInfoText(); storeVoice(buf,VOICE_NAME,type); distribute(VOICE.duration); rows(); show(0); vdel.hidden=false; vi.textContent=`${VOICE_NAME} · ${VOICE.duration.toFixed(1)} с`; };
   const fromInput=async e=>{ const f=e.target.files&&e.target.files[0]; if(!f) return; let buf=null; try{ buf=await f.arrayBuffer(); }catch(err){} const name=f.name, type=f.type; e.target.value=""; takeVoice(buf,name,type); };
-  el.querySelector("#voicef").addEventListener("change",fromInput);
-  el.querySelector("#voicerec").addEventListener("change",fromInput);
-  voicePicker(el.querySelector("#vpbox"),{getText:()=>el.querySelector("#voicetext").textContent,onAudio:(buf,name,type)=>takeVoice(buf,name,type)});
-  const recB=el.querySelector("#recbtn"); let rec=null, recT=0, recTimer=0;
+  ER.querySelector("#voicef").addEventListener("change",fromInput);
+  ER.querySelector("#voicerec").addEventListener("change",fromInput);
+  voicePicker(ER.querySelector("#vpbox"),{getText:()=>ER.querySelector("#voicetext").textContent,onAudio:(buf,name,type)=>takeVoice(buf,name,type)});
+  const recB=ER.querySelector("#recbtn"); let rec=null, recT=0, recTimer=0;
   recB.addEventListener("click",async()=>{ if(rec){ rec.stop(); return; } stopPlay();
     let stream=null; try{ stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}}); }catch(err){ stream=null; }
-    if(!stream){ el.querySelector("#voicerec").click(); return; }
+    if(!stream){ ER.querySelector("#voicerec").click(); return; }
     const mime=["audio/mp4","audio/webm;codecs=opus","audio/webm"].find(m=>window.MediaRecorder&&MediaRecorder.isTypeSupported(m))||"";
     rec=new MediaRecorder(stream,mime?{mimeType:mime}:{}); const ch=[]; rec.ondataavailable=ev=>ev.data.size&&ch.push(ev.data);
     rec.onstop=async()=>{ stream.getTracks().forEach(t=>t.stop()); clearInterval(recTimer); recB.textContent="● Записати голос"; recB.classList.remove("rec"); const blob=new Blob(ch,{type:rec.mimeType||mime}); rec=null; takeVoice(await blob.arrayBuffer(),"мій запис",blob.type); };
     rec.start(); recT=Date.now(); recB.classList.add("rec"); const tick=()=>{ const s=Math.floor((Date.now()-recT)/1000); recB.textContent=`■ Зупинити · ${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`; }; tick(); recTimer=setInterval(tick,500); });
-  el.querySelector("#vcopy").addEventListener("click",e=>{ const b=e.currentTarget, t=el.querySelector("#voicetext"); const ok=()=>{ b.textContent="Скопійовано"; setTimeout(()=>b.textContent="Скопіювати",1400); };
+  ER.querySelector("#vcopy").addEventListener("click",e=>{ const b=e.currentTarget, t=ER.querySelector("#voicetext"); const ok=()=>{ b.textContent="Скопійовано"; setTimeout(()=>b.textContent="Скопіювати",1400); };
     try{ navigator.clipboard.writeText(t.textContent).then(ok,()=>{ const r=document.createRange(); r.selectNodeContents(t); getSelection().removeAllRanges(); getSelection().addRange(r); b.textContent="Виділено, скопіюй вручну"; }); }catch(err){} });
-  el.querySelector("#ttslink")?.addEventListener("click",()=>{ const t=el.querySelector("#voicetext").textContent; try{ navigator.clipboard.writeText(t).then(()=>toast("Текст скопійовано. Встав його в ElevenLabs"),()=>{}); }catch(err){} });
-  vdel.addEventListener("click",()=>{ VOICE=null; VOICE_RAW=null; VOICE_INFO=null; el.querySelector("#vfit").textContent=""; VOICE_NAME=""; MIX=null; forgetVoice(); vdel.hidden=true; distribute(S.dur); rows(); show(0); vi.textContent=`Голосу немає · ${S.dur} с`; });
-  el.querySelector("[data-redist]").addEventListener("click",()=>{ distribute(VOICE?VOICE.duration:S.dur); rows(); show(0); });
+  ER.querySelector("#ttslink")?.addEventListener("click",()=>{ const t=ER.querySelector("#voicetext").textContent; try{ navigator.clipboard.writeText(t).then(()=>toast("Текст скопійовано. Встав його в ElevenLabs"),()=>{}); }catch(err){} });
+  vdel.addEventListener("click",()=>{ VOICE=null; VOICE_RAW=null; VOICE_INFO=null; ER.querySelector("#vfit").textContent=""; VOICE_NAME=""; MIX=null; forgetVoice(); vdel.hidden=true; distribute(S.dur); rows(); show(0); vi.textContent=`Голосу немає · ${S.dur} с`; });
+  ER.querySelector("[data-redist]").addEventListener("click",()=>{ distribute(VOICE?VOICE.duration:S.dur); rows(); show(0); });
   seek.addEventListener("input",()=>{ stopPlay(); show(seek.value/1000*totalDur()); });
   playB.addEventListener("click",async()=>{ if(PLAY){ stopPlay(); return; } playB.textContent="…"; const a=ac(); const mix=await buildMix(); const tot=totalDur(); const from=pos>=tot-.05?0:pos;
     const src=a.createBufferSource(); src.buffer=mix; src.connect(a.destination); const t0=a.currentTime+.05; src.start(t0,from);
     PLAY={src,raf:0,onstop:()=>{ playB.textContent="▶ Дивитись"; }}; playB.textContent="❚❚ Пауза";
     const loop=()=>{ if(!PLAY) return; const t=from+a.currentTime-t0; if(t>=tot){ show(tot); stopPlay(); return; } show(Math.max(from,t)); PLAY.raf=requestAnimationFrame(loop); }; PLAY.raf=requestAnimationFrame(loop); });
-  el.querySelector("[data-dl=vexp]")?.addEventListener("click",e=>{ e.stopImmediatePropagation(); gateExport(el); },true);
+  ER.querySelector("[data-dl=vexp]")?.addEventListener("click",e=>{ e.stopImmediatePropagation(); gateExport(el); },true);
 }
 
 async function encodeFast(mix,total,prog){
