@@ -660,6 +660,10 @@ body{background:var(--p-bg)}
 .wst b{font-size:17px;font-weight:700;color:var(--p-card-text);letter-spacing:-.01em;font-variant-numeric:tabular-nums}.wst b.g{color:#5fd39a}
 
 .fkick{font-family:var(--pfont);font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--p-muted);margin:-6px 4px 10px}
+.colw{display:grid;grid-template-rows:0fr;transition:grid-template-rows .38s cubic-bezier(.3,.8,.3,1)}.colw.open{grid-template-rows:1fr}.colw>div{overflow:hidden;min-height:0}
+.colt{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:10px;padding:11px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:var(--p-text,#f5f5f7);font:600 14.5px var(--pfont,system-ui);cursor:pointer}
+.colt svg{transition:transform .3s}.colt[aria-expanded="true"] svg{transform:rotate(180deg)}
+.fhh{display:flex;align-items:center;gap:8px}.fhh .q{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.12);font-size:13px;font-weight:800}
 .fhow{font-family:var(--pfont);color:var(--p-text);background:var(--p-surface);border:1px solid var(--p-line);border-radius:22px;padding:16px 16px 14px;margin:4px 0 14px;box-shadow:var(--p-shadow)}
 .fhh{font-size:17px;font-weight:700;letter-spacing:-.01em}
 .fhow .steps{gap:10px;margin-top:12px}.fhow .steps li{font-size:15px;padding-left:38px;color:var(--p-muted)}.fhow .steps li b{color:var(--p-text);font-weight:600}
@@ -3975,6 +3979,21 @@ window.applyUIF=applyUIF;
 async function loadUIF(){ if(!window.SRV?.uiFlags) { applyUIF(); return; } const f=await SRV.uiFlags(); if(f){ Object.assign(UIF,UIF_DEF,f); try{ localStorage.setItem("yvUIF",JSON.stringify(f)); }catch(e){} } applyUIF(); }
 
 
+
+/* Згортаються блоки: «Як заробити з цим відео» і «Безкоштовні інструменти» */
+(function(){ const CH='<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  function collapsible(box,afterEl,openTxt,closeTxt,key){ if(!box||box.dataset.col) return; box.dataset.col=1;
+    const inner=document.createElement("div"), w=document.createElement("div"); w.className="colw"; w.appendChild(inner);
+    let n=afterEl.nextSibling; const move=[]; while(n){ move.push(n); n=n.nextSibling; } move.forEach(m=>inner.appendChild(m));
+    const b=document.createElement("button"); b.type="button"; b.className="colt"; b.setAttribute("aria-expanded","false");
+    const set=o=>{ w.classList.toggle("open",o); b.setAttribute("aria-expanded",o); b.innerHTML=(o?closeTxt:openTxt)+" "+CH; };
+    let o=false; try{ o=localStorage.getItem(key)==="1"; }catch(e){} set(o);
+    b.onclick=()=>{ o=!o; set(o); try{ localStorage.setItem(key,o?"1":"0"); uiSnd("tap"); }catch(e){} };
+    box.appendChild(w); box.appendChild(b); }
+  const run=()=>{ const fh=document.querySelector(".fhow"); if(fh){ const h=fh.querySelector(".fhh"); if(h&&!h.querySelector(".q")) h.insertAdjacentHTML("beforeend",'<span class="q" aria-hidden="true">?</span>'); collapsible(fh,h,"Детальніше","Згорнути","yvColHow"); }
+    const fb=document.querySelector(".freebox"); if(fb) collapsible(fb,fb.querySelector(".freehd"),"Вибрати інструмент","Згорнути","yvColFree"); };
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",run); else run();
+})();
 /* ===== Завантаження під час генерації: розмитий фон, кільце з відсотками (ривками) ===== */
 (function(){
   const KIND={ text:{t:"Генерую…",m:["Підбираю слова","Шукаю сильний хук","Складаю сцени","Перевіряю, щоб чіпляло","Майже готово"]},
