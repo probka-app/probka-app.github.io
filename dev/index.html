@@ -1077,7 +1077,7 @@ body{background:radial-gradient(900px 640px at 8% -12%,var(--yv-glow-1),transpar
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="YuVi DEV">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>window.YV_DEV=true;window.YV_BUILD="30.10 18:26";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
+<script>window.YV_DEV=true;window.YV_BUILD="30.10 18:30";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="server.js?v=4ccfcc55"></script>
@@ -4013,7 +4013,7 @@ function closeOwn(){ ownStop(); const W=document.getElementById("ownw"); W.hidde
 document.getElementById("owback")?.addEventListener("click",()=>{ try{ uiSnd("tap"); }catch(e){} closeOwn(); });
 document.getElementById("ownfmt")?.addEventListener("click",()=>openOwn());
 /* ТЕСТ (лише dev і власник): «Монтаж твого відео» */
-{ const vb=document.getElementById("vedfmt"), tb=document.getElementById("trendfmt"); let n=0; const chk=()=>{ if(uiOwner()&&(!window.SRV||SRV.session)){ vb.hidden=false; if(tb) tb.hidden=false; } else if(++n<40) setTimeout(chk,500); }; if(vb){ setTimeout(chk,300);
+{ const vb=document.getElementById("vedfmt"), tb=document.getElementById("trendfmt"); const chk=()=>{ const on=!!(uiOwner()&&(!window.SRV||SRV.session)); if(vb.hidden===on) vb.hidden=!on; if(tb&&tb.hidden===on) tb.hidden=!on; setTimeout(chk,1500); }; if(vb){ setTimeout(chk,300);
   const load=src=>new Promise((ok,no)=>{ const sc=document.createElement("script"); sc.src=src+"?v="+Date.now(); sc.onload=ok; sc.onerror=no; document.head.appendChild(sc); });
   vb.addEventListener("click",async()=>{ try{ uiSnd("tap"); }catch(e){} try{ if(!window.YVTalk) await load("a/talk.js"); if(!window.YVVideo) await load("a/vedit.js"); }catch(e){ toast("Не вдалося завантажити"); return; } YVVideo.open(); });
   tb?.addEventListener("click",async()=>{ try{ uiSnd("tap"); }catch(e){} try{ if(!window.YVTalk) await load("a/talk.js"); if(!window.YVTrend) await load("a/trend.js"); }catch(e){ toast("Не вдалося завантажити"); return; } YVTrend.open(); }); } }
