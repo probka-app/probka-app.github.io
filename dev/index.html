@@ -2155,7 +2155,7 @@ function stHooks(el){
 }
 function stScript(el){
   el.innerHTML += `<div class="row" style="margin-top:0"><button class="chip ink" id="s-gen" type="button">${S.script?"↻ Інший текст":"Згенерувати"}</button><button class="chip" id="s-stop" type="button" hidden>Зупинити</button></div><div class="status" id="s-st"></div>
-  <textarea id="s-script" class="grow idea" rows="8" aria-label="Текст для озвучки" placeholder="Згенеруй текст кнопкою вище або напиши свій">${esc(S.script||(S.hook?S.hook+"\n":""))}</textarea><div class="status" id="s-wc"></div>`;
+  <textarea id="s-script" class="grow idea" rows="8" style="max-height:34vh;overflow-y:auto" aria-label="Текст для озвучки" placeholder="Згенеруй текст кнопкою вище або напиши свій">${esc(S.script||(S.hook?S.hook+"\n":""))}</textarea><div class="status" id="s-wc"></div>`;
   const ta=el.querySelector("#s-script"), st=el.querySelector("#s-st"), wc=el.querySelector("#s-wc"), stop=el.querySelector("#s-stop");
   const count=()=>{ const n=(ta.value.trim().match(/\S+/g)||[]).length; wc.textContent=`${n} слів · приблизно ${Math.round(n/2.4)} с озвучки (ціль ${S.dur} с)`; };
   count(); grow(ta); ta.addEventListener("input",()=>{ grow(ta); S.script=ta.value; persist(); count(); });
