@@ -902,6 +902,10 @@ body{background:var(--p-bg)}
 .fnwhere{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0}.fnwhere span{font-size:12px;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.08)}
 .fnmeta{font-size:13px;opacity:.8;margin:4px 0}.fnopen{display:inline-block;padding:3px 10px;border-radius:999px;background:#30d158;color:#0b0b0d;font-weight:800;font-size:12px}
 .fopen{align-self:flex-start;margin-top:4px;padding:2px 8px;border-radius:999px;font-size:10.5px;font-weight:700;background:rgba(48,209,88,.16);color:#5fd39a}.fopen.lk{background:rgba(255,255,255,.1);color:#a1a1aa}
+.askx{display:flex;align-items:center;gap:12px;width:100%;margin:10px 0 4px;padding:12px 14px;border-radius:20px;border:1px solid rgba(94,92,230,.55);background:linear-gradient(135deg,rgba(94,92,230,.28),rgba(94,92,230,.08));color:var(--p-text);font-family:var(--pfont);text-align:left;cursor:pointer}
+.askx:active{transform:scale(.985)}.aski{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:#5e5ce6;color:#fff}.askt b{display:block;font-size:16px}.askt small{display:block;font-size:12.5px;color:var(--p-muted);margin-top:1px}
+.askmic{display:grid;place-items:center;width:96px;height:96px;margin:6px auto 10px;border-radius:50%;border:0;background:#5e5ce6;color:#fff;cursor:pointer;box-shadow:0 10px 30px -8px rgba(94,92,230,.8)}.askmic.rec{background:#ff453a;box-shadow:0 0 0 10px rgba(255,69,58,.18)}
+.askmic .tkdot{display:none}.askex{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.askex button{padding:7px 11px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:inherit;font:inherit;font-size:12.5px;cursor:pointer;text-align:left}
 .ideacard{display:flex;align-items:center;gap:12px;width:100%;margin-top:12px;padding:14px;border-radius:20px;border:1px solid var(--p-line);background:var(--p-surface);color:var(--p-text);font-family:var(--pfont);text-align:left;box-shadow:var(--p-shadow)}
 .idi{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,#e3b341 18%,transparent);color:#b8860b;flex:none}
 .idt{display:flex;flex-direction:column;flex:1;min-width:0}.idt b{font-size:15px}.idt small{font-size:12.5px;color:var(--p-muted)}
@@ -1037,6 +1041,7 @@ body{background:radial-gradient(900px 640px at 8% -12%,var(--yv-glow-1),transpar
   <div class="wallet"><div class="wtop"><span class="wlg"><span class="wl">Заробіток</span><button class="wsnd" type="button" data-snd aria-pressed="true" aria-label="Звук зарахувань"></button></span><button class="hbtn" type="button" data-earn>Як заробити?</button></div><div class="wrow"><span class="wv" data-bal>0 грн</span><div class="wpend" data-pend hidden><div class="wpl"><span>Очікує зарахування для виводу:</span><b data-pendv></b></div><button class="hbtn wwhy" type="button" data-why>Чому гроші<br>зараховуються<br>не одразу?</button></div><div class="wpas" data-pas></div><button class="wout" type="button" data-withdraw>Виплати</button><span class="wrf" data-refs></span></div><button class="woffl" type="button" data-woff hidden></button><div class="wst" data-wst></div><button class="wmore" type="button" data-wmore aria-expanded="false"><span>Детальніше</span><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
   <div class="fophint" id="fophint" hidden></div>
   <div class="fnx" id="fnx" hidden><button class="fnbar" type="button" id="fnbar" aria-expanded="false"><span class="fnbi" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18"><rect x="3.5" y="3.5" width="7" height="7" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="13.5" y="3.5" width="7" height="7" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="3.5" y="13.5" width="7" height="7" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="13.5" y="13.5" width="7" height="7" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></span><b>Функції</b><span class="fnsum" id="fnsum"></span><svg class="fnch" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="fnbody" id="fnbody" hidden></div></div>
+  <button class="askx" type="button" id="askx" hidden><span class="aski" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><span class="askt"><b>Скажи, що хочеш</b><small>Сценарій, картинка, озвучка, монтаж — голосом</small></span></button>
   <h1 class="htitle"><svg class="hgear" viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37 1 .608 2.296.07 2.572-1.065z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>Інструменти</h1>
   <div class="fkick">Для створення контенту та заробітку</div>
   <div class="fmts">
@@ -1093,7 +1098,7 @@ body{background:radial-gradient(900px 640px at 8% -12%,var(--yv-glow-1),transpar
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="YuVi">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>window.YV_DEV=false;window.YV_BUILD="30.10 20:27";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
+<script>window.YV_DEV=false;window.YV_BUILD="30.10 21:37";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="server.js?v=f7af69dc"></script>
@@ -4103,10 +4108,62 @@ function openImgGen(){ let last=null; const IG=(()=>{ try{ return localStorage.g
     }catch(err){ const m=errText(err); st.className="status err"; st.textContent=m||"Не вдалося намалювати. Спробуй ще раз."; }
     go.disabled=false; go.textContent="Намалювати"; };
 }
+/* ---------- «Скажи, що хочеш»: голос або текст → агент сам вибирає інструмент і запускає його ---------- */
+const loadJS=(src)=>new Promise((ok,no)=>{ const sc=document.createElement("script"); sc.src=src+"?v="+(window.YV_BUILD||Date.now()); sc.onload=ok; sc.onerror=no; document.head.appendChild(sc); });
+const ASK_TOOLS=`script — написати сценарій відео з хуками (args: topic — про що і скільки секунд)
+ideas — ідеї для відео (args: topic — про що акаунт)
+hooks — варіанти хука (args: topic — про що відео)
+check — перевірити хук (args: topic — хук і про що відео)
+cap — підпис і хештеги (args: topic — про що відео)
+img — намалювати картинку в стилі маркера (args: prompt — що на картинці, українською)
+talk — записати свій голос як є і змонтувати / «наговорити» думку і зробити з неї текст (args: —)
+aivoice — озвучити текст голосом студії (args: text — текст для озвучки, якщо людина його продиктувала)
+marker — відкрити формат «Рілс маркером» (анімоване відео на аркуші) (args: topic)
+montage — змонтувати своє відео: субтитри, вирізати паузи, вставки, музика (args: wish — побажання до монтажу)
+trend — зняти відео під тренд за картками кадрів (args: —)
+earn — як заробляти на партнерці YuVi (args: —)
+none — нічого з переліченого або просто питання (тоді дай коротку відповідь у say)`;
+async function askRun(text){ text=String(text||"").trim(); if(text.length<3) return toast("Скажи або напиши кількома словами");
+  if(!sample) return toast("AI зараз недоступний");
+  let r=null; try{ r=await busyRun2(()=>sample.json(`Ти — помічник платформи YuVi Studio для створення коротких відео. Людина сказала: «${text}».
+Вибери ОДИН інструмент, який найкраще виконає її задачу, і витягни параметри з її слів (своїми словами нічого не вигадуй, лише уточни формулювання).
+Інструменти:
+${ASK_TOOLS}
+Відповідай тільки JSON: {"tool":"ключ","args":{...},"say":"одне коротке речення українською — що зараз зробиш"}`,{cache:false,kb:true})); }catch(e){ return toast(errText(e)||"Не вийшло зрозуміти. Спробуй ще раз."); }
+  const t=String(r?.tool||"none"), a=r?.args||{}, say=String(r?.say||""); try{ yvTrack("ask","route",{v:t}); }catch(e){}
+  closeSheet(); if(say) toast(say);
+  const free=(k,topic)=>{ FD[k]=Object.assign({topic:"",list:[],pick:-1,head:""},FD[k]||{}); if(topic){ FD[k].topic=String(topic); FD[k].list=[]; fdSave(); } setTimeout(()=>{ openFree(k); if(topic) setTimeout(()=>BS.querySelector("#ffgo")?.click(),250); },250); };
+  if(["script","ideas","hooks","check","cap"].includes(t)) return free(t,a.topic||text);
+  if(t==="img") return setTimeout(()=>{ try{ localStorage.setItem("yvImgTxt",String(a.prompt||text)); }catch(e){} openImgGen(); setTimeout(()=>BS.querySelector("#iggo")?.click(),250); },250);
+  if(t==="talk") return setTimeout(openTalkTool,250);
+  if(t==="aivoice") return setTimeout(()=>{ if(a.text) try{ localStorage.setItem("yvVoiceTxt",String(a.text)); }catch(e){} openVoiceTool(); },250);
+  if(t==="marker") return setTimeout(()=>document.querySelector('.fmts [data-open="studio"]')?.click(),250);
+  if(t==="montage"||t==="trend"){ try{ if(!window.YVTalk) await loadJS("a/talk.js"); if(t==="montage"&&!window.YVVideo) await loadJS("a/vedit.js"); if(t==="trend"&&!window.YVTrend) await loadJS("a/trend.js"); }catch(e){ return toast("Не вдалося завантажити"); }
+    if(t==="trend") return YVTrend.open(); YVVideo.open(); if(a.wish){ const P=YVVideo._t.P(); if(P) P.wish=String(a.wish); } return; }
+  if(t==="earn") return setTimeout(()=>document.querySelector("[data-earn]")?.click(),250);
+  setTimeout(()=>openSheet(`<div class="pshead"><h3>Скажи, що хочеш</h3></div><p class="hint" style="display:block">${esc(say||"Поки не вмію це зробити. Спробуй інакше: «напиши сценарій про…», «намалюй…», «змонтуй моє відео…».")}</p><button class="big" type="button" id="askagain">Сказати ще</button>`,"plat"),260);
+  setTimeout(()=>{ const b=BS.querySelector("#askagain"); if(b) b.onclick=openAsk; },320);
+}
+async function busyRun2(fn){ const b=BS.querySelector("#askgo"), m=BS.querySelector("#askmic"); if(b){ b.disabled=true; b.textContent="Думаю…"; } if(m) m.disabled=true; try{ return await fn(); } finally{ if(b){ b.disabled=false; b.textContent="Зробити"; } if(m) m.disabled=false; } }
+async function openAsk(){ try{ uiSnd("tap"); }catch(e){}
+  if(window.SRV&&!SRV.session) return SRV.login("Щоб давати задачі голосом, увійди або зареєструйся.","tool:ask");
+  const EX=["Напиши сценарій на 60 секунд, як почати заробляти на відео","Намалюй людину за ноутбуком, з екрана летять гроші","Змонтуй моє відео: динамічно, жовті субтитри, без пауз","Дай 5 ідей для акаунта про біг"];
+  openSheet(`<div class="pshead"><h3>Скажи, що хочеш</h3></div><p class="hint" style="display:block">Натисни й розкажи задачу — я сам виберу потрібний інструмент.</p>
+    <button class="askmic" type="button" id="askmic" aria-label="Говорити"><svg viewBox="0 0 24 24" width="40" height="40"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+    <textarea id="askt" class="cpd" rows="2" maxlength="600" placeholder="…або напиши тут"></textarea><button class="big" type="button" id="askgo">Зробити</button>
+    <div class="askex">${EX.map(e=>`<button type="button" data-ex="${esc(e)}">${esc(e)}</button>`).join("")}</div>`,"plat");
+  const ta=BS.querySelector("#askt"), mic=BS.querySelector("#askmic"), lbl=mic.innerHTML;
+  BS.querySelector("#askgo").onclick=()=>askRun(ta.value);
+  BS.querySelectorAll("[data-ex]").forEach(b=>b.onclick=()=>{ ta.value=b.dataset.ex; });
+  mic.onclick=async()=>{ try{ if(!window.YVTalk) await loadJS("a/talk.js"); }catch(e){ return toast("Не вдалося завантажити"); } const E=YVTalk._t;
+    E.record(mic,lbl,async(buf)=>{ try{ const t=await busyRun2(async()=>{ const raw=await E.decode(buf), small=await E.resample(raw,E.SR,16000); const r=await SRV.stt({audio:E.b64(E.wav(small,16000)),mime:"audio/wav"}); return (r.words||[]).map(w=>w.w).join(" "); });
+      if(!t.trim()) return toast("Не почув — спробуй ще раз"); ta.value=t; askRun(t); }catch(e){ toast("Не вийшло розпізнати. Спробуй ще раз або напиши."); } }); };
+}
+document.getElementById("askx")?.addEventListener("click",openAsk);
 { const box=document.getElementById("fnx"), bar=document.getElementById("fnbar"), body=document.getElementById("fnbody");
   bar.onclick=()=>{ const o=bar.getAttribute("aria-expanded")!=="true"; bar.setAttribute("aria-expanded",o); body.hidden=!o; if(o) drawFns(); try{ uiSnd("tap"); }catch(e){} };
   // поки тест — бачить лише власник; формати під панеллю показують «Відкрито / від N грн»
-  const chk=()=>{ const on=!!(uiOwner()&&(!window.SRV||SRV.session)); if(box.hidden===on){ box.hidden=!on; if(on) drawFns(); }
+  const chk=()=>{ const on=!!(uiOwner()&&(!window.SRV||SRV.session)); if(box.hidden===on){ box.hidden=!on; if(on) drawFns(); } const ax=document.getElementById("askx"); if(ax&&ax.hidden===on) ax.hidden=!on;
     document.querySelectorAll(".fmts>.fmt .fi").forEach(fi=>{ let b=fi.querySelector(".fopen"); if(!on){ b?.remove(); return; } if(!b){ b=document.createElement("span"); b.className="fopen"; fi.appendChild(b); } b.textContent="✓ Відкрито"; });
     setTimeout(chk,1500); };
   setTimeout(chk,300); }
