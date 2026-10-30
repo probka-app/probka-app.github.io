@@ -97,7 +97,7 @@
   SRV.refresh = async () => {
     if (!SRV.session) { SRV.me = null; if (typeof WL !== "undefined") { for (const k of Object.keys(WL)) delete WL[k]; Object.assign(WL, { balance: 0, pending: 0, total: 0, req: null, history: [], unlocked: {}, saved: 0, refs: 0, vesting: [], passPeople: 0, held: 0 }); ls.set("rilsWallet", null); window.renderBal?.(); } return; }
     try {
-      const me = await rpc("me");
+      const me = await Promise.race([rpc("me"), new Promise((_, no) => setTimeout(() => no(new Error("auth timeout")), 12000))]);
       if (!me || typeof me !== "object") throw new Error("no_profile");
       SRV.me = me;
       WL.balance = kop(me.available_kop); WL.pending = kop(me.pending_kop); WL.total = kop(me.earned_kop); WL.refs = me.refs_total;
@@ -119,8 +119,8 @@
       // зламаний або прострочений вхід (акаунт видалено, токен недійсний) — виходимо, щоб людина могла увійти знову
       // акаунт видалено або вхід недійсний: сервер не знає цієї людини → виходимо, щоб можна було увійти знову
       let bad = /jwt|token|auth|not_authenticated|401|403/i.test(String(e?.message || ""));
-      if (!bad) { try { const { data, error } = await sb.auth.getUser(); bad = !!error || !data?.user; } catch (x) {} }
-      if (bad) { try { await sb.auth.signOut({ scope: "local" }); } catch (x) {} try { Object.keys(localStorage).filter((k) => /^sb-.*-auth-token/.test(k)).forEach((k) => localStorage.removeItem(k)); } catch (x) {}
+      if (!bad) { try { const { data, error } = await Promise.race([sb.auth.getUser(), new Promise((_, no) => setTimeout(() => no(new Error("t")), 6000))]); bad = !!error || !data?.user; } catch (x) { bad = true; } }
+      if (bad) { try { await Promise.race([sb.auth.signOut({ scope: "local" }), new Promise((r) => setTimeout(r, 1500))]); } catch (x) {} try { Object.keys(localStorage).filter((k) => /^sb-.*-auth-token/.test(k)).forEach((k) => localStorage.removeItem(k)); } catch (x) {}
         SRV.session = null; SRV.me = null; try { ls.set("rilsWallet", null); } catch (x) {} toast("Вхід застарів — увійди ще раз"); setTimeout(() => location.reload(), 900); }
     }
   };
@@ -433,7 +433,8 @@
   SRV.consent = (docs, ver) => { if (!SRV.session) return; for (const d of docs) sb.rpc("log_consent", { p_doc: d, p_ver: ver }).then(({ error }) => { if (error) console.warn("consent", error.message); }); };
   // вихід завжди спрацьовує: навіть якщо сесія зламана або немає інтернету — чистимо вхід на цьому пристрої
   SRV.signOut = async () => {
-    try { await Promise.race([sb.auth.signOut(), new Promise((_, no) => setTimeout(() => no(new Error("timeout")), 4000))]); } catch (e) { try { await sb.auth.signOut({ scope: "local" }); } catch (x) {} }
+    const lim = (p, ms) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error("timeout")), ms))]);
+    try { await lim(sb.auth.signOut(), 3000); } catch (e) { try { await lim(sb.auth.signOut({ scope: "local" }), 1500); } catch (x) {} }
     try { Object.keys(localStorage).filter((k) => /^sb-.*-auth-token/.test(k)).forEach((k) => localStorage.removeItem(k)); } catch (e) {}
     SRV.session = null; SRV.me = null; SRV.isOwner = false; SRV.isAdmin = false;
     try { closeSheet(); } catch (e) {} toast("Ти вийшов з акаунта"); setTimeout(() => location.reload(), 600);
