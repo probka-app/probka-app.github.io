@@ -114,7 +114,10 @@
       else { const fresh = firsts.filter((h) => h.created_at > seen).sort((a, b) => a.created_at.localeCompare(b.created_at));
         if (fresh.length && typeof addCredits === "function") { WL.balance = WL.balance; addCredits(fresh.map((h) => ({ key: h.created_at + "|" + h.amount_kop, amount_kop: h.amount_kop, created_at: h.created_at }))); } }
       window.renderBal?.(); window.renderTop?.(); window.renderSubs?.();
-    } catch (e) { console.warn("me", e); }
+    } catch (e) { console.warn("me", e);
+      // зламаний або прострочений вхід (акаунт видалено, токен недійсний) — виходимо, щоб людина могла увійти знову
+      if (/jwt|token|auth|not_authenticated|401|403/i.test(String(e?.message || ""))) { try { await sb.auth.signOut({ scope: "local" }); } catch (x) {} SRV.session = null; SRV.me = null; window.renderTop?.(); }
+    }
   };
   SRV.refCode = () => SRV.me?.ref_code || "";
 
@@ -423,7 +426,13 @@
   const needLogin = (why, after) => { if (SRV.session) return false; loginSheet(why, after, (after === "pay" || after === "paytest") && !ls.get("probkaMail") ? "reg" : undefined); return true; };
   // згода з документами: хто, коли і яку редакцію прийняв (доказ укладення договору)
   SRV.consent = (docs, ver) => { if (!SRV.session) return; for (const d of docs) sb.rpc("log_consent", { p_doc: d, p_ver: ver }).then(({ error }) => { if (error) console.warn("consent", error.message); }); };
-  SRV.signOut = async () => { await sb.auth.signOut(); closeSheet(); toast("Ти вийшов з акаунта"); };
+  // вихід завжди спрацьовує: навіть якщо сесія зламана або немає інтернету — чистимо вхід на цьому пристрої
+  SRV.signOut = async () => {
+    try { await Promise.race([sb.auth.signOut(), new Promise((_, no) => setTimeout(() => no(new Error("timeout")), 4000))]); } catch (e) { try { await sb.auth.signOut({ scope: "local" }); } catch (x) {} }
+    try { Object.keys(localStorage).filter((k) => /^sb-.*-auth-token/.test(k)).forEach((k) => localStorage.removeItem(k)); } catch (e) {}
+    SRV.session = null; SRV.me = null; SRV.isOwner = false; SRV.isAdmin = false;
+    try { closeSheet(); } catch (e) {} toast("Ти вийшов з акаунта"); setTimeout(() => location.reload(), 600);
+  };
 
   // --- оплата підписки ---
   let afterPay = null;
