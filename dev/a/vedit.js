@@ -439,7 +439,7 @@ ${numbered()}
 #yvved .clips{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;padding:0 12px}#yvved .clips.empty{align-items:center}
 #yvved .crow{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:6px 2px}#yvved .crow::-webkit-scrollbar{display:none}
 #yvved .clip{position:relative;flex:none;width:96px;height:170px;border-radius:14px;overflow:hidden;background:#1c1c20;border:1px solid rgba(255,255,255,.12)}
-#yvved .clip video{width:100%;height:100%;object-fit:cover;display:block}
+#yvved .clip video,#yvved .clip canvas{width:100%;height:100%;object-fit:cover;display:block}
 #yvved .clip .cdur{position:absolute;left:6px;bottom:6px;z-index:2;font-size:11px;font-weight:700;background:rgba(0,0,0,.55);padding:1px 6px;border-radius:6px}
 #yvved .clip .cx,#yvved .clip .cmv{position:absolute;top:5px;z-index:2;width:26px;height:26px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:16px;line-height:1;cursor:pointer}#yvved .clip .cx{right:5px}#yvved .clip .cmv{left:5px}
 #yvved .clip.add{display:grid;place-items:center;font-size:34px;color:#a1a1aa;border-style:dashed;cursor:pointer}
@@ -490,41 +490,55 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
 
   /* ---------- кліпи: легке читання (лише звук), підготовка у фоні одразу після вибору ---------- */
   let MB = null;
+  // звук з відео: 1) розкодувати браузером; 2) якщо не вміє — витягти лише звукову доріжку в маленький m4a і розкодувати її; 3) весь файл
   async function audioOf(file, dur) {
-    const SR = E().SR, n = Math.max(1, Math.ceil(dur * SR));
-    try {
-      const M = await (MB ||= import(MBURL));
-      const input = new M.Input({ formats: M.ALL_FORMATS, source: new M.BlobSource(file) });
-      const tr = await input.getPrimaryAudioTrack(); if (!tr) return new Float32Array(n);
+    const SR = E().SR, n = Math.max(1, Math.ceil(dur * SR)), why = [];
+    const fit = (y) => { if (y.length >= n) return y.subarray(0, n).slice(); const z = new Float32Array(n); z.set(y); return z; };
+    const short = (e) => String(e?.message || e || "?").slice(0, 60);
+    let M = null, input = null, tr = null;
+    try { M = await (MB ||= import(MBURL)); input = new M.Input({ formats: M.ALL_FORMATS, source: new M.BlobSource(file) }); tr = await input.getPrimaryAudioTrack(); if (!tr) return new Float32Array(n); } catch (e) { why.push("open " + short(e)); }
+    if (tr) try {
       if (!(await tr.canDecode())) throw new Error("nodecode");
       const rate = await tr.getSampleRate(), out = new Float32Array(Math.ceil(dur * rate) + rate), sink = new M.AudioBufferSink(tr);
       for await (const w of sink.buffers()) { const b = w.buffer, ch = b.numberOfChannels, L = b.length, o = Math.round((w.timestamp || 0) * rate);
         const d0 = b.getChannelData(0), d1 = ch > 1 ? b.getChannelData(1) : null; for (let i = 0; i < L && o + i < out.length; i++) out[o + i] = d1 ? (d0[i] + d1[i]) / 2 : d0[i]; }
-      const y = rate === SR ? out : await E().resample(out, rate, SR); return y.length >= n ? y.subarray(0, n).slice() : (() => { const z = new Float32Array(n); z.set(y); return z; })();
-    } catch (e) {
-      // запасний шлях: весь файл у пам'ять (повільніше, для невеликих файлів)
-      if (file.size > 700e6) throw new Error("big");
-      const y = await E().decode(await file.arrayBuffer()); if (y.length >= n) return y.subarray(0, n).slice(); const z = new Float32Array(n); z.set(y); return z;
-    }
+      return fit(rate === SR ? out : await E().resample(out, rate, SR));
+    } catch (e) { why.push("dec " + short(e)); }
+    if (input) try {
+      const o = new M.Output({ format: new M.Mp4OutputFormat(), target: new M.BufferTarget() });
+      const c = await M.Conversion.init({ input, output: o, video: { discard: true }, showWarnings: false }); if (!c.isValid) throw new Error("invalid");
+      await c.execute(); return fit(await E().decode(o.target.buffer));
+    } catch (e) { why.push("m4a " + short(e)); }
+    if (file.size > 700e6) throw new Error("big");
+    try { return fit(await E().decode(await file.arrayBuffer())); } catch (e) { why.push("whole " + short(e)); }
+    const er = new Error("audio"); er.why = why.join(" · "); throw er;
+  }
+  // мініатюра кліпу — прямо з файлу (iPhone не завжди малює кадр прихованого відео)
+  async function thumbOf(file) {
+    const M = await (MB ||= import(MBURL)), input = new M.Input({ formats: M.ALL_FORMATS, source: new M.BlobSource(file) }), tr = await input.getPrimaryVideoTrack();
+    if (!tr || !(await tr.canDecode())) return null; const w = await new M.CanvasSink(tr, { width: 200 }).getCanvas(Math.min(.6, ((await tr.computeDuration().catch(() => 1)) || 1) / 3)); return w?.canvas || null;
   }
   let PREP = null, PREPK = 0;
   function prepare(onStage) {
-    const k = ++PREPK, clips = P.clips.slice();
+    const k = ++PREPK, clips = P.clips.slice(); let step = "audio";
     const job = (async () => {
       let off = 0; clips.forEach((c) => { c.off = off; off += c.dur; }); P.main = { dur: off };
       const parts = [];
       for (let i = 0; i < clips.length; i++) { if (k !== PREPK) return; onStage?.(`Слухаю відео ${clips.length > 1 ? `${i + 1} з ${clips.length}` : ""}…`, i / clips.length * .5);
         clips[i].aud ||= await audioOf(clips[i].file, clips[i].dur); parts.push(clips[i].aud); }
       const SR = E().SR, all = new Float32Array(parts.reduce((a, x) => a + x.length, 0)); let o = 0; parts.forEach((x) => { all.set(x, o); o += x.length; });
-      if (k !== PREPK) return; onStage?.("Чищу звук…", .55); await new Promise((r) => setTimeout(r, 30));
+      step = "clean"; if (k !== PREPK) return; onStage?.("Чищу звук…", .55); await new Promise((r) => setTimeout(r, 30));
       const aud = await E().processTake(all); if (k !== PREPK) return;
-      onStage?.("Розпізнаю слова…", .7);
+      step = "stt"; onStage?.("Розпізнаю слова…", .7);
       const small = await E().resample(aud, SR, 16000), r = await SRV.stt({ audio: E().b64(E().wav(small, 16000)), mime: "audio/wav", quiet: true }); if (k !== PREPK) return;
       const dur = aud.length / SR;
       P.aud = aud; P.words = (r.words || []).map((w) => ({ w: String(w.w), s: Math.max(0, +w.s || 0), e: Math.min(dur, Math.max((+w.s || 0) + .05, +w.e || 0)) })).filter((w) => w.w.trim());
       onStage?.("✓ Готово до монтажу", 1); return true;
     })();
-    PREP = job; job.catch((e) => { if (k === PREPK) onStage?.(e?.message === "big" ? "Файл завеликий — зніми в 1080p" : e?.message === "limit" ? "Ліміт на сьогодні вичерпано" : "Не вдалося підготувати звук", -1); }); return job;
+    PREP = job; job.catch((e) => { job.failed = true; if (k !== PREPK) return; console.error("prep", step, e, e?.why);
+      const msg = String(e?.message || ""), det = (e?.why || msg).slice(0, 140); track("prep_err", { v: (step + ":" + det).slice(0, 80) });
+      onStage?.(msg === "big" ? "Файл завеликий — зніми в 1080p" : msg === "limit" ? "Ліміт на сьогодні вичерпано" : msg === "login" ? "Увійди в акаунт, щоб монтувати"
+        : `Не вдалося ${{ audio: "прочитати звук з відео", clean: "почистити звук", stt: "розпізнати слова" }[step]}. Натисни «Змонтувати», щоб спробувати ще раз`, -1, msg === "big" || msg === "limit" || msg === "login" ? "" : det); }); return job;
   }
 
   function screenStart() {
@@ -535,7 +549,7 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
       o.querySelectorAll("[data-o]").forEach((b) => b.onclick = () => { P.opt[b.dataset.o] = !P.opt[b.dataset.o]; saveOpt(P.opt); drawOpts(); }); };
     drawOpts();
     const st = $(B, "#prep"); let deb = 0;
-    const stage = (t, p) => { st.innerHTML = t ? `<span>${escH(t)}</span>${p >= 0 && p < 1 ? `<i><b style="width:${Math.round(p * 100)}%"></b></i>` : ""}` : ""; st.className = "prep" + (p < 0 ? " err" : p >= 1 ? " ok" : ""); };
+    const stage = (t, p, det) => { st.innerHTML = t ? `<span>${escH(t)}</span>${p >= 0 && p < 1 ? `<i><b style="width:${Math.round(p * 100)}%"></b></i>` : ""}${det ? `<small style="opacity:.6;font-size:11px">${escH(det)}</small>` : ""}` : ""; st.className = "prep" + (p < 0 ? " err" : p >= 1 ? " ok" : ""); };
     const restart = () => { clearTimeout(deb); PREP = null; PREPK++; if (!P.clips.length) { stage(""); return; } stage("Готую…", 0); deb = setTimeout(() => prepare(stage), 350); };
     const drawClips = () => {
       const box = $(B, "#clips"), total = P.clips.reduce((a, c) => a + c.dur, 0);
@@ -563,7 +577,8 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
         if (!(v.duration > 0)) { say(`«${f.name.slice(0, 20)}» не відкривається тут`); continue; }
         const total = P.clips.reduce((a, c) => a + c.dur, 0); if (total + v.duration > 305) { say("Разом до 5 хвилин — решту не додав"); break; }
         try { v.currentTime = Math.min(.6, v.duration / 3); } catch (x) {}
-        P.clips.push({ file: f, url, dur: v.duration, w: v.videoWidth, h: v.videoHeight, thumb: v, vids: [v, mkVideo(url)] });
+        const C = { file: f, url, dur: v.duration, w: v.videoWidth, h: v.videoHeight, thumb: v, vids: [v, mkVideo(url)] }; P.clips.push(C);
+        thumbOf(f).then((cv) => { if (cv && P.clips.includes(C)) { C.thumb = cv; drawClips(); } }).catch(() => {});
       }
       drawClips(); restart(); };
     const shotSheet = () => { const S = E().sheet(B, "Субтитри як на скріні", `<label class="btn" for="vshot">${IC2.shot} Додати скрін</label><input type="file" id="vshot" accept="image/*" multiple hidden><div class="thumbs">${P.styleImgs.map((m) => `<span style="background-image:url(data:image/jpeg;base64,${m.data})"></span>`).join("")}</div>`);
@@ -584,7 +599,7 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
 
   async function run(stage) {
     try {
-      if (!PREP) prepare(stage);
+      if (!PREP || PREP.failed) prepare(stage);
       const ok = await busyRun("listen", () => PREP);
       if (!ok) throw new Error("prep");
       if (!P.words.length) say("Не почув слів — змонтую кліпи як є");
@@ -744,5 +759,5 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
     return S;
   }
 
-  window.YVVideo = { open() { screenStart(); track("open"); }, _t: { set: (p) => { P = p; }, fresh, build, drawFrame, screenEdit, aiPlan, aiCommand, outToSrc, seg: () => SEG, tot: () => TOT, chunks: () => CHUNKS, exportVideo, P: () => P, mkVideo, loadMeta, run: () => run() } };
+  window.YVVideo = { open() { screenStart(); track("open"); }, _t: { set: (p) => { P = p; }, fresh, audioOf, thumbOf, build, drawFrame, screenEdit, aiPlan, aiCommand, outToSrc, seg: () => SEG, tot: () => TOT, chunks: () => CHUNKS, exportVideo, P: () => P, mkVideo, loadMeta, run: () => run() } };
 })();
