@@ -3425,6 +3425,7 @@ const TTS_ERR={no_quota:"Хвилини AI-озвучки закінчились
 function b64Buf(b64){ const bin=atob(b64), u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); return u.buffer; }
 function blobB64(blob){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(",")[1]||""); r.onerror=rej; r.readAsDataURL(blob); }); }
 function vpStop(){ try{ VPA?.pause(); }catch(e){} VPA=null; }
+const VPS={};
 async function voicePicker(box,{getText,onAudio}){
   if(!box) return;
   if(!window.SRV){ box.innerHTML=`<p class="note">AI-озвучка працює на сайті studio.yuvi.life.</p>`; return; }
@@ -3434,13 +3435,16 @@ async function voicePicker(box,{getText,onAudio}){
   const all=()=>(cl?.has?[{id:"clone",name:"Мій голос",descr:"Озвучка твоїм голосом"}]:[]).concat(VOICES);
   if(!VP.id||!all().some(v=>v.id===VP.id)){ VP.id=all()[0]?.id||""; vpSave(); }
   const draw=()=>{ const left=Q?Q.voice.trial+Q.voice.month+Q.voice.pack:null;
-    box.innerHTML=`<div class="vpl">${all().map(v=>`<div class="vpi${VP.id===v.id?" on":""}" data-vp="${esc(v.id)}" role="button" tabindex="0"><b>${esc(v.name)}</b><span>${esc(v.descr||"")}</span>${v.preview?`<button type="button" class="vpp" data-vpp="${esc(v.preview)}" aria-label="Прослухати ${esc(v.name)}">▶</button>`:""}</div>`).join("")}
+    box.innerHTML=`<div class="vpl">${all().map(v=>`<div class="vpi${VP.id===v.id?" on":""}" data-vp="${esc(v.id)}" role="button" tabindex="0"><b>${esc(v.name)}</b><span>${esc(v.descr||"")}</span><button type="button" class="vpp" data-vpp="${esc(v.preview||"")}" data-vpid="${esc(v.id)}" aria-label="Прослухати ${esc(v.name)}">▶</button></div>`).join("")}
       ${cl?.has?"":`<div class="vpi add" data-vclone role="button" tabindex="0"><b>+ Мій голос</b><span>Запиши 1 хвилину — і AI озвучуватиме твоїм голосом</span></div>`}</div>
       <div class="chips" style="margin-top:10px">${Object.entries(TONES).map(([k,n])=>`<button class="chip" type="button" data-vt="${k}" aria-pressed="${VP.tone===k}">${n}</button>`).join("")}</div>
       <button class="big" type="button" id="vpgo">Озвучити текст</button><p class="status" id="vpst"></p>
       <p class="tnote">${left==null?"":`Залишилось ${fmtMin(left)} AI-озвучки · `}<button class="lnk inl" type="button" data-plans>Тарифи і пакети</button>${cl?.has?` · <button class="lnk inl" type="button" data-vclone>Мій голос: перезаписати</button>`:""}</p>`;
     box.querySelectorAll("[data-vp]").forEach(e=>e.onclick=ev=>{ if(ev.target.closest("[data-vpp]")) return; try{ uiSnd("tap"); }catch(x){} VP.id=e.dataset.vp; vpSave(); box.querySelectorAll("[data-vp]").forEach(o=>o.classList.toggle("on",o===e)); });
-    box.querySelectorAll("[data-vpp]").forEach(b=>b.onclick=()=>{ const u=b.dataset.vpp; if(VPA&&VPA._u===u){ vpStop(); b.textContent="▶"; return; } vpStop(); box.querySelectorAll("[data-vpp]").forEach(x=>x.textContent="▶"); VPA=new Audio(u); VPA._u=u; b.textContent="■"; VPA.onended=()=>{ b.textContent="▶"; VPA=null; }; VPA.play().catch(()=>{ b.textContent="▶"; }); });
+    box.querySelectorAll("[data-vpp]").forEach(b=>b.onclick=async()=>{ let u=b.dataset.vpp;
+      if(!u){ const id=b.dataset.vpid; u=VPS[id]; if(!u){ if(b.dataset.busy) return; b.dataset.busy=1; b.textContent="…";   // прикладу немає — генеруємо коротку фразу і запам'ятовуємо
+          try{ const r=await SRV.tts({text:"Привіт! Ось так звучить мій голос у твоєму відео.",voice:id==="clone"?{kind:"clone"}:{kind:"preset",id},tone:VP.tone,quiet:true}); u=VPS[id]=URL.createObjectURL(new Blob([b64Buf(r.audio)],{type:r.mime||"audio/mpeg"})); }catch(x){ delete b.dataset.busy; b.textContent="▶"; toast(TTS_ERR[x.message]||"Не вдалося прослухати"); return; }
+          delete b.dataset.busy; } } if(VPA&&VPA._u===u){ vpStop(); b.textContent="▶"; return; } vpStop(); box.querySelectorAll("[data-vpp]").forEach(x=>x.textContent="▶"); VPA=new Audio(u); VPA._u=u; b.textContent="■"; VPA.onended=()=>{ b.textContent="▶"; VPA=null; }; VPA.play().catch(()=>{ b.textContent="▶"; }); });
     box.querySelectorAll("[data-vt]").forEach(b=>b.onclick=()=>{ VP.tone=b.dataset.vt; vpSave(); box.querySelectorAll("[data-vt]").forEach(x=>x.setAttribute("aria-pressed",x===b)); });
     box.querySelectorAll("[data-vclone]").forEach(b=>b.onclick=()=>openClone(async()=>{ cl=await SRV.myClone(); VP.id="clone"; vpSave(); draw(); }));
     box.querySelectorAll("[data-plans]").forEach(b=>b.onclick=()=>openPlans());
