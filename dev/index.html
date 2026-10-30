@@ -571,6 +571,7 @@ body{background:var(--p-bg)}
 #yviosh{position:fixed;inset:0;z-index:95;background:rgba(0,0,0,.55);display:flex;flex-direction:column;justify-content:flex-end;align-items:center;padding:0 16px calc(70px + env(safe-area-inset-bottom,0px));font-family:var(--pfont,system-ui)}
 #yviosh .b{background:#1c1c20;color:#f5f5f7;border-radius:18px;padding:16px 18px;max-width:360px;border:1px solid rgba(255,255,255,.14)}#yviosh ol{margin:8px 0 12px;padding-left:20px;display:grid;gap:6px;font-size:14px}#yviosh .sh{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:6px;background:rgba(10,132,255,.25);color:#5ac8fa}
 #yviosh button{width:100%;border:0;border-radius:12px;padding:11px;background:#fff;color:#0b0b0d;font:700 15px var(--pfont,system-ui)}#yviosh .ar{font-style:normal;font-size:34px;color:#fff;margin-top:8px;animation:yvbob 1s ease-in-out infinite}@keyframes yvbob{50%{transform:translateY(8px)}}
+.svoice{margin-top:18px;padding-top:14px;border-top:1px dashed var(--rule,rgba(255,255,255,.15))}.svoice h4{margin:0 0 8px}
 .fwip{align-self:flex-start;margin-top:6px;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.1);color:#d4d4d8}.fmt.wipc .fn,.fmt.wipc .fs,.fmt.wipc .fprev{opacity:.6}
 .fdev{align-self:flex-start;margin-top:6px;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px;background:color-mix(in srgb,#e8a33d 16%,transparent);color:#b5781c}
 .fmt.dev{border-style:dashed}.fdevnote{margin:14px 0 10px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,#e8a33d 12%,transparent);font-size:13.5px;color:var(--p-text)}
@@ -1726,6 +1727,8 @@ function stAssemble(el){ const ER=document.getElementById("reader")||el;
         onPick:k=>{ S.scenes[i].sfx=k; persist(); n.textContent=k==="auto"?"Як загалом":soundName(k); refresh(); }}); }));
     sfxList.querySelectorAll("[data-try]").forEach(b=>b.addEventListener("click",()=>{ const f=sfxFor(+b.dataset.try); if(f) playSfx(f[0],f[1],b); else toast("У цієї сцени без звуку"); })); };
   onMediaReady=()=>{ rows(); show(pos); if(VOICE){ vi.textContent=`${VOICE_NAME} · ${VOICE.duration.toFixed(1)} с`; vdel.hidden=false; ER.querySelector("#vfit").textContent=voiceInfoText(); } }; ensureMedia();
+  (async()=>{ if(!window.yvBusy) return; yvBusy.start("montage"); try{ await ensureMedia(); await new Promise(r=>setTimeout(r,60)); S.scenes.forEach((_,i)=>{ try{ inkOf(i); }catch(x){} }); await buildMix(); }catch(x){} yvBusy.end(true);
+    if(!cv.isConnected) return; setTimeout(()=>{ try{ show(0); if(!PLAY) playB.click(); }catch(x){} },450); })();
   rows(); show(Math.min(1.2,totalDur())); fontReady().then(()=>{ PLQ.clear(); show(pos); });
   const RB=document.getElementById("rbody"), tabsEl=ER.querySelector(".etabs");
   const scrollToEl=(node,off=10)=>{ if(!RB||!node) return; RB.scrollTo({top:RB.scrollTop+node.getBoundingClientRect().top-RB.getBoundingClientRect().top-off,behavior:"smooth"}); };
@@ -2162,6 +2165,23 @@ function stScript(el){
       S.script=text.trim(); ta.value=S.script; grow(ta); S.scenes=[]; persist(); st.textContent="Можна правити текст прямо в полі.";
     }catch(err){ if(err?.text) { ta.value=err.text; S.script=err.text; persist(); } const m=errText(err); st.textContent=m; st.className=m?"status err":"status"; }
     stop.hidden=true; busy(b,false,S.script?"↻ Інший текст":"Згенерувати"); count(); });
+
+  // ---- озвучка одразу після тексту: поки людина робить кадри, голос уже готовий ----
+  el.insertAdjacentHTML("beforeend",`<div class="svoice"><h4>Озвучка</h4><div id="s-vpbox"></div>
+    <div class="row" style="margin-top:8px"><button class="chip" type="button" id="s-rec">● Записати своїм голосом</button><label class="chip" for="s-vf">Файл</label><input type="file" id="s-vf" accept="audio/*,video/*,.mp3,.m4a,.wav,.aac,.ogg,.webm" class="sr"></div>
+    <div class="status" id="s-vst">${S.voiceName?`Голос готовий: ${esc(S.voiceName)}`+(S.voiceText&&S.voiceText!==S.script?" · текст змінено — краще переозвучити":""):"Голосу ще немає — можна додати зараз або пізніше"}</div></div>`);
+  const vst=el.querySelector("#s-vst");
+  const takeV=async(buf,name,type)=>{ if(!buf){ vst.textContent="Не вдалося відкрити запис."; return; } vst.textContent="Обробляю голос…";
+    try{ monDefaults(); VOICE_RAW=await decodeAudioBuf(buf.slice(0)); VOICE_NAME=name||"запис"; processVoice(); MIX=null; storeVoice(buf,VOICE_NAME,type); S.voiceText=S.script; persist();
+      vst.textContent=`Голос готовий: ${VOICE_NAME} · ${VOICE.duration.toFixed(1)} с`; }catch(err){ vst.textContent="Цей запис не відкривається. Спробуй ще раз або інший файл."; } };
+  try{ voicePicker(el.querySelector("#s-vpbox"),{getText:()=>S.script||ta.value,onAudio:(buf,name,type)=>takeV(buf,name,type)}); }catch(err){}
+  el.querySelector("#s-vf").addEventListener("change",async ev=>{ const f=ev.target.files?.[0]; if(!f) return; let b=null; try{ b=await f.arrayBuffer(); }catch(x){} ev.target.value=""; takeV(b,f.name,f.type); });
+  { const rb=el.querySelector("#s-rec"); let rec=null, t0=0, tm=0;
+    rb.addEventListener("click",async()=>{ if(rec){ rec.stop(); return; } let stream=null; try{ stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}}); }catch(x){}
+      if(!stream){ vst.textContent="Немає доступу до мікрофона. Дозволь мікрофон у налаштуваннях браузера."; return; }
+      const mime=["audio/mp4","audio/webm;codecs=opus","audio/webm"].find(m=>window.MediaRecorder&&MediaRecorder.isTypeSupported(m))||""; rec=new MediaRecorder(stream,mime?{mimeType:mime}:{}); const ch=[]; rec.ondataavailable=x=>x.data.size&&ch.push(x.data);
+      rec.onstop=async()=>{ stream.getTracks().forEach(t=>t.stop()); clearInterval(tm); rb.textContent="● Записати своїм голосом"; rb.classList.remove("rec"); const bl=new Blob(ch,{type:rec.mimeType||mime}); rec=null; takeV(await bl.arrayBuffer(),"мій запис",bl.type); };
+      rec.start(); t0=Date.now(); rb.classList.add("rec"); const tick=()=>{ const sec=Math.floor((Date.now()-t0)/1000); rb.textContent=`■ Зупинити · ${Math.floor(sec/60)}:${String(sec%60).padStart(2,"0")}`; }; tick(); tm=setInterval(tick,500); }); }
 }
 function colorHTML(sc){ return `<div class="f"><span>Колір плашки</span><div class="colr">${[["red","Червона — проблема, помилка"],["green","Зелена — рішення, порада"]].map(([k,n])=>`<button type="button" class="sw" data-c="${k}" aria-pressed="${colOf(sc)===k}" aria-label="${n}" title="${n}" style="background:${plaqueStyle(k).fill}"></button>`).join("")}</div></div>`; }
 function sceneHTML(sc,i){ const F=FIELDS[S.format]||FIELDS.marker;
@@ -4181,7 +4201,8 @@ async function loadUIF(){ if(!window.SRV?.uiFlags) { applyUIF(); return; } const
 (function(){
   const KIND={ text:{t:"Генерую…",m:["Підбираю слова","Шукаю сильний хук","Складаю сцени","Перевіряю, щоб чіпляло","Майже готово"]},
                image:{t:"Малюю картинку…",m:["Продумую кадр","Малюю","Додаю деталі","Перевіряю якість","Майже готово"]},
-               voice:{t:"Озвучую…",m:["Готую голос","Записую","Вирівнюю звук","Майже готово"]} };
+               voice:{t:"Озвучую…",m:["Готую голос","Записую","Вирівнюю звук","Майже готово"]},
+               montage:{t:"Монтую відео…",m:["Збираю кадри","Накладаю голос","Додаю звуки й рух","Майже готово"]} };
   let el, n=0, p=0, timer=null, endT=null, msgT=null, bgT=null, kind="text", hidden=false, last={t:"",at:0};
   document.addEventListener("click",e=>{ const b=e.target.closest?.("button"); if(b) last={t:(b.textContent||"").replace(/\s+/g," ").trim().slice(0,60),at:Date.now()}; },true);
   const C=2*Math.PI*54;
