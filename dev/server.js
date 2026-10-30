@@ -246,6 +246,11 @@
   SRV.kbList = async () => (await rpc("kb_list")) || [];
   SRV.kbSet = async (id, o) => rpc("kb_set", { p_id: id, p_status: o.status ?? null, p_title: o.title ?? null, p_body: o.body ?? null, p_why: o.why ?? null, p_how: o.how ?? null, p_kind: o.kind ?? null, p_niche: o.niche ?? null });
   SRV.kbChatList = async () => (await rpc("kb_chat_list", { p_limit: 60 })) || [];
+  // розпізнавання мови з часом слів — монтаж живого голосу («Розкажи своїми словами»)
+  SRV.stt = async (o) => {
+    if (!SRV.session) { loginSheet("Щоб змонтувати голос, увійди або зареєструйся."); throw new Error("login"); }
+    return busy("listen", () => call("stt", o), o?.quiet);
+  };
   SRV.kbChat = async (message) => busy("text", () => call("kb-chat", { message }));
 
   // --- вхід посиланням на пошту ---
