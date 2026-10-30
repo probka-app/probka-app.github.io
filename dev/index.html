@@ -2179,7 +2179,7 @@ function stScript(el){
       vst.textContent=`Голос готовий: ${VOICE_NAME} · ${VOICE.duration.toFixed(1)} с`; }catch(err){ vst.textContent="Цей запис не відкривається. Спробуй ще раз або інший файл."; } };
   try{ voicePicker(el.querySelector("#s-vpbox"),{getText:()=>S.script||ta.value,onAudio:(buf,name,type)=>takeV(buf,name,type)}); }catch(err){}
   // ---- ТЕСТ (лише dev і власник): «Розкажи своїми словами» — монтаж живого голосу ----
-  if(window.YV_DEV&&uiOwner()){ el.insertAdjacentHTML("afterbegin",`<button class="talkgo" type="button" id="s-talk"><b>🎙 Розкажи своїми словами</b><span>Наговори думку як є — змонтуємо живий голос без зайвого<i>ТЕСТ</i></span></button>`);
+  if(uiOwner()){ el.insertAdjacentHTML("afterbegin",`<button class="talkgo" type="button" id="s-talk"><b>🎙 Розкажи своїми словами</b><span>Наговори думку як є — змонтуємо живий голос без зайвого<i>ТЕСТ</i></span></button>`);
     el.querySelector("#s-talk").onclick=async()=>{ try{ if(!window.YVTalk) await new Promise((ok,no)=>{ const sc=document.createElement("script"); sc.src="a/talk.js?v="+Date.now(); sc.onload=ok; sc.onerror=no; document.head.appendChild(sc); }); }catch(e){ toast("Не вдалося завантажити"); return; }
       YVTalk.open({target:S.dur||0,onDone:async({text,wav,seconds})=>{ S.script=text; ta.value=text; grow(ta); count(); S.scenes=[]; S.dur=Math.max(10,Math.round(seconds)); monDefaults(); S.mon.cutPauses=false; S.mon.fitVoice=false; persist();
         await takeV(wav,"мій голос (змонтовано)","audio/wav"); toast("Текст і голос готові — далі розкадровка"); setTimeout(()=>document.getElementById("next").click(),500); }}); }; }
@@ -4011,7 +4011,7 @@ function closeOwn(){ ownStop(); const W=document.getElementById("ownw"); W.hidde
 document.getElementById("owback")?.addEventListener("click",()=>{ try{ uiSnd("tap"); }catch(e){} closeOwn(); });
 document.getElementById("ownfmt")?.addEventListener("click",()=>openOwn());
 /* ТЕСТ (лише dev і власник): «Монтаж твого відео» */
-{ const vb=document.getElementById("vedfmt"); let n=0; const chk=()=>{ if(window.YV_DEV&&uiOwner()&&(!window.SRV||SRV.session)) vb.hidden=false; else if(++n<40) setTimeout(chk,500); }; if(vb){ setTimeout(chk,300);
+{ const vb=document.getElementById("vedfmt"); let n=0; const chk=()=>{ if(uiOwner()&&(!window.SRV||SRV.session)) vb.hidden=false; else if(++n<40) setTimeout(chk,500); }; if(vb){ setTimeout(chk,300);
   const load=src=>new Promise((ok,no)=>{ const sc=document.createElement("script"); sc.src=src+"?v="+Date.now(); sc.onload=ok; sc.onerror=no; document.head.appendChild(sc); });
   vb.addEventListener("click",async()=>{ try{ uiSnd("tap"); }catch(e){} try{ if(!window.YVTalk) await load("a/talk.js"); if(!window.YVVideo) await load("a/vedit.js"); }catch(e){ toast("Не вдалося завантажити"); return; } YVVideo.open(); }); } }
 async function openIdeas(){
