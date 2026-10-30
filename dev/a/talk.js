@@ -148,6 +148,38 @@
     v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, "data"); v.setUint32(40, n * 2, true);
     for (let i = 0; i < n; i++) v.setInt16(44 + i * 2, Math.max(-1, Math.min(1, x[i])) * 32767, true); return b;
   }
+  /* ---------- «Звучання»: легке підлаштування голосу (живий голос, без AI) ---------- */
+  const FXP = {
+    orig: { n: "Оригінал", p: 0, eq: [] },
+    deep: { n: "Глибше", p: -1, eq: [["lowshelf", 160, 3], ["peaking", 3000, -1]] },
+    warm: { n: "Тепліше", p: 0, eq: [["lowshelf", 220, 2.5], ["highshelf", 7500, -2.5], ["peaking", 2500, -1]] },
+    clear: { n: "Чіткіше", p: 0, eq: [["highpass", 120], ["peaking", 300, -2.5], ["peaking", 3600, 3.5]] },
+    bright: { n: "Дзвінкіше", p: 1, eq: [["highshelf", 6500, 3], ["peaking", 250, -1.5]] },
+    radio: { n: "Радіо", p: -.5, eq: [["lowshelf", 130, 3.5], ["peaking", 420, -2], ["peaking", 4200, 2.5], ["highshelf", 11000, 1.5]], comp: true },
+  };
+  let FX = { k: "orig", pitch: 0, tone: 0 }, FXOUT = null, FXSIG = "";
+  try { const f = JSON.parse(localStorage.getItem("yvTalkFx")); if (f && FXP[f.k]) FX = f; } catch (e) {}
+  const saveFx = () => { try { localStorage.setItem("yvTalkFx", JSON.stringify(FX)); } catch (e) {} };
+  function pitchShift(x, semi) {
+    if (!semi || typeof wsola !== "function") return x;
+    const r = Math.pow(2, semi / 12), y = wsola(x, SR, 1 / r), out = new Float32Array(x.length);
+    for (let i = 0; i < out.length; i++) { const f = i * r, a = Math.floor(f), t = f - a; out[i] = (y[a] || 0) * (1 - t) + (y[a + 1] || 0) * t; }
+    return out;
+  }
+  async function applyFx(x) {
+    const P = FXP[FX.k] || FXP.orig, semi = Math.max(-3, Math.min(3, (P.p || 0) + (+FX.pitch || 0))), tone = +FX.tone || 0;
+    if (!semi && !tone && !P.eq.length) return x;
+    const y = pitchShift(x, semi);
+    const oc = new OfflineAudioContext(1, y.length, SR), b = oc.createBuffer(1, y.length, SR); b.copyToChannel(y, 0);
+    const src = oc.createBufferSource(); src.buffer = b; let node = src;
+    const bq = (type, f, g = 0, Q = .8) => { const q = oc.createBiquadFilter(); q.type = type; q.frequency.value = f; q.gain.value = g; q.Q.value = Q; node.connect(q); node = q; };
+    P.eq.forEach(([t, f, g]) => bq(t, f, g || 0)); if (tone) { bq("lowshelf", 320, -tone / 2); bq("highshelf", 2800, tone / 2); }
+    if (P.comp) { const c = oc.createDynamicsCompressor(); c.threshold.value = -22; c.ratio.value = 4; c.attack.value = .004; c.release.value = .12; node.connect(c); node = c; }
+    node.connect(oc.destination); src.start();
+    return master((await oc.startRendering()).getChannelData(0).slice());
+  }
+  async function fxOut() { const sig = JSON.stringify(FX); if (FXOUT && FXSIG === sig) return FXOUT; FXOUT = await applyFx(OUT); FXSIG = sig; return FXOUT; }
+
   const b64 = (ab) => { const u = new Uint8Array(ab); let s = ""; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode(...u.subarray(i, i + 0x8000)); return btoa(s); };
 
   // точка різу — у найтихішому місці поруч (щоб не обрізати слово й не клацало)
@@ -180,7 +212,7 @@
       s.p.toks.forEach((t) => { const w = src.words[t.i]; MAP.push({ tok: t, s: (o + Math.max(0, w.s * SR - s.a)) / SR, e: (o + Math.min(L, w.e * SR - s.a)) / SR }); });
       for (let j = 0; j < L; j++) { const f = Math.min(1, j / F, (L - j) / F); y[o + j] += src.x[s.a + j] * f; }
       o += L + (i < segs.length - 1 ? Math.round(gapAfter(s.p) * SR) : 0); });
-    OUT = master(y.subarray(0, o + Math.round(SR * .2)));
+    OUT = master(y.subarray(0, o + Math.round(SR * .2))); FXOUT = null;
   }
 
   const snapTok = () => JSON.stringify(TOK);
@@ -280,6 +312,7 @@ ${cmdSrc ? `- {"op":"insert","after":N,"from":A,"to":B} — вставити п�
       if (PL.hl) { const m = MAP.find((o) => t >= o.s - .02 && t < o.e + .05); UI.root.querySelectorAll(".tkw.now").forEach((w) => w.classList.remove("now")); if (m) UI.root.querySelector(`.tkw[data-k="${TOK.indexOf(m.tok)}"]`)?.classList.add("now"); }
       PL.raf = requestAnimationFrame(loop); }; loop();
   }
+  const fmtS = (v, u = "") => (+v > 0 ? "+" : "") + (+v || 0) + u + (u ? "" : " тону");
   const fmt = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
 
   /* ================= ІНТЕРФЕЙС ================= */
@@ -322,6 +355,11 @@ ${cmdSrc ? `- {"op":"insert","after":N,"from":A,"to":B} — вставити п�
 #yvtalk .tkpop .tkq{color:#a1a1aa;font-size:12.5px;padding:2px 4px}
 #yvtalk .tkmsg{margin:10px 0 0;padding:10px 12px;border-radius:14px;background:rgba(255,214,10,.1);border:1px solid rgba(255,214,10,.3);color:#ffe27a;font-size:13.5px}
 #yvtalk textarea{width:100%;min-height:60px;padding:10px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#f5f5f7;font:15px inherit;resize:none}
+#yvtalk .tkfx{margin:12px 0 4px;padding:10px 12px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
+#yvtalk .tkfxh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}#yvtalk .tkfxh b{font-size:13.5px}
+#yvtalk .tkfxr{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}#yvtalk .tkfxr::-webkit-scrollbar{display:none}#yvtalk .tkfxr .tkc{flex:none}
+#yvtalk .tkfxs{display:grid;gap:2px;margin-top:10px}#yvtalk .tkfxs label{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:13px;font-weight:600}#yvtalk .tkfxs label span{text-align:right;color:#a1a1aa;font-weight:500}
+#yvtalk .tkfxs input{grid-column:1/-1;width:100%;accent-color:#f5f5f7}#yvtalk .tkfxs small{display:flex;justify-content:space-between;color:#71717a;font-size:11px;margin:-2px 0 6px}
 #yvtalk .tkdev{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:#ff9f0a;color:#0b0b0d;font-size:10.5px;font-weight:800;vertical-align:2px}`;
 
   function shell(title) {
@@ -375,15 +413,25 @@ ${cmdSrc ? `- {"op":"insert","after":N,"from":A,"to":B} — вставити п�
     const was = ORIG ? ORIG.length / SR : 0, now = OUT.length / SR, cutN = TOK.filter((t) => t.cut).length;
     B.innerHTML = `<div class="tkpl"><button id="tkplay" type="button" aria-label="Слухати">${ICON.play}</button><div style="flex:1"><div id="tkbar"><i></i></div><div class="tkmeta" style="margin:6px 0 0"><span id="tktime">0:00 / ${fmt(now)}</span><button class="tkc" type="button" id="tkorig" style="padding:3px 9px;font-size:11.5px">Як було</button></div></div></div>
       <div class="tkmeta"><span>Було ${fmt(was)} → стало <b style="color:#f5f5f7">${fmt(now)}</b></span><span>вирізано слів: ${cutN}</span></div>
+      <div class="tkfx"><div class="tkfxh"><b>Звучання голосу</b><button type="button" class="tkc" id="tkfxm" style="padding:3px 9px;font-size:11.5px">Тонко ▾</button></div>
+        <div class="tkfxr">${Object.entries(FXP).map(([k, P]) => `<button type="button" class="tkc" data-fx="${k}" aria-pressed="${FX.k === k}">${P.n}</button>`).join("")}</div>
+        <div class="tkfxs" hidden><label>Висота <span id="tkpv">${fmtS(FX.pitch)}</span><input type="range" id="tkpitch" min="-2" max="2" step=".5" value="${FX.pitch}"></label><small><span>грубше</span><span>дзвінкіше</span></small>
+          <label>Тембр <span id="tktv">${fmtS(FX.tone, " дБ")}</span><input type="range" id="tktone" min="-6" max="6" step="1" value="${FX.tone}"></label><small><span>м'якше</span><span>яскравіше</span></small></div></div>
       ${msg ? `<div class="tkmsg">${escH(msg)}</div>` : ""}
       <div class="tktxt" style="margin-top:12px">${TOK.map((t, k) => `<span class="tkw${t.cut ? " cut" : ""}${t.ins ? " ins" : ""}" data-k="${k}">${escH(SRC[t.src].words[t.i].w)}</span>`).join(" ")}</div>
       <div class="tkleg"><span>Тапни слово — щоб вирізати, повернути або вставити після нього</span><s>вирізано</s><em>додано правкою</em></div>`;
     F.innerHTML = `<div class="tk2"><button class="tkbtn" type="button" id="tkvoice">${ICON.mic} Сказати правку</button><button class="tkbtn" type="button" id="tkwrite">✍ Написати</button></div>
       <div class="tk2"><button class="tkbtn" type="button" id="tkundo"${HIST.length ? "" : " disabled style=\"opacity:.4\""}>↶ Скасувати</button><button class="tkbtn" type="button" id="tkagain">Записати заново</button></div>
       <button class="tkbtn main" type="button" id="tkdone">Влаштовує → до розкадровки</button>`;
-    $(B, "#tkplay").onclick = () => { if (PL) stop(); else play(OUT, 0, true); };
+    $(B, "#tkplay").onclick = async () => { if (PL) stop(); else play(await fxOut(), 0, true); };
     $(B, "#tkorig").onclick = () => { if (PL) stop(); else play(ORIG, 0, false); };
     B.querySelectorAll(".tkw").forEach((w) => w.onclick = () => wordMenu(+w.dataset.k, w));
+    // звучання: змінюєш — одразу чуєш (з того ж місця)
+    const reFx = async () => { saveFx(); const was = PL ? AC().currentTime - PL.t0 : null; stop(); const d = await fxOut(); play(d, was != null ? Math.min(was, d.length / SR - .1) : 0, true); };
+    B.querySelectorAll("[data-fx]").forEach((b) => b.onclick = () => { FX.k = b.dataset.fx; B.querySelectorAll("[data-fx]").forEach((o) => o.setAttribute("aria-pressed", o === b)); reFx(); });
+    $(B, "#tkfxm").onclick = () => { const s = $(B, ".tkfxs"); s.hidden = !s.hidden; $(B, "#tkfxm").textContent = s.hidden ? "Тонко ▾" : "Сховати ▴"; };
+    const sl = (id, key, lab, u) => { const r = $(B, id); r.oninput = () => { FX[key] = +r.value; $(B, lab).textContent = fmtS(FX[key], u); }; r.onchange = reFx; };
+    sl("#tkpitch", "pitch", "#tkpv", ""); sl("#tktone", "tone", "#tktv", " дБ");
     $(F, "#tkundo").onclick = () => { if (!HIST.length) return; stop(); TOK = JSON.parse(HIST.pop()); render(); screenEdit("Скасовано."); };
     $(F, "#tkagain").onclick = () => { stop(); screenRecord(); };
     $(F, "#tkwrite").onclick = writeEdit;
@@ -402,7 +450,7 @@ ${cmdSrc ? `- {"op":"insert","after":N,"from":A,"to":B} — вставити п�
     p.querySelector('[data-a="x"]').onclick = closeP;
     p.querySelector('[data-a="cut"]').onclick = () => { pushHist(); t.cut = !t.cut; closeP(); render(); screenEdit(); };
     p.querySelector('[data-a="sent"]').onclick = () => { pushHist(); const to = !t.cut; for (let j = k; j < TOK.length; j++) { TOK[j].cut = to; if (/[.!?…]$/.test(SRC[TOK[j].src].words[TOK[j].i].w)) break; } closeP(); render(); screenEdit(); };
-    p.querySelector('[data-a="from"]').onclick = () => { closeP(); let m = MAP.find((o) => o.tok === t); if (!m) { for (let j = k; j < TOK.length && !m; j++) m = MAP.find((o) => o.tok === TOK[j]); } play(OUT, m ? Math.max(0, m.s - .05) : 0, true); };
+    p.querySelector('[data-a="from"]').onclick = () => { closeP(); let m = MAP.find((o) => o.tok === t); if (!m) { for (let j = k; j < TOK.length && !m; j++) m = MAP.find((o) => o.tok === TOK[j]); } fxOut().then((d) => play(d, m ? Math.max(0, m.s - .05) : 0, true)); };
     const ib = p.querySelector('[data-a="ins"]'), il = ib.innerHTML;
     ib.onclick = () => { if (!ib._rec) p.querySelector(".tkq").textContent = "Говори тільки те, що вставити. Натисни ще раз, щоб завершити."; record(ib, il, async (buf) => {
       closeP();
@@ -431,10 +479,10 @@ ${cmdSrc ? `- {"op":"insert","after":N,"from":A,"to":B} — вставити п�
   }
 
   let ONDONE = null;
-  function done() {
-    stop(); const text = TOK.filter((t) => !t.cut).map((t) => SRC[t.src].words[t.i].w).join(" ").replace(/\s+([,.!?…:;])/g, "$1");
+  async function done() {
+    stop(); const FINAL = await fxOut(); const text = TOK.filter((t) => !t.cut).map((t) => SRC[t.src].words[t.i].w).join(" ").replace(/\s+([,.!?…:;])/g, "$1");
     const sentences = text.replace(/([.!?…])\s+/g, "$1\n").split("\n").map((l) => l.charAt(0).toUpperCase() + l.slice(1)).join("\n");
-    const cb = ONDONE; close(); cb?.({ text: sentences, wav: wav(OUT), seconds: OUT.length / SR });
+    const cb = ONDONE; close(); cb?.({ text: sentences, wav: wav(FINAL), seconds: FINAL.length / SR });
   }
 
   window.YVTalk = { open(opts = {}) { ONDONE = opts.onDone || null; TARGET = opts.target ?? TARGET; screenRecord(); },
