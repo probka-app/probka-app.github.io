@@ -330,7 +330,7 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvtr .")}`;
         // звук тренду не вшиваємо (права) — лише відео; людина додає звук у соцмережі
         const files = [new File([out.blob], `yuvi_trend_${new Date().toISOString().slice(0, 10)}.${out.ext}`, { type: out.blob.type })];
         if (T.gallery) T.clips.forEach((c, i) => c?.file && files.push(new File([c.file], `kadr_${i + 1}.${(c.file.name.split(".").pop() || "mp4")}`, { type: c.file.type })));
-        await share(files);
+        E().offerSave(F, files, () => screenResult(), () => track("saved")); return;
       } catch (x) { console.error(x); say("Не вдалося зберегти відео"); }
       b.disabled = false; b.textContent = "Зберегти відео"; };
   }

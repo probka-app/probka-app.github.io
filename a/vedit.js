@@ -30,7 +30,11 @@
 
   /* ---------- стан ---------- */
   let P = null; // проєкт
-  const fresh = () => ({ main: null, media: [], styleImgs: [], wish: "", aud: null, words: [], cut: new Set(), zoom: new Set(), emph: new Set(), broll: [], hook: "", style: { ...BASE, ...PRESETS.yellow.s }, preset: "yellow", hist: [] });
+  // що додавати під час монтажу — галочки на старті (запам'ятовуємо)
+  const OPTS = [["subs", "Субтитри"], ["hook", "Плашка-хук"], ["stock", "Фото й відео-вставки"], ["music", "Музика"], ["amb", "Фонові звуки"]];
+  const loadOpt = () => { let o = {}; try { o = JSON.parse(localStorage.getItem("yv_ved_opt") || "{}"); } catch (e) {} return { subs: true, hook: true, stock: true, music: true, amb: false, ...o }; };
+  const saveOpt = (o) => { try { localStorage.setItem("yv_ved_opt", JSON.stringify(o)); } catch (e) {} };
+  const fresh = () => ({ opt: loadOpt(), main: null, media: [], styleImgs: [], wish: "", aud: null, words: [], cut: new Set(), zoom: new Set(), emph: new Set(), broll: [], hook: "", style: { ...BASE, ...PRESETS.yellow.s }, preset: "yellow", hist: [] });
   const snapState = () => JSON.stringify({ cut: [...P.cut], zoom: [...P.zoom], emph: [...P.emph], broll: P.broll, hook: P.hook, style: P.style, preset: P.preset });
   const pushHist = () => { P.hist.push(snapState()); if (P.hist.length > 30) P.hist.shift(); };
   const popHist = () => { const s = P.hist.pop(); if (!s) return false; const o = JSON.parse(s); P.cut = new Set(o.cut); P.zoom = new Set(o.zoom); P.emph = new Set(o.emph); P.broll = o.broll; P.hook = o.hook; P.style = o.style; P.preset = o.preset; return true; };
@@ -89,7 +93,7 @@
   /* ---------- малювання кадру ---------- */
   function cover(x, el, w, h, W, H, k = 1) { const r = Math.max(W / w, H / h) * k, dw = w * r, dh = h * r; x.drawImage(el, (W - dw) / 2, (H - dh) / 2, dw, dh); }
   function drawMain(x, el, W, H, zoom) {
-    const vw = el.videoWidth || el.naturalWidth || W, vh = el.videoHeight || el.naturalHeight || H;
+    const vw = el.videoWidth || el.naturalWidth || el.width || W, vh = el.videoHeight || el.naturalHeight || el.height || H;
     if (!vw || !vh) return;
     x.save(); x.translate(W / 2, H / 2); x.scale(zoom, zoom); x.translate(-W / 2, -H / 2);
     if (vw / vh > .8) { // горизонтальне/квадратне — розмитий фон + відео по ширині
@@ -101,7 +105,7 @@
   const fontStr = (st, px) => `${st.weight || 800} ${px}px "${st.font}", system-ui, sans-serif`;
   function rr(x, a, b, w, h, r) { x.beginPath(); x.roundRect ? x.roundRect(a, b, w, h, r) : x.rect(a, b, w, h); }
   function drawSubs(x, t, W, H) {
-    const st = P.style, k = W / OW, ch = CHUNKS.find((c) => t >= c.s - .04 && t < c.until); if (!ch) return;
+    if (P.style.off) return; const st = P.style, k = W / OW, ch = CHUNKS.find((c) => t >= c.s - .04 && t < c.until); if (!ch) return;
     const cur = wordAt(t), px = Math.round(66 * (st.size || 1) * k), words = ch.idx.map((i) => ({ i, t: st.upper ? P.words[i].w.toUpperCase() : P.words[i].w.replace(/[.,!?…:;]+$/, (m) => m === "," ? "" : m) }));
     x.font = fontStr(st, px); x.textBaseline = "middle"; x.textAlign = "left";
     const sp = x.measureText(" ").width, maxW = W * .84, lines = [[]]; let lw = 0;
@@ -136,8 +140,8 @@
   function zoomAt(t) { let z = 1; for (const i of P.zoom) { const o = WOUT[i]; if (!o) continue; const d = t - (o.s - .05); if (d < 0 || d > 1.35) continue; const e = d < .18 ? 1 - Math.pow(1 - d / .18, 3) : d > 1.05 ? 1 - (d - 1.05) / .3 : 1; z = Math.max(z, 1 + .13 * clamp(e)); } return z; }
   function brollAt(t) { for (const b of P.broll) { const a = WOUT[b.a], e = WOUT[b.b]; if (!a || !e) continue; if (t >= a.s && t < e.e + .2) return { b, t0: a.s, t1: e.e + .2 }; } return null; }
   // вставка: на весь екран або віконцем (розмір і положення — повзунками), з вирізаним фоном для фото
-  function drawLayer(x, m, br, t, W, H) {
-    const L = br.b, fa = clamp(Math.min((t - br.t0) / .12, (br.t1 - t) / .12)), el = L.cutBg && m.cut ? m.cut : m.el, ew = el.videoWidth || el.naturalWidth || el.width || W, eh = el.videoHeight || el.naturalHeight || el.height || H;
+  function drawLayer(x, m, br, t, W, H, ov) {
+    const L = br.b, fa = clamp(Math.min((t - br.t0) / .12, (br.t1 - t) / .12)), el = L.cutBg && m.cut ? m.cut : (ov || m.el), ew = el.videoWidth || el.naturalWidth || el.width || W, eh = el.videoHeight || el.naturalHeight || el.height || H;
     const grow = m.kind === "img" ? 1 + .06 * clamp((t - br.t0) / Math.max(.5, br.t1 - br.t0)) : 1;
     x.save(); x.globalAlpha = fa;
     if (L.full !== false && !(L.cutBg && m.cut)) { cover(x, el, ew, eh, W, H, grow); x.restore(); return; }
@@ -147,11 +151,11 @@
     else { const r = 26 * W / OW; x.shadowColor = "rgba(0,0,0,.45)"; x.shadowBlur = 30 * W / OW; x.shadowOffsetY = 8 * W / OW; rr(x, -w / 2, -h / 2, w, h, r); x.fillStyle = "#000"; x.fill(); x.shadowColor = "transparent"; x.clip(); x.drawImage(el, -w / 2, -h / 2, w, h); }
     x.restore();
   }
-  function drawFrame(x, t, W, H, vEl) {
+  function drawFrame(x, t, W, H, vEl, brEl) {
     x.fillStyle = "#000"; x.fillRect(0, 0, W, H);
     const br = brollAt(t), z = zoomAt(t);
     drawMain(x, vEl, W, H, z);
-    if (br) { const m = P.media[br.b.m]; if (m) drawLayer(x, m, br, t, W, H); }
+    if (br) { const m = P.media[br.b.m]; if (m) drawLayer(x, m, br, t, W, H, brEl); }
     drawSubs(x, t, W, H); drawHook(x, t, W, H);
   }
 
@@ -186,8 +190,62 @@
   }
   async function still(t, cv) { const m = outToSrc(t), v = m.seg.v; await seekTo(v, local(m.seg, m.src)); const br = brollAt(t), me = br && P.media[br.b.m]; if (me?.kind === "video") await seekTo(me.el, Math.max(0, t - br.t0)); drawFrame(cv.getContext("2d"), t, cv.width, cv.height, v); }
 
-  /* ---------- збереження: запис кадрів у реальному часі ---------- */
+  /* ---------- збереження: покадрово (рівно 30 кадрів/с, без ривків) через Mediabunny; запасний шлях — запис у реальному часі ---------- */
+  const MBURL = "https://cdn.jsdelivr.net/npm/mediabunny@1.45.0/+esm";
   async function exportVideo(onProg) {
+    try { return await exportFrames(onProg); }
+    catch (e) { console.warn("frames export → realtime", e); track("exp_fallback", { v: String(e?.message || e).slice(0, 30) }); onProg?.(0); return exportRealtime(onProg); }
+  }
+  async function exportFrames(onProg) {
+    const M = await (MB ||= import(MBURL));
+    if (!window.VideoEncoder) throw new Error("noenc");
+    const can = (c) => M.canEncodeVideo(c, { width: OW, height: OH, bitrate: 1e7 }).catch(() => false);
+    // H.264 (iPhone, Mac, Windows) → MP4; де його немає — VP9 у WebM
+    const vc = (await can("avc")) ? "avc" : (await can("vp9")) ? "vp9" : null; if (!vc) throw new Error("noavc");
+    // звук: AAC у MP4; якщо браузер не вміє AAC — MOV з нестисненим звуком (iPhone і Instagram його приймають)
+    const aac = vc === "avc" && await M.canEncodeAudio("aac").catch(() => false), webm = vc !== "avc";
+    try { await document.fonts?.ready; } catch (e) {}
+    await ensureFx();
+    // кадри відео людини читаємо напряму з файлу — точно, послідовно, швидше за реальний час
+    const SZ = 1920, mkSink = async (blob) => { const inp = new M.Input({ formats: M.ALL_FORMATS, source: new M.BlobSource(blob) }), tr = await inp.getPrimaryVideoTrack();
+      if (!tr || !(await tr.canDecode())) throw new Error("nodecode"); const dw = +(await tr.getDisplayWidth()) || 0, dh = +(await tr.getDisplayHeight()) || 0, k = dw && dh ? Math.min(1, SZ / Math.max(dw, dh)) : 1;
+      let dur = 0; try { dur = await tr.computeDuration(); } catch (e) {}
+      return { sink: new M.CanvasSink(tr, k < 1 ? { width: Math.round(dw * k), height: Math.round(dh * k), fit: "fill", poolSize: 2 } : { poolSize: 2 }), dur }; };
+    const sinks = await Promise.all(P.clips.map((c) => mkSink(c.file)));
+    const bsinks = new Map();
+    const bSink = async (m) => { if (!bsinks.has(m)) bsinks.set(m, (async () => { try { return await mkSink(await (await fetch(m.url)).blob()); } catch (e) { return null; } })()); return bsinks.get(m); };
+    const cv = document.createElement("canvas"); cv.width = OW; cv.height = OH; const x = cv.getContext("2d", { alpha: false });
+    const out = new M.Output({ format: webm ? new M.WebMOutputFormat() : aac ? new M.Mp4OutputFormat({ fastStart: "in-memory" }) : new M.MovOutputFormat({ fastStart: "in-memory" }), target: new M.BufferTarget() });
+    const vs = new M.CanvasSource(cv, { codec: vc, bitrate: 1e7, keyFrameInterval: 2 }), as = new M.AudioBufferSource(webm ? { codec: "opus", bitrate: 160e3 } : aac ? { codec: "aac", bitrate: 192e3 } : { codec: "pcm-s16" });
+    out.addVideoTrack(vs, { frameRate: FPS }); out.addAudioTrack(as); await out.start();
+    // звук подаємо шматками по секунді разом з кадрами — так файл збирається рівно, без накопичення в пам'яті
+    const SR = E().SR, A = OUTA; let aPos = 0;
+    const pushAudio = async (upto) => { upto = Math.min(A.length, Math.round(upto)); if (upto <= aPos) return; const L = upto - aPos, ab = new AudioBuffer({ length: L, numberOfChannels: 2, sampleRate: SR }), part = A.subarray(aPos, upto);
+      ab.copyToChannel(part, 0); ab.copyToChannel(part, 1); aPos = upto; await as.add(ab); };
+    const N = Math.max(1, Math.round(TOT * FPS)); let segI = -1, it = null, cur = null, bKey = null, bit = null, bcur = null;
+    const pull = async (iter, prev) => { if (!iter) return prev; const r = await iter.next(); return r.done || !r.value ? prev : r.value.canvas; };
+    for (let i = 0; i < N; i++) {
+      if (i % FPS === 0) await pushAudio((i / FPS + 1) * SR);
+      const t = Math.min(i / FPS, TOT - .001), m = outToSrc(t), si = SEG.indexOf(m.seg);
+      if (si !== segI) { await it?.return?.(); segI = si; const sg = m.seg, ts = [];
+        for (let j = i; j < N; j++) { const tt = Math.min(j / FPS, TOT - .001); if (outToSrc(tt).seg !== sg) break; ts.push(Math.max(0, local(sg, sg.a + tt - sg.o))); }
+        it = sinks[sg.c].sink.canvasesAtTimestamps(ts); }
+      cur = await pull(it, cur);
+      const br = brollAt(t), me = br && P.media[br.b.m];
+      if (me?.kind === "video") { if (bKey !== br.b) { await bit?.return?.(); bKey = br.b; bcur = null; const S = await bSink(me), ts = [];
+          for (let j = i; j < N; j++) { const tt = j / FPS, q = brollAt(tt); if (q?.b !== br.b) break; const d = S?.dur || me.el.duration || 5; ts.push((tt - br.t0) % Math.max(.5, d - .05)); }
+          bit = S ? S.sink.canvasesAtTimestamps(ts) : null; }
+        bcur = await pull(bit, bcur); }
+      else if (bKey) { await bit?.return?.(); bKey = null; bit = null; bcur = null; }
+      drawFrame(x, t, OW, OH, cur || P.clips[m.seg.c].vids[0], bcur || undefined);
+      await vs.add(i / FPS, 1 / FPS); onProg?.((i + 1) / N * .98);
+    }
+    await it?.return?.(); await bit?.return?.(); await pushAudio(A.length);
+    vs.close(); as.close(); await out.finalize(); onProg?.(1);
+    const [type, ext] = webm ? ["video/webm", "webm"] : aac ? ["video/mp4", "mp4"] : ["video/quicktime", "mov"];
+    return { blob: new Blob([out.target.buffer], { type }), ext };
+  }
+  async function exportRealtime(onProg) {
     try { await document.fonts?.ready; } catch (e) {}
     const cv = document.createElement("canvas"); cv.width = OW; cv.height = OH; const ac = AC(), dest = ac.createMediaStreamDestination();
     const stream = cv.captureStream(FPS); dest.stream.getAudioTracks().forEach((t) => stream.addTrack(t));
@@ -200,11 +258,6 @@
     await new Promise((r) => setTimeout(r, 250)); rec.stop(); await stopped;
     return { blob: new Blob(ch, { type: mime.split(";")[0] }), ext: mime.includes("mp4") ? "mp4" : "webm" };
   }
-  async function saveBlob(blob, name) {
-    const file = new File([blob], name, { type: blob.type });
-    if (/iPhone|iPad|Android/i.test(navigator.userAgent) && navigator.canShare?.({ files: [file] })) { try { await navigator.share({ files: [file] }); return; } catch (e) { if (e?.name === "AbortError") return; } }
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
-  }
 
   /* ---------- AI ---------- */
   const numbered = () => P.words.map((w, i) => `${P.cut.has(i) ? "[" : ""}${i}:${w.w}${P.cut.has(i) ? "]" : ""}`).join(" ");
@@ -215,7 +268,8 @@
       r = await sample.json(`Ти монтажер коротких вертикальних відео (Reels/TikTok/Shorts). Людина завантажила своє відео — ось дослівна розшифровка, кожне слово з номером:
 ${numbered()}
 
-Побажання людини: ${P.wish ? `«${P.wish}»` : "немає — зроби як для сильного Reels"}.
+Побажання людини: ${P.wish ? `«${P.wish}»` : "немає — зроби як для сильного Reels"}. Якщо в побажаннях названо конкретні вставки, музику чи звуки — використай саме їх.
+Плашка-хук: ${P.opt.hook ? "потрібна" : "НЕ потрібна (hook: \"\")"}.
 Вставки, які людина завантажила (номер: тип «назва»): ${mediaList()}.
 
 Склади план монтажу. Можна ТІЛЬКИ вирізати (порядок слів не змінюється).
@@ -224,20 +278,24 @@ ${numbered()}
 - zoom: 2–5 номерів слів, на яких зробити легкий наїзд камери (найсильніші моменти).
 - emph: 2–6 номерів ключових слів, які виділити кольором у субтитрах.
 - broll: куди поставити вставки людини [{"m":номер вставки,"a":номер слова початку,"b":номер слова кінця}] — тільки якщо зрозуміло з назви вставки або з побажань; інакше [].
-- stock: 2–5 місць, де доречна вставка з бібліотеки безкоштовних відео/фото (наочні речі: гроші, кава, місто, телефон, природа, люди за роботою…), не частіше ніж раз на 4–6 секунд і не на першій фразі: [{"a":слово початку,"b":слово кінця (1.5–3 с),"q":"2–4 англійські слова для пошуку","kind":"video" або "photo","full":true (на весь екран) або false (віконцем поверх людини)}]. Чергуй: частіше video, іноді photo; full і віконце теж чергуй.
-- music: 2–4 англійські слова — настрій фонової музики (напр. "calm lofi", "upbeat energetic", "inspiring piano", "funny quirky", "cinematic tension") або "" якщо музика заважатиме.
-- amb: 2–3 англійські слова — фоновий звук атмосфери, якщо доречний (напр. "forest birds", "city street", "cafe ambience", "rain"), інакше "".
+- stock: ${P.opt.stock ? "ОБОВ'ЯЗКОВО 3–6" : "НЕ ПОТРІБНО, поверни []. Інакше"} місць, де доречна вставка з бібліотеки безкоштовних відео/фото (наочні речі: гроші, кава, місто, телефон, природа, люди за роботою…), не частіше ніж раз на 4–6 секунд і не на першій фразі: [{"a":слово початку,"b":слово кінця (1.5–3 с),"q":"2–4 англійські слова для пошуку","kind":"video" або "photo","full":true (на весь екран) або false (віконцем поверх людини)}]. Чергуй: частіше video, іноді photo; full і віконце теж чергуй.
+- music: ${P.opt.music ? "ОБОВ'ЯЗКОВО" : "не потрібна — поверни \"\". Формат:"} 2–4 англійські слова — настрій фонової музики під зміст і темп (напр. "calm lofi", "upbeat energetic", "inspiring piano", "funny quirky", "cinematic tension", "corporate motivational").
+- amb: ${P.opt.amb ? "ОБОВ'ЯЗКОВО" : "не потрібен — поверни \"\". Формат:"} 2–3 англійські слова — фоновий звук атмосфери під зміст (напр. "forest birds", "city street", "cafe ambience", "rain", "office ambience").
 Відповідай тільки JSON: {"keep":[[a,b],...],"hook":"...","zoom":[...],"emph":[...],"broll":[...],"stock":[...],"music":"...","amb":"..."}`, { cache: false });
     } catch (e) { r = null; }
     const n = P.words.length, keep = new Set();
     if (Array.isArray(r?.keep)) for (const [a, b] of r.keep) for (let i = Math.max(0, a | 0); i <= Math.min(n - 1, b | 0); i++) keep.add(i);
     if (!keep.size) P.words.forEach((w, i) => { if (!E().FILLERS.test(E().norm(w.w))) keep.add(i); });
     P.cut = new Set(P.words.map((w, i) => i).filter((i) => !keep.has(i)));
-    P.hook = typeof r?.hook === "string" ? r.hook.trim().slice(0, 60) : "";
+    P.hook = P.opt.hook && typeof r?.hook === "string" ? r.hook.trim().slice(0, 60) : "";
     const okI = (v) => Number.isInteger(v) && v >= 0 && v < n;
     P.zoom = new Set((r?.zoom || []).filter(okI)); P.emph = new Set((r?.emph || []).filter(okI));
     P.broll = (r?.broll || []).filter((b) => okI(b.a) && okI(b.b) && b.b >= b.a && P.media[b.m]).map((b) => ({ m: b.m, a: b.a, b: b.b, full: true, size: .6, x: 0, y: -.3 }));
-    P.plan = { stock: (r?.stock || []).filter((q) => okI(q.a) && okI(q.b) && q.b >= q.a && typeof q.q === "string" && q.q.trim()).slice(0, 5), music: String(r?.music || ""), amb: String(r?.amb || "") };
+    P.plan = { stock: P.opt.stock ? (r?.stock || []).filter((q) => okI(q.a) && okI(q.b) && q.b >= q.a && typeof q.q === "string" && q.q.trim()).slice(0, 6) : [],
+      music: P.opt.music ? String(r?.music || "").trim() || "upbeat inspiring" : "", amb: P.opt.amb ? String(r?.amb || "").trim() || "cafe ambience" : "" };
+    // якщо AI не запропонував вставок, а людина їх хоче — рівномірно по відео, пошук за змістом фрази
+    if (P.opt.stock && !P.plan.stock.length && n > 12) for (let k = 1; k <= 3; k++) { const a = Math.floor(n * k / 4); P.plan.stock.push({ a, b: Math.min(n - 1, a + 4), q: "", kind: k % 2 ? "video" : "photo", full: k !== 2 }); }
+    for (const q of P.plan.stock) if (!q.q) q.q = await toEn(P.words.slice(q.a, q.b + 1).map((w) => w.w).join(" ")).catch(() => "lifestyle");
   }
   /* ---------- бібліотеки: найкращий варіант одразу + 7 на заміну ---------- */
   async function loadStock(item) {
@@ -245,17 +303,25 @@ ${numbered()}
     if (item.kind === "video") { const v = mkVideo(url); v.loop = true; await loadMeta(v); return { kind: "video", el: v, url, name: item.q || item.by || "відео", stock: item }; }
     const im = new Image(); im.src = url; await im.decode().catch(() => {}); return { kind: "img", el: im, url, name: item.q || item.by || "фото", stock: item };
   }
+  let LIBERR = "";
+  const libFail = (e) => { LIBERR = e?.message === "login" ? "Увійди в акаунт, щоб брати матеріали з бібліотек" : "Бібліотеки фото й музики зараз недоступні"; console.warn("lib", e); };
+  async function toEn(t) { const r = await sample.json(`Зроби з цього 2–4 англійські слова для пошуку стокового відео/фото (наочний предмет або дія): «${String(t).slice(0, 200)}». Тільки JSON {"q":"..."}`, { cache: true }); return String(r?.q || "").trim() || "lifestyle"; }
+  // вставка з бібліотеки на слова a..b: одразу найкращий варіант + ще 6 на заміну
+  async function addStock(q, a, b, kind = "video", full = true) {
+    const items = await SRV.media(kind === "photo" ? "photo" : "video", q, 7); if (!items.length) return false;
+    items.forEach((it) => it.q = q); let m = null;
+    for (let k = 0; k < Math.min(3, items.length) && !m; k++) { try { m = await loadStock(items[k]); m.ai = k; } catch (e) { m = null; } }
+    if (!m) return false; m.alts = items; P.media.push(m);
+    P.broll.push({ m: P.media.length - 1, a, b, full: full !== false, size: .62, x: 0, y: -.32, stock: true }); return true;
+  }
+  async function setBed(k, q) {
+    const items = await SRV.media(k === "music" ? "music" : "sound", q, 7); if (!items.length) return false;
+    P[k] = { q, alts: items, i: 0, vol: P[k]?.vol ?? (k === "music" ? .3 : .22), buf: await bedBuf(items[0]) }; return true;
+  }
   async function fillStock() {
-    if (!SRV.media || !P.plan) return;
-    await Promise.all(P.plan.stock.map(async (q) => { try {
-      const items = await SRV.media(q.kind === "photo" ? "photo" : "video", q.q, 7); if (!items.length) return;
-      items.forEach((it) => it.q = q.q); const m = await loadStock(items[0]); m.alts = items; m.ai = 0; P.media.push(m);
-      P.broll.push({ m: P.media.length - 1, a: q.a, b: q.b, full: q.full !== false, size: .62, x: 0, y: -.32, stock: true });
-    } catch (e) { console.warn("stock", e); } }));
-    await Promise.all([["music", P.plan.music], ["amb", P.plan.amb]].map(async ([k, q]) => { if (!q) return; try {
-      const items = await SRV.media(k === "music" ? "music" : "sound", q, 7); if (!items.length) return;
-      P[k] = { q, alts: items, i: 0, vol: k === "music" ? .3 : .22, buf: await bedBuf(items[0]) };
-    } catch (e) { console.warn(k, e); } }));
+    LIBERR = ""; if (!SRV.media || !P.plan) return;
+    await Promise.all(P.plan.stock.map((q) => addStock(q.q, q.a, q.b, q.kind, q.full).catch(libFail)));
+    await Promise.all([["music", P.plan.music], ["amb", P.plan.amb]].map(([k, q]) => q && setBed(k, q).catch(libFail)));
   }
   const BEDS = new Map();
   async function bedBuf(item) { if (BEDS.has(item.src)) return BEDS.get(item.src); const u = await SRV.mediaFile(item.src); const ab = await (await fetch(u)).arrayBuffer(); const x = await E().decode(ab); BEDS.set(item.src, x); return x; }
@@ -274,13 +340,13 @@ ${numbered()}
   function sanitizeStyle(s) {
     const hex = (v, d) => /^#[0-9a-f]{6}$/i.test(String(v)) ? v : d;
     return { ...BASE, ...s, font: FONTS.includes(s.font) ? s.font : "Manrope", weight: [400, 500, 600, 700, 800].includes(+s.weight) ? +s.weight : 800, color: hex(s.color, "#FFFFFF"), hl: hex(s.hl, "#FFD60A"), boxColor: hex(s.boxColor, "#000000"), outlineColor: hex(s.outlineColor, "#000000"),
-      hlMode: ["color", "box", "none"].includes(s.hlMode) ? s.hlMode : "color", box: s.box === "line" ? "line" : "none", outline: clamp(+s.outline || 0, 0, 10), size: clamp(+s.size || 1, .6, 1.5), pos: clamp(+s.pos || .72, .1, .9), words: clamp(+s.words | 0 || 3, 1, 6), upper: !!s.upper, shadow: s.shadow !== false, glow: !!s.glow };
+      hlMode: ["color", "box", "none"].includes(s.hlMode) ? s.hlMode : "color", box: s.box === "line" ? "line" : "none", outline: clamp(+s.outline || 0, 0, 10), size: clamp(+s.size || 1, .6, 1.5), pos: clamp(+s.pos || .72, .1, .9), words: clamp(+s.words | 0 || 3, 1, 6), upper: !!s.upper, off: !!s.off, shadow: s.shadow !== false, glow: !!s.glow };
   }
   async function aiCommand(text, words) {
     const r = await sample.json(`Ти монтажер. Поточний монтаж відео людини. Слова розшифровки з номерами (у квадратних дужках — вирізані):
 ${numbered()}
 Плашка-хук: «${P.hook || "немає"}». Стиль субтитрів: ${JSON.stringify(P.style)}. Готові стилі: ${Object.entries(PRESETS).map(([k, v]) => `${k}=«${v.n}»`).join(", ")}. Шрифти: ${FONTS.join(", ")}.
-Вставки: ${mediaList()}. Зараз стоять: ${JSON.stringify(P.broll)}. Наїзди на словах: ${JSON.stringify([...P.zoom])}. Виділені слова: ${JSON.stringify([...P.emph])}.
+Вставки: ${mediaList()}. Музика: ${P.music && !P.music.off ? `«${P.music.q}»` : "немає"}. Фоновий звук: ${P.amb && !P.amb.off ? `«${P.amb.q}»` : "немає"}. Зараз стоять: ${JSON.stringify(P.broll)}. Наїзди на словах: ${JSON.stringify([...P.zoom])}. Виділені слова: ${JSON.stringify([...P.emph])}.
 
 Людина ${words ? "сказала голосом" : "написала"}: «${text}»
 
@@ -289,7 +355,11 @@ ${numbered()}
 {"op":"hook","text":"..."} ("" — прибрати плашку); {"op":"preset","name":"ключ готового стилю"};
 {"op":"style","set":{...поля стилю: font, weight, upper, color, hl, hlMode, box, boxColor, outline, outlineColor, shadow, glow, size (0.6-1.5), pos (0.1-0.9), words (1-6)}};
 {"op":"zoom","idx":N} / {"op":"unzoom","idx":N}; {"op":"emph","idx":N} / {"op":"unemph","idx":N};
-{"op":"broll","m":номер вставки,"start":N,"end":M} / {"op":"unbroll","m":номер}.
+{"op":"broll","m":номер вставки,"start":N,"end":M} / {"op":"unbroll","m":номер};
+{"op":"stock","start":N,"end":M,"q":"2–4 англійські слова для пошуку","kind":"video"|"photo","full":true|false} — додати нову вставку з бібліотеки безкоштовних відео/фото (якщо місце не вказане — сам вибери доречні місця, можна кілька ops);
+{"op":"music","q":"англійський настрій, напр. calm lofi"} — поставити/змінити фонову музику; {"op":"nomusic"} — прибрати;
+{"op":"amb","q":"англійською, напр. rain"} — фоновий звук; {"op":"noamb"} — прибрати;
+{"op":"vol","k":"music"|"amb","v":0.05-0.8} — гучність; {"op":"subs","on":true|false} — показати/сховати субтитри.
 Місце шукай за змістом. «Більші/менші субтитри» — size, «вище/нижче» — pos, «жовті» — color або hl. Якщо незрозуміло — ops порожні.
 Відповідай тільки JSON: {"ops":[...],"say":"одне коротке речення — що зроблено"}`, { cache: false });
     const ops = Array.isArray(r?.ops) ? r.ops : [], n = P.words.length, okI = (v) => Number.isInteger(v) && v >= 0 && v < n;
@@ -305,7 +375,17 @@ ${numbered()}
       else if (o.op === "emph" && okI(o.idx)) P.emph.add(o.idx); else if (o.op === "unemph") P.emph.delete(o.idx);
       else if (o.op === "broll" && P.media[o.m] && okI(o.start) && okI(o.end)) { P.broll = P.broll.filter((b) => b.m !== o.m); P.broll.push({ m: o.m, a: o.start, b: Math.max(o.start, o.end) }); }
       else if (o.op === "unbroll") P.broll = P.broll.filter((b) => b.m !== o.m);
+      else if (o.op === "subs") P.style.off = o.on === false;
+      else if ((o.op === "nomusic" || o.op === "noamb") && P[o.op.slice(2)]) P[o.op.slice(2)].off = true;
+      else if (o.op === "vol" && P[o.k] && +o.v > 0) P[o.k].vol = clamp(+o.v, .02, .9);
     }
+    // те, що треба знайти в бібліотеках
+    LIBERR = ""; let added = 0;
+    await busyRun("montage", () => Promise.all(ops.map(async (o) => {
+      if (o.op === "stock" && okI(o.start) && typeof o.q === "string" && o.q.trim()) { if (await addStock(o.q, o.start, okI(o.end) && o.end >= o.start ? o.end : Math.min(n - 1, o.start + 4), o.kind, o.full).catch(libFail)) added++; }
+      else if ((o.op === "music" || o.op === "amb") && typeof o.q === "string" && o.q.trim()) { if (await setBed(o.op, o.q).catch(libFail)) added++; }
+    })));
+    if (LIBERR) say(LIBERR);
     return r?.say || "Готово.";
   }
 
@@ -333,13 +413,13 @@ ${numbered()}
 #yvved .vb{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;padding:4px 0 6px}
 #yvved .vf{padding:8px 14px 12px;display:grid;gap:8px;border-top:1px solid rgba(255,255,255,.08)}
 #yvved .vdev{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:#ff9f0a;color:#0b0b0d;font-size:10.5px;font-weight:800;vertical-align:2px}
-#yvved .btn{width:100%;padding:13px;border-radius:15px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.07);color:#f5f5f7;font:700 15px inherit;cursor:pointer;display:flex;gap:7px;align-items:center;justify-content:center}
+#yvved .btn{width:100%;padding:13px;border-radius:15px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.07);color:#f5f5f7;font-weight:700;font-size:15px;font-family:inherit;cursor:pointer;display:flex;gap:7px;align-items:center;justify-content:center}
 #yvved .btn.main{background:#f5f5f7;color:#0b0b0d;border-color:transparent}#yvved .btn.rec{background:#ff453a;border-color:transparent}#yvved .btn:disabled{opacity:.4}
 #yvved .rowf{display:flex;gap:8px}#yvved .rowf .btn:first-child{flex:1}#yvved .btn.sq{width:52px;flex:none;padding:0}
-#yvved .chip{flex:none;padding:7px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:#e4e4e7;font:600 13px inherit;cursor:pointer;display:inline-flex;gap:4px;align-items:center}
+#yvved .chip{flex:none;padding:7px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:#e4e4e7;font-weight:600;font-size:13px;font-family:inherit;cursor:pointer;display:inline-flex;gap:4px;align-items:center}
 #yvved .chip[aria-pressed=true]{background:#f5f5f7;color:#0b0b0d}#yvved .chip svg{width:15px;height:15px}
 #yvved .chips{display:flex;flex-wrap:wrap;gap:6px}
-#yvved textarea,#yvved input[type=text]{width:100%;padding:10px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#f5f5f7;font:15px inherit;resize:none}
+#yvved textarea,#yvved input[type=text]{width:100%;padding:10px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#f5f5f7;font-size:15px;font-family:inherit;resize:none}
 #yvved .lbl{font-size:12.5px;color:#a1a1aa;font-weight:600;margin:10px 0 4px}
 #yvved input[type=range]{width:100%;accent-color:#f5f5f7}
 #yvved .vstage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 6px}
@@ -367,16 +447,19 @@ ${numbered()}
 #yvved .prep{flex:none;min-height:22px;text-align:center;font-size:13px;color:#d4d4d8;padding:4px 16px;display:grid;gap:5px;justify-items:center}#yvved .prep i{display:block;width:60%;height:4px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}#yvved .prep b{display:block;height:100%;background:#30d158;transition:width .3s}
 #yvved .prep.wait i b{width:35%!important;animation:yvwait 1.2s ease-in-out infinite}@keyframes yvwait{0%{transform:translateX(-100%)}100%{transform:translateX(290%)}}
 #yvved .prep.ok{color:#30d158}#yvved .prep.err{color:#ff9f0a}
-#yvved .up{flex:1;min-height:0;width:min(78%,330px);margin:0 auto;display:grid;place-items:center;align-content:center;gap:8px;border-radius:26px;border:1.5px dashed rgba(255,255,255,.22);background:rgba(255,255,255,.04);color:#f5f5f7;cursor:pointer;text-align:center;font:700 16px inherit;position:relative;overflow:hidden}
+#yvved .up{flex:1;min-height:0;width:min(78%,330px);margin:0 auto;display:grid;place-items:center;align-content:center;gap:8px;border-radius:26px;border:1.5px dashed rgba(255,255,255,.22);background:rgba(255,255,255,.04);color:#f5f5f7;cursor:pointer;text-align:center;font-weight:700;font-size:16px;font-family:inherit;position:relative;overflow:hidden}
 #yvved .up small{color:#a1a1aa;font-weight:500;font-size:12.5px}#yvved .up.ok{border-style:solid;border-color:rgba(52,208,122,.6)}
 #yvved .up video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55}#yvved .up span,#yvved .up svg,#yvved .up small{position:relative}
 #yvved .tools{display:flex;justify-content:center;gap:10px;padding:12px 0 2px;flex:none}
 #yvved .yvtool{position:relative}#yvved .yvtool .n{position:absolute;top:-5px;right:-5px;min-width:19px;height:19px;border-radius:10px;background:#30d158;color:#0b0b0d;font-size:11px;font-weight:800;display:grid;place-items:center;padding:0 5px}
 #yvved .alts{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0}#yvved .alts::-webkit-scrollbar{display:none}
-#yvved .alt{flex:none;width:58px;height:84px;border-radius:12px;border:2px solid transparent;background:#222 center/cover;color:#fff;font:700 13px inherit;cursor:pointer;text-shadow:0 1px 3px #000}
+#yvved .alt{flex:none;width:58px;height:84px;border-radius:12px;border:2px solid transparent;background:#222 center/cover;color:#fff;font-weight:700;font-size:13px;font-family:inherit;cursor:pointer;text-shadow:0 1px 3px #000}
 #yvved .alt.on{border-color:#30d158}#yvved .alt.load{opacity:.4}#yvved .alt.more{background:rgba(255,255,255,.08);border:1px dashed rgba(255,255,255,.3)}
 #yvved .alt.snd{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.08)}#yvved .alt.snd.on{background:#30d158;color:#0b0b0d}
 #yvved .attr{margin:10px 0 0;font-size:11px;color:#71717a;text-align:center}#yvved .attr a{color:#a1a1aa}
+#yvved .opts{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+#yvved .chip.ck{padding:7px 11px 7px 7px}#yvved .chip.ck i{width:18px;height:18px;border-radius:6px;border:1.5px solid rgba(255,255,255,.35);display:grid;place-items:center;font-style:normal;font-size:12px;font-weight:900}
+#yvved .chip.ck[aria-pressed=true]{background:rgba(48,209,88,.16);color:#f5f5f7;border-color:rgba(48,209,88,.55)}#yvved .chip.ck[aria-pressed=true] i{background:#30d158;border-color:#30d158;color:#0b0b0d}
 #yvved .thumbs{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}#yvved .thumbs span{width:56px;height:74px;border-radius:10px;background:#222 center/cover;font-size:10px;display:grid;place-items:end center;color:#fff;overflow:hidden;padding:2px}
 ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
   const IC2 = {
@@ -385,6 +468,7 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
     ins: `<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 16l5-5 4 4 3-3 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>`,
     shot: `<svg viewBox="0 0 24 24"><path d="M4 8V5h3M17 5h3v3M20 16v3h-3M7 19H4v-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M8 13h8" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>`,
     wish: `<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>`,
+    find: `<svg viewBox="0 0 24 24" width="20" height="20"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M15 15l5 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>`,
     neu: `<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>`,
   };
   const tool = (k, ic, t, n) => `<button class="yvtool" type="button" data-sh="${k}">${ic}${t}${n ? `<b class="n">${n}</b>` : ""}</button>`;
@@ -409,7 +493,7 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
   async function audioOf(file, dur) {
     const SR = E().SR, n = Math.max(1, Math.ceil(dur * SR));
     try {
-      const M = await (MB ||= import("https://cdn.jsdelivr.net/npm/mediabunny@1.45.0/+esm"));
+      const M = await (MB ||= import(MBURL));
       const input = new M.Input({ formats: M.ALL_FORMATS, source: new M.BlobSource(file) });
       const tr = await input.getPrimaryAudioTrack(); if (!tr) return new Float32Array(n);
       if (!(await tr.canDecode())) throw new Error("nodecode");
@@ -446,7 +530,10 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
   function screenStart() {
     P = fresh(); P.clips = []; const d = shell("Монтаж відео"), B = $(d, ".vb"), F = $(d, ".vf");
     B.innerHTML = `<div class="clips" id="clips"></div><div class="prep" id="prep"></div><div class="tools"></div><input type="file" id="vmain" accept="video/*" multiple hidden>`;
-    F.innerHTML = `<button class="btn main" type="button" id="vgo" disabled>Змонтувати</button>`;
+    F.innerHTML = `<div class="opts" id="vopts"></div><button class="btn main" type="button" id="vgo" disabled>Змонтувати</button>`;
+    const drawOpts = () => { const o = $(F, "#vopts"); o.innerHTML = OPTS.map(([k, n]) => `<button class="chip ck" type="button" data-o="${k}" aria-pressed="${!!P.opt[k]}"><i>${P.opt[k] ? "✓" : ""}</i>${n}</button>`).join("");
+      o.querySelectorAll("[data-o]").forEach((b) => b.onclick = () => { P.opt[b.dataset.o] = !P.opt[b.dataset.o]; saveOpt(P.opt); drawOpts(); }); };
+    drawOpts();
     const st = $(B, "#prep"); let deb = 0;
     const stage = (t, p) => { st.innerHTML = t ? `<span>${escH(t)}</span>${p >= 0 && p < 1 ? `<i><b style="width:${Math.round(p * 100)}%"></b></i>` : ""}` : ""; st.className = "prep" + (p < 0 ? " err" : p >= 1 ? " ok" : ""); };
     const restart = () => { clearTimeout(deb); PREP = null; PREPK++; if (!P.clips.length) { stage(""); return; } stage("Готую…", 0); deb = setTimeout(() => prepare(stage), 350); };
@@ -487,7 +574,7 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
       const ta = $(S.body, "#vwish"); ta.oninput = () => { P.wish = ta.value.trim(); };
       const wr = $(S.body, "#vwrec"), wl = wr.innerHTML;
       wr.onclick = () => E().record(wr, wl, async (buf) => { try { const t = await sttBuf(buf); ta.value = (ta.value + " " + t).trim(); P.wish = ta.value; } catch (x) { say("Не вийшло розпізнати"); } }); return S; };
-    $(F, "#vgo").onclick = () => { B.querySelectorAll(".yvsh").forEach((x) => x._close(true)); track("start", { v: `${P.clips.length}clips` + (P.media.length ? "+ins" : "") + (P.wish ? "+wish" : "") }); run(stage); };
+    $(F, "#vgo").onclick = () => { B.querySelectorAll(".yvsh").forEach((x) => x._close(true)); track("start", { v: `${P.clips.length}clips` + (P.media.length ? "+ins" : "") + (P.wish ? "+wish" : "") + "|" + OPTS.filter(([k]) => P.opt[k]).map(([k]) => k).join(",") }); run(stage); };
     drawClips(); draw();
   }
   async function sttBuf(buf) {
@@ -502,10 +589,13 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
       if (!ok) throw new Error("prep");
       if (!P.words.length) say("Не почув слів — змонтую кліпи як є");
       await aiStyleFromShots();
-      if (P.words.length) await aiPlan(); else P.plan = { stock: [], music: "upbeat energetic", amb: "" };
+      if (P.words.length) await aiPlan(); else P.plan = { stock: [], music: P.opt.music ? "upbeat energetic" : "", amb: P.opt.amb ? "city street" : "" };
+      P.style.off = !P.opt.subs;
       await busyRun("montage", () => fillStock());
       await Promise.all(P.clips.flatMap((c) => c.vids.map((v) => loadMeta(v).catch(() => {}))));
-      build(); screenEdit(); track("ready", { v: P.styleImgs.length ? "shot" : P.preset });
+      build(); track("ready", { v: P.styleImgs.length ? "shot" : P.preset });
+      const got = P.broll.some((b) => b.stock) || P.music || P.amb;
+      screenEdit(LIBERR ? LIBERR + " — змонтував без них" : got ? "Не подобається вставка чи музика? Кнопки «Вставки» і «Музика» збоку — там інші варіанти" : "");
     } catch (e) { console.error(e); say(e?.message === "big" ? "Файл завеликий — зніми в 1080p або коротше" : e?.message === "limit" ? "Ліміт на сьогодні вичерпано" : "Не вийшло обробити відео. Спробуй ще раз."); }
   }
 
@@ -522,7 +612,8 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
         ${L ? `${alts.length ? `<div class="lbl">Інший варіант</div><div class="alts">${alts.map((it, k) => `<button type="button" class="alt${k === m.ai ? " on" : ""}" data-alt="${k}" style="background-image:url('${escH(it.thumb)}')">${it.kind === "video" ? "▶" : ""}</button>`).join("")}<button type="button" class="alt more" id="vmore">Ще</button></div>` : ""}
           <div class="chips" style="margin-top:10px"><button class="chip" type="button" id="vfull" aria-pressed="${L.full !== false}">На весь екран</button><button class="chip" type="button" id="vwin" aria-pressed="${L.full === false}">Віконцем</button>${m?.kind === "img" ? `<button class="chip" type="button" id="vcut" aria-pressed="${!!L.cutBg}">Прибрати фон</button>` : ""}<button class="chip" type="button" id="vdel">${IC3.trash} Прибрати</button></div>
           ${L.full === false || L.cutBg ? `<div class="lbl">Розмір</div><input type="range" id="lsz" min="20" max="100" value="${Math.round((L.size ?? .6) * 100)}"><div class="lbl">↕ Вгору / вниз</div><input type="range" id="ly" min="-100" max="100" value="${Math.round((L.y ?? -.3) * 100)}"><div class="lbl">↔ Вліво / вправо</div><input type="range" id="lx" min="-100" max="100" value="${Math.round((L.x || 0) * 100)}">` : ""}` : ""}
-        <label class="btn" for="vins2" style="margin-top:12px">${IC2.ins} Додати своє фото або відео</label><input type="file" id="vins2" accept="image/*,video/*" multiple hidden>
+        <div class="rowf" style="margin-top:12px"><input type="text" id="vq" placeholder="Знайти: гроші, кава, місто…" enterkeyhint="search"><button class="btn sq" type="button" id="vqgo" aria-label="Знайти">${IC2.find}</button></div>
+        <label class="btn" for="vins2" style="margin-top:8px">${IC2.ins} Додати своє фото або відео</label><input type="file" id="vins2" accept="image/*,video/*" multiple hidden>
         <p class="attr">Матеріали: <a href="https://www.pexels.com" target="_blank" rel="noopener">Pexels</a>, <a href="https://pixabay.com" target="_blank" rel="noopener">Pixabay</a>, <a href="https://freesound.org" target="_blank" rel="noopener">Freesound</a></p>`;
       const jump = () => { const o = WOUT[L.a]; if (o) { POS = o.s + .3; still(POS, cv); const sk = UI.root?.querySelector("#vseek"), tm = UI.root?.querySelector("#vtm"); if (sk) sk.value = Math.round(POS / TOT * 1000); if (tm) tm.textContent = `${fmt(POS)} / ${fmt(TOT)}`; } };
       b.querySelectorAll("[data-l]").forEach((x) => x.onclick = () => { SELL = P.broll[+x.dataset.l]; draw(); jump(); });
@@ -537,6 +628,11 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
         L.cutBg = true; L.full = false; draw(); jump(); });
       const sl = (id, key, k) => { const r = $(b, id); if (r) r.oninput = () => { L[key] = +r.value / k; still(getPos(), cv); }; };
       sl("#lsz", "size", 100); sl("#ly", "y", 100); sl("#lx", "x", 100);
+      const span = () => { const i0 = Math.max(0, wordAt(getPos())); let j = i0; const t0 = P.words[i0]?.s || 0; while (j + 1 < P.words.length && P.words[j + 1].e - t0 < 2.4) j++; return [i0, j]; };
+      const find = async () => { const q = $(b, "#vq").value.trim(); if (q.length < 2 || !P.words.length) return; const [i0, j] = span(); LIBERR = "";
+        try { const ok = await busyRun("montage", async () => addStock(await toEn(q), i0, j, "video", true)); if (LIBERR) { say(LIBERR); return; } if (!ok) { say("Нічого не знайшлося — спробуй інше слово"); return; }
+          pushHist(); SELL = P.broll[P.broll.length - 1]; track("find", { v: q.slice(0, 30) }); redraw(); draw(); jump(); } catch (e) { libFail(e); say(LIBERR); } };
+      $(b, "#vqgo").onclick = find; $(b, "#vq").onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); find(); } };
       $(b, "#vins2").onchange = async (e) => { const n0 = P.media.length; for (const f of [...e.target.files].slice(0, 8)) await addMedia(f);
         if (P.media.length > n0) { const i0 = Math.max(0, wordAt(getPos())); let j = i0; const t0 = P.words[i0]?.s || 0; while (j + 1 < P.words.length && P.words[j + 1].e - t0 < 2.2) j++;
           pushHist(); SELL = { m: n0, a: i0, b: j, full: true, size: .6, x: 0, y: -.3 }; P.broll.push(SELL); redraw(); draw(); jump(); } };
@@ -578,7 +674,7 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
     B.className = "vb";
     B.innerHTML = `<div class="vstage"><div class="bar">${tool("style", IC2.style, "Стиль")}${tool("hook", IC2.plaque, "Плашка")}${tool("text", E().IC.text, "Текст")}</div>
         <div class="cvw"><canvas id="vcv" width="540" height="960"></canvas><button class="pb" type="button" id="vpb" aria-label="Дивитись"><i>${ICON.play}</i></button></div>
-        <div class="bar">${tool("ins", IC2.ins, "Вставки", P.media.length)}${tool("fx", E().IC.eq, "Звук")}${tool("neu", IC2.neu, "Нове")}</div></div>
+        <div class="bar">${tool("ins", IC2.ins, "Вставки", P.media.length)}${tool("fx", E().IC.eq, "Музика")}${tool("neu", IC2.neu, "Нове")}</div></div>
       <div class="seekrow"><input type="range" id="vseek" min="0" max="1000" value="${Math.round(POS / Math.max(.1, TOT) * 1000)}"><span id="vtm">${fmt(POS)} / ${fmt(TOT)}</span></div>
       ${msg ? `<div class="msg">${escH(msg)}</div>` : ""}`;
     F.innerHTML = `<div class="rowf"><button class="btn" type="button" id="vvoice">${ICON.mic} Скажи, що змінити</button><button class="btn sq" type="button" id="vwrite" aria-label="Написати">${E().IC.pen}</button></div>
@@ -597,10 +693,11 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
     const redraw = () => { build(); if (!PL) still(POS, cv); };
     const refresh = (m) => { build(); screenEdit(m); };
     wireTools(B, {
-      style: () => { const S = E().sheet(B, "Субтитри", `<div class="chips">${Object.entries(PRESETS).map(([k, v]) => `<button class="chip" type="button" data-pr="${k}" aria-pressed="${P.preset === k}">${v.n}</button>`).join("")}${P.preset === "shot" ? `<button class="chip" type="button" aria-pressed="true">Як на скріні</button>` : ""}</div>
+      style: () => { const S = E().sheet(B, "Субтитри", `<div class="chips"><button class="chip" type="button" id="vsoff" aria-pressed="${!!P.style.off}">Без субтитрів</button>${Object.entries(PRESETS).map(([k, v]) => `<button class="chip" type="button" data-pr="${k}" aria-pressed="${P.preset === k}">${v.n}</button>`).join("")}${P.preset === "shot" ? `<button class="chip" type="button" aria-pressed="true">Як на скріні</button>` : ""}</div>
           <div class="lbl">Розмір</div><input type="range" id="vsz" min="60" max="150" value="${Math.round(P.style.size * 100)}"><div class="lbl">Висота</div><input type="range" id="vps" min="12" max="88" value="${Math.round(P.style.pos * 100)}">
           <div class="lbl">Слів на екрані</div><div class="chips">${[1, 2, 3, 4].map((n) => `<button class="chip" type="button" data-wn="${n}" aria-pressed="${P.style.words === n}">${n}</button>`).join("")}</div>`), b = S.body;
-        b.querySelectorAll("[data-pr]").forEach((x) => x.onclick = () => { pushHist(); P.preset = x.dataset.pr; track("style", { v: P.preset }); P.style = sanitizeStyle({ ...BASE, ...PRESETS[P.preset].s }); b.querySelectorAll("[data-pr]").forEach((o) => o.setAttribute("aria-pressed", o === x)); $(b, "#vsz").value = Math.round(P.style.size * 100); $(b, "#vps").value = Math.round(P.style.pos * 100); redraw(); $(d, "#vundo").hidden = false; });
+        $(b, "#vsoff").onclick = (e) => { pushHist(); P.style.off = !P.style.off; e.currentTarget.setAttribute("aria-pressed", P.style.off); redraw(); };
+        b.querySelectorAll("[data-pr]").forEach((x) => x.onclick = () => { pushHist(); P.preset = x.dataset.pr; track("style", { v: P.preset }); P.style = sanitizeStyle({ ...BASE, ...PRESETS[P.preset].s }); $(b, "#vsoff").setAttribute("aria-pressed", "false"); b.querySelectorAll("[data-pr]").forEach((o) => o.setAttribute("aria-pressed", o === x)); $(b, "#vsz").value = Math.round(P.style.size * 100); $(b, "#vps").value = Math.round(P.style.pos * 100); redraw(); $(d, "#vundo").hidden = false; });
         $(b, "#vsz").oninput = (e) => { P.style.size = e.target.value / 100; redraw(); };
         $(b, "#vps").oninput = (e) => { P.style.pos = e.target.value / 100; redraw(); };
         b.querySelectorAll("[data-wn]").forEach((x) => x.onclick = () => { P.style.words = +x.dataset.wn; b.querySelectorAll("[data-wn]").forEach((o) => o.setAttribute("aria-pressed", o === x)); redraw(); }); return S; },
@@ -621,7 +718,10 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
     $(F, "#vsave").onclick = async () => {
       stopPlay(); const sv = $(F, "#vsave"); sv.disabled = true; sv.innerHTML = `Зберігаю… <b id="vpp">0%</b>`;
       try { const out = await exportVideo((p) => { const e = $(F, "#vpp"); if (e) e.textContent = Math.round(clamp(p) * 100) + "%"; });
-        track("save", { v: P.preset }); await saveBlob(out.blob, `yuvi_montazh_${new Date().toISOString().slice(0, 10)}.${out.ext}`); if (out.ext !== "mp4") say("Збережено у webm — для Instagram краще зберігати в Safari на iPhone");
+        track("save", { v: P.preset + "|" + out.ext }); if (out.ext === "webm") say("Вийшов webm — для Instagram краще зберігати в Safari на iPhone");
+        // iPhone дозволяє «Зберегти відео» в Фото лише після свіжого тапу — тому окрема кнопка, коли файл готовий
+        E().offerSave(F, [new File([out.blob], `yuvi_montazh_${new Date().toISOString().slice(0, 10)}.${out.ext}`, { type: out.blob.type })], () => screenEdit(), () => track("saved"));
+        still(POS, cv); return;
       } catch (x) { console.error(x); say("Не вдалося зберегти відео"); }
       sv.disabled = false; sv.textContent = "Зберегти відео"; still(POS, cv); };
   }

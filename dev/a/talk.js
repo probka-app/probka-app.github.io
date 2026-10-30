@@ -435,6 +435,19 @@ ${SHEET_CSS.replace(/^\./gm, "#yvtalk .")}
   }
 
   /* ---------- спільна «шторка» знизу: сторінка не гортається, гортається лише шторка ---------- */
+  // готове відео → велика кнопка «Зберегти в Фото» (меню iPhone відкривається лише одразу після тапу)
+  function offerSave(F, files, back, onSaved) {
+    const ua = navigator.userAgent, mob = /iPhone|iPad|iPod|Android/i.test(ua) || (navigator.maxTouchPoints > 1 && /Mac/.test(ua)), ios = !/Android/i.test(ua) && mob;
+    let canSh = false; try { canSh = mob && !!navigator.canShare?.({ files }); } catch (e) {}
+    const dl = () => files.forEach((f) => { const a = document.createElement("a"); a.href = URL.createObjectURL(f); a.download = f.name; document.body.appendChild(a); a.click(); a.remove(); });
+    F.innerHTML = `<div style="text-align:center;font-weight:800;color:#30d158">✓ Відео готове</div>
+      <button class="btn main" type="button" data-sv="photo">${canSh ? (ios ? "Зберегти в Фото" : "Зберегти в галерею") : "Завантажити відео"}</button>
+      ${canSh && ios ? `<div style="text-align:center;color:#a1a1aa;font-size:12.5px;margin-top:-2px">У меню вибери «Зберегти відео»</div>` : ""}
+      <div style="display:flex;gap:8px">${canSh ? `<button class="btn" type="button" data-sv="file" style="flex:1">Файлом</button>` : ""}<button class="btn" type="button" data-sv="back" style="flex:1">← До монтажу</button></div>`;
+    F.querySelector('[data-sv="photo"]').onclick = async () => { if (canSh) { try { await navigator.share({ files }); onSaved?.(); return; } catch (e) { if (e?.name === "AbortError") return; } } dl(); onSaved?.(); };
+    F.querySelector('[data-sv="file"]')?.addEventListener("click", () => { dl(); onSaved?.(); });
+    F.querySelector('[data-sv="back"]').onclick = () => back?.();
+  }
   function sheet(host, title, html, onClose) {
     host.querySelectorAll(".yvsh").forEach((x) => x._close?.(true));
     const box = document.createElement("div"); box.className = "yvsh";
@@ -526,5 +539,5 @@ ${SHEET_CSS.replace(/^\./gm, "#yvtalk .")}
   }
 
   window.YVTalk = { open(opts = {}) { ONDONE = opts.onDone || null; TARGET = opts.target ?? TARGET; screenRecord(); track("open"); },
-    _t: { sheet, SHEET_CSS, IC, SR, decode, resample, wav, b64, snap, envelope, record, busyRun, FILLERS, norm, bandProfile, applyFxTo: async (x, fx) => { const keep = FX; FX = fx; try { return await applyFx(x); } finally { FX = keep; } }, FXP, getFx: () => FX, denoise, levelPhrases, voiceChain, master, processTake, render: () => render(), set: (s, t) => { SRC = s; TOK = t; }, out: () => OUT, map: () => MAP, aiClean, aiEdit, voiceEdit: (b) => voiceEdit(b), tok: () => TOK, screenEdit: (m) => screenEdit(m), setOrig: (o) => ORIG = o } };
+    _t: { sheet, offerSave, SHEET_CSS, IC, SR, decode, resample, wav, b64, snap, envelope, record, busyRun, FILLERS, norm, bandProfile, applyFxTo: async (x, fx) => { const keep = FX; FX = fx; try { return await applyFx(x); } finally { FX = keep; } }, FXP, getFx: () => FX, denoise, levelPhrases, voiceChain, master, processTake, render: () => render(), set: (s, t) => { SRC = s; TOK = t; }, out: () => OUT, map: () => MAP, aiClean, aiEdit, voiceEdit: (b) => voiceEdit(b), tok: () => TOK, screenEdit: (m) => screenEdit(m), setOrig: (o) => ORIG = o } };
 })();
