@@ -42,7 +42,7 @@
 
   /* ---------- аналіз запису тренду ---------- */
   const mkVideo = (url) => { const v = document.createElement("video"); v.src = url; v.muted = true; v.playsInline = true; v.setAttribute("playsinline", ""); v.preload = "auto"; return v; };
-  const loadMeta = (el) => new Promise((ok, no) => { if (el.readyState >= 1) return ok(); el.onloadedmetadata = () => ok(); el.onerror = () => no(new Error("video")); setTimeout(ok, 8000); });
+  const loadMeta = (el) => new Promise((ok, no) => { if (el.readyState >= 1) return ok(); el.addEventListener("loadedmetadata", () => ok(), { once: true }); el.addEventListener("error", () => no(new Error("video")), { once: true }); try { el.load(); } catch (e) {} setTimeout(ok, 15000); });
   const seekTo = (v, t) => new Promise((ok) => { const f = () => { v.removeEventListener("seeked", f); ok(); }; v.addEventListener("seeked", f); v.currentTime = Math.max(0, Math.min(t, (v.duration || t) - .03)); setTimeout(f, 1500); });
   // кадри відео: зменшені сірі «відбитки» для пошуку склейок + чіткості/руху
   async function scan(v, step = .2, w = 36, h = 64) {

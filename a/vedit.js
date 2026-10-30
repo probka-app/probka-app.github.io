@@ -304,7 +304,7 @@ ${numbered()}
 
   /* ---------- завантаження файлів ---------- */
   const fileB64 = (f, max = 1280) => new Promise((ok, no) => { const im = new Image(); im.onload = () => { const r = Math.min(1, max / Math.max(im.width, im.height)), c = document.createElement("canvas"); c.width = Math.round(im.width * r); c.height = Math.round(im.height * r); c.getContext("2d").drawImage(im, 0, 0, c.width, c.height); ok(c.toDataURL("image/jpeg", .85).split(",")[1]); }; im.onerror = no; im.src = URL.createObjectURL(f); });
-  const loadMeta = (el) => new Promise((ok, no) => { if (el.readyState >= 1) return ok(); el.onloadedmetadata = () => ok(); el.onerror = () => no(new Error("video")); setTimeout(ok, 8000); });
+  const loadMeta = (el) => new Promise((ok, no) => { if (el.readyState >= 1) return ok(); el.addEventListener("loadedmetadata", () => ok(), { once: true }); el.addEventListener("error", () => no(new Error("video")), { once: true }); setTimeout(ok, 15000); });
   async function addMedia(f) {
     const url = URL.createObjectURL(f), isV = /^video\//.test(f.type) || /\.(mov|mp4|m4v|webm)$/i.test(f.name);
     if (isV) { const v = mkVideo(url); v.loop = true; await loadMeta(v); P.media.push({ kind: "video", el: v, url, name: f.name.replace(/\.[^.]+$/, "") }); }
@@ -393,10 +393,15 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
       wireTools(B, { shot: shotSheet, ins: insSheet, wish: wishSheet }); };
     B.innerHTML = `<label class="up" id="upmain" for="vmain">${ICON.film}<span id="upt">Вибери відео</span><small>де ти говориш у камеру · до 3 хв</small></label><input type="file" id="vmain" accept="video/*" hidden><div class="tools"></div>`;
     F.innerHTML = `<button class="btn main" type="button" id="vgo" disabled>Змонтувати</button>`;
-    $(B, "#vmain").onchange = async (e) => { const f = e.target.files?.[0]; if (!f) return; if (f.size > 400e6) { say("Файл завеликий — до 400 МБ"); return; }
-      const url = URL.createObjectURL(f), v = mkVideo(url); try { await loadMeta(v); } catch (x) { say("Це відео не відкривається в браузері"); return; }
-      if (v.duration > 185) { say("Відео задовге — до 3 хвилин"); return; }
-      P.main = { file: f, url, dur: v.duration, w: v.videoWidth, h: v.videoHeight }; const up = $(B, "#upmain"); up.classList.add("ok"); up.querySelector("video")?.remove();
+    $(B, "#vmain").onchange = async (e) => { const f = e.target.files?.[0]; e.target.value = ""; if (!f) return;
+      const up = $(B, "#upmain"), tt = $(B, "#upt"), sm = up.querySelector("small"), fail = (m) => { up.classList.remove("ok"); tt.textContent = "Вибери інше відео"; sm.textContent = m; sm.style.color = "#ff9f0a"; say(m); };
+      tt.textContent = "Відкриваю відео…"; sm.textContent = `${Math.round(f.size / 1e6)} МБ`; sm.style.color = "";
+      if (f.size > 1.2e9) return fail(`Файл завеликий (${Math.round(f.size / 1e6)} МБ). Зніми в 1080p або коротше — до 3 хв.`);
+      const url = URL.createObjectURL(f), v = mkVideo(url); v.style.cssText = "position:fixed;left:-9999px;width:2px;height:2px"; document.body.appendChild(v); v.load();
+      try { await loadMeta(v); } catch (x) {} v.remove();
+      if (!(v.duration > 0)) return fail("Це відео не відкривається тут. Спробуй інше або відкрий сайт у Safari.");
+      if (v.duration > 185) return fail(`Відео ${fmt(v.duration)} — задовге. До 3 хвилин.`);
+      P.main = { file: f, url, dur: v.duration, w: v.videoWidth, h: v.videoHeight }; up.classList.add("ok"); up.querySelector("video")?.remove();
       v.currentTime = Math.min(1, v.duration / 3); up.prepend(v); $(B, "#upt").textContent = `✓ ${fmt(v.duration)}`; up.querySelector("small").textContent = "тапни, щоб замінити"; $(F, "#vgo").disabled = false; };
     const shotSheet = () => { const S = E().sheet(B, "Субтитри як на скріні", `<label class="btn" for="vshot">${IC2.shot} Додати скрін</label><input type="file" id="vshot" accept="image/*" multiple hidden><div class="thumbs">${P.styleImgs.map((m) => `<span style="background-image:url(data:image/jpeg;base64,${m.data})"></span>`).join("")}</div>`);
       $(S.body, "#vshot").onchange = async (e) => { for (const f of [...e.target.files].slice(0, 3 - P.styleImgs.length)) { try { P.styleImgs.push({ data: await fileB64(f), mime: "image/jpeg" }); } catch (x) {} } S.close(true); draw(); }; return S; };
@@ -417,8 +422,8 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
   async function run() {
     try {
       const buf = await P.main.file.arrayBuffer();
-      const raw = await busyRun("voice", () => E().decode(buf).catch(() => { throw new Error("noaudio"); }));
-      P.aud = await busyRun("voice", async () => { await new Promise((r) => setTimeout(r, 40)); return E().processTake(raw); });
+      const raw = await busyRun("montage", () => E().decode(buf).catch(() => { throw new Error("noaudio"); }));
+      P.aud = await busyRun("montage", async () => { await new Promise((r) => setTimeout(r, 40)); return E().processTake(raw); });
       const small = await E().resample(P.aud, E().SR, 16000);
       const r = await busyRun("listen", () => SRV.stt({ audio: E().b64(E().wav(small, 16000)), mime: "audio/wav", quiet: true }));
       const dur = P.aud.length / E().SR;
