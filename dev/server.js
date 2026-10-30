@@ -246,6 +246,12 @@
   SRV.kbList = async () => (await rpc("kb_list")) || [];
   SRV.kbSet = async (id, o) => rpc("kb_set", { p_id: id, p_status: o.status ?? null, p_title: o.title ?? null, p_body: o.body ?? null, p_why: o.why ?? null, p_how: o.how ?? null, p_kind: o.kind ?? null, p_niche: o.niche ?? null });
   SRV.kbChatList = async () => (await rpc("kb_chat_list", { p_limit: 60 })) || [];
+  // AI зі скрінами-прикладами (наприклад, стиль субтитрів) → JSON
+  SRV.aiVision = async (prompt, images, o) => {
+    if (!SRV.session) { loginSheet("Щоб аналізувати приклади, увійди або зареєструйся."); throw new Error("login"); }
+    return busy("text", async () => { const j = await call("ai-text", { prompt, json: true, max: 1500, images }); const t = String(j.text || "").replace(/^```(?:json)?\s*|\s*```$/g, "");
+      const a = t.indexOf("{"), b = t.lastIndexOf("}"); return JSON.parse(a >= 0 ? t.slice(a, b + 1) : t); }, o?.quiet);
+  };
   // розпізнавання мови з часом слів — монтаж живого голосу («Розкажи своїми словами»)
   SRV.stt = async (o) => {
     if (!SRV.session) { loginSheet("Щоб змонтувати голос, увійди або зареєструйся."); throw new Error("login"); }

@@ -486,5 +486,5 @@ ${cmdSrc ? `- {"op":"insert","after":N,"from":A,"to":B} — вставити п�
   }
 
   window.YVTalk = { open(opts = {}) { ONDONE = opts.onDone || null; TARGET = opts.target ?? TARGET; screenRecord(); },
-    _t: { denoise, levelPhrases, voiceChain, master, processTake, render: () => render(), set: (s, t) => { SRC = s; TOK = t; }, out: () => OUT, map: () => MAP, aiClean, aiEdit, voiceEdit: (b) => voiceEdit(b), tok: () => TOK, screenEdit: (m) => screenEdit(m), setOrig: (o) => ORIG = o } };
+    _t: { SR, decode, resample, wav, b64, snap, envelope, record, busyRun, FILLERS, norm, bandProfile, applyFxTo: async (x, fx) => { const keep = FX; FX = fx; try { return await applyFx(x); } finally { FX = keep; } }, FXP, getFx: () => FX, denoise, levelPhrases, voiceChain, master, processTake, render: () => render(), set: (s, t) => { SRC = s; TOK = t; }, out: () => OUT, map: () => MAP, aiClean, aiEdit, voiceEdit: (b) => voiceEdit(b), tok: () => TOK, screenEdit: (m) => screenEdit(m), setOrig: (o) => ORIG = o } };
 })();
