@@ -285,11 +285,42 @@ ${cmdSrc ? `- {"op":"insert","after":N,"from":A,"to":B} — вставити п�
   }
 
   /* ================= ЗАПИС ================= */
+  // мікрофон: браузер сам питає дозвіл; якщо доступ заборонено раніше — показуємо, де саме його ввімкнути
+  async function getMic() {
+    if (!navigator.mediaDevices?.getUserMedia) { micHelp("nosupport"); return null; }
+    let err = null;
+    for (const c of [{ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }, { audio: true }]) {
+      try { return await navigator.mediaDevices.getUserMedia(c); } catch (e) { err = e; if (e?.name === "NotAllowedError" || e?.name === "SecurityError") break; }
+    }
+    micHelp(err?.name === "NotFoundError" ? "nodevice" : "denied"); return null;
+  }
+  function micHelp(kind) {
+    const ua = navigator.userAgent, ios = /iPhone|iPad|iPod/i.test(ua) || (navigator.maxTouchPoints > 1 && /Mac/.test(ua)), chrome = /CriOS/i.test(ua), ff = /FxiOS/i.test(ua), android = /Android/i.test(ua);
+    const app = chrome ? "Chrome" : ff ? "Firefox" : "Safari";
+    const steps = kind === "nodevice" ? ["Не бачу мікрофона. Перевір, чи не підключені навушники без мікрофона, і спробуй ще раз."]
+      : kind === "nosupport" ? ["Цей браузер не дає доступу до мікрофона. Відкрий сайт у Safari або Chrome."]
+      : ios && !chrome && !ff ? ["Натисни «аА» зліва в адресному рядку → «Параметри вебсайту» → «Мікрофон» → «Дозволити».", "Або: Параметри iPhone → Safari → Мікрофон → «Дозволити».", "Повернись сюди й натисни «Спробувати ще раз»."]
+      : ios ? [`Відкрий «Параметри» iPhone → прокрути до «${app}» → увімкни «Мікрофон».`, `Повернись у ${app}, онови сторінку й натисни «Спробувати ще раз» — з'явиться запит, натисни «Дозволити».`]
+      : android ? ["Натисни на значок замка зліва від адреси → «Дозволи» → «Мікрофон» → «Дозволити».", "Онови сторінку й спробуй ще раз."]
+      : ["Натисни на значок замка зліва від адреси → «Мікрофон» → «Дозволити».", "Онови сторінку й спробуй ще раз."];
+    document.getElementById("yvmic")?.remove();
+    const d = document.createElement("div"); d.id = "yvmic";
+    d.style.cssText = "position:fixed;inset:0;z-index:100001;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;padding:12px;font:15px/1.45 system-ui,-apple-system,sans-serif";
+    d.innerHTML = `<div style="width:100%;max-width:440px;background:#1c1c20;color:#f5f5f7;border-radius:24px;padding:20px 18px calc(16px + env(safe-area-inset-bottom));box-shadow:0 20px 50px rgba(0,0,0,.6)">
+      <div style="font-size:19px;font-weight:800;margin-bottom:6px">🎙 Дозволь мікрофон</div>
+      <p style="margin:0 0 10px;color:#a1a1aa;font-size:14px">${kind === "denied" ? "Браузер зараз не дає доступу до мікрофона. Ось як увімкнути:" : ""}</p>
+      <ol style="margin:0 0 14px;padding-left:20px;display:grid;gap:8px">${steps.map((t) => `<li>${t}</li>`).join("")}</ol>
+      <button type="button" data-m="try" style="width:100%;padding:14px;border-radius:15px;border:0;background:#f5f5f7;color:#0b0b0d;font-weight:800;font-size:15px;font-family:inherit">Спробувати ще раз</button>
+      <button type="button" data-m="x" style="width:100%;margin-top:8px;padding:12px;border-radius:15px;border:1px solid rgba(255,255,255,.16);background:none;color:#f5f5f7;font-weight:700;font-size:15px;font-family:inherit">Закрити</button></div>`;
+    document.body.appendChild(d);
+    d.querySelector('[data-m="x"]').onclick = () => d.remove();
+    d.querySelector('[data-m="try"]').onclick = async () => { try { const st = await navigator.mediaDevices.getUserMedia({ audio: true }); st.getTracks().forEach((t) => t.stop()); d.remove(); say("Мікрофон дозволено ✓ Натисни запис ще раз"); }
+      catch (e) { say(ios ? `Ще заборонено — увімкни мікрофон для ${app} у «Параметрах» iPhone` : "Ще заборонено — дозволь у налаштуваннях сайту"); } };
+  }
   async function record(btn, label, onBuf) {
-    if (btn._rec) { btn._rec.stop(); return; }
-    let stream = null;
-    try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); } catch (e) {}
-    if (!stream) { say("Немає доступу до мікрофона — дозволь його в налаштуваннях браузера"); return; }
+    if (btn._rec) { btn._rec.stop(); return true; }
+    const stream = await getMic();
+    if (!stream) return false;
     const mime = ["audio/mp4", "audio/webm;codecs=opus", "audio/webm"].find((m) => window.MediaRecorder && MediaRecorder.isTypeSupported(m)) || "";
     const rec = new MediaRecorder(stream, mime ? { mimeType: mime } : {}), ch = []; btn._rec = rec;
     rec.ondataavailable = (e) => e.data.size && ch.push(e.data);
@@ -297,7 +328,7 @@ ${cmdSrc ? `- {"op":"insert","after":N,"from":A,"to":B} — вставити п�
     const tm = setInterval(tick, 400); tick(); btn.classList.add("rec");
     rec.onstop = async () => { stream.getTracks().forEach((t) => t.stop()); clearInterval(tm); btn._rec = null; btn.classList.remove("rec"); btn.innerHTML = label;
       onBuf(await new Blob(ch, { type: rec.mimeType || mime }).arrayBuffer()); };
-    rec.start();
+    rec.start(); return true;
   }
 
   /* ================= ПЛЕЄР ================= */
@@ -406,7 +437,7 @@ ${SHEET_CSS.replace(/^\./gm, "#yvtalk .")}
     F.innerHTML = `<label class="tkbtn" for="tkfile">Завантажити файл</label><input type="file" id="tkfile" accept="audio/*,video/*" hidden>`;
     B.querySelectorAll("[data-tg]").forEach((b) => b.onclick = () => { TARGET = +b.dataset.tg; B.querySelectorAll("[data-tg]").forEach((o) => o.setAttribute("aria-pressed", o === b)); });
     const rb = $(B, "#tkrec");
-    rb.onclick = () => { if (!rb._rec) $(B, "#tkst").textContent = "Говори… натисни ще раз, щоб завершити"; record(rb, ICON.mic, start); };
+    rb.onclick = async () => { const st = $(B, "#tkst"), was = st.textContent; if (!rb._rec) st.textContent = "Говори… натисни ще раз, щоб завершити"; if ((await record(rb, ICON.mic, start)) === false) st.textContent = was; };
     $(F, "#tkfile").onchange = async (e) => { const f = e.target.files?.[0]; if (f) start(await f.arrayBuffer()); };
   }
 
@@ -539,5 +570,5 @@ ${SHEET_CSS.replace(/^\./gm, "#yvtalk .")}
   }
 
   window.YVTalk = { open(opts = {}) { ONDONE = opts.onDone || null; TARGET = opts.target ?? TARGET; screenRecord(); track("open"); },
-    _t: { sheet, offerSave, SHEET_CSS, IC, SR, decode, resample, wav, b64, snap, envelope, record, busyRun, FILLERS, norm, bandProfile, applyFxTo: async (x, fx) => { const keep = FX; FX = fx; try { return await applyFx(x); } finally { FX = keep; } }, FXP, getFx: () => FX, denoise, levelPhrases, voiceChain, master, processTake, render: () => render(), set: (s, t) => { SRC = s; TOK = t; }, out: () => OUT, map: () => MAP, aiClean, aiEdit, voiceEdit: (b) => voiceEdit(b), tok: () => TOK, screenEdit: (m) => screenEdit(m), setOrig: (o) => ORIG = o } };
+    _t: { sheet, offerSave, getMic, SHEET_CSS, IC, SR, decode, resample, wav, b64, snap, envelope, record, busyRun, FILLERS, norm, bandProfile, applyFxTo: async (x, fx) => { const keep = FX; FX = fx; try { return await applyFx(x); } finally { FX = keep; } }, FXP, getFx: () => FX, denoise, levelPhrases, voiceChain, master, processTake, render: () => render(), set: (s, t) => { SRC = s; TOK = t; }, out: () => OUT, map: () => MAP, aiClean, aiEdit, voiceEdit: (b) => voiceEdit(b), tok: () => TOK, screenEdit: (m) => screenEdit(m), setOrig: (o) => ORIG = o } };
 })();
