@@ -365,6 +365,7 @@ ${numbered()}
 #yvved .clip.add{display:grid;place-items:center;font-size:34px;color:#a1a1aa;border-style:dashed;cursor:pointer}
 #yvved .ctot{text-align:center;color:#a1a1aa;font-size:12.5px;margin-top:6px}
 #yvved .prep{flex:none;min-height:22px;text-align:center;font-size:13px;color:#d4d4d8;padding:4px 16px;display:grid;gap:5px;justify-items:center}#yvved .prep i{display:block;width:60%;height:4px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}#yvved .prep b{display:block;height:100%;background:#30d158;transition:width .3s}
+#yvved .prep.wait i b{width:35%!important;animation:yvwait 1.2s ease-in-out infinite}@keyframes yvwait{0%{transform:translateX(-100%)}100%{transform:translateX(290%)}}
 #yvved .prep.ok{color:#30d158}#yvved .prep.err{color:#ff9f0a}
 #yvved .up{flex:1;min-height:0;width:min(78%,330px);margin:0 auto;display:grid;place-items:center;align-content:center;gap:8px;border-radius:26px;border:1.5px dashed rgba(255,255,255,.22);background:rgba(255,255,255,.04);color:#f5f5f7;cursor:pointer;text-align:center;font:700 16px inherit;position:relative;overflow:hidden}
 #yvved .up small{color:#a1a1aa;font-weight:500;font-size:12.5px}#yvved .up.ok{border-style:solid;border-color:rgba(52,208,122,.6)}
@@ -451,7 +452,7 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
     const restart = () => { clearTimeout(deb); PREP = null; PREPK++; if (!P.clips.length) { stage(""); return; } stage("Готую…", 0); deb = setTimeout(() => prepare(stage), 350); };
     const drawClips = () => {
       const box = $(B, "#clips"), total = P.clips.reduce((a, c) => a + c.dur, 0);
-      if (!P.clips.length) { box.className = "clips empty"; box.innerHTML = `<label class="up" for="vmain">${ICON.film}<span>Додати відео</span><small>одне або кілька · до 5 хв разом</small></label>`; }
+      if (!P.clips.length) { box.className = "clips empty"; box.innerHTML = `<label class="up" for="vmain">${ICON.film}<span>Додати відео</span><small>одне або кілька · до 5 хв разом</small><small style="opacity:.75">Кілька: тапни відео, потім «Додати» вгорі</small></label>`; }
       else { box.className = "clips"; box.innerHTML = `<div class="crow">${P.clips.map((c, i) => `<div class="clip" data-i="${i}"><span class="cdur">${fmt(c.dur)}</span>${i ? `<button type="button" class="cmv" data-mv="${i}" aria-label="Раніше">‹</button>` : ""}<button type="button" class="cx" data-x="${i}" aria-label="Прибрати">×</button></div>`).join("")}<label class="clip add" for="vmain">+</label></div><div class="ctot">${P.clips.length} ${P.clips.length === 1 ? "відео" : "відео"} · ${fmt(total)}</div>`;
         box.querySelectorAll(".clip[data-i]").forEach((el) => { const c = P.clips[+el.dataset.i]; el.prepend(c.thumb); });
         box.querySelectorAll("[data-x]").forEach((b) => b.onclick = () => { P.clips.splice(+b.dataset.x, 1); drawClips(); restart(); });
@@ -461,7 +462,13 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
     const draw = () => {
       B.querySelector(".tools").innerHTML = tool("shot", IC2.shot, "Стиль", P.styleImgs.length) + tool("ins", IC2.ins, "Вставки", P.media.length) + tool("wish", IC2.wish, "Побажання", P.wish ? "✓" : "");
       wireTools(B, { shot: shotSheet, ins: insSheet, wish: wishSheet }); };
-    $(B, "#vmain").onchange = async (e) => { const fs = [...(e.target.files || [])]; e.target.value = ""; if (!fs.length) return;
+    // iPhone спершу тягне відео з iCloud, а сайт нічого не отримує, поки воно не завантажиться — показуємо, що чекаємо
+    const inp = $(B, "#vmain"); let picking = false, pickT = 0;
+    const waitMsg = () => { if (!picking) return; stage("Отримую відео з телефона… Якщо воно в iCloud, iPhone спершу його завантажить — це може зайняти хвилину", 0); st.classList.add("wait"); };
+    B.addEventListener("click", (e) => { if (e.target.closest('label[for="vmain"]')) { picking = true; clearTimeout(pickT); pickT = setTimeout(waitMsg, 1500); } });
+    addEventListener("focus", () => { if (picking) { clearTimeout(pickT); pickT = setTimeout(waitMsg, 400); } });
+    inp.addEventListener("cancel", () => { picking = false; clearTimeout(pickT); st.classList.remove("wait"); if (!P.clips.length) stage(""); });
+    inp.onchange = async (e) => { picking = false; clearTimeout(pickT); st.classList.remove("wait"); const fs = [...(e.target.files || [])]; e.target.value = ""; if (!fs.length) return;
       stage(`Відкриваю ${fs.length > 1 ? fs.length + " відео" : "відео"}…`, 0);
       for (const f of fs.slice(0, 12 - P.clips.length)) {
         const url = URL.createObjectURL(f), v = mkVideo(url); v.className = "cth"; v.style.cssText = "position:fixed;left:-9999px;width:2px;height:2px"; document.body.appendChild(v);
