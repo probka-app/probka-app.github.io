@@ -97,7 +97,7 @@
   SRV.refresh = async () => {
     if (!SRV.session) { SRV.me = null; if (typeof WL !== "undefined") { for (const k of Object.keys(WL)) delete WL[k]; Object.assign(WL, { balance: 0, pending: 0, total: 0, req: null, history: [], unlocked: {}, saved: 0, refs: 0, vesting: [], passPeople: 0, held: 0 }); ls.set("rilsWallet", null); window.renderBal?.(); } return; }
     try {
-      const me = await Promise.race([rpc("me"), new Promise((_, no) => setTimeout(() => no(new Error("auth timeout")), 12000))]);
+      const me = await rpc("me");
       if (!me || typeof me !== "object") throw new Error("no_profile");
       SRV.me = me;
       WL.balance = kop(me.available_kop); WL.pending = kop(me.pending_kop); WL.total = kop(me.earned_kop); WL.refs = me.refs_total;
@@ -117,9 +117,10 @@
       window.renderBal?.(); window.renderTop?.(); window.renderSubs?.();
     } catch (e) { console.warn("me", e);
       // зламаний або прострочений вхід (акаунт видалено, токен недійсний) — виходимо, щоб людина могла увійти знову
-      // акаунт видалено або вхід недійсний: сервер не знає цієї людини → виходимо, щоб можна було увійти знову
-      let bad = /jwt|token|auth|not_authenticated|401|403/i.test(String(e?.message || ""));
-      if (!bad) { try { const { data, error } = await Promise.race([sb.auth.getUser(), new Promise((_, no) => setTimeout(() => no(new Error("t")), 6000))]); bad = !!error || !data?.user; } catch (x) { bad = true; } }
+      // виходимо ЛИШЕ якщо сервер прямо каже, що такого акаунта/входу немає (не через повільний інтернет чи сплячу вкладку)
+      let bad = false;
+      try { const { data, error } = await sb.auth.getUser();
+        bad = (!!error && (error.status === 401 || error.status === 403 || /not found|invalid|expired|does not exist/i.test(error.message || ""))) || (!error && !data?.user); } catch (x) { bad = false; }
       if (bad) { try { await Promise.race([sb.auth.signOut({ scope: "local" }), new Promise((r) => setTimeout(r, 1500))]); } catch (x) {} try { Object.keys(localStorage).filter((k) => /^sb-.*-auth-token/.test(k)).forEach((k) => localStorage.removeItem(k)); } catch (x) {}
         SRV.session = null; SRV.me = null; try { ls.set("rilsWallet", null); } catch (x) {} toast("Вхід застарів — увійди ще раз"); setTimeout(() => location.reload(), 900); }
     }
