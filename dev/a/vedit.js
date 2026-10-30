@@ -50,7 +50,7 @@
     const n = Math.ceil(TOT * SR) + 1, y = new Float32Array(n), F = Math.round(SR * .01);
     for (const s of SEG) { const a = Math.round(s.a * SR), L = Math.round((s.b - s.a) * SR), oo = Math.round(s.o * SR);
       for (let j = 0; j < L && oo + j < n; j++) { const f = Math.min(1, j / F, (L - j) / F); y[oo + j] += (P.aud[a + j] || 0) * f; } }
-    OUTA = E().master(y); OUTB = OUTA; FXK = "orig";
+    OUTA = E().master(y); OUTB = OUTA; FXK = ""; OUTV = null;
     // час кожного слова у фінальному відео
     WOUT = W.map((w, wi) => { if (P.cut.has(wi)) return null; const s = SEG.find((q) => w.s >= q.a - .08 && w.s < q.b); return s ? { s: s.o + Math.max(0, w.s - s.a), e: s.o + Math.min(s.b - s.a, w.e - s.a) } : null; });
     // субтитри: короткі шматки по кілька слів
@@ -63,7 +63,20 @@
   }
   // «Звук голосу» (пресети з озвучки) — накладаємо на готове аудіо перед програванням/збереженням
   let OUTB = null, FXK = "";
-  async function ensureFx() { const want = P.fx || "orig"; if (FXK === want) return; OUTA = want === "orig" ? OUTB : await E().applyFxTo(OUTB, { k: want, pitch: 0, tone: 0 }); FXK = want; }
+  let OUTV = null;
+  async function ensureFx() { const want = P.fx || "orig", key = want + "|" + bedKey();
+    if (FXK === key) return; if (!OUTV || FXK.split("|")[0] !== want) OUTV = want === "orig" ? OUTB : await E().applyFxTo(OUTB, { k: want, pitch: 0, tone: 0 });
+    OUTA = mixBeds(OUTV); FXK = key; }
+  const bedKey = () => ["music", "amb"].map((k) => P[k] && !P[k].off ? `${P[k].i}:${P[k].vol}` : "-").join(",");
+  // музика й фон: по колу на всю довжину, плавний початок/кінець, тихішають, коли людина говорить
+  function mixBeds(v) {
+    const beds = ["music", "amb"].map((k) => P[k]).filter((b) => b && !b.off && b.buf?.length); if (!beds.length) return v;
+    const SR = E().SR, y = Float32Array.from(v), env = E().envelope(v, Math.round(SR * .01)), n = env.length, duck = new Float32Array(n); let g = 1;
+    for (let f = 0; f < n; f++) { const t = env[f] > .02 ? .45 : 1; g += (t < g ? .25 : .03) * (t - g); duck[f] = g; }
+    for (const b of beds) { const src = b.buf, L = src.length, fade = SR * 1.2;
+      for (let i = 0; i < y.length; i++) { const d = duck[Math.min(n - 1, (i / (SR * .01)) | 0)], e = Math.min(1, i / fade, (y.length - i) / fade); y[i] += src[i % L] * b.vol * d * e; } }
+    return E().master(y);
+  }
   const outToSrc = (t) => { for (const s of SEG) if (t < s.o + (s.b - s.a)) return { seg: s, src: s.a + Math.max(0, t - s.o) }; const l = SEG[SEG.length - 1]; return { seg: l, src: l.b }; };
   const wordAt = (t) => { let best = -1; P.words.forEach((w, i) => { const o = WOUT[i]; if (o && t >= o.s - .03 && t < o.e + .12) best = i; }); return best; };
 
@@ -116,12 +129,23 @@
   }
   function zoomAt(t) { let z = 1; for (const i of P.zoom) { const o = WOUT[i]; if (!o) continue; const d = t - (o.s - .05); if (d < 0 || d > 1.35) continue; const e = d < .18 ? 1 - Math.pow(1 - d / .18, 3) : d > 1.05 ? 1 - (d - 1.05) / .3 : 1; z = Math.max(z, 1 + .13 * clamp(e)); } return z; }
   function brollAt(t) { for (const b of P.broll) { const a = WOUT[b.a], e = WOUT[b.b]; if (!a || !e) continue; if (t >= a.s && t < e.e + .2) return { b, t0: a.s, t1: e.e + .2 }; } return null; }
+  // вставка: на весь екран або віконцем (розмір і положення — повзунками), з вирізаним фоном для фото
+  function drawLayer(x, m, br, t, W, H) {
+    const L = br.b, fa = clamp(Math.min((t - br.t0) / .12, (br.t1 - t) / .12)), el = L.cutBg && m.cut ? m.cut : m.el, ew = el.videoWidth || el.naturalWidth || el.width || W, eh = el.videoHeight || el.naturalHeight || el.height || H;
+    const grow = m.kind === "img" ? 1 + .06 * clamp((t - br.t0) / Math.max(.5, br.t1 - br.t0)) : 1;
+    x.save(); x.globalAlpha = fa;
+    if (L.full !== false && !(L.cutBg && m.cut)) { cover(x, el, ew, eh, W, H, grow); x.restore(); return; }
+    const sz = clamp(L.size ?? .6, .2, 1), w = W * sz, h = w * eh / ew, cx = W / 2 + (L.x || 0) * (W - w) / 2, cy = H / 2 + (L.y ?? -.3) * (H - h) / 2, pop = fa < 1 ? .92 + .08 * fa : 1;
+    x.translate(cx, cy); x.scale(pop * grow, pop * grow);
+    if (L.cutBg && m.cut) { x.shadowColor = "rgba(0,0,0,.35)"; x.shadowBlur = 24 * W / OW; x.drawImage(el, -w / 2, -h / 2, w, h); }
+    else { const r = 26 * W / OW; x.shadowColor = "rgba(0,0,0,.45)"; x.shadowBlur = 30 * W / OW; x.shadowOffsetY = 8 * W / OW; rr(x, -w / 2, -h / 2, w, h, r); x.fillStyle = "#000"; x.fill(); x.shadowColor = "transparent"; x.clip(); x.drawImage(el, -w / 2, -h / 2, w, h); }
+    x.restore();
+  }
   function drawFrame(x, t, W, H, vEl) {
     x.fillStyle = "#000"; x.fillRect(0, 0, W, H);
     const br = brollAt(t), z = zoomAt(t);
     drawMain(x, vEl, W, H, z);
-    if (br) { const m = P.media[br.b.m]; if (m) { const fa = clamp(Math.min((t - br.t0) / .12, (br.t1 - t) / .12)); x.save(); x.globalAlpha = fa;
-      const el = m.el, k = m.kind === "img" ? 1 + .06 * clamp((t - br.t0) / Math.max(.5, br.t1 - br.t0)) : 1; cover(x, el, el.videoWidth || el.naturalWidth || W, el.videoHeight || el.naturalHeight || H, W, H, k); x.restore(); } }
+    if (br) { const m = P.media[br.b.m]; if (m) drawLayer(x, m, br, t, W, H); }
     drawSubs(x, t, W, H); drawHook(x, t, W, H);
   }
 
@@ -192,8 +216,11 @@ ${numbered()}
 - hook: коротка плашка-заголовок на перші 2–3 секунди (до 6 слів, без лапок), яка чіпляє увагу. Якщо людина просила без плашки — "".
 - zoom: 2–5 номерів слів, на яких зробити легкий наїзд камери (найсильніші моменти).
 - emph: 2–6 номерів ключових слів, які виділити кольором у субтитрах.
-- broll: куди поставити вставки [{"m":номер вставки,"a":номер слова початку,"b":номер слова кінця}] — тільки якщо зрозуміло з назви вставки або з побажань; інакше [].
-Відповідай тільки JSON: {"keep":[[a,b],...],"hook":"...","zoom":[...],"emph":[...],"broll":[...]}`, { cache: false });
+- broll: куди поставити вставки людини [{"m":номер вставки,"a":номер слова початку,"b":номер слова кінця}] — тільки якщо зрозуміло з назви вставки або з побажань; інакше [].
+- stock: 2–5 місць, де доречна вставка з бібліотеки безкоштовних відео/фото (наочні речі: гроші, кава, місто, телефон, природа, люди за роботою…), не частіше ніж раз на 4–6 секунд і не на першій фразі: [{"a":слово початку,"b":слово кінця (1.5–3 с),"q":"2–4 англійські слова для пошуку","kind":"video" або "photo","full":true (на весь екран) або false (віконцем поверх людини)}]. Чергуй: частіше video, іноді photo; full і віконце теж чергуй.
+- music: 2–4 англійські слова — настрій фонової музики (напр. "calm lofi", "upbeat energetic", "inspiring piano", "funny quirky", "cinematic tension") або "" якщо музика заважатиме.
+- amb: 2–3 англійські слова — фоновий звук атмосфери, якщо доречний (напр. "forest birds", "city street", "cafe ambience", "rain"), інакше "".
+Відповідай тільки JSON: {"keep":[[a,b],...],"hook":"...","zoom":[...],"emph":[...],"broll":[...],"stock":[...],"music":"...","amb":"..."}`, { cache: false });
     } catch (e) { r = null; }
     const n = P.words.length, keep = new Set();
     if (Array.isArray(r?.keep)) for (const [a, b] of r.keep) for (let i = Math.max(0, a | 0); i <= Math.min(n - 1, b | 0); i++) keep.add(i);
@@ -202,8 +229,29 @@ ${numbered()}
     P.hook = typeof r?.hook === "string" ? r.hook.trim().slice(0, 60) : "";
     const okI = (v) => Number.isInteger(v) && v >= 0 && v < n;
     P.zoom = new Set((r?.zoom || []).filter(okI)); P.emph = new Set((r?.emph || []).filter(okI));
-    P.broll = (r?.broll || []).filter((b) => okI(b.a) && okI(b.b) && b.b >= b.a && P.media[b.m]).map((b) => ({ m: b.m, a: b.a, b: b.b }));
+    P.broll = (r?.broll || []).filter((b) => okI(b.a) && okI(b.b) && b.b >= b.a && P.media[b.m]).map((b) => ({ m: b.m, a: b.a, b: b.b, full: true, size: .6, x: 0, y: -.3 }));
+    P.plan = { stock: (r?.stock || []).filter((q) => okI(q.a) && okI(q.b) && q.b >= q.a && typeof q.q === "string" && q.q.trim()).slice(0, 5), music: String(r?.music || ""), amb: String(r?.amb || "") };
   }
+  /* ---------- бібліотеки: найкращий варіант одразу + 7 на заміну ---------- */
+  async function loadStock(item) {
+    const url = await SRV.mediaFile(item.src);
+    if (item.kind === "video") { const v = mkVideo(url); v.loop = true; await loadMeta(v); return { kind: "video", el: v, url, name: item.q || item.by || "відео", stock: item }; }
+    const im = new Image(); im.src = url; await im.decode().catch(() => {}); return { kind: "img", el: im, url, name: item.q || item.by || "фото", stock: item };
+  }
+  async function fillStock() {
+    if (!SRV.media || !P.plan) return;
+    await Promise.all(P.plan.stock.map(async (q) => { try {
+      const items = await SRV.media(q.kind === "photo" ? "photo" : "video", q.q, 7); if (!items.length) return;
+      items.forEach((it) => it.q = q.q); const m = await loadStock(items[0]); m.alts = items; m.ai = 0; P.media.push(m);
+      P.broll.push({ m: P.media.length - 1, a: q.a, b: q.b, full: q.full !== false, size: .62, x: 0, y: -.32, stock: true });
+    } catch (e) { console.warn("stock", e); } }));
+    await Promise.all([["music", P.plan.music], ["amb", P.plan.amb]].map(async ([k, q]) => { if (!q) return; try {
+      const items = await SRV.media(k === "music" ? "music" : "sound", q, 7); if (!items.length) return;
+      P[k] = { q, alts: items, i: 0, vol: k === "music" ? .3 : .22, buf: await bedBuf(items[0]) };
+    } catch (e) { console.warn(k, e); } }));
+  }
+  const BEDS = new Map();
+  async function bedBuf(item) { if (BEDS.has(item.src)) return BEDS.get(item.src); const u = await SRV.mediaFile(item.src); const ab = await (await fetch(u)).arrayBuffer(); const x = await E().decode(ab); BEDS.set(item.src, x); return x; }
   async function aiStyleFromShots() {
     if (!P.styleImgs.length || !SRV.aiVision) return;
     try {
@@ -306,6 +354,11 @@ ${numbered()}
 #yvved .up video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55}#yvved .up span,#yvved .up svg,#yvved .up small{position:relative}
 #yvved .tools{display:flex;justify-content:center;gap:10px;padding:12px 0 2px;flex:none}
 #yvved .yvtool{position:relative}#yvved .yvtool .n{position:absolute;top:-5px;right:-5px;min-width:19px;height:19px;border-radius:10px;background:#30d158;color:#0b0b0d;font-size:11px;font-weight:800;display:grid;place-items:center;padding:0 5px}
+#yvved .alts{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0}#yvved .alts::-webkit-scrollbar{display:none}
+#yvved .alt{flex:none;width:58px;height:84px;border-radius:12px;border:2px solid transparent;background:#222 center/cover;color:#fff;font:700 13px inherit;cursor:pointer;text-shadow:0 1px 3px #000}
+#yvved .alt.on{border-color:#30d158}#yvved .alt.load{opacity:.4}#yvved .alt.more{background:rgba(255,255,255,.08);border:1px dashed rgba(255,255,255,.3)}
+#yvved .alt.snd{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.08)}#yvved .alt.snd.on{background:#30d158;color:#0b0b0d}
+#yvved .attr{margin:10px 0 0;font-size:11px;color:#71717a;text-align:center}#yvved .attr a{color:#a1a1aa}
 #yvved .thumbs{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}#yvved .thumbs span{width:56px;height:74px;border-radius:10px;background:#222 center/cover;font-size:10px;display:grid;place-items:end center;color:#fff;overflow:hidden;padding:2px}
 ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
   const IC2 = {
@@ -373,12 +426,75 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
       if (!P.words.length) { say("Не почув слів у відео"); return; }
       await aiStyleFromShots();
       await aiPlan();
+      await busyRun("montage", () => fillStock());
       P.vids = [mkVideo(P.main.url), mkVideo(P.main.url)]; await Promise.all(P.vids.map(loadMeta));
       build(); screenEdit(); track("ready", { v: P.styleImgs.length ? "shot" : P.preset });
     } catch (e) { console.error(e); say(e?.message === "noaudio" ? "Не вдалося дістати звук з відео. Спробуй інший файл (MP4/MOV)." : e?.message === "limit" ? "Ліміт на сьогодні вичерпано" : "Не вийшло обробити відео. Спробуй ще раз."); }
   }
 
-  let POS = 0, SELW = -1;
+  let POS = 0, SELW = -1, SELL = null;
+  const IC3 = { trash: `<svg viewBox="0 0 24 24" width="16" height="16"><path d="M5 7h14M10 7V5h4v2M7 7l1 13h8l1-13" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>` };
+  const wordsOf = (L) => P.words.slice(L.a, L.b + 1).map((w) => w.w).join(" ");
+  // шторка «Вставки»: усі вставки по черзі → для вибраної: 7 варіантів, весь екран/віконце, розмір, положення, прибрати фон
+  function insSheet(B, cv, getPos, redraw, refresh, playIt) {
+    const S = E().sheet(B, "Вставки", ""), b = S.body;
+    const draw = () => {
+      if (SELL && !P.broll.includes(SELL)) SELL = null; if (!SELL) SELL = P.broll.find((L) => brollAt(getPos())?.b === L) || P.broll[0] || null;
+      const L = SELL, m = L && P.media[L.m], alts = m?.alts || [];
+      b.innerHTML = `${P.broll.length ? `<div class="chips">${P.broll.map((q, k) => `<button class="chip" type="button" data-l="${k}" aria-pressed="${q === L}">«${escH(wordsOf(q).slice(0, 18))}»</button>`).join("")}</div>` : `<p style="margin:0 0 8px;color:#a1a1aa;font-size:13px">Вставок ще немає. Додай своє або тапни слово в «Текст».</p>`}
+        ${L ? `${alts.length ? `<div class="lbl">Інший варіант</div><div class="alts">${alts.map((it, k) => `<button type="button" class="alt${k === m.ai ? " on" : ""}" data-alt="${k}" style="background-image:url('${escH(it.thumb)}')">${it.kind === "video" ? "▶" : ""}</button>`).join("")}<button type="button" class="alt more" id="vmore">Ще</button></div>` : ""}
+          <div class="chips" style="margin-top:10px"><button class="chip" type="button" id="vfull" aria-pressed="${L.full !== false}">На весь екран</button><button class="chip" type="button" id="vwin" aria-pressed="${L.full === false}">Віконцем</button>${m?.kind === "img" ? `<button class="chip" type="button" id="vcut" aria-pressed="${!!L.cutBg}">Прибрати фон</button>` : ""}<button class="chip" type="button" id="vdel">${IC3.trash} Прибрати</button></div>
+          ${L.full === false || L.cutBg ? `<div class="lbl">Розмір</div><input type="range" id="lsz" min="20" max="100" value="${Math.round((L.size ?? .6) * 100)}"><div class="lbl">↕ Вгору / вниз</div><input type="range" id="ly" min="-100" max="100" value="${Math.round((L.y ?? -.3) * 100)}"><div class="lbl">↔ Вліво / вправо</div><input type="range" id="lx" min="-100" max="100" value="${Math.round((L.x || 0) * 100)}">` : ""}` : ""}
+        <label class="btn" for="vins2" style="margin-top:12px">${IC2.ins} Додати своє фото або відео</label><input type="file" id="vins2" accept="image/*,video/*" multiple hidden>
+        <p class="attr">Матеріали: <a href="https://www.pexels.com" target="_blank" rel="noopener">Pexels</a>, <a href="https://pixabay.com" target="_blank" rel="noopener">Pixabay</a>, <a href="https://freesound.org" target="_blank" rel="noopener">Freesound</a></p>`;
+      const jump = () => { const o = WOUT[L.a]; if (o) { POS = o.s + .3; still(POS, cv); const sk = UI.root?.querySelector("#vseek"), tm = UI.root?.querySelector("#vtm"); if (sk) sk.value = Math.round(POS / TOT * 1000); if (tm) tm.textContent = `${fmt(POS)} / ${fmt(TOT)}`; } };
+      b.querySelectorAll("[data-l]").forEach((x) => x.onclick = () => { SELL = P.broll[+x.dataset.l]; draw(); jump(); });
+      b.querySelectorAll("[data-alt]").forEach((x) => x.onclick = async () => { const k = +x.dataset.alt, it = alts[k]; x.classList.add("load");
+        try { const nm = await loadStock(it); Object.assign(m, { kind: nm.kind, el: nm.el, url: nm.url, cut: null, ai: k }); L.cutBg = false; track("alt", { v: it.kind }); draw(); jump(); } catch (e) { say("Не вдалося завантажити"); x.classList.remove("load"); } });
+      $(b, "#vmore")?.addEventListener("click", async () => { try { const q = m.stock?.q || m.name, it = await SRV.media(m.kind === "video" ? "video" : "photo", q + " " + ["close up", "people", "aesthetic", "cinematic", "top view"][Math.floor(Math.random() * 5)], 7); if (it.length) { m.alts = it; m.ai = -1; draw(); } } catch (e) { say("Не вдалося знайти"); } });
+      $(b, "#vfull")?.addEventListener("click", () => { pushHist(); L.full = true; L.cutBg = false; draw(); jump(); });
+      $(b, "#vwin")?.addEventListener("click", () => { pushHist(); L.full = false; draw(); jump(); });
+      $(b, "#vdel")?.addEventListener("click", () => { pushHist(); P.broll = P.broll.filter((q) => q !== L); SELL = null; redraw(); draw(); });
+      $(b, "#vcut")?.addEventListener("click", async () => { pushHist(); if (L.cutBg) { L.cutBg = false; draw(); jump(); return; }
+        if (!m.cut) { try { m.cut = await busyRun("image", () => cutout(m.el)); } catch (e) { console.warn(e); say("Не вдалося прибрати фон"); return; } }
+        L.cutBg = true; L.full = false; draw(); jump(); });
+      const sl = (id, key, k) => { const r = $(b, id); if (r) r.oninput = () => { L[key] = +r.value / k; still(getPos(), cv); }; };
+      sl("#lsz", "size", 100); sl("#ly", "y", 100); sl("#lx", "x", 100);
+      $(b, "#vins2").onchange = async (e) => { const n0 = P.media.length; for (const f of [...e.target.files].slice(0, 8)) await addMedia(f);
+        if (P.media.length > n0) { const i0 = Math.max(0, wordAt(getPos())); let j = i0; const t0 = P.words[i0]?.s || 0; while (j + 1 < P.words.length && P.words[j + 1].e - t0 < 2.2) j++;
+          pushHist(); SELL = { m: n0, a: i0, b: j, full: true, size: .6, x: 0, y: -.3 }; P.broll.push(SELL); redraw(); draw(); jump(); } };
+    };
+    draw(); return S;
+  }
+  // прибрати фон з фото — прямо в телефоні (безкоштовно); модель завантажується один раз
+  let BGR = null;
+  async function cutout(img) {
+    BGR ||= import("https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/+esm");
+    const mod = await BGR, c = document.createElement("canvas"); c.width = img.naturalWidth; c.height = img.naturalHeight; c.getContext("2d").drawImage(img, 0, 0);
+    const blob = await new Promise((r) => c.toBlob(r, "image/png")); const out = await mod.removeBackground(blob);
+    const im = new Image(); im.src = URL.createObjectURL(out); await im.decode(); return im;
+  }
+  // шторка «Звук»: голос, музика, фон — по 7 варіантів, гучність, «без»
+  const MOODS = [["Спокійна", "calm lofi"], ["Енергійна", "upbeat energetic"], ["Натхненна", "inspiring piano"], ["Смішна", "funny quirky"], ["Кіно", "cinematic tension"]];
+  const AMBS = [["Ліс", "forest birds"], ["Дощ", "rain"], ["Місто", "city street"], ["Кафе", "cafe ambience"], ["Море", "ocean waves"], ["Офіс", "office ambience"]];
+  function soundSheet(B, getPos, playIt) {
+    const S = E().sheet(B, "Звук", ""), b = S.body, FXP = E().FXP;
+    const bed = (k, title, presets) => { const o = P[k]; return `<div class="lbl">${title}</div><div class="chips">${presets.map(([n, q]) => `<button class="chip" type="button" data-bq="${k}|${q}" aria-pressed="${o && !o.off && o.q === q}">${n}</button>`).join("")}<button class="chip" type="button" data-boff="${k}" aria-pressed="${!o || !!o.off}">Без</button></div>
+      ${o && !o.off && o.alts?.length ? `<div class="alts">${o.alts.map((it, i) => `<button type="button" class="alt snd${i === o.i ? " on" : ""}" data-bi="${k}|${i}">${i + 1}</button>`).join("")}</div><input type="range" data-bv="${k}" min="0" max="100" value="${Math.round(o.vol * 100)}">` : ""}`; };
+    const draw = () => {
+      b.innerHTML = `<div class="lbl" style="margin-top:0">Голос</div><div class="chips">${Object.entries(FXP).map(([k, v]) => `<button class="chip" type="button" data-fx="${k}" aria-pressed="${(P.fx || "orig") === k}">${v.n}</button>`).join("")}</div>
+        ${bed("music", "Музика", MOODS)}${bed("amb", "Фоновий звук", AMBS)}`;
+      const replay = () => { stopPlay(); playIt(getPos()); };
+      b.querySelectorAll("[data-fx]").forEach((x) => x.onclick = () => { P.fx = x.dataset.fx; track("fx", { v: P.fx }); draw(); replay(); });
+      b.querySelectorAll("[data-bq]").forEach((x) => x.onclick = async () => { const [k, q] = x.dataset.bq.split("|"); try {
+        const items = await busyRun("text", () => SRV.media(k === "music" ? "music" : "sound", q, 7)); if (!items.length) { say("Нічого не знайшлося"); return; }
+        P[k] = { q, alts: items, i: 0, vol: P[k]?.vol ?? (k === "music" ? .3 : .22), buf: await busyRun("voice", () => bedBuf(items[0])) }; track(k, { v: q }); draw(); replay(); } catch (e) { say("Не вдалося завантажити"); } });
+      b.querySelectorAll("[data-boff]").forEach((x) => x.onclick = () => { const k = x.dataset.boff; if (P[k]) P[k].off = true; draw(); replay(); });
+      b.querySelectorAll("[data-bi]").forEach((x) => x.onclick = async () => { const [k, i] = x.dataset.bi.split("|"), o = P[k]; try { o.buf = await busyRun("voice", () => bedBuf(o.alts[+i])); o.i = +i; o.off = false; draw(); replay(); } catch (e) { say("Не вдалося завантажити"); } });
+      b.querySelectorAll("[data-bv]").forEach((x) => x.onchange = () => { P[x.dataset.bv].vol = x.value / 100; replay(); });
+    };
+    draw(); return S;
+  }
   function screenEdit(msg) {
     const d = UI.root?.querySelector(".vstage") ? UI.root : shell("Монтаж відео"), B = $(d, ".vb"), F = $(d, ".vf");
     stopPlay(); SELW = -1; POS = Math.min(POS, Math.max(0, TOT - .05)); $(d, "#vundo").hidden = !P.hist.length;
@@ -399,7 +515,7 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
     const showAt = (t) => { POS = t; seek.value = Math.round(t / TOT * 1000); tm.textContent = `${fmt(t)} / ${fmt(TOT)}`; };
     still(POS, cv);
     const playIt = (from) => { setPlay(true); playFrom(from, cv, { tick: (t) => { showAt(t); hlWord(t); }, onend: () => setPlay(false), done: () => { POS = 0; } }); };
-    pb.onclick = () => { if (PL) { stopPlay(); return; } playIt(POS >= TOT - .1 ? 0 : POS); };
+    pb.onclick = () => { const br = brollAt(POS); if (!PL && br && SELL !== br.b) { SELL = br.b; B.querySelectorAll(".yvsh").forEach((x) => x._close(true)); $(B, '[data-sh="ins"]')?.click(); return; } if (PL) { stopPlay(); return; } playIt(POS >= TOT - .1 ? 0 : POS); };
     seek.oninput = () => { stopPlay(); showAt(seek.value / 1000 * TOT); still(POS, cv); };
     const redraw = () => { build(); if (!PL) still(POS, cv); };
     const refresh = (m) => { build(); screenEdit(m); };
@@ -415,10 +531,8 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
         const h = $(b, "#vhook"); h.oninput = () => { P.hook = h.value.trim(); POS = Math.min(POS, 1); showAt(POS); still(POS, cv); }; h.onfocus = () => pushHist();
         $(b, "#vhno").onclick = () => { pushHist(); P.hook = ""; h.value = ""; still(POS, cv); }; return S; },
       text: () => textSheet(B, cv, playIt, refresh),
-      ins: () => { const S = E().sheet(B, "Вставки", `<label class="btn" for="vins2">${IC2.ins} Додати фото або відео</label><input type="file" id="vins2" accept="image/*,video/*" multiple hidden><div class="thumbs">${P.media.map((m) => `<span style="background-image:url(${m.kind === "img" ? m.url : ""})">${m.kind === "video" ? "▶ " : ""}${escH(m.name.slice(0, 9))}</span>`).join("")}</div>${P.media.length ? `<div class="lbl">Щоб поставити — «Текст» → тапни слово, або скажи голосом</div>` : ""}`);
-        $(S.body, "#vins2").onchange = async (e) => { for (const f of [...e.target.files].slice(0, 8)) await addMedia(f); refresh("Вставку додано"); }; return S; },
-      fx: () => { const FXP = E().FXP, S = E().sheet(B, "Звук голосу", `<div class="chips">${Object.entries(FXP).map(([k, v]) => `<button class="chip" type="button" data-fx="${k}" aria-pressed="${(P.fx || "orig") === k}">${v.n}</button>`).join("")}</div>`);
-        S.body.querySelectorAll("[data-fx]").forEach((x) => x.onclick = async () => { P.fx = x.dataset.fx; S.body.querySelectorAll("[data-fx]").forEach((o) => o.setAttribute("aria-pressed", o === x)); stopPlay(); playIt(POS); }); return S; },
+      ins: () => insSheet(B, cv, () => POS, redraw, refresh, playIt),
+      fx: () => soundSheet(B, () => POS, playIt),
       neu: () => { const S = E().sheet(B, "Почати нове відео?", `<p style="margin:0 0 10px;color:#a1a1aa;font-size:13.5px">Поточний монтаж не збережеться.</p><button class="btn" type="button" id="vnew">Так, нове відео</button>`); $(S.body, "#vnew").onclick = () => { stopPlay(); screenStart(); }; return S; },
     }, fit);
     $(F, "#vwrite").onclick = () => { B.querySelectorAll(".yvsh").forEach((x) => x._close(true)); const S = E().sheet(B, "Що змінити?", `<textarea id="vcmd" rows="3" placeholder="Напр.: субтитри більші й жовті, прибери частину про ціни"></textarea><button class="btn main" type="button" id="vgo2" style="margin-top:8px">Застосувати</button>`); fit();

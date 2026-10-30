@@ -256,6 +256,13 @@
     return busy("text", async () => { const j = await call("ai-text", { prompt, json: true, max: 1500, images }); const t = String(j.text || "").replace(/^```(?:json)?\s*|\s*```$/g, "");
       const a = t.indexOf("{"), b = t.lastIndexOf("}"); return JSON.parse(a >= 0 ? t.slice(a, b + 1) : t); }, o?.quiet);
   };
+  // бібліотеки матеріалів без авторських прав (відео, фото, звуки, музика) + завантаження файлу через наш сервер
+  SRV.media = async (kind, q, n) => { if (!SRV.session) throw new Error("login"); return (await call("media", { kind, q, n: n || 7 })).items || []; };
+  const MEDIA_CACHE = new Map();
+  SRV.mediaFile = async (url) => { if (MEDIA_CACHE.has(url)) return MEDIA_CACHE.get(url);
+    const p = (async () => { const r = await fetch(`${FN}/media`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${SRV.session.access_token}`, apikey: CFG.key }, body: JSON.stringify({ proxy: url }) });
+      if (!r.ok) throw new Error("media_file"); return URL.createObjectURL(await r.blob()); })();
+    MEDIA_CACHE.set(url, p); p.catch(() => MEDIA_CACHE.delete(url)); return p; };
   // розпізнавання мови з часом слів — монтаж живого голосу («Розкажи своїми словами»)
   SRV.stt = async (o) => {
     if (!SRV.session) { loginSheet("Щоб змонтувати голос, увійди або зареєструйся."); throw new Error("login"); }
