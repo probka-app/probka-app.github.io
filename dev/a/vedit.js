@@ -49,7 +49,7 @@
     const n = Math.ceil(TOT * SR) + 1, y = new Float32Array(n), F = Math.round(SR * .01);
     for (const s of SEG) { const a = Math.round(s.a * SR), L = Math.round((s.b - s.a) * SR), oo = Math.round(s.o * SR);
       for (let j = 0; j < L && oo + j < n; j++) { const f = Math.min(1, j / F, (L - j) / F); y[oo + j] += (P.aud[a + j] || 0) * f; } }
-    OUTA = E().master(y);
+    OUTA = E().master(y); OUTB = OUTA; FXK = "orig";
     // час кожного слова у фінальному відео
     WOUT = W.map((w, wi) => { if (P.cut.has(wi)) return null; const s = SEG.find((q) => w.s >= q.a - .08 && w.s < q.b); return s ? { s: s.o + Math.max(0, w.s - s.a), e: s.o + Math.min(s.b - s.a, w.e - s.a) } : null; });
     // субтитри: короткі шматки по кілька слів
@@ -60,6 +60,9 @@
     c && CHUNKS.push(c);
     CHUNKS.forEach((q, k) => { q.until = CHUNKS[k + 1] ? Math.min(CHUNKS[k + 1].s, q.e + .6) : q.e + .6; });
   }
+  // «Звук голосу» (пресети з озвучки) — накладаємо на готове аудіо перед програванням/збереженням
+  let OUTB = null, FXK = "";
+  async function ensureFx() { const want = P.fx || "orig"; if (FXK === want) return; OUTA = want === "orig" ? OUTB : await E().applyFxTo(OUTB, { k: want, pitch: 0, tone: 0 }); FXK = want; }
   const outToSrc = (t) => { for (const s of SEG) if (t < s.o + (s.b - s.a)) return { seg: s, src: s.a + Math.max(0, t - s.o) }; const l = SEG[SEG.length - 1]; return { seg: l, src: l.b }; };
   const wordAt = (t) => { let best = -1; P.words.forEach((w, i) => { const o = WOUT[i]; if (o && t >= o.s - .03 && t < o.e + .12) best = i; }); return best; };
 
@@ -128,6 +131,7 @@
   function stopPlay() { if (!PL) return; cancelAnimationFrame(PL.raf); try { PL.src.stop(); } catch (e) {} PL.vids.forEach((v) => v.pause()); P.media.forEach((m) => m.kind === "video" && m.el.pause()); PL.onend?.(); PL = null; }
   async function playFrom(t0, cv, opts = {}) {
     stopPlay(); const ac = AC(); try { await ac.resume(); } catch (e) {}
+    await ensureFx();
     const x = cv.getContext("2d"), W = cv.width, H = cv.height, vids = P.vids; let segI = SEG.indexOf(outToSrc(t0).seg), cur = vids[0], nxt = vids[1];
     await seekTo(cur, outToSrc(t0).src); if (SEG[segI + 1]) seekTo(nxt, SEG[segI + 1].a);
     const b = ac.createBuffer(1, OUTA.length, E().SR); b.copyToChannel(OUTA, 0); const src = ac.createBufferSource(); src.buffer = b;
@@ -268,68 +272,88 @@ ${numbered()}
   const CSS = `
 #yvved{position:fixed;inset:0;z-index:9000;background:#0b0b0d;color:#f5f5f7;display:flex;flex-direction:column;font:15px/1.45 var(--pfont,system-ui,-apple-system,sans-serif);padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
 #yvved *{box-sizing:border-box}
-#yvved .vh{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 6px}#yvved .vh b{font-size:17px}
-#yvved .vx{width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#f5f5f7;font-size:20px;cursor:pointer}
-#yvved .vb{flex:1;overflow-y:auto;padding:4px 14px 14px;-webkit-overflow-scrolling:touch}
+#yvved .vh{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 4px}#yvved .vh b{font-size:17px}
+#yvved .vx{width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#f5f5f7;font-size:20px;cursor:pointer;display:grid;place-items:center}
+#yvved .vb{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;padding:4px 0 6px}
 #yvved .vf{padding:8px 14px 12px;display:grid;gap:8px;border-top:1px solid rgba(255,255,255,.08)}
 #yvved .vdev{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:#ff9f0a;color:#0b0b0d;font-size:10.5px;font-weight:800;vertical-align:2px}
-#yvved .hint{color:#a1a1aa;font-size:13.5px;margin:2px 0 12px}
-#yvved .up{display:grid;place-items:center;gap:6px;width:100%;padding:26px 14px;border-radius:22px;border:1.5px dashed rgba(255,255,255,.22);background:rgba(255,255,255,.04);color:#f5f5f7;cursor:pointer;text-align:center;font:600 15px inherit}
-#yvved .up small{color:#a1a1aa;font-weight:500}#yvved .up.ok{border-style:solid;border-color:rgba(52,208,122,.6);background:rgba(52,208,122,.08)}
-#yvved .opt{margin-top:12px;padding:12px;border-radius:18px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
-#yvved .opt h4{margin:0 0 2px;font-size:14.5px}#yvved .opt p{margin:0 0 8px;color:#a1a1aa;font-size:12.5px}
-#yvved .thumbs{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}#yvved .thumbs span{width:54px;height:72px;border-radius:10px;background:#222 center/cover;position:relative;font-size:10px;display:grid;place-items:end center;color:#fff;overflow:hidden}
-#yvved .btn{width:100%;padding:12px;border-radius:15px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.07);color:#f5f5f7;font:700 14.5px inherit;cursor:pointer;display:flex;gap:7px;align-items:center;justify-content:center}
+#yvved .btn{width:100%;padding:13px;border-radius:15px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.07);color:#f5f5f7;font:700 15px inherit;cursor:pointer;display:flex;gap:7px;align-items:center;justify-content:center}
 #yvved .btn.main{background:#f5f5f7;color:#0b0b0d;border-color:transparent}#yvved .btn.rec{background:#ff453a;border-color:transparent}#yvved .btn:disabled{opacity:.4}
-#yvved .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}#yvved .three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
-#yvved .chip{flex:none;padding:6px 11px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:#e4e4e7;font:600 12.5px inherit;cursor:pointer}
-#yvved .chip[aria-pressed=true]{background:#f5f5f7;color:#0b0b0d}
-#yvved .row{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0}#yvved .row::-webkit-scrollbar{display:none}
-#yvved textarea{width:100%;min-height:54px;padding:10px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#f5f5f7;font:15px inherit;resize:none}
-#yvved .stage{display:flex;gap:10px;align-items:flex-start}
+#yvved .rowf{display:flex;gap:8px}#yvved .rowf .btn:first-child{flex:1}#yvved .btn.sq{width:52px;flex:none;padding:0}
+#yvved .chip{flex:none;padding:7px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:#e4e4e7;font:600 13px inherit;cursor:pointer;display:inline-flex;gap:4px;align-items:center}
+#yvved .chip[aria-pressed=true]{background:#f5f5f7;color:#0b0b0d}#yvved .chip svg{width:15px;height:15px}
+#yvved .chips{display:flex;flex-wrap:wrap;gap:6px}
+#yvved textarea,#yvved input[type=text]{width:100%;padding:10px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#f5f5f7;font:15px inherit;resize:none}
+#yvved .lbl{font-size:12.5px;color:#a1a1aa;font-weight:600;margin:10px 0 4px}
+#yvved input[type=range]{width:100%;accent-color:#f5f5f7}
+#yvved .vstage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 6px}
+#yvved .bar{display:flex;flex-direction:column;gap:8px;flex:none}
+#yvved .bar .yvtool{width:58px;font-size:11px;padding:8px 2px 6px}#yvved .vx[hidden]{display:none}
 #yvved .cvw{position:relative;flex:none;border-radius:16px;overflow:hidden;background:#000;box-shadow:0 10px 30px rgba(0,0,0,.5)}
 #yvved .cvw canvas{display:block;width:100%;height:100%}
 #yvved .cvw .pb{position:absolute;inset:0;display:grid;place-items:center;background:none;border:0;color:#fff;cursor:pointer}
 #yvved .cvw .pb i{width:56px;height:56px;border-radius:50%;background:rgba(0,0,0,.45);display:grid;place-items:center;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-#yvved .side{flex:1;min-width:0;display:grid;gap:8px;align-content:start}
-#yvved .side .lbl{font-size:12px;color:#a1a1aa;font-weight:600;margin-top:2px}
-#yvved .seek{width:100%;accent-color:#f5f5f7;margin:6px 0 2px}
-#yvved .meta{display:flex;justify-content:space-between;color:#a1a1aa;font-size:12px}
-#yvved .msg{margin:8px 0 0;padding:9px 12px;border-radius:14px;background:rgba(255,214,10,.1);border:1px solid rgba(255,214,10,.3);color:#ffe27a;font-size:13px}
-#yvved .txt{font-size:17px;line-height:1.7;margin-top:10px;user-select:none;-webkit-user-select:none}
+#yvved .seekrow{display:flex;align-items:center;gap:10px;padding:6px 16px 0;flex:none}#yvved .seekrow span{color:#a1a1aa;font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+#yvved .msg{flex:none;margin:6px 14px 0;padding:8px 12px;border-radius:14px;background:rgba(255,214,10,.1);border:1px solid rgba(255,214,10,.3);color:#ffe27a;font-size:13px;text-align:center}
+#yvved .vb.shon .msg{display:none}
+#yvved .txt{font-size:17px;line-height:1.7;user-select:none;-webkit-user-select:none}
 #yvved .w{padding:1px 1px;border-radius:6px;cursor:pointer}#yvved .w.cut{color:#5b5b63;text-decoration:line-through;font-size:13.5px}
-#yvved .w.z{box-shadow:inset 0 -3px 0 #0a84ff}#yvved .w.em{color:#ffd60a}#yvved .w.br{background:rgba(52,208,122,.16)}#yvved .w.now{background:#ffd60a;color:#0b0b0d}
-#yvved .leg{display:flex;gap:10px;flex-wrap:wrap;color:#a1a1aa;font-size:11.5px;margin-top:10px}#yvved .leg i{font-style:normal}
-#yvved .pop{position:fixed;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom) + 120px);z-index:9001;background:rgba(28,28,32,.97);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:10px;display:grid;gap:6px;box-shadow:0 20px 50px rgba(0,0,0,.6)}
-#yvved .pop .q{color:#a1a1aa;font-size:12.5px;padding:2px 4px}
-#yvved .prog{height:6px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden}#yvved .prog i{display:block;height:100%;width:0;background:#30d158}`;
+#yvved .w.z{box-shadow:inset 0 -3px 0 #0a84ff}#yvved .w.em{color:#ffd60a}#yvved .w.br{background:rgba(52,208,122,.16)}#yvved .w.now{background:#ffd60a;color:#0b0b0d}#yvved .w.sel{outline:2px solid #ffd60a}
+#yvved .act{position:sticky;top:-4px;z-index:2;display:flex;gap:6px;flex-wrap:wrap;padding:6px 0 8px;background:rgba(26,26,30,.98)}#yvved .act .q{color:#a1a1aa;font-size:13px;padding:6px 2px}
+#yvved .up{flex:1;min-height:0;width:min(78%,330px);margin:0 auto;display:grid;place-items:center;align-content:center;gap:8px;border-radius:26px;border:1.5px dashed rgba(255,255,255,.22);background:rgba(255,255,255,.04);color:#f5f5f7;cursor:pointer;text-align:center;font:700 16px inherit;position:relative;overflow:hidden}
+#yvved .up small{color:#a1a1aa;font-weight:500;font-size:12.5px}#yvved .up.ok{border-style:solid;border-color:rgba(52,208,122,.6)}
+#yvved .up video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55}#yvved .up span,#yvved .up svg,#yvved .up small{position:relative}
+#yvved .tools{display:flex;justify-content:center;gap:10px;padding:12px 0 2px;flex:none}
+#yvved .yvtool{position:relative}#yvved .yvtool .n{position:absolute;top:-5px;right:-5px;min-width:19px;height:19px;border-radius:10px;background:#30d158;color:#0b0b0d;font-size:11px;font-weight:800;display:grid;place-items:center;padding:0 5px}
+#yvved .thumbs{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}#yvved .thumbs span{width:56px;height:74px;border-radius:10px;background:#222 center/cover;font-size:10px;display:grid;place-items:end center;color:#fff;overflow:hidden;padding:2px}
+${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
+  const IC2 = {
+    style: `<svg viewBox="0 0 24 24"><path d="M5 7h14M9 7v12M15 12h5M17.5 12v7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
+    plaque: `<svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7 12h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
+    ins: `<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 16l5-5 4 4 3-3 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>`,
+    shot: `<svg viewBox="0 0 24 24"><path d="M4 8V5h3M17 5h3v3M20 16v3h-3M7 19H4v-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M8 13h8" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>`,
+    wish: `<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>`,
+    neu: `<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>`,
+  };
+  const tool = (k, ic, t, n) => `<button class="yvtool" type="button" data-sh="${k}">${ic}${t}${n ? `<b class="n">${n}</b>` : ""}</button>`;
   const UI = { root: null };
   function shell(title) {
     if (!document.getElementById("yvvedcss")) { const st = document.createElement("style"); st.id = "yvvedcss"; st.textContent = CSS; document.head.appendChild(st); }
     UI.root?.remove(); const d = document.createElement("div"); d.id = "yvved";
-    d.innerHTML = `<div class="vh"><b>${title}<span class="vdev">ТЕСТ</span></b><button class="vx" type="button" aria-label="Закрити">×</button></div><div class="vb"></div><div class="vf"></div>`;
-    document.body.appendChild(d); UI.root = d; $(d, ".vx").onclick = close; return d;
+    d.innerHTML = `<div class="vh"><b>${title}<span class="vdev">ТЕСТ</span></b><span style="display:flex;gap:8px"><button class="vx" type="button" id="vundo" aria-label="Скасувати" hidden>${E().IC.undo}</button><button class="vx" type="button" id="vclose" aria-label="Закрити">×</button></span></div><div class="vb"></div><div class="vf"></div>`;
+    document.body.appendChild(d); UI.root = d; $(d, "#vclose").onclick = close;
+    $(d, "#vundo").onclick = () => { if (popHist()) { build(); screenEdit("Скасовано"); } }; return d;
   }
   function close() { stopPlay(); UI.root?.remove(); UI.root = null; }
   const busyRun = (k, fn) => E().busyRun(k, fn);
+  // кнопки-інструменти відкривають шторку; повторний тап — закриває
+  function wireTools(B, open, after) {
+    B.querySelectorAll("[data-sh]").forEach((b) => b.onclick = () => { const was = b.classList.contains("on"); B.querySelectorAll(".yvsh").forEach((x) => x._close(true)); B.classList.remove("shon"); B.querySelectorAll("[data-sh]").forEach((o) => o.classList.remove("on"));
+      if (!was) { b.classList.add("on"); const S = open[b.dataset.sh]?.(); if (S) { const c = S.close; S.box._close = (q) => { c(q); after?.(); }; } } after?.(); });
+  }
 
   function screenStart() {
-    P = fresh(); const d = shell("Монтаж твого відео"), B = $(d, ".vb"), F = $(d, ".vf");
-    B.innerHTML = `<p class="hint">Завантаж відео, де ти говориш у камеру. Ми приберемо паузи й «ну-е-типу», почистимо звук і додамо субтитри, плашку й наїзди. Усе можна поправити голосом.</p>
-      <label class="up" id="upmain" for="vmain">${ICON.film}<span id="upt">Вибрати відео</span><small>до 3 хвилин · вертикальне найкраще</small></label><input type="file" id="vmain" accept="video/*" hidden>
-      <div class="opt"><h4>Приклад субтитрів <small style="color:#a1a1aa;font-weight:500">· необов'язково</small></h4><p>Скрін з відео, де тобі подобаються субтитри — зробимо схоже.</p><label class="btn" for="vshot">+ Скрін-приклад</label><input type="file" id="vshot" accept="image/*" multiple hidden><div class="thumbs" id="shots"></div></div>
-      <div class="opt"><h4>Вставки <small style="color:#a1a1aa;font-weight:500">· необов'язково</small></h4><p>Фото чи короткі відео, які показати поверх. Назва файлу підкаже, куди їх ставити — або скажеш потім.</p><label class="btn" for="vins">+ Фото або відео</label><input type="file" id="vins" accept="image/*,video/*" multiple hidden><div class="thumbs" id="ins"></div></div>
-      <div class="opt"><h4>Що має бути у відео? <small style="color:#a1a1aa;font-weight:500">· необов'язково</small></h4><p>Розкажи голосом або напиши: стиль, що виділити, що прибрати.</p><textarea id="vwish" rows="2" placeholder="Напр.: динамічно, субтитри великі жовті, без плашки на початку"></textarea><button class="btn" type="button" id="vwrec" style="margin-top:6px">${ICON.mic} Сказати голосом</button></div>`;
+    P = fresh(); const d = shell("Монтаж відео"), B = $(d, ".vb"), F = $(d, ".vf");
+    const draw = () => {
+      B.querySelector(".tools").innerHTML = tool("shot", IC2.shot, "Стиль", P.styleImgs.length) + tool("ins", IC2.ins, "Вставки", P.media.length) + tool("wish", IC2.wish, "Побажання", P.wish ? "✓" : "");
+      wireTools(B, { shot: shotSheet, ins: insSheet, wish: wishSheet }); };
+    B.innerHTML = `<label class="up" id="upmain" for="vmain">${ICON.film}<span id="upt">Вибери відео</span><small>де ти говориш у камеру · до 3 хв</small></label><input type="file" id="vmain" accept="video/*" hidden><div class="tools"></div>`;
     F.innerHTML = `<button class="btn main" type="button" id="vgo" disabled>Змонтувати</button>`;
     $(B, "#vmain").onchange = async (e) => { const f = e.target.files?.[0]; if (!f) return; if (f.size > 400e6) { say("Файл завеликий — до 400 МБ"); return; }
       const url = URL.createObjectURL(f), v = mkVideo(url); try { await loadMeta(v); } catch (x) { say("Це відео не відкривається в браузері"); return; }
       if (v.duration > 185) { say("Відео задовге — до 3 хвилин"); return; }
-      P.main = { file: f, url, dur: v.duration, w: v.videoWidth, h: v.videoHeight }; $(B, "#upmain").classList.add("ok"); $(B, "#upt").textContent = "✓ " + f.name.slice(0, 32) + ` · ${fmt(v.duration)}`; $(F, "#vgo").disabled = false; };
-    $(B, "#vshot").onchange = async (e) => { for (const f of [...e.target.files].slice(0, 3 - P.styleImgs.length)) { try { const d64 = await fileB64(f); P.styleImgs.push({ data: d64, mime: "image/jpeg" }); $(B, "#shots").insertAdjacentHTML("beforeend", `<span style="background-image:url(data:image/jpeg;base64,${d64})"></span>`); } catch (x) {} } };
-    $(B, "#vins").onchange = async (e) => { for (const f of [...e.target.files].slice(0, 8)) { await addMedia(f); const m = P.media[P.media.length - 1]; $(B, "#ins").insertAdjacentHTML("beforeend", `<span style="background-image:url(${m.kind === "img" ? m.url : ""})">${m.kind === "video" ? "▶ " : ""}${escH(m.name.slice(0, 10))}</span>`); } };
-    const wr = $(B, "#vwrec"), wl = wr.innerHTML;
-    wr.onclick = () => E().record(wr, wl, async (buf) => { try { const t = await sttBuf(buf); $(B, "#vwish").value = ($(B, "#vwish").value + " " + t).trim(); } catch (x) { say("Не вийшло розпізнати"); } });
-    $(F, "#vgo").onclick = () => { P.wish = $(B, "#vwish").value.trim(); run(); };
+      P.main = { file: f, url, dur: v.duration, w: v.videoWidth, h: v.videoHeight }; const up = $(B, "#upmain"); up.classList.add("ok"); up.querySelector("video")?.remove();
+      v.currentTime = Math.min(1, v.duration / 3); up.prepend(v); $(B, "#upt").textContent = `✓ ${fmt(v.duration)}`; up.querySelector("small").textContent = "тапни, щоб замінити"; $(F, "#vgo").disabled = false; };
+    const shotSheet = () => { const S = E().sheet(B, "Субтитри як на скріні", `<label class="btn" for="vshot">${IC2.shot} Додати скрін</label><input type="file" id="vshot" accept="image/*" multiple hidden><div class="thumbs">${P.styleImgs.map((m) => `<span style="background-image:url(data:image/jpeg;base64,${m.data})"></span>`).join("")}</div>`);
+      $(S.body, "#vshot").onchange = async (e) => { for (const f of [...e.target.files].slice(0, 3 - P.styleImgs.length)) { try { P.styleImgs.push({ data: await fileB64(f), mime: "image/jpeg" }); } catch (x) {} } S.close(true); draw(); }; return S; };
+    const insSheet = () => { const S = E().sheet(B, "Вставки", `<label class="btn" for="vins">${IC2.ins} Фото або відео</label><input type="file" id="vins" accept="image/*,video/*" multiple hidden><div class="thumbs">${P.media.map((m) => `<span style="background-image:url(${m.kind === "img" ? m.url : ""})">${m.kind === "video" ? "▶ " : ""}${escH(m.name.slice(0, 9))}</span>`).join("")}</div>`);
+      $(S.body, "#vins").onchange = async (e) => { for (const f of [...e.target.files].slice(0, 8)) await addMedia(f); S.close(true); draw(); }; return S; };
+    const wishSheet = () => { const S = E().sheet(B, "Що має бути у відео?", `<textarea id="vwish" rows="3" placeholder="Напр.: динамічно, великі жовті субтитри, без плашки">${escH(P.wish)}</textarea><button class="btn" type="button" id="vwrec" style="margin-top:8px">${ICON.mic} Сказати голосом</button>`);
+      const ta = $(S.body, "#vwish"); ta.oninput = () => { P.wish = ta.value.trim(); };
+      const wr = $(S.body, "#vwrec"), wl = wr.innerHTML;
+      wr.onclick = () => E().record(wr, wl, async (buf) => { try { const t = await sttBuf(buf); ta.value = (ta.value + " " + t).trim(); P.wish = ta.value; } catch (x) { say("Не вийшло розпізнати"); } }); return S; };
+    $(F, "#vgo").onclick = () => { B.querySelectorAll(".yvsh").forEach((x) => x._close(true)); run(); };
+    draw();
   }
   async function sttBuf(buf) {
     const raw = await E().decode(buf), small = await E().resample(raw, E().SR, 16000);
@@ -353,75 +377,79 @@ ${numbered()}
     } catch (e) { console.error(e); say(e?.message === "noaudio" ? "Не вдалося дістати звук з відео. Спробуй інший файл (MP4/MOV)." : e?.message === "limit" ? "Ліміт на сьогодні вичерпано" : "Не вийшло обробити відео. Спробуй ще раз."); }
   }
 
+  let POS = 0, SELW = -1;
   function screenEdit(msg) {
-    const d = UI.root?.querySelector(".stage") ? UI.root : shell("Монтаж твого відео"), B = $(d, ".vb"), F = $(d, ".vf");
-    stopPlay();
-    const cutN = P.cut.size, vw = Math.min(window.innerWidth * .5, (window.innerHeight * .46) * 9 / 16);
-    B.innerHTML = `<div class="stage"><div class="cvw" style="width:${vw}px;height:${vw * 16 / 9}px"><canvas id="vcv" width="540" height="960"></canvas><button class="pb" type="button" id="vpb" aria-label="Дивитись"><i>${ICON.play}</i></button></div>
-        <div class="side"><div class="lbl">Субтитри</div><div style="display:flex;flex-wrap:wrap;gap:5px">${Object.entries(PRESETS).map(([k, v]) => `<button class="chip" type="button" data-pr="${k}" aria-pressed="${P.preset === k}">${v.n}</button>`).join("")}${P.preset === "shot" ? `<button class="chip" type="button" aria-pressed="true">Як на скріні</button>` : ""}</div>
-          <div class="lbl">Розмір</div><input class="seek" type="range" id="vsz" min="60" max="150" value="${Math.round(P.style.size * 100)}">
-          <div class="lbl">Висота</div><input class="seek" type="range" id="vps" min="12" max="88" value="${Math.round(P.style.pos * 100)}"></div></div>
-      <input class="seek" type="range" id="vseek" min="0" max="1000" value="0"><div class="meta"><span id="vtm">0:00 / ${fmt(TOT)}</span><span>було ${fmt(P.main.dur)} · вирізано слів: ${cutN}</span></div>
-      ${msg ? `<div class="msg">${escH(msg)}</div>` : ""}
-      <div class="opt" style="margin-top:10px;padding:10px"><div class="lbl" style="font-size:12px;color:#a1a1aa;font-weight:600">Плашка на початку</div><input id="vhook" value="${escH(P.hook)}" placeholder="без плашки" style="width:100%;margin-top:4px;padding:9px 11px;border-radius:12px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#f5f5f7;font:600 14.5px inherit"></div>
-      <div class="txt">${P.words.map((w, i) => `<span class="w${P.cut.has(i) ? " cut" : ""}${P.zoom.has(i) ? " z" : ""}${P.emph.has(i) ? " em" : ""}${P.broll.some((b) => i >= b.a && i <= b.b) ? " br" : ""}" data-i="${i}">${escH(w.w)}</span>`).join(" ")}</div>
-      <div class="leg"><i>Тапни слово: вирізати, наїзд, виділити, вставка</i><i style="text-decoration:line-through">вирізано</i><i style="box-shadow:inset 0 -3px 0 #0a84ff">наїзд</i><i style="color:#ffd60a">виділено</i><i style="background:rgba(52,208,122,.16)">вставка</i></div>`;
-    F.innerHTML = `<div class="two"><button class="btn" type="button" id="vvoice">${ICON.mic} Сказати правку</button><button class="btn" type="button" id="vwrite">✍ Написати</button></div>
-      <div class="three"><button class="btn" type="button" id="vundo"${P.hist.length ? "" : " disabled"}>↶</button><label class="btn" for="vins2">+ Вставка</label><button class="btn" type="button" id="vnew">Інше відео</button></div><input type="file" id="vins2" accept="image/*,video/*" multiple hidden>
+    const d = UI.root?.querySelector(".vstage") ? UI.root : shell("Монтаж відео"), B = $(d, ".vb"), F = $(d, ".vf");
+    stopPlay(); SELW = -1; POS = Math.min(POS, Math.max(0, TOT - .05)); $(d, "#vundo").hidden = !P.hist.length;
+    B.className = "vb";
+    B.innerHTML = `<div class="vstage"><div class="bar">${tool("style", IC2.style, "Стиль")}${tool("hook", IC2.plaque, "Плашка")}${tool("text", E().IC.text, "Текст")}</div>
+        <div class="cvw"><canvas id="vcv" width="540" height="960"></canvas><button class="pb" type="button" id="vpb" aria-label="Дивитись"><i>${ICON.play}</i></button></div>
+        <div class="bar">${tool("ins", IC2.ins, "Вставки", P.media.length)}${tool("fx", E().IC.eq, "Звук")}${tool("neu", IC2.neu, "Нове")}</div></div>
+      <div class="seekrow"><input type="range" id="vseek" min="0" max="1000" value="${Math.round(POS / Math.max(.1, TOT) * 1000)}"><span id="vtm">${fmt(POS)} / ${fmt(TOT)}</span></div>
+      ${msg ? `<div class="msg">${escH(msg)}</div>` : ""}`;
+    F.innerHTML = `<div class="rowf"><button class="btn" type="button" id="vvoice">${ICON.mic} Скажи, що змінити</button><button class="btn sq" type="button" id="vwrite" aria-label="Написати">${E().IC.pen}</button></div>
       <button class="btn main" type="button" id="vsave">Зберегти відео</button>`;
-    const cv = $(B, "#vcv"), pb = $(B, "#vpb"), seek = $(B, "#vseek"), tm = $(B, "#vtm"); let pos = 0;
+    const cv = $(B, "#vcv"), pb = $(B, "#vpb"), seek = $(B, "#vseek"), tm = $(B, "#vtm"), cw = $(B, ".cvw"), stage = $(B, ".vstage");
+    // відео завжди максимально велике між кнопками, без прокрутки
+    const fit = () => { const h = stage.clientHeight - 8, bars = [...stage.querySelectorAll(".bar")].reduce((a, b) => a + b.offsetWidth, 0) + 16, w = Math.max(90, Math.min(h * 9 / 16, stage.clientWidth - bars - 12)); cw.style.width = w + "px"; cw.style.height = w * 16 / 9 + "px"; };
+    fit(); requestAnimationFrame(fit); const ro = new ResizeObserver(fit); ro.observe(stage);
     const setPlay = (on) => { pb.innerHTML = on ? "" : `<i>${ICON.play}</i>`; };
     const hlWord = (t) => { B.querySelectorAll(".w.now").forEach((e) => e.classList.remove("now")); const i = wordAt(t); if (i >= 0) B.querySelector(`.w[data-i="${i}"]`)?.classList.add("now"); };
-    still(0, cv);
-    pb.onclick = () => { if (PL) { stopPlay(); return; } setPlay(true); playFrom(pos >= TOT - .1 ? 0 : pos, cv, { tick: (t) => { pos = t; seek.value = Math.round(t / TOT * 1000); tm.textContent = `${fmt(t)} / ${fmt(TOT)}`; hlWord(t); }, onend: () => setPlay(false), done: () => { pos = 0; } }); };
-    seek.oninput = () => { stopPlay(); pos = seek.value / 1000 * TOT; tm.textContent = `${fmt(pos)} / ${fmt(TOT)}`; still(pos, cv); };
-    const restyle = () => { build(); if (!PL) still(pos, cv); };
-    B.querySelectorAll("[data-pr]").forEach((b) => b.onclick = () => { pushHist(); P.preset = b.dataset.pr; P.style = sanitizeStyle({ ...BASE, ...PRESETS[P.preset].s }); B.querySelectorAll("[data-pr]").forEach((o) => o.setAttribute("aria-pressed", o === b)); $(B, "#vsz").value = Math.round(P.style.size * 100); $(B, "#vps").value = Math.round(P.style.pos * 100); restyle(); });
-    $(B, "#vsz").oninput = (e) => { P.style.size = e.target.value / 100; restyle(); };
-    $(B, "#vps").oninput = (e) => { P.style.pos = e.target.value / 100; restyle(); };
-    $(B, "#vhook").onchange = (e) => { pushHist(); P.hook = e.target.value.trim(); if (!PL) still(Math.min(pos, 1), cv); };
-    B.querySelectorAll(".w").forEach((w) => w.onclick = () => wordMenu(+w.dataset.i, w, cv, (t) => { pos = t; }));
-    $(F, "#vundo").onclick = () => { if (popHist()) { build(); screenEdit("Скасовано."); } };
-    $(F, "#vnew").onclick = () => { stopPlay(); screenStart(); };
-    $(F, "#vins2").onchange = async (e) => { for (const f of [...e.target.files].slice(0, 8)) await addMedia(f); say("Вставку додано — тапни слово, щоб поставити, або скажи голосом"); };
-    $(F, "#vwrite").onclick = () => writeCmd();
+    const showAt = (t) => { POS = t; seek.value = Math.round(t / TOT * 1000); tm.textContent = `${fmt(t)} / ${fmt(TOT)}`; };
+    still(POS, cv);
+    const playIt = (from) => { setPlay(true); playFrom(from, cv, { tick: (t) => { showAt(t); hlWord(t); }, onend: () => setPlay(false), done: () => { POS = 0; } }); };
+    pb.onclick = () => { if (PL) { stopPlay(); return; } playIt(POS >= TOT - .1 ? 0 : POS); };
+    seek.oninput = () => { stopPlay(); showAt(seek.value / 1000 * TOT); still(POS, cv); };
+    const redraw = () => { build(); if (!PL) still(POS, cv); };
+    const refresh = (m) => { build(); screenEdit(m); };
+    wireTools(B, {
+      style: () => { const S = E().sheet(B, "Субтитри", `<div class="chips">${Object.entries(PRESETS).map(([k, v]) => `<button class="chip" type="button" data-pr="${k}" aria-pressed="${P.preset === k}">${v.n}</button>`).join("")}${P.preset === "shot" ? `<button class="chip" type="button" aria-pressed="true">Як на скріні</button>` : ""}</div>
+          <div class="lbl">Розмір</div><input type="range" id="vsz" min="60" max="150" value="${Math.round(P.style.size * 100)}"><div class="lbl">Висота</div><input type="range" id="vps" min="12" max="88" value="${Math.round(P.style.pos * 100)}">
+          <div class="lbl">Слів на екрані</div><div class="chips">${[1, 2, 3, 4].map((n) => `<button class="chip" type="button" data-wn="${n}" aria-pressed="${P.style.words === n}">${n}</button>`).join("")}</div>`), b = S.body;
+        b.querySelectorAll("[data-pr]").forEach((x) => x.onclick = () => { pushHist(); P.preset = x.dataset.pr; P.style = sanitizeStyle({ ...BASE, ...PRESETS[P.preset].s }); b.querySelectorAll("[data-pr]").forEach((o) => o.setAttribute("aria-pressed", o === x)); $(b, "#vsz").value = Math.round(P.style.size * 100); $(b, "#vps").value = Math.round(P.style.pos * 100); redraw(); $(d, "#vundo").hidden = false; });
+        $(b, "#vsz").oninput = (e) => { P.style.size = e.target.value / 100; redraw(); };
+        $(b, "#vps").oninput = (e) => { P.style.pos = e.target.value / 100; redraw(); };
+        b.querySelectorAll("[data-wn]").forEach((x) => x.onclick = () => { P.style.words = +x.dataset.wn; b.querySelectorAll("[data-wn]").forEach((o) => o.setAttribute("aria-pressed", o === x)); redraw(); }); return S; },
+      hook: () => { const S = E().sheet(B, "Плашка на початку", `<input type="text" id="vhook" value="${escH(P.hook)}" placeholder="Без плашки"><div class="chips" style="margin-top:8px"><button class="chip" type="button" id="vhno">Без плашки</button></div>`), b = S.body;
+        const h = $(b, "#vhook"); h.oninput = () => { P.hook = h.value.trim(); POS = Math.min(POS, 1); showAt(POS); still(POS, cv); }; h.onfocus = () => pushHist();
+        $(b, "#vhno").onclick = () => { pushHist(); P.hook = ""; h.value = ""; still(POS, cv); }; return S; },
+      text: () => textSheet(B, cv, playIt, refresh),
+      ins: () => { const S = E().sheet(B, "Вставки", `<label class="btn" for="vins2">${IC2.ins} Додати фото або відео</label><input type="file" id="vins2" accept="image/*,video/*" multiple hidden><div class="thumbs">${P.media.map((m) => `<span style="background-image:url(${m.kind === "img" ? m.url : ""})">${m.kind === "video" ? "▶ " : ""}${escH(m.name.slice(0, 9))}</span>`).join("")}</div>${P.media.length ? `<div class="lbl">Щоб поставити — «Текст» → тапни слово, або скажи голосом</div>` : ""}`);
+        $(S.body, "#vins2").onchange = async (e) => { for (const f of [...e.target.files].slice(0, 8)) await addMedia(f); refresh("Вставку додано"); }; return S; },
+      fx: () => { const FXP = E().FXP, S = E().sheet(B, "Звук голосу", `<div class="chips">${Object.entries(FXP).map(([k, v]) => `<button class="chip" type="button" data-fx="${k}" aria-pressed="${(P.fx || "orig") === k}">${v.n}</button>`).join("")}</div>`);
+        S.body.querySelectorAll("[data-fx]").forEach((x) => x.onclick = async () => { P.fx = x.dataset.fx; S.body.querySelectorAll("[data-fx]").forEach((o) => o.setAttribute("aria-pressed", o === x)); stopPlay(); playIt(POS); }); return S; },
+      neu: () => { const S = E().sheet(B, "Почати нове відео?", `<p style="margin:0 0 10px;color:#a1a1aa;font-size:13.5px">Поточний монтаж не збережеться.</p><button class="btn" type="button" id="vnew">Так, нове відео</button>`); $(S.body, "#vnew").onclick = () => { stopPlay(); screenStart(); }; return S; },
+    }, fit);
+    $(F, "#vwrite").onclick = () => { B.querySelectorAll(".yvsh").forEach((x) => x._close(true)); const S = E().sheet(B, "Що змінити?", `<textarea id="vcmd" rows="3" placeholder="Напр.: субтитри більші й жовті, прибери частину про ціни"></textarea><button class="btn main" type="button" id="vgo2" style="margin-top:8px">Застосувати</button>`); fit();
+      const ta = $(S.body, "#vcmd"); setTimeout(() => ta.focus(), 50);
+      $(S.body, "#vgo2").onclick = async () => { const v = ta.value.trim(); if (!v) return; S.close(true); try { refresh(await aiCommand(v, false)); } catch (x) { say("Не вийшло застосувати правку"); } }; };
     const vv = $(F, "#vvoice"), vl = vv.innerHTML;
-    vv.onclick = () => { stopPlay(); if (!vv._rec) say("Кажи, що змінити: «субтитри більші», «вирізай частину про…»"); E().record(vv, vl, async (buf) => {
-      try { const t = await busyRun("listen", () => sttBuf(buf)); if (!t.trim()) { say("Не почув"); return; } const m = await aiCommand(t, true); build(); screenEdit(`«${t}» → ${m}`); } catch (x) { console.error(x); say("Не вийшло застосувати правку"); } }); };
+    vv.onclick = () => { stopPlay(); if (!vv._rec) say("Кажи: «субтитри більші», «виріж частину про…»"); E().record(vv, vl, async (buf) => {
+      try { const t = await busyRun("listen", () => sttBuf(buf)); if (!t.trim()) { say("Не почув"); return; } refresh(`«${t}» → ${await aiCommand(t, true)}`); } catch (x) { console.error(x); say("Не вийшло застосувати правку"); } }); };
     $(F, "#vsave").onclick = async () => {
-      stopPlay(); const sv = $(F, "#vsave"); sv.disabled = true; sv.innerHTML = `<span style="flex:1">Зберігаю… <b id="vpp">0%</b></span>`;
+      stopPlay(); const sv = $(F, "#vsave"); sv.disabled = true; sv.innerHTML = `Зберігаю… <b id="vpp">0%</b>`;
       try { const out = await exportVideo((p) => { const e = $(F, "#vpp"); if (e) e.textContent = Math.round(clamp(p) * 100) + "%"; });
         await saveBlob(out.blob, `yuvi_montazh_${new Date().toISOString().slice(0, 10)}.${out.ext}`); if (out.ext !== "mp4") say("Збережено у webm — для Instagram краще зберігати в Safari на iPhone");
       } catch (x) { console.error(x); say("Не вдалося зберегти відео"); }
-      sv.disabled = false; sv.textContent = "Зберегти відео"; still(0, cv); };
+      sv.disabled = false; sv.textContent = "Зберегти відео"; still(POS, cv); };
   }
 
-  function wordMenu(i, el, cv, setPos) {
-    stopPlay(); UI.root.querySelectorAll(".pop").forEach((p) => p.remove());
-    const p = document.createElement("div"), inB = P.broll.find((b) => i >= b.a && i <= b.b); p.className = "pop";
-    p.innerHTML = `<div class="q">«${escH(P.words[i].w)}»</div>
-      <div class="two"><button class="btn" data-a="cut">${P.cut.has(i) ? "Повернути" : "Вирізати"}</button><button class="btn" data-a="sent">${P.cut.has(i) ? "Повернути до крапки" : "Вирізати до крапки"}</button></div>
-      <div class="two"><button class="btn" data-a="zoom">${P.zoom.has(i) ? "Без наїзду" : "Наїзд тут"}</button><button class="btn" data-a="em">${P.emph.has(i) ? "Не виділяти" : "Виділити"}</button></div>
-      ${P.media.length ? `<div class="q">Вставка з цього слова (≈2 с):</div><div class="row">${P.media.map((m, k) => `<button class="chip" data-m="${k}">${m.kind === "video" ? "▶ " : ""}${escH(m.name.slice(0, 14))}</button>`).join("")}${inB ? `<button class="chip" data-m="-1">Прибрати вставку</button>` : ""}</div>` : ""}
-      <div class="two"><button class="btn" data-a="go">▶ Дивитись звідси</button><button class="btn" data-a="x">Закрити</button></div>`;
-    UI.root.appendChild(p);
-    const apply = (fn) => { pushHist(); fn(); p.remove(); build(); screenEdit(); };
-    p.querySelector('[data-a="x"]').onclick = () => p.remove();
-    p.querySelector('[data-a="cut"]').onclick = () => apply(() => { P.cut.has(i) ? P.cut.delete(i) : P.cut.add(i); });
-    p.querySelector('[data-a="sent"]').onclick = () => apply(() => { const to = !P.cut.has(i); for (let j = i; j < P.words.length; j++) { to ? P.cut.add(j) : P.cut.delete(j); if (/[.!?…]$/.test(P.words[j].w)) break; } });
-    p.querySelector('[data-a="zoom"]').onclick = () => apply(() => { P.zoom.has(i) ? P.zoom.delete(i) : P.zoom.add(i); });
-    p.querySelector('[data-a="em"]').onclick = () => apply(() => { P.emph.has(i) ? P.emph.delete(i) : P.emph.add(i); });
-    p.querySelectorAll("[data-m]").forEach((b) => b.onclick = () => apply(() => { const m = +b.dataset.m; if (m < 0) { P.broll = P.broll.filter((q) => q !== inB); return; }
-      let j = i, t0 = P.words[i].s; while (j + 1 < P.words.length && P.words[j + 1].e - t0 < 2.2) j++; P.broll = P.broll.filter((q) => q.m !== m); P.broll.push({ m, a: i, b: j }); }));
-    p.querySelector('[data-a="go"]').onclick = () => { p.remove(); const o = WOUT[i] || WOUT.find((q, k) => k > i && q); const t = o ? Math.max(0, o.s - .1) : 0; setPos(t); UI.root.querySelector("#vpb")?.click(); };
-  }
-  function writeCmd() {
-    UI.root.querySelectorAll(".pop").forEach((p) => p.remove());
-    const p = document.createElement("div"); p.className = "pop";
-    p.innerHTML = `<div class="q">Що змінити? Напр.: «субтитри по одному слову і більші», «прибери частину про ціни», «плашка: Як я заробив перші 1000»</div><textarea id="vcmd" rows="3"></textarea><div class="two"><button class="btn" data-a="x">Скасувати</button><button class="btn main" data-a="go">Застосувати</button></div>`;
-    UI.root.appendChild(p); const ta = $(p, "#vcmd"); setTimeout(() => ta.focus(), 50);
-    p.querySelector('[data-a="x"]').onclick = () => p.remove();
-    p.querySelector('[data-a="go"]').onclick = async () => { const v = ta.value.trim(); if (!v) return; p.remove(); try { const m = await aiCommand(v, false); build(); screenEdit(m); } catch (x) { say("Не вийшло застосувати правку"); } };
+  function textSheet(B, cv, playIt, refresh) {
+    const cls = (i) => `w${P.cut.has(i) ? " cut" : ""}${P.zoom.has(i) ? " z" : ""}${P.emph.has(i) ? " em" : ""}${P.broll.some((b) => i >= b.a && i <= b.b) ? " br" : ""}`;
+    const S = E().sheet(B, "Текст", `<div class="act" id="vact"><span class="q">Тапни слово</span></div><div class="txt">${P.words.map((w, i) => `<span class="${cls(i)}" data-i="${i}">${escH(w.w)}</span>`).join(" ")}</div>`), b = S.body;
+    const reopen = () => { refresh(); $(UI.root, '.vb [data-sh="text"]')?.click(); };
+    b.querySelectorAll(".w").forEach((w) => w.onclick = () => { const i = SELW = +w.dataset.i; b.querySelectorAll(".w.sel").forEach((x) => x.classList.remove("sel")); w.classList.add("sel");
+      const inB = P.broll.find((q) => i >= q.a && i <= q.b), bar = $(b, "#vact");
+      bar.innerHTML = `<button class="chip" data-a="cut">${P.cut.has(i) ? "Повернути" : "Вирізати"}</button><button class="chip" data-a="sent">${P.cut.has(i) ? "Повернути речення" : "До крапки"}</button><button class="chip" data-a="zoom">${P.zoom.has(i) ? "Без наїзду" : "Наїзд"}</button><button class="chip" data-a="em">${P.emph.has(i) ? "Не виділяти" : "Виділити"}</button>${P.media.map((m, k) => `<button class="chip" data-m="${k}">${IC2.ins}${escH(m.name.slice(0, 10))}</button>`).join("")}${inB ? `<button class="chip" data-m="-1">Без вставки</button>` : ""}<button class="chip" data-a="go">▶</button>`;
+      const apply = (fn) => { pushHist(); fn(); reopen(); };
+      $(bar, '[data-a="cut"]').onclick = () => apply(() => { P.cut.has(i) ? P.cut.delete(i) : P.cut.add(i); });
+      $(bar, '[data-a="sent"]').onclick = () => apply(() => { const to = !P.cut.has(i); for (let j = i; j < P.words.length; j++) { to ? P.cut.add(j) : P.cut.delete(j); if (/[.!?…]$/.test(P.words[j].w)) break; } });
+      $(bar, '[data-a="zoom"]').onclick = () => apply(() => { P.zoom.has(i) ? P.zoom.delete(i) : P.zoom.add(i); });
+      $(bar, '[data-a="em"]').onclick = () => apply(() => { P.emph.has(i) ? P.emph.delete(i) : P.emph.add(i); });
+      bar.querySelectorAll("[data-m]").forEach((x) => x.onclick = () => apply(() => { const m = +x.dataset.m; if (m < 0) { P.broll = P.broll.filter((q) => q !== inB); return; }
+        let j = i; const t0 = P.words[i].s; while (j + 1 < P.words.length && P.words[j + 1].e - t0 < 2.2) j++; P.broll = P.broll.filter((q) => q.m !== m); P.broll.push({ m, a: i, b: j }); }));
+      $(bar, '[data-a="go"]').onclick = () => { const o = WOUT[i] || WOUT.find((q, k) => k > i && q); stopPlay(); playIt(o ? Math.max(0, o.s - .1) : 0); }; });
+    return S;
   }
 
   window.YVVideo = { open() { screenStart(); }, _t: { set: (p) => { P = p; }, fresh, build, drawFrame, screenEdit, aiPlan, aiCommand, outToSrc, seg: () => SEG, tot: () => TOT, chunks: () => CHUNKS, exportVideo, P: () => P, mkVideo, loadMeta, run: () => run() } };

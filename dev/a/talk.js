@@ -301,19 +301,37 @@ ${cmdSrc ? `- {"op":"insert","after":N,"from":A,"to":B} — вставити п�
 
   /* ================= ПЛЕЄР ================= */
   let PL = null;
-  function stop() { if (PL) { try { PL.src.stop(); } catch (e) {} cancelAnimationFrame(PL.raf); PL = null; } UI.root?.querySelectorAll(".tkw.now").forEach((w) => w.classList.remove("now")); const b = UI.root && $(UI.root, "#tkplay"); if (b) b.innerHTML = ICON.play; }
+  function stop() { if (PL) { try { PL.src.stop(); } catch (e) {} cancelAnimationFrame(PL.raf); PL = null; } UI.root?.querySelectorAll(".tkw.now").forEach((w) => w.classList.remove("now")); const b = UI.root && $(UI.root, "#tkplay .pi"); if (b) b.innerHTML = ICON.play; }
   function play(data, from = 0, hl = true) {
     stop(); const ac = AC(); ac.resume?.(); const b = ac.createBuffer(1, data.length, SR); b.copyToChannel(data, 0);
     const src = ac.createBufferSource(); src.buffer = b; src.connect(ac.destination); const t0 = ac.currentTime - from; src.start(0, from);
     PL = { src, t0, len: data.length / SR, hl }; src.onended = () => { if (PL?.src === src) stop(); };
-    $(UI.root, "#tkplay").innerHTML = ICON.pause;
-    const loop = () => { if (!PL) return; const t = ac.currentTime - PL.t0, bar = $(UI.root, "#tkbar i"); if (bar) bar.style.width = Math.min(100, t / PL.len * 100) + "%";
+    const pi = $(UI.root, "#tkplay .pi"); if (pi) pi.innerHTML = ICON.pause;
+    const loop = () => { if (!PL) return; const t = ac.currentTime - PL.t0, rg = $(UI.root, "#tkplay .rfg");
+      if (rg) { const C = +rg.getAttribute("stroke-dasharray"); rg.setAttribute("stroke-dashoffset", C * (1 - Math.min(1, t / PL.len))); }
       const tt = $(UI.root, "#tktime"); if (tt) tt.textContent = `${fmt(t)} / ${fmt(PL.len)}`;
-      if (PL.hl) { const m = MAP.find((o) => t >= o.s - .02 && t < o.e + .05); UI.root.querySelectorAll(".tkw.now").forEach((w) => w.classList.remove("now")); if (m) UI.root.querySelector(`.tkw[data-k="${TOK.indexOf(m.tok)}"]`)?.classList.add("now"); }
+      if (PL.hl) { phrase(t); const m = MAP.find((o) => t >= o.s - .02 && t < o.e + .05); UI.root.querySelectorAll(".tkw.now").forEach((w) => w.classList.remove("now")); if (m) UI.root.querySelector(`.tkw[data-k="${TOK.indexOf(m.tok)}"]`)?.classList.add("now"); }
       PL.raf = requestAnimationFrame(loop); }; loop();
   }
   const fmtS = (v, u = "") => (+v > 0 ? "+" : "") + (+v || 0) + u + (u ? "" : " тону");
   const fmt = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
+
+  const SHEET_CSS = `
+.yvsh{flex:none;max-height:56%;display:flex;flex-direction:column;margin:6px 10px 0;border-radius:20px;border:1px solid rgba(255,255,255,.14);background:rgba(26,26,30,.96);box-shadow:0 -14px 40px -12px rgba(0,0,0,.7);animation:yvshin .22s cubic-bezier(.3,.9,.3,1)}
+@keyframes yvshin{from{transform:translateY(24px);opacity:0}}
+.yvshh{display:flex;align-items:center;justify-content:space-between;padding:10px 10px 4px 16px}.yvshh b{font-size:15px}
+.yvshx{width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#f5f5f7;display:grid;place-items:center;cursor:pointer}
+.yvshb{overflow-y:auto;padding:4px 14px 14px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.yvtools{display:flex;justify-content:center;gap:10px}
+.yvtool{width:76px;padding:9px 4px 7px;border-radius:16px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:#f5f5f7;display:grid;justify-items:center;gap:3px;font:600 11.5px var(--pfont,system-ui);cursor:pointer}
+.yvtool svg{width:22px;height:22px}.yvtool.on{background:#f5f5f7;color:#0b0b0d}`;
+  const IC = {
+    text: `<svg viewBox="0 0 24 24"><path d="M4 6h16M4 11h16M4 16h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
+    eq: `<svg viewBox="0 0 24 24"><path d="M6 4v16M12 4v16M18 4v16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity=".45"/><circle cx="6" cy="14" r="2.6" fill="currentColor"/><circle cx="12" cy="8" r="2.6" fill="currentColor"/><circle cx="18" cy="12" r="2.6" fill="currentColor"/></svg>`,
+    ab: `<svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.7M4 4v4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    undo: `<svg viewBox="0 0 24 24" width="18" height="18"><path d="M9 7L4 12l5 5M4 12h11a5 5 0 0 1 0 10h-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    pen: `<svg viewBox="0 0 24 24" width="20" height="20"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>`,
+  };
 
   /* ================= ІНТЕРФЕЙС ================= */
   const ICON = {
@@ -326,7 +344,18 @@ ${cmdSrc ? `- {"op":"insert","after":N,"from":A,"to":B} — вставити п�
 #yvtalk{position:fixed;inset:0;z-index:9000;background:#0b0b0d;color:#f5f5f7;display:flex;flex-direction:column;font:15px/1.45 var(--pfont,system-ui,-apple-system,sans-serif);padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
 #yvtalk .tkh{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 6px}#yvtalk .tkh b{font-size:17px}
 #yvtalk .tkx{width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#f5f5f7;font-size:20px;cursor:pointer}
-#yvtalk .tkb{flex:1;overflow-y:auto;padding:6px 16px 16px;-webkit-overflow-scrolling:touch}
+#yvtalk .tkb{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;padding:4px 0 8px}
+#yvtalk .tkstage{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:0 18px;overflow:hidden}
+#yvtalk #tkplay{position:relative;width:132px;height:132px;border-radius:50%;border:0;background:none;color:#0b0b0d;display:grid;place-items:center;cursor:pointer;flex:none;transition:width .2s,height .2s}
+#yvtalk #tkplay .ring{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}#yvtalk .rbg{fill:none;stroke:rgba(255,255,255,.12);stroke-width:5}#yvtalk .rfg{fill:none;stroke:#30d158;stroke-width:5;stroke-linecap:round}
+#yvtalk #tkplay .pi{width:76%;height:76%;border-radius:50%;background:#f5f5f7;display:grid;place-items:center}#yvtalk #tkplay .pi svg{width:34%;height:34%}
+#yvtalk .tktm{display:grid;justify-items:center;gap:0}#yvtalk .tktm b{font-size:15px;font-variant-numeric:tabular-nums}#yvtalk .tktm small{color:#71717a;font-size:12px}
+#yvtalk .tkphr{max-width:340px;text-align:center;font-size:21px;line-height:1.45;font-weight:600;color:#d4d4d8;min-height:62px}#yvtalk .tkphr span.now{color:#0b0b0d;background:#ffd60a;border-radius:6px;padding:0 3px}
+#yvtalk .tkb.shon #tkplay{width:84px;height:84px}#yvtalk .tkb.shon .tkphr{font-size:16px;min-height:0;max-height:48px;overflow:hidden}#yvtalk .tkb.shon .tkmsg{display:none}
+#yvtalk .tkrowf{display:flex;gap:8px}#yvtalk .tkrowf .tkbtn:first-child{flex:1}#yvtalk .tkbtn.sq{width:52px;flex:none;padding:0}
+#yvtalk .tkact{position:sticky;top:-4px;z-index:2;display:flex;gap:6px;flex-wrap:wrap;padding:6px 0 8px;background:rgba(26,26,30,.98)}#yvtalk .tkact .tkc{display:flex;gap:4px;align-items:center}#yvtalk .tkact svg{width:15px;height:15px}
+#yvtalk .tkh .tkx svg{display:block;margin:auto}
+${SHEET_CSS.replace(/^\./gm, "#yvtalk .")}
 #yvtalk .tkf{padding:10px 16px 14px;display:grid;gap:8px;border-top:1px solid rgba(255,255,255,.08);background:#0b0b0d}
 #yvtalk .tkhint{color:#a1a1aa;font-size:13.5px;margin:4px 0 14px}
 #yvtalk .tkbig{width:132px;height:132px;border-radius:50%;margin:26px auto 14px;display:grid;place-items:center;border:0;cursor:pointer;color:#0b0b0d;background:radial-gradient(circle at 35% 30%,#fff,#e8e8ea);box-shadow:0 0 0 10px rgba(255,255,255,.06),0 20px 50px -10px rgba(0,0,0,.8)}
@@ -340,9 +369,6 @@ ${cmdSrc ? `- {"op":"insert","after":N,"from":A,"to":B} — вставити п�
 #yvtalk .tkbtn.main{background:#f5f5f7;color:#0b0b0d;border-color:transparent}
 #yvtalk .tkbtn.rec{background:#ff453a;border-color:transparent}#yvtalk .tkdot{width:9px;height:9px;border-radius:50%;background:#fff;display:inline-block}
 #yvtalk .tk2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-#yvtalk .tkpl{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:18px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);position:sticky;top:0;z-index:2;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
-#yvtalk #tkplay{width:46px;height:46px;border-radius:50%;border:0;background:#f5f5f7;color:#0b0b0d;display:grid;place-items:center;cursor:pointer;flex:none}
-#yvtalk #tkbar{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden}#yvtalk #tkbar i{display:block;height:100%;width:0;background:#f5f5f7}
 #yvtalk .tkmeta{display:flex;justify-content:space-between;color:#a1a1aa;font-size:12.5px;margin:8px 2px 12px;gap:8px}
 #yvtalk .tktxt{font-size:19px;line-height:1.75;user-select:none;-webkit-user-select:none}
 #yvtalk .tkw{padding:2px 1px;border-radius:6px;cursor:pointer;transition:background .15s}
@@ -353,7 +379,7 @@ ${cmdSrc ? `- {"op":"insert","after":N,"from":A,"to":B} — вставити п�
 #yvtalk .tkleg{display:flex;gap:12px;flex-wrap:wrap;color:#a1a1aa;font-size:12px;margin-top:14px}#yvtalk .tkleg s{color:#5b5b63}#yvtalk .tkleg em{font-style:normal;color:#bdf5cf;background:rgba(52,208,122,.18);border-radius:4px;padding:0 4px}
 #yvtalk .tkpop{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 150px);z-index:9001;background:rgba(28,28,32,.97);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:10px;display:grid;gap:6px;box-shadow:0 20px 50px rgba(0,0,0,.6)}
 #yvtalk .tkpop .tkq{color:#a1a1aa;font-size:12.5px;padding:2px 4px}
-#yvtalk .tkmsg{margin:10px 0 0;padding:10px 12px;border-radius:14px;background:rgba(255,214,10,.1);border:1px solid rgba(255,214,10,.3);color:#ffe27a;font-size:13.5px}
+#yvtalk .tkmsg{margin:0;padding:10px 12px;border-radius:14px;background:rgba(255,214,10,.1);border:1px solid rgba(255,214,10,.3);color:#ffe27a;font-size:13.5px}
 #yvtalk textarea{width:100%;min-height:60px;padding:10px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#f5f5f7;font:15px inherit;resize:none}
 #yvtalk .tkfx{margin:12px 0 4px;padding:10px 12px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
 #yvtalk .tkfxh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}#yvtalk .tkfxh b{font-size:13.5px}
@@ -365,19 +391,18 @@ ${cmdSrc ? `- {"op":"insert","after":N,"from":A,"to":B} — вставити п�
   function shell(title) {
     if (!document.getElementById("yvtalkcss")) { const st = document.createElement("style"); st.id = "yvtalkcss"; st.textContent = CSS; document.head.appendChild(st); }
     UI.root?.remove(); const d = document.createElement("div"); d.id = "yvtalk";
-    d.innerHTML = `<div class="tkh"><b>${title}<span class="tkdev">ТЕСТ</span></b><button class="tkx" type="button" aria-label="Закрити">×</button></div><div class="tkb"></div><div class="tkf"></div>`;
-    document.body.appendChild(d); UI.root = d; $(d, ".tkx").onclick = close; return d;
+    d.innerHTML = `<div class="tkh"><b>${title}<span class="tkdev">ТЕСТ</span></b><span style="display:flex;gap:8px"><button class="tkx" type="button" id="tkundo" aria-label="Скасувати" hidden>${IC.undo}</button><button class="tkx" type="button" id="tkclose" aria-label="Закрити">×</button></span></div><div class="tkb"></div><div class="tkf"></div>`;
+    document.body.appendChild(d); UI.root = d; $(d, "#tkclose").onclick = close;
+    $(d, "#tkundo").onclick = () => { if (!HIST.length) return; stop(); TOK = JSON.parse(HIST.pop()); render(); screenEdit("Скасовано"); }; return d;
   }
   function close() { stop(); UI.root?.remove(); UI.root = null; }
   async function busyRun(kind, fn) { if (window.yvBusy) yvBusy.start(kind); let ok = false; try { const v = await fn(); ok = true; return v; } finally { if (window.yvBusy) yvBusy.end(ok); } }
 
   function screenRecord() {
     const d = shell("Розкажи своїми словами"), B = $(d, ".tkb"), F = $(d, ".tkf");
-    B.innerHTML = `<p class="tkhint">Говори як зручно — з паузами, «ну», повторами, збився і почав знову. Усе зайве приберемо, звук вирівняємо. Голос лишиться твій, живий.</p>
-      <button class="tkbig" type="button" id="tkrec" aria-label="Записати">${ICON.mic}</button><div class="tkst" id="tkst">Натисни і говори</div>
-      <div class="tkrow" role="group" aria-label="Довжина">${[["Як вийде", 0], ["≈30 с", 30], ["≈45 с", 45], ["≈60 с", 60], ["≈90 с", 90]].map(([l, v]) => `<button class="tkc" type="button" data-tg="${v}" aria-pressed="${v === TARGET}">${l}</button>`).join("")}</div>
-      <p class="tkhint" style="text-align:center">До 4 хвилин. Краще в тихому місці, телефон на звичайній відстані.</p>`;
-    F.innerHTML = `<label class="tkbtn" for="tkfile">Або завантажити аудіо чи відео</label><input type="file" id="tkfile" accept="audio/*,video/*" hidden>`;
+    B.innerHTML = `<div class="tkstage"><button class="tkbig" type="button" id="tkrec" aria-label="Записати">${ICON.mic}</button><div class="tkst" id="tkst">Натисни і говори</div><div style="flex:none">
+      <div class="tkrow" role="group" aria-label="Довжина">${[["Як вийде", 0], ["≈30 с", 30], ["≈45 с", 45], ["≈60 с", 60], ["≈90 с", 90]].map(([l, v]) => `<button class="tkc" type="button" data-tg="${v}" aria-pressed="${v === TARGET}">${l}</button>`).join("")}</div><p class="tkhint" style="text-align:center;margin:0">Говори як зручно — зайве приберемо</p></div>`;
+    F.innerHTML = `<label class="tkbtn" for="tkfile">Завантажити файл</label><input type="file" id="tkfile" accept="audio/*,video/*" hidden>`;
     B.querySelectorAll("[data-tg]").forEach((b) => b.onclick = () => { TARGET = +b.dataset.tg; B.querySelectorAll("[data-tg]").forEach((o) => o.setAttribute("aria-pressed", o === b)); });
     const rb = $(B, "#tkrec");
     rb.onclick = () => { if (!rb._rec) $(B, "#tkst").textContent = "Говори… натисни ще раз, щоб завершити"; record(rb, ICON.mic, start); };
@@ -408,57 +433,73 @@ ${cmdSrc ? `- {"op":"insert","after":N,"from":A,"to":B} — вставити п�
     src.words = (r.words || []).map((w) => ({ w: String(w.w), s: Math.max(0, +w.s || 0), e: Math.min(dur, Math.max((+w.s || 0) + .05, +w.e || 0)) })).filter((w) => w.w.trim());
   }
 
+  /* ---------- спільна «шторка» знизу: сторінка не гортається, гортається лише шторка ---------- */
+  function sheet(host, title, html, onClose) {
+    host.querySelectorAll(".yvsh").forEach((x) => x._close?.(true));
+    const box = document.createElement("div"); box.className = "yvsh";
+    box.innerHTML = `<div class="yvshh"><b>${title}</b><button type="button" class="yvshx" aria-label="Згорнути"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><div class="yvshb"></div>`;
+    const body = box.querySelector(".yvshb"); if (typeof html === "string") body.innerHTML = html; else if (html) body.appendChild(html);
+    host.appendChild(box); host.classList.add("shon");
+    const close = (silent) => { box.remove(); if (!host.querySelector(".yvsh")) host.classList.remove("shon"); host.querySelectorAll("[data-sh].on").forEach((b) => b.classList.remove("on")); if (!silent) onClose?.(); };
+    box._close = close; box.querySelector(".yvshx").onclick = () => close(); return { box, body, close };
+  }
+  let SEL = -1;
   function screenEdit(msg) {
-    const d = UI.root && UI.root.querySelector(".tktxt") ? UI.root : shell("Твій голос, змонтований"), B = $(d, ".tkb"), F = $(d, ".tkf");
-    const was = ORIG ? ORIG.length / SR : 0, now = OUT.length / SR, cutN = TOK.filter((t) => t.cut).length;
-    B.innerHTML = `<div class="tkpl"><button id="tkplay" type="button" aria-label="Слухати">${ICON.play}</button><div style="flex:1"><div id="tkbar"><i></i></div><div class="tkmeta" style="margin:6px 0 0"><span id="tktime">0:00 / ${fmt(now)}</span><button class="tkc" type="button" id="tkorig" style="padding:3px 9px;font-size:11.5px">Як було</button></div></div></div>
-      <div class="tkmeta"><span>Було ${fmt(was)} → стало <b style="color:#f5f5f7">${fmt(now)}</b></span><span>вирізано слів: ${cutN}</span></div>
-      <div class="tkfx"><div class="tkfxh"><b>Звучання голосу</b><button type="button" class="tkc" id="tkfxm" style="padding:3px 9px;font-size:11.5px">Тонко ▾</button></div>
-        <div class="tkfxr">${Object.entries(FXP).map(([k, P]) => `<button type="button" class="tkc" data-fx="${k}" aria-pressed="${FX.k === k}">${P.n}</button>`).join("")}</div>
-        <div class="tkfxs" hidden><label>Висота <span id="tkpv">${fmtS(FX.pitch)}</span><input type="range" id="tkpitch" min="-2" max="2" step=".5" value="${FX.pitch}"></label><small><span>грубше</span><span>дзвінкіше</span></small>
-          <label>Тембр <span id="tktv">${fmtS(FX.tone, " дБ")}</span><input type="range" id="tktone" min="-6" max="6" step="1" value="${FX.tone}"></label><small><span>м'якше</span><span>яскравіше</span></small></div></div>
-      ${msg ? `<div class="tkmsg">${escH(msg)}</div>` : ""}
-      <div class="tktxt" style="margin-top:12px">${TOK.map((t, k) => `<span class="tkw${t.cut ? " cut" : ""}${t.ins ? " ins" : ""}" data-k="${k}">${escH(SRC[t.src].words[t.i].w)}</span>`).join(" ")}</div>
-      <div class="tkleg"><span>Тапни слово — щоб вирізати, повернути або вставити після нього</span><s>вирізано</s><em>додано правкою</em></div>`;
-    F.innerHTML = `<div class="tk2"><button class="tkbtn" type="button" id="tkvoice">${ICON.mic} Сказати правку</button><button class="tkbtn" type="button" id="tkwrite">✍ Написати</button></div>
-      <div class="tk2"><button class="tkbtn" type="button" id="tkundo"${HIST.length ? "" : " disabled style=\"opacity:.4\""}>↶ Скасувати</button><button class="tkbtn" type="button" id="tkagain">Записати заново</button></div>
-      <button class="tkbtn main" type="button" id="tkdone">Влаштовує → до розкадровки</button>`;
+    const d = UI.root && UI.root.querySelector(".tkstage") ? UI.root : shell("Твій голос"), B = $(d, ".tkb"), F = $(d, ".tkf");
+    stop(); SEL = -1;
+    const was = ORIG ? ORIG.length / SR : 0, now = OUT.length / SR, R = 54, C = 2 * Math.PI * R;
+    const hu = $(d, "#tkundo"); if (hu) hu.hidden = !HIST.length;
+    B.innerHTML = `<div class="tkstage"><button id="tkplay" type="button" aria-label="Слухати"><svg class="ring" viewBox="0 0 120 120"><circle cx="60" cy="60" r="${R}" class="rbg"/><circle cx="60" cy="60" r="${R}" class="rfg" stroke-dasharray="${C}" stroke-dashoffset="${C}"/></svg><span class="pi">${ICON.play}</span></button>
+        <div class="tktm"><b id="tktime">0:00 / ${fmt(now)}</b><small>було ${fmt(was)}</small></div>
+        <div class="tkphr" id="tkphr"></div>${msg ? `<div class="tkmsg">${escH(msg)}</div>` : ""}</div>
+      <div class="yvtools"><button class="yvtool" type="button" data-sh="text">${IC.text}Текст</button><button class="yvtool" type="button" data-sh="fx">${IC.eq}Звучання</button><button class="yvtool" type="button" id="tkorig">${IC.ab}Як було</button></div>`;
+    F.innerHTML = `<div class="tkrowf"><button class="tkbtn" type="button" id="tkvoice">${ICON.mic} Сказати правку</button><button class="tkbtn sq" type="button" id="tkwrite" aria-label="Написати правку">${IC.pen}</button></div>
+      <button class="tkbtn main" type="button" id="tkdone">Влаштовує →</button>`;
+    phrase(0);
     $(B, "#tkplay").onclick = async () => { if (PL) stop(); else play(await fxOut(), 0, true); };
     $(B, "#tkorig").onclick = () => { if (PL) stop(); else play(ORIG, 0, false); };
-    B.querySelectorAll(".tkw").forEach((w) => w.onclick = () => wordMenu(+w.dataset.k, w));
-    // звучання: змінюєш — одразу чуєш (з того ж місця)
-    const reFx = async () => { saveFx(); const was = PL ? AC().currentTime - PL.t0 : null; stop(); const d = await fxOut(); play(d, was != null ? Math.min(was, d.length / SR - .1) : 0, true); };
-    B.querySelectorAll("[data-fx]").forEach((b) => b.onclick = () => { FX.k = b.dataset.fx; B.querySelectorAll("[data-fx]").forEach((o) => o.setAttribute("aria-pressed", o === b)); reFx(); });
-    $(B, "#tkfxm").onclick = () => { const s = $(B, ".tkfxs"); s.hidden = !s.hidden; $(B, "#tkfxm").textContent = s.hidden ? "Тонко ▾" : "Сховати ▴"; };
-    const sl = (id, key, lab, u) => { const r = $(B, id); r.oninput = () => { FX[key] = +r.value; $(B, lab).textContent = fmtS(FX[key], u); }; r.onchange = reFx; };
-    sl("#tkpitch", "pitch", "#tkpv", ""); sl("#tktone", "tone", "#tktv", " дБ");
-    $(F, "#tkundo").onclick = () => { if (!HIST.length) return; stop(); TOK = JSON.parse(HIST.pop()); render(); screenEdit("Скасовано."); };
-    $(F, "#tkagain").onclick = () => { stop(); screenRecord(); };
-    $(F, "#tkwrite").onclick = writeEdit;
+    B.querySelectorAll("[data-sh]").forEach((b) => b.onclick = () => { const k = b.dataset.sh, open = b.classList.contains("on"); B.querySelectorAll(".yvsh").forEach((x) => x._close(true)); B.classList.remove("shon"); B.querySelectorAll("[data-sh]").forEach((o) => o.classList.remove("on")); if (open) return; b.classList.add("on"); (k === "text" ? textSheet : fxSheet)(B); });
+    $(F, "#tkwrite").onclick = () => writeEdit(B);
     const vb = $(F, "#tkvoice"), lbl = vb.innerHTML;
-    vb.onclick = () => { stop(); if (!vb._rec) say("Кажи правку, напр.: «після фрази … додай …»"); record(vb, lbl, voiceEdit); };
+    vb.onclick = () => { stop(); if (!vb._rec) say("Кажи правку: «після фрази … додай …»"); record(vb, lbl, voiceEdit); };
     $(F, "#tkdone").onclick = done;
   }
-
-  function wordMenu(k, el) {
-    stop(); UI.root.querySelectorAll(".tkpop").forEach((p) => p.remove()); UI.root.querySelectorAll(".tkw.sel").forEach((w) => w.classList.remove("sel")); el.classList.add("sel");
-    const t = TOK[k], p = document.createElement("div"); p.className = "tkpop";
-    p.innerHTML = `<div class="tkq">«${escH(SRC[t.src].words[t.i].w)}»</div><div class="tk2"><button class="tkbtn" type="button" data-a="cut">${t.cut ? "Повернути" : "Вирізати"}</button><button class="tkbtn" type="button" data-a="sent">${t.cut ? "Повернути до крапки" : "Вирізати до крапки"}</button></div>
-      <div class="tk2"><button class="tkbtn" type="button" data-a="ins">${ICON.mic} Вставити після</button><button class="tkbtn" type="button" data-a="from">▶ Слухати звідси</button></div><button class="tkbtn" type="button" data-a="x">Закрити</button>`;
-    UI.root.appendChild(p);
-    const closeP = () => { p.remove(); el.classList.remove("sel"); };
-    p.querySelector('[data-a="x"]').onclick = closeP;
-    p.querySelector('[data-a="cut"]').onclick = () => { pushHist(); t.cut = !t.cut; closeP(); render(); screenEdit(); };
-    p.querySelector('[data-a="sent"]').onclick = () => { pushHist(); const to = !t.cut; for (let j = k; j < TOK.length; j++) { TOK[j].cut = to; if (/[.!?…]$/.test(SRC[TOK[j].src].words[TOK[j].i].w)) break; } closeP(); render(); screenEdit(); };
-    p.querySelector('[data-a="from"]').onclick = () => { closeP(); let m = MAP.find((o) => o.tok === t); if (!m) { for (let j = k; j < TOK.length && !m; j++) m = MAP.find((o) => o.tok === TOK[j]); } fxOut().then((d) => play(d, m ? Math.max(0, m.s - .05) : 0, true)); };
-    const ib = p.querySelector('[data-a="ins"]'), il = ib.innerHTML;
-    ib.onclick = () => { if (!ib._rec) p.querySelector(".tkq").textContent = "Говори тільки те, що вставити. Натисни ще раз, щоб завершити."; record(ib, il, async (buf) => {
-      closeP();
+  // «караоке»: показуємо фразу, що звучить, поточне слово підсвічене
+  function phrase(t) {
+    const el = UI.root && $(UI.root, "#tkphr"); if (!el || !MAP.length) return;
+    let k = MAP.findIndex((o) => t >= o.s - .02 && t < o.e + .05); if (k < 0) k = Math.max(0, MAP.findIndex((o) => o.s > t) - 1);
+    const a = Math.max(0, k - (k % 9)), seg = MAP.slice(a, a + 9);
+    el.innerHTML = seg.map((o, j) => { let w = SRC[o.tok.src].words[o.tok.i].w; if (j === 0) w = w.charAt(0).toUpperCase() + w.slice(1); return `<span${a + j === k && PL ? ' class="now"' : ""}>${escH(w)}</span>`; }).join(" ");
+  }
+  function textSheet(B) {
+    const html = `<div class="tkact" id="tkact"><span class="tkq">Тапни слово</span></div><div class="tktxt">${TOK.map((t, k) => `<span class="tkw${t.cut ? " cut" : ""}${t.ins ? " ins" : ""}" data-k="${k}">${escH(SRC[t.src].words[t.i].w)}</span>`).join(" ")}</div>`;
+    const S = sheet(B, "Текст", html);
+    S.body.querySelectorAll(".tkw").forEach((w) => w.onclick = () => { SEL = +w.dataset.k; S.body.querySelectorAll(".tkw.sel").forEach((x) => x.classList.remove("sel")); w.classList.add("sel"); actBar(S, B); });
+  }
+  function actBar(S, B) {
+    const k = SEL, t = TOK[k], bar = $(S.body, "#tkact");
+    bar.innerHTML = `<button class="tkc" data-a="cut">${t.cut ? "Повернути" : "Вирізати"}</button><button class="tkc" data-a="sent">${t.cut ? "Повернути речення" : "До крапки"}</button><button class="tkc" data-a="ins">${ICON.mic} Вставити</button><button class="tkc" data-a="from">▶</button>`;
+    const reopen = (m) => { render(); screenEdit(m); B = $(UI.root, ".tkb"); $(B, '[data-sh="text"]').click(); };
+    $(bar, '[data-a="cut"]').onclick = () => { pushHist(); t.cut = !t.cut; reopen(); };
+    $(bar, '[data-a="sent"]').onclick = () => { pushHist(); const to = !t.cut; for (let j = k; j < TOK.length; j++) { TOK[j].cut = to; if (/[.!?…]$/.test(SRC[TOK[j].src].words[TOK[j].i].w)) break; } reopen(); };
+    $(bar, '[data-a="from"]').onclick = () => { let m = null; for (let j = k; j < TOK.length && !m; j++) m = MAP.find((o) => o.tok === TOK[j]); fxOut().then((dd) => play(dd, m ? Math.max(0, m.s - .05) : 0, true)); };
+    const ib = $(bar, '[data-a="ins"]'), il = ib.innerHTML;
+    ib.onclick = () => { stop(); if (!ib._rec) say("Говори лише те, що вставити"); record(ib, il, async (buf) => {
       try { const raw = await busyRun("voice", () => decode(buf)); const src = await busyRun("voice", () => addSourceProcessOnly(raw, true)); await busyRun("listen", () => transcribe(src));
         const ws = src.words.map((w, i) => i).filter((i) => !FILLERS.test(norm(src.words[i].w)));
         if (!ws.length) { say("Не почув слів"); return; }
-        pushHist(); TOK.splice(k + 1, 0, ...ws.map((i) => ({ src: src.id, i, cut: false, ins: true }))); render(); screenEdit("Вставлено. Послухай, як звучить.");
+        pushHist(); TOK.splice(k + 1, 0, ...ws.map((i) => ({ src: src.id, i, cut: false, ins: true }))); reopen("Вставлено");
       } catch (e) { say("Не вийшло — спробуй ще раз"); } }); };
+  }
+  function fxSheet(B) {
+    const html = `<div class="tkfxr">${Object.entries(FXP).map(([k, P]) => `<button type="button" class="tkc" data-fx="${k}" aria-pressed="${FX.k === k}">${P.n}</button>`).join("")}</div>
+      <div class="tkfxs"><label>Висота <span id="tkpv">${fmtS(FX.pitch)}</span><input type="range" id="tkpitch" min="-2" max="2" step=".5" value="${FX.pitch}"></label><small><span>грубше</span><span>дзвінкіше</span></small>
+      <label>Тембр <span id="tktv">${fmtS(FX.tone, " дБ")}</span><input type="range" id="tktone" min="-6" max="6" step="1" value="${FX.tone}"></label><small><span>м'якше</span><span>яскравіше</span></small></div>`;
+    const S = sheet(B, "Звучання голосу", html), b = S.body;
+    const reFx = async () => { saveFx(); const was = PL ? AC().currentTime - PL.t0 : null; stop(); const dd = await fxOut(); play(dd, was != null ? Math.min(was, dd.length / SR - .1) : 0, true); };
+    b.querySelectorAll("[data-fx]").forEach((x) => x.onclick = () => { FX.k = x.dataset.fx; b.querySelectorAll("[data-fx]").forEach((o) => o.setAttribute("aria-pressed", o === x)); reFx(); });
+    const sl = (id, key, lab, u) => { const r = $(b, id); r.oninput = () => { FX[key] = +r.value; $(b, lab).textContent = fmtS(FX[key], u); }; r.onchange = reFx; };
+    sl("#tkpitch", "pitch", "#tkpv", ""); sl("#tktone", "tone", "#tktv", " дБ");
   }
 
   async function voiceEdit(buf) {
@@ -468,13 +509,11 @@ ${cmdSrc ? `- {"op":"insert","after":N,"from":A,"to":B} — вставити п�
       const m = await aiEdit("", src); render(); screenEdit(m);
     } catch (e) { console.error(e); say("Не вийшло застосувати правку"); }
   }
-  function writeEdit() {
-    UI.root.querySelectorAll(".tkpop").forEach((p) => p.remove());
-    const p = document.createElement("div"); p.className = "tkpop";
-    p.innerHTML = `<div class="tkq">Що змінити? Напр.: «прибери частину про ТікТок», «зроби коротше до 30 секунд», «почни з фрази про підписників»</div><textarea id="tkcmd" rows="3"></textarea><div class="tk2"><button class="tkbtn" type="button" data-a="x">Скасувати</button><button class="tkbtn main" type="button" data-a="go">Застосувати</button></div>`;
-    UI.root.appendChild(p); const ta = $(p, "#tkcmd"); setTimeout(() => ta.focus(), 50);
-    p.querySelector('[data-a="x"]').onclick = () => p.remove();
-    p.querySelector('[data-a="go"]').onclick = async () => { const v = ta.value.trim(); if (!v) return; p.remove();
+  function writeEdit(B) {
+    B = B || $(UI.root, ".tkb");
+    const S = sheet(B, "Що змінити?", `<textarea id="tkcmd" rows="3" placeholder="Напр.: прибери частину про ТікТок"></textarea><button class="tkbtn main" type="button" id="tkgo" style="margin-top:8px">Застосувати</button>`);
+    const ta = $(S.body, "#tkcmd"); setTimeout(() => ta.focus(), 50);
+    $(S.body, "#tkgo").onclick = async () => { const v = ta.value.trim(); if (!v) return; S.close(true);
       try { const m = await aiEdit(v, null); render(); screenEdit(m); } catch (e) { say("Не вийшло застосувати правку"); } };
   }
 
@@ -486,5 +525,5 @@ ${cmdSrc ? `- {"op":"insert","after":N,"from":A,"to":B} — вставити п�
   }
 
   window.YVTalk = { open(opts = {}) { ONDONE = opts.onDone || null; TARGET = opts.target ?? TARGET; screenRecord(); },
-    _t: { SR, decode, resample, wav, b64, snap, envelope, record, busyRun, FILLERS, norm, bandProfile, applyFxTo: async (x, fx) => { const keep = FX; FX = fx; try { return await applyFx(x); } finally { FX = keep; } }, FXP, getFx: () => FX, denoise, levelPhrases, voiceChain, master, processTake, render: () => render(), set: (s, t) => { SRC = s; TOK = t; }, out: () => OUT, map: () => MAP, aiClean, aiEdit, voiceEdit: (b) => voiceEdit(b), tok: () => TOK, screenEdit: (m) => screenEdit(m), setOrig: (o) => ORIG = o } };
+    _t: { sheet, SHEET_CSS, IC, SR, decode, resample, wav, b64, snap, envelope, record, busyRun, FILLERS, norm, bandProfile, applyFxTo: async (x, fx) => { const keep = FX; FX = fx; try { return await applyFx(x); } finally { FX = keep; } }, FXP, getFx: () => FX, denoise, levelPhrases, voiceChain, master, processTake, render: () => render(), set: (s, t) => { SRC = s; TOK = t; }, out: () => OUT, map: () => MAP, aiClean, aiEdit, voiceEdit: (b) => voiceEdit(b), tok: () => TOK, screenEdit: (m) => screenEdit(m), setOrig: (o) => ORIG = o } };
 })();
