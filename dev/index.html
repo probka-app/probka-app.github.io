@@ -1028,6 +1028,7 @@ body{background:radial-gradient(900px 640px at 8% -12%,var(--yv-glow-1),transpar
     <button class="fmt on" type="button" data-open="studio"><canvas class="fprev" id="fprev" width="108" height="192" aria-hidden="true"></canvas><span class="fi"><span class="fn">Рілс маркером</span><span class="fs" id="fresume"></span></span><span class="chev" aria-hidden="true">›</span></button>
     <button class="fmt on" type="button" id="ownfmt"><span class="fprev qq" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26"><rect x="3" y="6" width="13" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 10.5l5-3v9l-5-3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span><span class="fi"><span class="fn">Збери своє відео</span><span class="fs">Сценарій → зйомка → автомонтаж</span><span class="fdev fst">Студія · beta</span></span><span class="chev" aria-hidden="true">›</span></button>
     <button class="fmt on" type="button" id="vedfmt" hidden><span class="fprev qq" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26"><rect x="3" y="6" width="13" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 10.5l5-3v9l-5-3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span><span class="fi"><span class="fn">Монтаж твого відео</span><span class="fs">Субтитри, плашки, без пауз — скажи, що змінити</span><span class="fwip" style="background:#ff9f0a;color:#0b0b0d">ТЕСТ</span></span><span class="chev" aria-hidden="true">›</span></button>
+    <button class="fmt on" type="button" id="trendfmt" hidden><span class="fprev qq" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26"><path d="M9 18V6l11-2v12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="6.5" cy="18" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="17.5" cy="16" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></span><span class="fi"><span class="fn">Відео під тренд</span><span class="fs">Без голосу: знімай за картками — зберемо в ритм</span><span class="fwip" style="background:#ff9f0a;color:#0b0b0d">ТЕСТ</span></span><span class="chev" aria-hidden="true">›</span></button>
     <button class="fmt on" type="button" id="voicefmt"><span class="fprev qq vcic" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><span class="fi"><span class="fn">Озвучка твоїм голосом</span><span class="fs">Пишеш текст — він звучить твоїм голосом</span><span class="ffree">3 хв безкоштовно</span></span><span class="chev" aria-hidden="true">›</span></button>
     <button class="fmt on" type="button" id="testfmt"><span class="fprev qq" aria-hidden="true">₴</span><span class="fi"><span class="fn">Тестовий інструмент</span><span class="fs">Перевірка оплати</span></span><span class="chev" aria-hidden="true">›</span></button>
   </div>
@@ -1079,7 +1080,7 @@ body{background:radial-gradient(900px 640px at 8% -12%,var(--yv-glow-1),transpar
 <script>window.YV_DEV=true;</script>
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="server.js?v=1a8bd3b0"></script>
+<script src="server.js?v=a451d401"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.min.js"></script>
 <script>
@@ -1117,6 +1118,7 @@ let downloads=null, sample=null;
 (async()=>{ try{ downloads = await window.claude?.use?.("downloads"); }catch(e){} if(downloads){ document.body.classList.add("can-dl"); showDl(); }
   try{ sample = await window.claude?.use?.("sample"); }catch(e){} if(!reader.hidden && cur?.id==="studio") render(); })();
 function showDl(){ if(!downloads) return; document.querySelectorAll(".dl,.dlwrap,.dlhint").forEach(e=>e.hidden=false); }
+window.yvTrack=(t,st,m)=>{ try{ window.SRV?.track?.(t,st,m); }catch(e){} };
 function toast(t){ const d=document.createElement("div"); let pt=false; try{ pt=document.getElementById("fworld").hidden&&reader.hidden; }catch(e){} d.className="toast"+(pt?" pt":""); d.textContent=t; document.body.appendChild(d); setTimeout(()=>d.remove(),2200); }
 async function save(filename, data){ if(!downloads) return; try{ const r=await downloads.save({filename, data}); if(r?.status==="saved") toast("Збережено"); }catch(e){ if(e?.code==="declined") return; if(e?.code==="rate_limited") toast("Зачекай секунду й спробуй ще"); else toast("Не вдалося зберегти файл тут"); } }
 async function fileBlob(path){ const r=await fetch(path); if(!r.ok) throw new Error(path); return await r.blob(); }
@@ -1921,7 +1923,7 @@ async function exportVideo(el){ const st=el.querySelector("#vst"), btn=el.queryS
     let silent=false; if(want){ st.textContent="Перевіряю звук…"; silent=!(await blobHasSound(out.blob)); }
     st.textContent="Відео готове.";
     WL.saved=(WL.saved||0)+1; saveWallet();
-    sendSheet(out.blob,`рілс_${(S.topic||"відео").slice(0,30).replace(/[^\p{L}\p{N}]+/gu,"_")}.${out.ext}`,
+    yvTrack("marker","save"); sendSheet(out.blob,`рілс_${(S.topic||"відео").slice(0,30).replace(/[^\p{L}\p{N}]+/gu,"_")}.${out.ext}`,
       silent?"Цей браузер не записав звук. Спробуй Chrome.":out.ext==="mp4"?"":"Відео у форматі webm — частина застосунків його не прийме. Краще зібрати в Safari або Chrome на телефоні.",afterExport); }
   catch(e){ st.textContent="Не вдалося зібрати відео в цьому браузері. Спробуй Chrome або Safari останньої версії."; st.className="status err"; }
   btn.disabled=false; }
@@ -2325,9 +2327,9 @@ const grid=document.getElementById("grid");
 SECTIONS.forEach(s=>{ const b=document.createElement("button"); b.type="button"; b.className="card"+(s.cls?" "+s.cls:""); const n=s.steps.length; b.innerHTML=`<h2>${s.title}</h2><p>${s.sub}</p><span class="meta">${n} ${n<5?"вікна":"вікон"}</span>`; b.addEventListener("click",()=>{ ac(); click(); openSec(s.id,0); }); grid?.appendChild(b); });
 const reader=document.getElementById("reader"), page=document.getElementById("page"), lock=document.getElementById("lock"), rfat=document.getElementById("rfat"), rpct=document.getElementById("rpct");
 let cur=null, idx=0;
-function openSec(id,i){ cur=SECTIONS.find(s=>s.id===id); if(!cur) return; idx=i; reader.hidden=false; document.body.style.overflow="hidden"; document.getElementById("rtitle").textContent=cur.title; lock.classList.toggle("open",!!cur.open); try{history.replaceState(null,"","#"+id)}catch(e){} render(); document.getElementById("next").focus(); }
+function openSec(id,i){ cur=SECTIONS.find(s=>s.id===id); if(!cur) return; yvTrack(id==="studio"?"marker":id,"open"); idx=i; reader.hidden=false; document.body.style.overflow="hidden"; document.getElementById("rtitle").textContent=cur.title; lock.classList.toggle("open",!!cur.open); try{history.replaceState(null,"","#"+id)}catch(e){} render(); document.getElementById("next").focus(); }
 function closeSec(){ ctl?.abort(); stopPlay(); reader.hidden=true; document.body.style.overflow=""; try{history.replaceState(null,"",location.pathname+location.search)}catch(e){} }
-function render(){ stopPlay(); S.lastStep=idx; persist(); const st=cur.steps[idx], n=cur.steps.length, p=Math.round((idx+1)/n*100);
+function render(){ stopPlay(); S.lastStep=idx; persist(); if(cur?.id==="studio") yvTrack("marker","step"+(idx+1)); const st=cur.steps[idx], n=cur.steps.length, p=Math.round((idx+1)/n*100);
   rfat.style.width=`calc(${p}% - 20px * ${p/100})`; rpct.textContent=p+"%";
   page.innerHTML=`${st.render===stAssemble?"":`<h3>${typeof st.h==="function"?st.h():st.h}</h3>`}${st.b||""}`;   // без «Крок N з M»: прогрес уже видно зверху
   if(st.render) st.render(page);
@@ -4011,9 +4013,10 @@ function closeOwn(){ ownStop(); const W=document.getElementById("ownw"); W.hidde
 document.getElementById("owback")?.addEventListener("click",()=>{ try{ uiSnd("tap"); }catch(e){} closeOwn(); });
 document.getElementById("ownfmt")?.addEventListener("click",()=>openOwn());
 /* ТЕСТ (лише dev і власник): «Монтаж твого відео» */
-{ const vb=document.getElementById("vedfmt"); let n=0; const chk=()=>{ if(uiOwner()&&(!window.SRV||SRV.session)) vb.hidden=false; else if(++n<40) setTimeout(chk,500); }; if(vb){ setTimeout(chk,300);
+{ const vb=document.getElementById("vedfmt"), tb=document.getElementById("trendfmt"); let n=0; const chk=()=>{ if(uiOwner()&&(!window.SRV||SRV.session)){ vb.hidden=false; if(tb) tb.hidden=false; } else if(++n<40) setTimeout(chk,500); }; if(vb){ setTimeout(chk,300);
   const load=src=>new Promise((ok,no)=>{ const sc=document.createElement("script"); sc.src=src+"?v="+Date.now(); sc.onload=ok; sc.onerror=no; document.head.appendChild(sc); });
-  vb.addEventListener("click",async()=>{ try{ uiSnd("tap"); }catch(e){} try{ if(!window.YVTalk) await load("a/talk.js"); if(!window.YVVideo) await load("a/vedit.js"); }catch(e){ toast("Не вдалося завантажити"); return; } YVVideo.open(); }); } }
+  vb.addEventListener("click",async()=>{ try{ uiSnd("tap"); }catch(e){} try{ if(!window.YVTalk) await load("a/talk.js"); if(!window.YVVideo) await load("a/vedit.js"); }catch(e){ toast("Не вдалося завантажити"); return; } YVVideo.open(); });
+  tb?.addEventListener("click",async()=>{ try{ uiSnd("tap"); }catch(e){} try{ if(!window.YVTalk) await load("a/talk.js"); if(!window.YVTrend) await load("a/trend.js"); }catch(e){ toast("Не вдалося завантажити"); return; } YVTrend.open(); }); } }
 async function openIdeas(){
   if(window.SRV&&!SRV.session) return SRV.login("Щоб пропонувати ідеї й голосувати, увійди або зареєструйся.");
   let tab="top";
@@ -4084,7 +4087,7 @@ async function renderAdmin(){ const body=document.getElementById("admbody");
     ${FP.map(f=>`<div class="admfi"><div class="admft"><b>${esc(f.nick)}</b><i class="${f.paused?"bad":""}">${f.paused?"нові нарахування на паузі":`пауза через ${Math.max(0,30-(f.days||0))} дн.`}</i></div>
       <div class="admfr">${esc(f.name||"")} · ${f.is_fop?"ФОП":"картка"} •••• ${esc(f.last4||"")} · не пройшла ${f.days||0} дн. тому · на балансі ${k(f.available_kop)}</div>
       <div class="admfc">${f.email?`<a href="mailto:${esc(f.email)}?subject=${encodeURIComponent("YuVi Studio: виплата не пройшла")}">${esc(f.email)}</a>`:""}${f.phone?` · <a href="tel:${tel(f.phone)}">${esc(f.phone)}</a> · <a href="viber://chat?number=${encodeURIComponent(tel(f.phone))}">Viber</a> · <a href="https://t.me/${tel(f.phone)}" target="_blank" rel="noopener">Telegram</a>`:" · телефону немає"}</div></div>`).join("")}</div>`:"";
-  body.innerHTML=`${A.demo?`<p class="anote">Це приклад з вигаданими цифрами. На сайті тут будуть справжні дані.</p>`:""}${failedHTML}${(!window.SRV||SRV.isOwner)?`<div class="ana" id="oana"><div class="anah"><b>Аналітика</b><small>бачиш лише ти</small></div><div class="anap">${[7,30,90].map(d=>`<button class="pill2${d===ANA_D?" ok":""}" type="button" data-anad="${d}">${d} днів</button>`).join("")}</div><div id="oanab"><p class="anote">Завантажую…</p></div></div><div class="ana" id="otools"><div class="anah"><b>Інструменти засновника</b><small>бачиш лише ти</small></div>
+  body.innerHTML=`${A.demo?`<p class="anote">Це приклад з вигаданими цифрами. На сайті тут будуть справжні дані.</p>`:""}${failedHTML}${(!window.SRV||SRV.isOwner)?`<div class="ana" id="oana"><div class="anah"><b>Аналітика</b><small>бачиш лише ти</small></div><div class="anap">${[7,30,90].map(d=>`<button class="pill2${d===ANA_D?" ok":""}" type="button" data-anad="${d}">${d} днів</button>`).join("")}</div><div id="oanab"><p class="anote">Завантажую…</p></div></div><div class="ana" id="opst"><div class="anah"><b>Статистика продуктів</b><small>за той самий період</small></div><div id="opstb"><p class="anote">Завантажую…</p></div></div><div class="ana" id="otools"><div class="anah"><b>Інструменти засновника</b><small>бачиш лише ти</small></div>
       <div class="otl"><button type="button" data-ot="kb">🧠 Навчання агента</button><button type="button" data-ot="voices">🎙 Голоси для озвучки</button><button type="button" data-ot="svc">💸 Витрати й сервіси<i id="otalert" hidden></i></button><button type="button" data-ot="calc">🧮 Калькулятор цін</button><button type="button" data-ot="uif">👁 Що бачать люди</button><button type="button" data-ot="ideas">💡 Ідеї людей</button></div></div>`:""}
     <div class="admres"><small>На рахунку для виплат має бути</small><b>${k(R.total_kop)}</b>
       <div class="admrr"><span>Можуть вивести зараз</span><i>${k(R.available_kop)}</i></div>
@@ -4128,7 +4131,24 @@ async function renderAdmin(){ const body=document.getElementById("admbody");
     BS.querySelector("#cn").onclick=closeSheet; BS.querySelector("#cy").onclick=()=>{ closeSheet(); act(r.id,"paid"); }; });
   const anaLoad=async()=>{ const box=body.querySelector("#oanab"); if(!box) return;
     let D; try{ D=window.SRV?await SRV.ownerAnalytics(ANA_D):anaDemo(); }catch(x){ box.innerHTML=`<p class="anote">Не вдалося. Запусти на сервері крок «Аналітика для засновника».</p>`; return; }
-    box.innerHTML=anaHTML(D); };
+    box.innerHTML=anaHTML(D); pstLoad(); };
+  const PNAME={marker:"Рілс маркером",studio:"Студія",pack_voice:"Пакет озвучки",pack_img:"Пакет картинок",talk:"Озвучка своїм голосом",vedit:"Монтаж відео",trend:"Відео під тренд",pay:"Оплата"};
+  const KNAME={first:"перша",renewal:"продовження",pack:"пакет"};
+  const SNAME={open:"відкрили",start:"почали",ready:"змонтовано",done:"готово",save:"зберегли",cmd_voice:"правка голосом",cmd_text:"правка текстом",fx:"звук",style:"стиль",shoot:"зняли кадр",step1:"крок 1",step2:"крок 2",step3:"крок 3",step4:"крок 4",step5:"крок 5",step6:"крок 6"};
+  const pstLoad=async()=>{ const box=body.querySelector("#opstb"); if(!box||!window.SRV) { if(box) box.innerHTML=`<p class="anote">Тут буде статистика продуктів.</p>`; return; }
+    let D; try{ D=await SRV.productStats(ANA_D); }catch(x){ box.innerHTML=`<p class="anote">Не вдалося. Запусти на сервері крок «Статистика продуктів» (0034).</p>`; return; }
+    const g=k=>money((k||0)/100), rev=D.revenue||[], tot=rev.reduce((a,r)=>a+(+r.sum_kop||0),0), ref=rev.reduce((a,r)=>a+(+r.ref_kop||0),0), cost=(D.costs||[]).reduce((a,c)=>a+(+c.uah||0),0), tax=tot*.073/100;
+    const net=tot/100-ref/100-cost-tax;
+    const byTool={}; (D.funnel||[]).forEach(f=>{ (byTool[f.tool]||=[]).push(f); });
+    const order=["open","step1","step2","step3","step4","step5","step6","start","shoot","ready","done","save"];
+    box.innerHTML=`<div class="anak"><div class="anac"><span class="anach">Виторг</span><b>${g(tot)}</b></div><div class="anac"><span class="anach">Лишилось тобі (оцінка)</span><b>${money(Math.round(net))}</b></div>
+        <div class="anac"><span class="anach">Партнерам</span><b>${g(ref)}</b></div><div class="anac"><span class="anach">Сервіси AI (оцінка)</span><b>${money(Math.round(cost))}</b></div></div>
+      <p class="anaw"><b>Що купують</b></p>${rev.length?rev.map(r=>`<div class="anar"><span>${esc(PNAME[r.product]||r.product)} · ${KNAME[r.kind]||r.kind}</span><div class="anabar"><i style="display:block;height:100%;width:${tot?Math.round(r.sum_kop/tot*100):0}%;background:#30d158"></i></div><b>${g(r.sum_kop)}</b><small>${r.n} шт</small></div>`).join(""):`<p class="anote">Оплат ще немає.</p>`}
+      <p class="anaw"><b>Де люди кидають</b> <small>(скільки людей дійшли до кроку)</small></p>${Object.keys(byTool).length?Object.entries(byTool).map(([t,L])=>{ L.sort((a,b)=>(order.indexOf(a.step)+99*(order.indexOf(a.step)<0))-(order.indexOf(b.step)+99*(order.indexOf(b.step)<0))); const mx=Math.max(...L.map(x=>+x.people)); return `<p class="anaw" style="margin-top:4px">${esc(PNAME[t]||t)}</p>`+L.map(x=>`<div class="anar"><span>${esc(SNAME[x.step]||x.step)}</span><div class="anabar"><i style="display:block;height:100%;width:${Math.round(x.people/mx*100)}%;background:#0a84ff"></i></div><b>${x.people}</b><small>${x.n}×</small></div>`).join(""); }).join(""):`<p class="anote">Подій ще немає — з'являться, коли люди почнуть користуватися.</p>`}
+      ${(D.choices||[]).length?`<p class="anaw"><b>Що вибирають найчастіше</b></p>`+D.choices.slice(0,12).map(c=>`<div class="anar"><span>${esc(PNAME[c.tool]||c.tool)} · ${esc(SNAME[c.step]||c.step)}</span><b style="grid-column:span 2">${esc(c.v)}</b><small>${c.n}×</small></div>`).join(""):""}
+      <p class="anaw"><b>Чи повертаються</b> — нових: ${D.retention?.new||0} · через день: ${D.retention?.d1||0} · через тиждень: ${D.retention?.d7||0} · через місяць: ${D.retention?.d30||0}</p>
+      <p class="anaw"><b>Продовжують підписку</b> — заплатили 1 раз: ${D.renew?.paid1||0} · 2+: ${D.renew?.paid2||0} · 3+: ${D.renew?.paid3||0}</p>
+      ${(D.partners||[]).length?`<p class="anaw"><b>Топ партнерів</b></p>`+D.partners.map(x=>`<div class="anar"><span>${esc(x.nickname||"без ніка")}</span><span>${x.people} людей</span><b style="grid-column:span 2">${g(x.kop)}</b></div>`).join(""):""}`; };
   body.querySelectorAll("[data-anad]").forEach(b=>b.onclick=()=>{ uiSnd("tap"); ANA_D=+b.dataset.anad; body.querySelectorAll("[data-anad]").forEach(x=>x.classList.toggle("ok",x===b)); anaLoad(); });
   anaLoad();
   body.querySelectorAll("[data-ot]").forEach(b=>b.onclick=()=>{ try{ uiSnd("tap"); }catch(e){} if(!window.SRV){ toast("На сайті тут відкриється інструмент"); return; }

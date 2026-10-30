@@ -10,6 +10,7 @@
   const db = (v) => 20 * Math.log10(Math.max(1e-9, v));
   const fromDb = (d) => Math.pow(10, d / 20);
   const say = (t) => { try { toast(t); } catch (e) {} };
+  const track = (st, m) => { try { window.yvTrack?.("talk", st, m); } catch (e) {} };
 
   /* ================= ЗВУК ================= */
   const AC = () => (window.__yvTalkAC ||= new (window.AudioContext || window.webkitAudioContext)());
@@ -419,7 +420,7 @@ ${SHEET_CSS.replace(/^\./gm, "#yvtalk .")}
       await busyRun("voice", async () => { await new Promise((r) => setTimeout(r, 30)); return addSourceProcessOnly(raw); });
       await busyRun("listen", () => transcribe(SRC[0]));
       if (!SRC[0].words.length) { say("Не почув слів — спробуй ще раз"); return; }
-      await aiClean(); render(); screenEdit();
+      await aiClean(); render(); screenEdit(); track("ready", { v: TARGET ? TARGET + "s" : "free" });
     } catch (e) { console.error(e); say(e?.message === "login" ? "Спочатку увійди" : e?.message === "limit" ? "Ліміт на сьогодні вичерпано" : "Не вийшло обробити запис. Спробуй ще раз."); }
   }
   async function addSourceProcessOnly(raw, isInsert) {
@@ -497,7 +498,7 @@ ${SHEET_CSS.replace(/^\./gm, "#yvtalk .")}
       <label>Тембр <span id="tktv">${fmtS(FX.tone, " дБ")}</span><input type="range" id="tktone" min="-6" max="6" step="1" value="${FX.tone}"></label><small><span>м'якше</span><span>яскравіше</span></small></div>`;
     const S = sheet(B, "Звучання голосу", html), b = S.body;
     const reFx = async () => { saveFx(); const was = PL ? AC().currentTime - PL.t0 : null; stop(); const dd = await fxOut(); play(dd, was != null ? Math.min(was, dd.length / SR - .1) : 0, true); };
-    b.querySelectorAll("[data-fx]").forEach((x) => x.onclick = () => { FX.k = x.dataset.fx; b.querySelectorAll("[data-fx]").forEach((o) => o.setAttribute("aria-pressed", o === x)); reFx(); });
+    b.querySelectorAll("[data-fx]").forEach((x) => x.onclick = () => { FX.k = x.dataset.fx; track("fx", { v: FX.k }); b.querySelectorAll("[data-fx]").forEach((o) => o.setAttribute("aria-pressed", o === x)); reFx(); });
     const sl = (id, key, lab, u) => { const r = $(b, id); r.oninput = () => { FX[key] = +r.value; $(b, lab).textContent = fmtS(FX[key], u); }; r.onchange = reFx; };
     sl("#tkpitch", "pitch", "#tkpv", ""); sl("#tktone", "tone", "#tktv", " дБ");
   }
@@ -506,7 +507,7 @@ ${SHEET_CSS.replace(/^\./gm, "#yvtalk .")}
     try {
       const raw = await busyRun("voice", () => decode(buf)); const src = await busyRun("voice", () => addSourceProcessOnly(raw, true)); await busyRun("listen", () => transcribe(src));
       if (!src.words.length) { say("Не почув правку"); return; }
-      const m = await aiEdit("", src); render(); screenEdit(m);
+      const m = await aiEdit("", src); render(); screenEdit(m); track("cmd_voice");
     } catch (e) { console.error(e); say("Не вийшло застосувати правку"); }
   }
   function writeEdit(B) {
@@ -514,16 +515,16 @@ ${SHEET_CSS.replace(/^\./gm, "#yvtalk .")}
     const S = sheet(B, "Що змінити?", `<textarea id="tkcmd" rows="3" placeholder="Напр.: прибери частину про ТікТок"></textarea><button class="tkbtn main" type="button" id="tkgo" style="margin-top:8px">Застосувати</button>`);
     const ta = $(S.body, "#tkcmd"); setTimeout(() => ta.focus(), 50);
     $(S.body, "#tkgo").onclick = async () => { const v = ta.value.trim(); if (!v) return; S.close(true);
-      try { const m = await aiEdit(v, null); render(); screenEdit(m); } catch (e) { say("Не вийшло застосувати правку"); } };
+      try { const m = await aiEdit(v, null); render(); screenEdit(m); track("cmd_text"); } catch (e) { say("Не вийшло застосувати правку"); } };
   }
 
   let ONDONE = null;
   async function done() {
     stop(); const FINAL = await fxOut(); const text = TOK.filter((t) => !t.cut).map((t) => SRC[t.src].words[t.i].w).join(" ").replace(/\s+([,.!?…:;])/g, "$1");
     const sentences = text.replace(/([.!?…])\s+/g, "$1\n").split("\n").map((l) => l.charAt(0).toUpperCase() + l.slice(1)).join("\n");
-    const cb = ONDONE; close(); cb?.({ text: sentences, wav: wav(FINAL), seconds: FINAL.length / SR });
+    track("done", { v: FX.k }); const cb = ONDONE; close(); cb?.({ text: sentences, wav: wav(FINAL), seconds: FINAL.length / SR });
   }
 
-  window.YVTalk = { open(opts = {}) { ONDONE = opts.onDone || null; TARGET = opts.target ?? TARGET; screenRecord(); },
+  window.YVTalk = { open(opts = {}) { ONDONE = opts.onDone || null; TARGET = opts.target ?? TARGET; screenRecord(); track("open"); },
     _t: { sheet, SHEET_CSS, IC, SR, decode, resample, wav, b64, snap, envelope, record, busyRun, FILLERS, norm, bandProfile, applyFxTo: async (x, fx) => { const keep = FX; FX = fx; try { return await applyFx(x); } finally { FX = keep; } }, FXP, getFx: () => FX, denoise, levelPhrases, voiceChain, master, processTake, render: () => render(), set: (s, t) => { SRC = s; TOK = t; }, out: () => OUT, map: () => MAP, aiClean, aiEdit, voiceEdit: (b) => voiceEdit(b), tok: () => TOK, screenEdit: (m) => screenEdit(m), setOrig: (o) => ORIG = o } };
 })();

@@ -190,6 +190,10 @@
   SRV.adminAudit = async (from, to) => (await rpc("admin_audit", { p_from: from, p_to: to })) || [];
   SRV.adminAuditCheck = async () => rpc("admin_audit_check");
   SRV.adminFailed = async () => (await rpc("admin_failed_payouts")) || [];
+  SRV.productStats = async (days) => rpc("admin_product_stats", { p_days: days || 30 });
+  // події використання інструментів (для статистики продуктів) — тихо, без очікування
+  SRV.track = (tool, step, meta) => { try { let v = localStorage.getItem("yvVid"); if (!v) { v = Math.random().toString(36).slice(2, 12); localStorage.setItem("yvVid", v); }
+    sb.rpc("log_event", { p_tool: tool, p_step: step, p_meta: meta || null, p_visitor: v }).then(() => {}, () => {}); } catch (e) {} };
   SRV.ownerAnalytics = async (days) => rpc("admin_analytics", { p_days: days || 30 });
   SRV.leaderboard = async (period) => rpc("leaderboard", { p_period: period || null });
   SRV.setHideRating = async (hide) => rpc("set_hide_rating", { p_hide: !!hide });
@@ -418,7 +422,7 @@
   let afterPay = null;
   let payOpts = null;
   SRV.pay = (onDone, opts) => {
-    afterPay = onDone || null; payOpts = opts || null;
+    afterPay = onDone || null; payOpts = opts || null; SRV.track("pay", "open", { v: opts?.product || "marker" });
     if (!offerGate("offer", () => SRV.pay(onDone, opts))) return;
     const guest = !SRV.session;
     const test = opts?.product === "test", custom = !!opts?.product && opts.product !== "marker", once = !!opts?.once;
@@ -442,7 +446,7 @@
         if (m) return mockSheet(decodeURIComponent(m[1]), kop(j.amount_kop) || price);
         ls.set("probkaAfter", test ? "paidtest" : "paid");
         payFrame(j.url, j.payment_id);
-      } catch (x) { b.disabled = false; b.textContent = `Оплатити ${money(price)}`; err.textContent = "Не вдалося відкрити оплату. Спробуй ще раз."; console.warn(x); }
+      } catch (x) { b.disabled = false; b.textContent = `Оплатити ${money(price)}`; err.textContent = x?.message === "need_subscription" ? "Пакети — це докупівля понад ліміт. Спершу оформи підписку." : "Не вдалося відкрити оплату. Спробуй ще раз."; console.warn(x); }
     };
     BS.querySelector("#pbal")?.addEventListener("click", async (e) => {
       const b = e.currentTarget; b.disabled = true;

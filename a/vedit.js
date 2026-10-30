@@ -10,6 +10,7 @@
   const $ = (r, s) => r.querySelector(s);
   const escH = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const say = (t) => { try { toast(t); } catch (e) {} };
+  const track = (st, m) => { try { window.yvTrack?.("vedit", st, m); } catch (e) {} };
   const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
   const fmt = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
   const AC = () => (window.__yvTalkAC ||= new (window.AudioContext || window.webkitAudioContext)());
@@ -352,7 +353,7 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
       const ta = $(S.body, "#vwish"); ta.oninput = () => { P.wish = ta.value.trim(); };
       const wr = $(S.body, "#vwrec"), wl = wr.innerHTML;
       wr.onclick = () => E().record(wr, wl, async (buf) => { try { const t = await sttBuf(buf); ta.value = (ta.value + " " + t).trim(); P.wish = ta.value; } catch (x) { say("Не вийшло розпізнати"); } }); return S; };
-    $(F, "#vgo").onclick = () => { B.querySelectorAll(".yvsh").forEach((x) => x._close(true)); run(); };
+    $(F, "#vgo").onclick = () => { B.querySelectorAll(".yvsh").forEach((x) => x._close(true)); track("start", { v: (P.media.length ? "ins" : "") + (P.wish ? "wish" : "") || "plain" }); run(); };
     draw();
   }
   async function sttBuf(buf) {
@@ -373,7 +374,7 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
       await aiStyleFromShots();
       await aiPlan();
       P.vids = [mkVideo(P.main.url), mkVideo(P.main.url)]; await Promise.all(P.vids.map(loadMeta));
-      build(); screenEdit();
+      build(); screenEdit(); track("ready", { v: P.styleImgs.length ? "shot" : P.preset });
     } catch (e) { console.error(e); say(e?.message === "noaudio" ? "Не вдалося дістати звук з відео. Спробуй інший файл (MP4/MOV)." : e?.message === "limit" ? "Ліміт на сьогодні вичерпано" : "Не вийшло обробити відео. Спробуй ще раз."); }
   }
 
@@ -406,7 +407,7 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
       style: () => { const S = E().sheet(B, "Субтитри", `<div class="chips">${Object.entries(PRESETS).map(([k, v]) => `<button class="chip" type="button" data-pr="${k}" aria-pressed="${P.preset === k}">${v.n}</button>`).join("")}${P.preset === "shot" ? `<button class="chip" type="button" aria-pressed="true">Як на скріні</button>` : ""}</div>
           <div class="lbl">Розмір</div><input type="range" id="vsz" min="60" max="150" value="${Math.round(P.style.size * 100)}"><div class="lbl">Висота</div><input type="range" id="vps" min="12" max="88" value="${Math.round(P.style.pos * 100)}">
           <div class="lbl">Слів на екрані</div><div class="chips">${[1, 2, 3, 4].map((n) => `<button class="chip" type="button" data-wn="${n}" aria-pressed="${P.style.words === n}">${n}</button>`).join("")}</div>`), b = S.body;
-        b.querySelectorAll("[data-pr]").forEach((x) => x.onclick = () => { pushHist(); P.preset = x.dataset.pr; P.style = sanitizeStyle({ ...BASE, ...PRESETS[P.preset].s }); b.querySelectorAll("[data-pr]").forEach((o) => o.setAttribute("aria-pressed", o === x)); $(b, "#vsz").value = Math.round(P.style.size * 100); $(b, "#vps").value = Math.round(P.style.pos * 100); redraw(); $(d, "#vundo").hidden = false; });
+        b.querySelectorAll("[data-pr]").forEach((x) => x.onclick = () => { pushHist(); P.preset = x.dataset.pr; track("style", { v: P.preset }); P.style = sanitizeStyle({ ...BASE, ...PRESETS[P.preset].s }); b.querySelectorAll("[data-pr]").forEach((o) => o.setAttribute("aria-pressed", o === x)); $(b, "#vsz").value = Math.round(P.style.size * 100); $(b, "#vps").value = Math.round(P.style.pos * 100); redraw(); $(d, "#vundo").hidden = false; });
         $(b, "#vsz").oninput = (e) => { P.style.size = e.target.value / 100; redraw(); };
         $(b, "#vps").oninput = (e) => { P.style.pos = e.target.value / 100; redraw(); };
         b.querySelectorAll("[data-wn]").forEach((x) => x.onclick = () => { P.style.words = +x.dataset.wn; b.querySelectorAll("[data-wn]").forEach((o) => o.setAttribute("aria-pressed", o === x)); redraw(); }); return S; },
@@ -422,14 +423,14 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
     }, fit);
     $(F, "#vwrite").onclick = () => { B.querySelectorAll(".yvsh").forEach((x) => x._close(true)); const S = E().sheet(B, "Що змінити?", `<textarea id="vcmd" rows="3" placeholder="Напр.: субтитри більші й жовті, прибери частину про ціни"></textarea><button class="btn main" type="button" id="vgo2" style="margin-top:8px">Застосувати</button>`); fit();
       const ta = $(S.body, "#vcmd"); setTimeout(() => ta.focus(), 50);
-      $(S.body, "#vgo2").onclick = async () => { const v = ta.value.trim(); if (!v) return; S.close(true); try { refresh(await aiCommand(v, false)); } catch (x) { say("Не вийшло застосувати правку"); } }; };
+      $(S.body, "#vgo2").onclick = async () => { const v = ta.value.trim(); if (!v) return; S.close(true); try { refresh(await aiCommand(v, false)); track("cmd_text"); } catch (x) { say("Не вийшло застосувати правку"); } }; };
     const vv = $(F, "#vvoice"), vl = vv.innerHTML;
     vv.onclick = () => { stopPlay(); if (!vv._rec) say("Кажи: «субтитри більші», «виріж частину про…»"); E().record(vv, vl, async (buf) => {
-      try { const t = await busyRun("listen", () => sttBuf(buf)); if (!t.trim()) { say("Не почув"); return; } refresh(`«${t}» → ${await aiCommand(t, true)}`); } catch (x) { console.error(x); say("Не вийшло застосувати правку"); } }); };
+      try { const t = await busyRun("listen", () => sttBuf(buf)); if (!t.trim()) { say("Не почув"); return; } refresh(`«${t}» → ${await aiCommand(t, true)}`); track("cmd_voice"); } catch (x) { console.error(x); say("Не вийшло застосувати правку"); } }); };
     $(F, "#vsave").onclick = async () => {
       stopPlay(); const sv = $(F, "#vsave"); sv.disabled = true; sv.innerHTML = `Зберігаю… <b id="vpp">0%</b>`;
       try { const out = await exportVideo((p) => { const e = $(F, "#vpp"); if (e) e.textContent = Math.round(clamp(p) * 100) + "%"; });
-        await saveBlob(out.blob, `yuvi_montazh_${new Date().toISOString().slice(0, 10)}.${out.ext}`); if (out.ext !== "mp4") say("Збережено у webm — для Instagram краще зберігати в Safari на iPhone");
+        track("save", { v: P.preset }); await saveBlob(out.blob, `yuvi_montazh_${new Date().toISOString().slice(0, 10)}.${out.ext}`); if (out.ext !== "mp4") say("Збережено у webm — для Instagram краще зберігати в Safari на iPhone");
       } catch (x) { console.error(x); say("Не вдалося зберегти відео"); }
       sv.disabled = false; sv.textContent = "Зберегти відео"; still(POS, cv); };
   }
@@ -452,5 +453,5 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
     return S;
   }
 
-  window.YVVideo = { open() { screenStart(); }, _t: { set: (p) => { P = p; }, fresh, build, drawFrame, screenEdit, aiPlan, aiCommand, outToSrc, seg: () => SEG, tot: () => TOT, chunks: () => CHUNKS, exportVideo, P: () => P, mkVideo, loadMeta, run: () => run() } };
+  window.YVVideo = { open() { screenStart(); track("open"); }, _t: { set: (p) => { P = p; }, fresh, build, drawFrame, screenEdit, aiPlan, aiCommand, outToSrc, seg: () => SEG, tot: () => TOT, chunks: () => CHUNKS, exportVideo, P: () => P, mkVideo, loadMeta, run: () => run() } };
 })();
