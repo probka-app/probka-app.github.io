@@ -2930,19 +2930,21 @@ ICON.share='<svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 15V4M8 
 const PROF={ get nick(){ return (window.SRV?.me?.nickname)||LS.get("rilsNick")||""; }, get email(){ return window.SRV?.me?.email||""; }, get phone(){ return window.SRV?.me?.phone||LS.get("rilsPhone")||""; }, get logged(){ return !!window.SRV?.session; } };
 
 /* ===== Поділитися YuVi (QR, AirDrop, Quick Share, месенджери) і встановлення на телефон ===== */
-function yuviLink(){ const base=location.origin+"/"; const partner=window.SRV?!!(SRV.session&&SRV.me?.phone&&earnOn()):earnOn(); if(!partner) return {url:base,partner:false}; const code=window.SRV?.refCode?.()||refCode(); return {url:base+"?ref="+code,partner:true}; }
+function yuviLink(){ const base=location.origin+"/"; const partner=window.SRV?!!(SRV.session&&SRV.me?.phone&&earnOn()):earnOn();
+  /* реферальний код є в кожного, хто увійшов: друг закріплюється одразу, навіть якщо виплати ще не налаштовані */
+  const code=window.SRV?(SRV.session?SRV.refCode?.():""):refCode(); return code?{url:base+"?ref="+code,partner,ref:true}:{url:base,partner:false,ref:false}; }
 let QRLIB=null; function loadQR(){ return QRLIB||(QRLIB=new Promise((ok,no)=>{ if(window.qrcode) return ok(window.qrcode); const sc=document.createElement("script"); sc.src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"; sc.onload=()=>ok(window.qrcode); sc.onerror=()=>{ QRLIB=null; no(); }; document.head.appendChild(sc); })); }
 async function qrSVG(text){ const q=(await loadQR())(0,"M"); q.addData(text); q.make(); const n=q.getModuleCount(), m=2; let d=""; for(let r=0;r<n;r++) for(let c=0;c<n;c++) if(q.isDark(r,c)) d+=`M${c+m} ${r+m}h1v1h-1z`;
   return `<svg viewBox="0 0 ${n+m*2} ${n+m*2}" width="100%" height="100%" shape-rendering="crispEdges" role="img" aria-label="QR-код посилання"><rect width="100%" height="100%" fill="#fff"/><path d="${d}" fill="#0b0b0d"/></svg>`; }
 const SHARE_TXT2="Я роблю відео в YuVi Studio. Спробуй і ти:";
 async function shareYuvi(){ try{ uiSnd("tap"); }catch(e){} const L=yuviLink();
   openSheet(`<h3>Поділитися YuVi</h3>
-   <p class="hint" style="display:block">${L.partner?"Друг відкриє YuVi за твоїм посиланням — і закріпиться за тобою як партнером.":"Покажи QR другу або надішли посилання."}</p>
+   <p class="hint" style="display:block">${L.ref?"Це твоє особисте посилання: друг, який зайде за ним, закріпиться за тобою.":"Покажи QR другу або надішли посилання."}</p>
    <div class="shqr" id="shqr"><span class="hint" style="display:block">Готую QR…</span></div>
    <p class="hint" style="display:block;text-align:center;margin-top:6px">Друг наводить камеру телефону на код — і YuVi відкривається.</p>
    <div class="reflink"><span id="shurl">${esc(L.url)}</span><button class="pill2" type="button" id="shcp">Скопіювати</button></div>
    ${navigator.share?`<button class="big" type="button" id="shgo" style="margin-top:10px">Надіслати: AirDrop, Telegram, Viber…</button>`:""}
-   ${L.partner?"":`<button class="lnk" type="button" id="shearn" style="margin-top:8px">Стань партнером — і посилання приноситиме тобі гроші →</button>`}
+   ${L.partner?"":`<button class="lnk" type="button" id="shearn" style="margin-top:8px">${L.ref?"Вкажи картку для виплат — і отримуй гроші за друзів →":"Стань партнером — і посилання приноситиме тобі гроші →"}</button>`}
    <button class="lnk" type="button" id="shinst" style="margin-top:4px">Як встановити YuVi на телефон →</button>`,"plat");
   qrSVG(L.url).then(svg=>{ const b=BS.querySelector("#shqr"); if(b) b.innerHTML=svg; }).catch(()=>{ const b=BS.querySelector("#shqr"); if(b) b.innerHTML=`<span class="hint" style="display:block">QR не завантажився — скопіюй посилання нижче.</span>`; });
   BS.querySelector("#shcp").onclick=e=>{ const b=e.currentTarget; navigator.clipboard?.writeText(L.url).then(()=>{ b.textContent="Скопійовано"; setTimeout(()=>b.textContent="Скопіювати",1400); }).catch(()=>{}); };
