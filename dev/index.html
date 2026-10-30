@@ -887,6 +887,22 @@ body{background:var(--p-bg)}
 .fophint{font-family:var(--pfont);margin-top:10px;padding:14px;border-radius:18px;background:color-mix(in srgb,var(--p-accent) 9%,var(--p-surface));border:1px solid color-mix(in srgb,var(--p-accent) 28%,var(--p-line));color:var(--p-text)}
 .fht{display:flex;flex-direction:column;gap:4px;font-size:13.5px;line-height:1.45;color:var(--p-muted)}.fht>b{font-size:15px;color:var(--p-text)}.fht span b{color:var(--p-accent)}
 .fhb{display:flex;align-items:center;gap:14px;margin-top:10px}.fhb .lnk{margin:0;padding:0}
+.fnx{margin:12px 0 4px;border-radius:20px;border:1px solid var(--p-line);background:var(--p-surface);box-shadow:var(--p-shadow);overflow:hidden}
+.fnbar{display:flex;align-items:center;gap:10px;width:100%;padding:11px 14px;background:none;border:0;color:var(--p-text);font-family:var(--pfont);font-size:15px;cursor:pointer;text-align:left}
+.fnbar b{font-weight:700}.fnbi{display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:color-mix(in srgb,var(--p-text) 8%,transparent)}
+.fnsum{flex:1;font-size:12.5px;color:var(--p-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fnch{transition:transform .2s;color:var(--p-muted)}.fnbar[aria-expanded="true"] .fnch{transform:rotate(180deg)}
+.fnbody{padding:2px 12px 14px}.fngh{display:flex;justify-content:space-between;align-items:baseline;margin:8px 2px 8px;font-size:12.5px;color:var(--p-muted);font-weight:600}.fngh b{font-size:13.5px;color:var(--p-text)}
+.fngrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.fnt{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px 9px;border-radius:16px;border:1px solid var(--p-line);background:color-mix(in srgb,var(--p-text) 4%,transparent);color:var(--p-text);font-family:var(--pfont);cursor:pointer;min-width:0}
+.fnt:active{transform:scale(.96)}.fnt i{display:grid;place-items:center;width:42px;height:42px;border-radius:12px;background:color-mix(in srgb,var(--p-text) 9%,transparent);font-style:normal}
+.fnt span{font-size:11.5px;line-height:1.2;font-weight:600;text-align:center;overflow-wrap:anywhere}.fnt em{position:absolute;top:5px;right:5px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;font-style:normal;font-size:10px;font-weight:800;display:grid;place-items:center}
+.fnt em.on{background:#30d158;color:#0b0b0d}.fnt em.off{background:color-mix(in srgb,var(--p-text) 14%,transparent);color:var(--p-muted)}.fnt em.fsn{background:#ff9f0a;color:#0b0b0d;font-size:9px}
+.fnt.lock i,.fnt.lock span{opacity:.55}.fnfree i{color:#5fd39a}
+.fntiers{display:grid;gap:8px;margin:12px 0}.fntier{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;border:1.5px solid var(--p-line,rgba(255,255,255,.14));background:rgba(255,255,255,.04);color:inherit;font:inherit;text-align:left;cursor:pointer}
+.fntier.on{border-color:#30d158;background:rgba(48,209,88,.1)}.fntier b{font-size:16px}.fntier small{display:block;opacity:.7;font-size:12.5px}.fntier .pr{margin-left:auto;font-weight:800;font-size:17px;white-space:nowrap}.fntier .pr small{display:inline;font-weight:600}
+.fnwhere{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0}.fnwhere span{font-size:12px;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.08)}
+.fnmeta{font-size:13px;opacity:.8;margin:4px 0}.fnopen{display:inline-block;padding:3px 10px;border-radius:999px;background:#30d158;color:#0b0b0d;font-weight:800;font-size:12px}
+.fopen{align-self:flex-start;margin-top:4px;padding:2px 8px;border-radius:999px;font-size:10.5px;font-weight:700;background:rgba(48,209,88,.16);color:#5fd39a}.fopen.lk{background:rgba(255,255,255,.1);color:#a1a1aa}
 .ideacard{display:flex;align-items:center;gap:12px;width:100%;margin-top:12px;padding:14px;border-radius:20px;border:1px solid var(--p-line);background:var(--p-surface);color:var(--p-text);font-family:var(--pfont);text-align:left;box-shadow:var(--p-shadow)}
 .idi{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,#e3b341 18%,transparent);color:#b8860b;flex:none}
 .idt{display:flex;flex-direction:column;flex:1;min-width:0}.idt b{font-size:15px}.idt small{font-size:12.5px;color:var(--p-muted)}
@@ -1021,6 +1037,7 @@ body{background:radial-gradient(900px 640px at 8% -12%,var(--yv-glow-1),transpar
   <div class="htop"><button class="burger" id="burger" type="button" aria-label="Меню" aria-expanded="false"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><span class="hbrand">YuVi Studio</span><span class="hnick" id="hnick"></span></div>
   <div class="wallet"><div class="wtop"><span class="wlg"><span class="wl">Заробіток</span><button class="wsnd" type="button" data-snd aria-pressed="true" aria-label="Звук зарахувань"></button></span><button class="hbtn" type="button" data-earn>Як заробити?</button></div><div class="wrow"><span class="wv" data-bal>0 грн</span><div class="wpend" data-pend hidden><div class="wpl"><span>Очікує зарахування для виводу:</span><b data-pendv></b></div><button class="hbtn wwhy" type="button" data-why>Чому гроші<br>зараховуються<br>не одразу?</button></div><div class="wpas" data-pas></div><button class="wout" type="button" data-withdraw>Виплати</button><span class="wrf" data-refs></span></div><button class="woffl" type="button" data-woff hidden></button><div class="wst" data-wst></div><button class="wmore" type="button" data-wmore aria-expanded="false"><span>Детальніше</span><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
   <div class="fophint" id="fophint" hidden></div>
+  <div class="fnx" id="fnx" hidden><button class="fnbar" type="button" id="fnbar" aria-expanded="false"><span class="fnbi" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18"><rect x="3.5" y="3.5" width="7" height="7" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="13.5" y="3.5" width="7" height="7" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="3.5" y="13.5" width="7" height="7" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="13.5" y="13.5" width="7" height="7" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></span><b>Функції</b><span class="fnsum" id="fnsum"></span><svg class="fnch" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="fnbody" id="fnbody" hidden></div></div>
   <h1 class="htitle"><svg class="hgear" viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37 1 .608 2.296.07 2.572-1.065z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>Інструменти</h1>
   <div class="fkick">Для створення контенту та заробітку</div>
   <div class="fmts">
@@ -1077,7 +1094,7 @@ body{background:radial-gradient(900px 640px at 8% -12%,var(--yv-glow-1),transpar
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="YuVi DEV">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>window.YV_DEV=true;window.YV_BUILD="30.10 19:38";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
+<script>window.YV_DEV=true;window.YV_BUILD="30.10 20:16";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="server.js?v=f7af69dc"></script>
@@ -3356,6 +3373,17 @@ ${prev.length?`Ці ідеї вже були — придумай зовсім �
     parse:r=>r?[{type:"Підпис",text:r.caption},{type:"Заклик до дії",text:r.cta},{type:"Хештеги",text:(r.hashtags||[]).map(h=>String(h).startsWith("#")?h:"#"+h).join(" ")}].filter(x=>x.text):[],
     demo:{caption:"Більшість новачків кидають біг через ці 3 помилки 🏃 Я теж їх робив — поки не зрозумів, що справа не в силі волі.",cta:"Збережи, щоб не забути перед наступною пробіжкою.",hashtags:["#біг","#бігдляпочатківців","#running","#марафон","#спорт","#здоровийспосібжиття"]} }
 };
+FREE.script={ el:"freescript", title:"Сценарій", go:"Написати сценарій", more:"↻ Інший варіант", busy:"Пишу сценарій…", single:true,
+  hint:"Напиши, про що відео і скільки секунд, — отримаєш 3 хуки на вибір і готовий текст, який можна прочитати в кадрі.",
+  label:"Про що відео і скільки секунд", ph:"Наприклад: як почати заробляти на відео без підписників, 60 секунд",
+  note:"Натисни на блок, щоб вибрати, і скопіюй. Або скопіюй усе разом.",
+  prompt:t=>`Ти сценарист коротких вертикальних відео (Reels, TikTok, Shorts).
+Задум автора (його слова, можуть бути з помилками): «${t}»
+Якщо тривалість не вказана — 45 секунд (≈ 2,3 слова на секунду).
+Напиши: 1) 3 різні хуки — перша фраза, до 12 слів кожен, різних типів; 2) сценарій — суцільний текст, який автор говорить у кадрі після хуку: коротко, живою розмовною українською, одна думка — одне речення, конкретика й приклади, без води; в кінці — заклик до дії одним реченням.
+Відповідай тільки JSON-об'єктом {"hooks":[{"type":"тип","text":"хук"}],"script":"…"}.`,
+  parse:r=>r?[...(r.hooks||[]).map((h,i)=>({type:"Хук "+(i+1)+(h.type?" · "+h.type:""),text:h.text})),{type:"Сценарій",text:r.script}].filter(x=>x.text):[],
+  demo:{hooks:[{type:"Провокація",text:"Тобі не потрібні підписники, щоб заробляти на відео"}],script:"Більшість думає, що гроші з'являються після 10 тисяч підписників. Насправді рекламодавцю важливі перегляди одного відео. Зніми ролик, який вирішує одну проблему. Поклади в опис посилання. І все. Збережи, щоб не загубити."}};
 const FD=(()=>{ let o={}; try{ o=JSON.parse(localStorage.getItem("freeDraft"))||{}; }catch(e){} try{ const h=JSON.parse(localStorage.getItem("hookDraft")); if(h&&!o.hooks) o.hooks=h; }catch(e){} return o; })();
 const fdSave=()=>{ try{ localStorage.setItem("freeDraft",JSON.stringify(FD)); }catch(e){} };
 function openFree(key){ uiSnd("tap"); const T=FREE[key]; const D=FD[key]=Object.assign({topic:"",list:[],pick:-1,head:""},FD[key]||{});
@@ -4013,6 +4041,76 @@ function closeOwn(){ ownStop(); const W=document.getElementById("ownw"); W.hidde
 document.getElementById("owback")?.addEventListener("click",()=>{ try{ uiSnd("tap"); }catch(e){} closeOwn(); });
 document.getElementById("ownfmt")?.addEventListener("click",()=>openOwn());
 /* ТЕСТ (лише dev і власник): «Монтаж твого відео» */
+/* ---------- Функції: безкоштовні й платні, в одному місці; одна оплата відкриває функцію в усіх форматах ---------- */
+const FNI={ script:'<path d="M7 4h7l4 4v12H7z M14 4v4h4 M10 12h5M10 15.5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>',
+  ideas:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
+  hooks:'<path d="M13 3L5 13.5h6L10 21l9-11.5h-6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
+  check:'<path d="M4 12.5l5 5L20 6.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
+  cap:'<path d="M5 9h14M5 15h14M10 4l-2 16M16 4l-2 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
+  img:'<rect x="3.5" y="5" width="17" height="14" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 16l5-5 4 4 3-3 4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
+  talk:'<rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
+  aivoice:'<path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
+  myvoice:'<circle cx="9" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 20c.5-3.5 3-5.5 6-5.5s5.5 2 6 5.5M17 7.5c1 1 1 3 0 4M19.5 5.5c2 2.2 2 5.8 0 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>' };
+const VTIERS=[["Старт",399,"45 хв на місяць"],["Про",749,"90 хв на місяць"],["Макс",1290,"160 хв на місяць"]];
+const FNS=[
+  {k:"script",free:1,t:"Сценарій",go:()=>openFree("script")},
+  {k:"ideas",free:1,t:"Ідеї",go:()=>openFree("ideas")},
+  {k:"hooks",free:1,t:"Хуки",go:()=>openFree("hooks")},
+  {k:"check",free:1,t:"Перевірка хука",go:()=>openFree("check")},
+  {k:"cap",free:1,t:"Підпис і хештеги",go:()=>openFree("cap")},
+  {k:"img",free:1,t:"Картинки",go:()=>openImgGen()},
+  {k:"talk",t:"Озвучка",d:"Наговори до 5 хвилин як є — змонтуємо твій живий голос без пауз і паразитів, покращимо звучання. Або скажи «зроби з цього текст» — отримаєш сценарій з хуком під Reels.",
+    where:["Рілс маркером","Монтаж відео","Своє відео"],trial:"3 хв безкоштовно",tiers:[["Старт",399,"60 хв на місяць"],["Про",599,"150 хв на місяць"],["Макс",899,"300 хв на місяць"]],over:"+60 хв — 99 грн",go:()=>openTalkTool()},
+  {k:"aivoice",t:"AI-голос",d:"Пишеш текст — він звучить одним з голосів студії.",where:["Рілс маркером","Монтаж відео","Своє відео"],trial:"1 хв безкоштовно",tiers:VTIERS,over:"+15 хв — 119 грн",note:"Хвилини спільні з «Мій голос».",go:()=>openVoiceTool()},
+  {k:"myvoice",t:"Мій голос",soon:1,d:"Записуєш свій голос один раз — далі будь-який текст звучить твоїм голосом.",where:["Рілс маркером","Монтаж відео","Своє відео"],tiers:VTIERS,over:"+15 хв — 119 грн",note:"Хвилини спільні з «AI-голос»."},
+];
+const fnOpen=(f)=>f.free||(window.SRV?SRV.isOwner:true);
+function fnTile(f){ const on=fnOpen(f); return `<button class="fnt${f.free?" fnfree":""}${on?"":" lock"}" type="button" data-fn="${f.k}"><i><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">${FNI[f.k]}</svg></i><span>${f.t}</span>${f.soon?`<em class="fsn">скоро</em>`:on?`<em class="on">✓</em>`:`<em class="off">🔒</em>`}</button>`; }
+function drawFns(){ const body=document.getElementById("fnbody"); if(!body) return; const fr=FNS.filter(f=>f.free), pd=FNS.filter(f=>!f.free);
+  document.getElementById("fnsum").textContent=`${fr.length} безкоштовних · ${pd.length} платні`;
+  body.innerHTML=`<div class="fngh"><b>Безкоштовні</b><span>з денним лімітом</span></div><div class="fngrid">${fr.map(fnTile).join("")}</div>
+    <div class="fngh" style="margin-top:14px"><b>Платні</b><span>одна оплата — у всіх форматах</span></div><div class="fngrid">${pd.map(fnTile).join("")}</div>`;
+  body.querySelectorAll("[data-fn]").forEach(b=>b.onclick=()=>{ try{ uiSnd("tap"); }catch(e){} const f=FNS.find(x=>x.k===b.dataset.fn); try{ yvTrack("fn","tap",{v:f.k}); }catch(e){} f.free?f.go():fnSheet(f); }); }
+function fnSheet(f){ const on=fnOpen(f)&&!f.soon; let pick=1;
+  const draw=()=>{ openSheet(`<div class="pshead"><h3>${f.t}</h3></div>${on?`<span class="fnopen">✓ Відкрито</span>`:f.soon?`<span class="ffree" style="background:rgba(255,159,10,.18);color:#ff9f0a">Скоро</span>`:""}
+    <p class="hint" style="display:block;margin-top:10px">${f.d}</p><div class="fnwhere">${f.where.map(w=>`<span>${w}</span>`).join("")}</div>
+    <div class="fntiers">${f.tiers.map(([n,p,l],i)=>`<button class="fntier${i===pick?" on":""}" type="button" data-ti="${i}"><span><b>${n}</b><small>${l}</small></span><span class="pr">${p} <small>грн/міс</small></span></button>`).join("")}</div>
+    <p class="fnmeta">Понад ліміт: ${f.over}${f.note?` · ${f.note}`:""}</p>${f.trial?`<p class="fnmeta">Спробувати: ${f.trial}</p>`:""}
+    ${on?`<button class="big" type="button" id="fngo">Відкрити</button>`:f.soon?`<button class="big" type="button" disabled>Скоро</button>`:`<button class="big" type="button" id="fnpay">Оплатити ${f.tiers[pick][1]} грн</button>${f.go?`<button class="lnk" type="button" id="fntry" style="margin-top:10px">Спробувати безкоштовно →</button>`:""}`}`,"plat");
+    BS.querySelectorAll("[data-ti]").forEach(b=>b.onclick=()=>{ pick=+b.dataset.ti; draw(); });
+    BS.querySelector("#fngo")?.addEventListener("click",()=>{ closeSheet(); setTimeout(()=>f.go?.(),200); });
+    BS.querySelector("#fntry")?.addEventListener("click",()=>{ closeSheet(); setTimeout(()=>f.go?.(),200); });
+    BS.querySelector("#fnpay")?.addEventListener("click",()=>{ try{ yvTrack("fn","pay_tap",{v:f.k+":"+f.tiers[pick][0]}); }catch(e){} toast("Оплата цієї функції відкриється найближчим часом"); }); };
+  draw(); }
+async function openTalkTool(){ try{ if(!window.YVTalk) await new Promise((ok,no)=>{ const sc=document.createElement("script"); sc.src="a/talk.js?v="+(window.YV_BUILD||Date.now()); sc.onload=ok; sc.onerror=no; document.head.appendChild(sc); }); }catch(e){ toast("Не вдалося завантажити"); return; } YVTalk.open({}); }
+// генератор картинок: описуєш словами → картинка в стилі маркера
+function openImgGen(){ let last=null; const IG=(()=>{ try{ return localStorage.getItem("yvImgTxt")||""; }catch(e){ return ""; } })();
+  openSheet(`<div class="pshead"><h3>Картинки</h3></div><span class="ffree" style="margin:-4px 0 10px">Безкоштовно · з денним лімітом</span>
+    <p class="hint" style="display:block">Опиши, що має бути на картинці, — намалюємо в стилі маркера, як у «Рілс маркером».</p>
+    <textarea id="igt" class="cpd" rows="3" maxlength="600" placeholder="Наприклад: людина сидить за ноутбуком, а з екрана летять гроші">${esc(IG)}</textarea>
+    <button class="big" type="button" id="iggo">Намалювати</button><div class="status" id="igst"></div><div id="igres"></div>`,"plat");
+  const ta=BS.querySelector("#igt"), st=BS.querySelector("#igst"), res=BS.querySelector("#igres"), go=BS.querySelector("#iggo");
+  ta.oninput=()=>{ try{ localStorage.setItem("yvImgTxt",ta.value); }catch(e){} };
+  go.onclick=async()=>{ const t=ta.value.trim(); if(t.length<3){ st.className="status err"; st.textContent="Опиши кількома словами."; return; }
+    if(window.SRV&&!SRV.session) return SRV.login("Картинки — безкоштовно, потрібна лише реєстрація.","tool:img");
+    go.disabled=true; go.textContent="Малюю…"; st.className="status"; st.textContent="";
+    try{ let en=t; if(sample) try{ const r=await sample.json(`Опиши англійською одну просту сцену для малюнка маркером (до 40 слів): хто/що, дія, ключові предмети. Без тексту на картинці. Опис людини: «${t}». Тільки JSON {"scene":"..."}`,{cache:false}); en=String(r?.scene||t); }catch(e){}
+      const r=await SRV.genImage({prompt:en,style:styleSuffix(),aspect:"1:1"}); last=r; try{ yvTrack("img","gen"); }catch(e){}
+      res.innerHTML=`<img alt="" src="data:${r.mime};base64,${r.image}" style="width:100%;border-radius:16px;margin-top:12px;display:block"><div class="hkact" style="margin-top:10px"><button type="button" id="igsave">Зберегти</button><button type="button" id="igmore">↻ Ще варіант</button></div>${r.left!=null?`<p class="fnmeta" style="text-align:center">Залишилось сьогодні: ${r.left}</p>`:""}`;
+      res.querySelector("#igmore").onclick=()=>go.click();
+      res.querySelector("#igsave").onclick=async()=>{ const bin=atob(last.image), u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
+        const f=new File([u],`yuvi_${Date.now()}.png`,{type:last.mime||"image/png"}); try{ if(navigator.canShare?.({files:[f]})){ await navigator.share({files:[f]}); return; } }catch(e){ if(e?.name==="AbortError") return; }
+        const a=document.createElement("a"); a.href=URL.createObjectURL(f); a.download=f.name; document.body.appendChild(a); a.click(); a.remove(); };
+    }catch(err){ const m=errText(err); st.className="status err"; st.textContent=m||"Не вдалося намалювати. Спробуй ще раз."; }
+    go.disabled=false; go.textContent="Намалювати"; };
+}
+{ const box=document.getElementById("fnx"), bar=document.getElementById("fnbar"), body=document.getElementById("fnbody");
+  bar.onclick=()=>{ const o=bar.getAttribute("aria-expanded")!=="true"; bar.setAttribute("aria-expanded",o); body.hidden=!o; if(o) drawFns(); try{ uiSnd("tap"); }catch(e){} };
+  // поки тест — бачить лише власник; формати під панеллю показують «Відкрито / від N грн»
+  const chk=()=>{ const on=!!(uiOwner()&&(!window.SRV||SRV.session)); if(box.hidden===on){ box.hidden=!on; if(on) drawFns(); }
+    document.querySelectorAll(".fmts>.fmt .fi").forEach(fi=>{ let b=fi.querySelector(".fopen"); if(!on){ b?.remove(); return; } if(!b){ b=document.createElement("span"); b.className="fopen"; fi.appendChild(b); } b.textContent="✓ Відкрито"; });
+    setTimeout(chk,1500); };
+  setTimeout(chk,300); }
 { const vb=document.getElementById("vedfmt"), tb=document.getElementById("trendfmt"); const chk=()=>{ const on=!!(uiOwner()&&(!window.SRV||SRV.session)); if(vb.hidden===on) vb.hidden=!on; if(tb&&tb.hidden===on) tb.hidden=!on; setTimeout(chk,1500); }; if(vb){ setTimeout(chk,300);
   const load=src=>new Promise((ok,no)=>{ const sc=document.createElement("script"); sc.src=src+"?v="+Date.now(); sc.onload=ok; sc.onerror=no; document.head.appendChild(sc); });
   vb.addEventListener("click",async()=>{ try{ uiSnd("tap"); }catch(e){} try{ if(!window.YVTalk) await load("a/talk.js"); if(!window.YVVideo) await load("a/vedit.js"); }catch(e){ toast("Не вдалося завантажити"); return; } YVVideo.open(); });
