@@ -80,6 +80,12 @@
     hryvnia: () => [[...arc(.05, -.45, .38, 200, 400, 12), [-.3, .55], [.4, .55]], [[-.45, -.12], [.45, -.12]], [[-.45, .15], [.45, .15]]],
   };
   const KINDS = Object.keys(SH);
+  const CORE = new Set(["man", "text", "say", "thinkb", "count", "icon"]);
+  function fixK(it) { if (!it || typeof it.k !== "string") return null; const k = it.k.toLowerCase().trim();
+    if (CAST[k] && k !== "man") return { ...it, k: "man", who: k }; if (CORE.has(k) || SH[k] || ANIM[k]) return { ...it, k };
+    if (/^[a-z][a-z0-9 _-]{1,30}$/.test(k)) return { ...it, k: "icon", q: it.q || k }; return null; }
+  const KOK = (it) => it && (CORE.has(it.k) || SH[it.k] || ANIM[it.k]);
+  const WHO = (it) => ({ who: CAST[it.who] ? it.who : undefined, q: it.k === "icon" ? String(it.q || "").slice(0, 40) : undefined });
 
   /* ---------- чоловічок: скелет і рухи ---------- */
   // пози в градусах: b — нахил тулуба, h — нахил голови; руки/ноги: 1 — від плеча/стегна (від вертикалі вниз), 2 — згин ліктя/коліна; y — присід; r — поворот усього тіла
@@ -216,12 +222,12 @@
   let NOBOIL = false;
   const jit = (pts, seed, k) => NOBOIL ? pts : pts.map((p, i) => [p[0] + (rnd(seed + i * 1.7, BOIL) - .5) * 2.4 * k, p[1] + (rnd(seed * 3.1 + i, BOIL + 9) - .5) * 2.4 * k]);
   function figure(pose, x0, y0, U, f, face = "", wear = null, fo = {}) {
-    const P = { ...P0, ...pose }, sv = P.sv > .5;
+    const P = { ...P0, ...pose }, sv = P.sv > .5, hs = fo.hs || 1, HP = [];
     const hip = [0, -1.65 + P.y], tb = P.b * D, neck = [hip[0] + Math.sin(tb) * 1.3, hip[1] - Math.cos(tb) * 1.3], sh = [neck[0] + (hip[0] - neck[0]) * .16, neck[1] + (hip[1] - neck[1]) * .16];
     // напрям кінцівки: збоку — уперед, спереду — у свій бік (s = −1 ліва, +1 права)
     const dir = (a, s) => [(sv ? 1 : s) * Math.sin(a * D), Math.cos(a * D)];
     const limb = (o, a1, a2, l1, l2, s, leg) => { const off = leg ? 0 : (sv ? P.b : 0), d1 = dir(a1 + off, s), e = [o[0] + d1[0] * l1, o[1] + d1[1] * l1], d2 = dir(a1 + off + (leg && sv ? -a2 : a2), s); return [o, e, [e[0] + d2[0] * l2, e[1] + d2[1] * l2]]; };
-    const ht = (P.b + P.h) * D, hc = [neck[0] + Math.sin(ht) * .5, neck[1] - Math.cos(ht) * .5];
+    const ht = (P.b + P.h) * D, hc = [neck[0] + Math.sin(ht) * (.42 * hs + .08), neck[1] - Math.cos(ht) * (.42 * hs + .08)];
     let parts = [[hip, neck], arc(hc[0], hc[1], .42, 0, 360, 20), limb(sh, P.la1, P.la2, .72, .66, -1), limb(sh, P.ra1, P.ra2, .72, .66, 1), limb(hip, P.ll1, P.ll2, .85, .82, -1, 1), limb(hip, P.rl1, P.rl2, .85, .82, 1, 1)];
     // долоні й черевики
     const end = (l) => l[2], la = parts[2], ra = parts[3], ll = parts[4], rl = parts[5];
@@ -229,35 +235,138 @@
     [[ll, -1], [rl, 1]].forEach(([l, s]) => { const e = end(l), fx = sv ? .24 : s * .17; parts.push([[e[0] - (sv ? .04 : s * .02), e[1]], [e[0] + fx, e[1] + .02]]); });
     // обличчя: очі-зіниці (кліпають, дивляться вперед), брови за емоцією, рот (говорить — рухається)
     if (face) { const ex = sv ? [.17] : [-.15, .15], o = sv ? .1 : 0, fc = [hc[0] + o, hc[1]], lk = sv ? .04 : 0;
-      ex.forEach((e) => parts.push(fo.blink ? [[fc[0] + e - .06, fc[1] - .07], [fc[0] + e + .06, fc[1] - .07]] : face === "shock" ? arc(fc[0] + e, fc[1] - .07, .075, 0, 360, 10) : arc(fc[0] + e + lk, fc[1] - .07, .045, 0, 360, 8)));
-      if (face === "shock") ex.forEach((e) => parts.push(arc(fc[0] + e + lk, fc[1] - .07, .02, 0, 360, 6)));
+      ex.forEach((e) => HP.push(fo.blink ? [[fc[0] + e - .06, fc[1] - .07], [fc[0] + e + .06, fc[1] - .07]] : face === "shock" ? arc(fc[0] + e, fc[1] - .07, .075, 0, 360, 10) : arc(fc[0] + e + lk, fc[1] - .07, .045, 0, 360, 8)));
+      if (face === "shock") ex.forEach((e) => HP.push(arc(fc[0] + e + lk, fc[1] - .07, .02, 0, 360, 6)));
       const br = { happy: [-.2, -.24, .02], sad: [-.18, -.2, -.06], shock: [-.27, -.27, 0], strain: [-.2, -.16, .06] }[face];
-      if (br) ex.forEach((e) => { const sg = e < 0 ? -1 : 1; parts.push([[fc[0] + e - .08, fc[1] + br[0] + (sg < 0 ? 0 : br[2])], [fc[0] + e + .08, fc[1] + br[1] + (sg < 0 ? br[2] : 0)]]); });
+      if (br) ex.forEach((e) => { const sg = e < 0 ? -1 : 1; HP.push([[fc[0] + e - .08, fc[1] + br[0] + (sg < 0 ? 0 : br[2])], [fc[0] + e + .08, fc[1] + br[1] + (sg < 0 ? br[2] : 0)]]); });
       const mo = fo.mouth || 0;
-      if (mo > .06) parts.push(arc(fc[0] + o * .4, fc[1] + .19, .1, 0, 360, 12).map(([a, b]) => [a, fc[1] + .19 + (b - fc[1] - .19) * (.25 + mo)]));
-      else if (face === "happy") parts.push(arc(fc[0], fc[1] + .04, .19, 25, 155, 10)); else if (face === "sad") parts.push(arc(fc[0], fc[1] + .32, .17, 215, 325, 10));
-      else if (face === "shock") parts.push(arc(fc[0], fc[1] + .2, .08, 0, 360, 10)); else if (face === "strain") parts.push([[fc[0] - .13, fc[1] + .2], [fc[0] - .04, fc[1] + .15], [fc[0] + .04, fc[1] + .2], [fc[0] + .13, fc[1] + .15]]);
-      else parts.push([[fc[0] - .09, fc[1] + .18], [fc[0] + .09, fc[1] + .18]]); }
+      if (mo > .06) HP.push(arc(fc[0] + o * .4, fc[1] + .19, .1, 0, 360, 12).map(([a, b]) => [a, fc[1] + .19 + (b - fc[1] - .19) * (.25 + mo)]));
+      else if (face === "happy") HP.push(arc(fc[0], fc[1] + .04, .19, 25, 155, 10)); else if (face === "sad") HP.push(arc(fc[0], fc[1] + .32, .17, 215, 325, 10));
+      else if (face === "shock") HP.push(arc(fc[0], fc[1] + .2, .08, 0, 360, 10)); else if (face === "strain") HP.push([[fc[0] - .13, fc[1] + .2], [fc[0] - .04, fc[1] + .15], [fc[0] + .04, fc[1] + .2], [fc[0] + .13, fc[1] + .15]]);
+      else HP.push([[fc[0] - .09, fc[1] + .18], [fc[0] + .09, fc[1] + .18]]); }
     // зовнішність: щоб персонажів можна було розрізнити без звуку (мама/дитина/начальник/мавпа…)
     if (wear?.length) { const Wr = new Set(wear), hr = .42, H0 = hc[0], H1 = hc[1];
-      if (Wr.has("hair")) for (let i = -2; i <= 2; i++) { const a = (-90 + i * 24) * D; parts.push([[H0 + Math.cos(a) * hr, H1 + Math.sin(a) * hr], [H0 + Math.cos(a) * (hr + .17), H1 + Math.sin(a) * (hr + .17)]]); }
-      if (Wr.has("longhair")) parts.push(arc(H0, H1, hr + .07, 175, 365, 14), [[H0 - hr - .06, H1 + .02], [H0 - hr - .12, H1 + .6]], [[H0 + hr + .06, H1 + .02], [H0 + hr + .12, H1 + .6]]);
-      if (Wr.has("bun")) parts.push(arc(H0, H1 - hr - .14, .15, 0, 360, 10));
-      if (Wr.has("bow")) parts.push([[H0 + .12, H1 - hr + .02], [H0 + .38, H1 - hr - .14], [H0 + .38, H1 - hr + .14], [H0 + .12, H1 - hr + .02], [H0 - .14, H1 - hr - .14], [H0 - .14, H1 - hr + .14], [H0 + .12, H1 - hr + .02]]);
-      if (Wr.has("hat")) parts.push([[H0 - .62, H1 - hr + .06], [H0 + .62, H1 - hr + .06]], rect(H0 - .34, H1 - hr - .42, .68, .48));
-      if (Wr.has("cap")) parts.push(arc(H0, H1 - .04, hr + .03, 180, 360, 12), [[H0 + hr + .02, H1 - .07], [H0 + hr + .38, H1 - .03]]);
-      if (Wr.has("crown")) parts.push([[H0 - .34, H1 - hr + .02], [H0 - .34, H1 - hr - .3], [H0 - .17, H1 - hr - .12], [H0, H1 - hr - .34], [H0 + .17, H1 - hr - .12], [H0 + .34, H1 - hr - .3], [H0 + .34, H1 - hr + .02], [H0 - .34, H1 - hr + .02]]);
-      if (Wr.has("glasses")) parts.push(arc(H0 - .15, H1 - .06, .11, 0, 360, 10), arc(H0 + .15, H1 - .06, .11, 0, 360, 10), [[H0 - .04, H1 - .06], [H0 + .04, H1 - .06]]);
-      if (Wr.has("beard")) parts.push(arc(H0, H1 + .1, .32, 15, 165, 12));
-      if (Wr.has("ears")) parts.push(arc(H0 - hr - .1, H1 - .02, .16, 0, 360, 10), arc(H0 + hr + .1, H1 - .02, .16, 0, 360, 10));
-      if (Wr.has("cat")) parts.push([[H0 - .38, H1 - .2], [H0 - .3, H1 - .62], [H0 - .1, H1 - .4]], [[H0 + .38, H1 - .2], [H0 + .3, H1 - .62], [H0 + .1, H1 - .4]]);
+      if (Wr.has("hair")) for (let i = -2; i <= 2; i++) { const a = (-90 + i * 24) * D; HP.push([[H0 + Math.cos(a) * hr, H1 + Math.sin(a) * hr], [H0 + Math.cos(a) * (hr + .17), H1 + Math.sin(a) * (hr + .17)]]); }
+      if (Wr.has("longhair")) HP.push(arc(H0, H1, hr + .07, 175, 365, 14), [[H0 - hr - .06, H1 + .02], [H0 - hr - .12, H1 + .6]], [[H0 + hr + .06, H1 + .02], [H0 + hr + .12, H1 + .6]]);
+      if (Wr.has("bun")) HP.push(arc(H0, H1 - hr - .14, .15, 0, 360, 10));
+      if (Wr.has("bow")) HP.push([[H0 + .12, H1 - hr + .02], [H0 + .38, H1 - hr - .14], [H0 + .38, H1 - hr + .14], [H0 + .12, H1 - hr + .02], [H0 - .14, H1 - hr - .14], [H0 - .14, H1 - hr + .14], [H0 + .12, H1 - hr + .02]]);
+      if (Wr.has("hat")) HP.push([[H0 - .62, H1 - hr + .06], [H0 + .62, H1 - hr + .06]], rect(H0 - .34, H1 - hr - .42, .68, .48));
+      if (Wr.has("cap")) HP.push(arc(H0, H1 - .04, hr + .03, 180, 360, 12), [[H0 + hr + .02, H1 - .07], [H0 + hr + .38, H1 - .03]]);
+      if (Wr.has("crown")) HP.push([[H0 - .34, H1 - hr + .02], [H0 - .34, H1 - hr - .3], [H0 - .17, H1 - hr - .12], [H0, H1 - hr - .34], [H0 + .17, H1 - hr - .12], [H0 + .34, H1 - hr - .3], [H0 + .34, H1 - hr + .02], [H0 - .34, H1 - hr + .02]]);
+      if (Wr.has("glasses")) HP.push(arc(H0 - .15, H1 - .06, .11, 0, 360, 10), arc(H0 + .15, H1 - .06, .11, 0, 360, 10), [[H0 - .04, H1 - .06], [H0 + .04, H1 - .06]]);
+      if (Wr.has("beard")) HP.push(arc(H0, H1 + .1, .32, 15, 165, 12));
+      if (Wr.has("ears")) HP.push(arc(H0 - hr - .1, H1 - .02, .16, 0, 360, 10), arc(H0 + hr + .1, H1 - .02, .16, 0, 360, 10));
+      if (Wr.has("cat")) HP.push([[H0 - .38, H1 - .2], [H0 - .3, H1 - .62], [H0 - .1, H1 - .4]], [[H0 + .38, H1 - .2], [H0 + .3, H1 - .62], [H0 + .1, H1 - .4]]);
       if (Wr.has("tail")) parts.push([[hip[0], hip[1]], [hip[0] - .45, hip[1] + .12], [hip[0] - .78, hip[1] - .18], [hip[0] - .7, hip[1] - .55], [hip[0] - .42, hip[1] - .5]]);
       if (Wr.has("skirt")) parts.push([[hip[0] - .12, hip[1] - .22], [hip[0] - .58, hip[1] + .6], [hip[0] + .58, hip[1] + .6], [hip[0] + .12, hip[1] - .22]]);
       if (Wr.has("tie")) parts.push([[neck[0], neck[1] + .14], [neck[0] - .09, neck[1] + .36], [neck[0], neck[1] + .78], [neck[0] + .09, neck[1] + .36], [neck[0], neck[1] + .14]]);
       if (Wr.has("cape")) parts.push([[sh[0] - .1, sh[1]], [sh[0] - .75, hip[1] + .5], [sh[0] - .2, hip[1] + .35]]); }
+    { const sc = (p) => p.map(([a, b]) => [hc[0] + (a - hc[0]) * hs, hc[1] + (b - hc[1]) * hs]); parts[1] = sc(parts[1]); parts.push(...HP.map(sc)); }
     if (P.r) { const c = P.r > 120 ? [0, -1.65] : [0, 0], a = P.r * D; parts = parts.map((p) => p.map(([x, y]) => [c[0] + (x - c[0]) * Math.cos(a) - (y - c[1]) * Math.sin(a), c[1] + (x - c[0]) * Math.sin(a) + (y - c[1]) * Math.cos(a)])); }
     return parts.map((p) => p.map(([x, y]) => [x0 + x * f * U, y0 + y * U]));
   }
+  /* ---------- кастинг: люди різного віку й тварини ---------- */
+  const CAST = { man: { n: "чоловік", wear: ["hair"] }, woman: { n: "жінка", wear: ["longhair", "skirt"], s: .95 }, girl: { n: "дівчинка", wear: ["bow", "longhair", "skirt"], s: .62, hs: 1.32 }, boy: { n: "хлопчик", wear: ["hair"], s: .62, hs: 1.32 },
+    baby: { n: "малюк", wear: [], s: .42, hs: 1.5 }, grandma: { n: "бабуся", wear: ["bun", "glasses", "skirt"], s: .9, stoop: 10 }, grandpa: { n: "дідусь", wear: ["beard", "glasses", "hat"], s: .93, stoop: 10 }, boss: { n: "начальник", wear: ["tie", "glasses"] } };
+  // чотирилапі на одному «скелеті»: L — довжина тулуба, H — висота лап, hd — голова, bod — товщина тулуба, sn — морда
+  const ANIM = {
+    dog: { n: "собака", L: 1.05, H: .55, hd: .4, ear: "flop", tail: "wag", sn: .24, bod: .32 }, cat: { n: "кіт", L: .9, H: .45, hd: .37, ear: "point", tail: "curl", sn: 0, bod: .27, wh: 1 },
+    fox: { n: "лис", L: 1.05, H: .48, hd: .35, ear: "point", tail: "bush", sn: .3, bod: .27 }, rabbit: { n: "кролик", L: .62, H: .26, hd: .32, ear: "long", tail: "puff", sn: 0, bod: .3, wh: 1 },
+    mouse: { n: "миша", L: .5, H: .14, hd: .25, ear: "round", tail: "long", sn: .12, bod: .19, wh: 1 }, bear: { n: "ведмідь", L: 1.35, H: .55, hd: .47, ear: "round", tail: "stub", sn: .2, bod: .45 },
+    horse: { n: "кінь", L: 1.5, H: 1.1, hd: .34, ear: "point", tail: "hang", sn: .3, bod: .36, neck: .65 }, pig: { n: "свиня", L: 1.1, H: .36, hd: .4, ear: "point", tail: "curl", sn: .1, bod: .4, pig: 1 },
+    cow: { n: "корова", L: 1.55, H: .9, hd: .37, ear: "side", tail: "hang", sn: .25, bod: .47, horn: 1, spots: 1, neck: .2 }, sheep: { n: "вівця", L: 1.05, H: .5, hd: .31, ear: "side", tail: "stub", sn: .12, bod: .42, wool: 1 },
+    bird: { n: "пташка", bird: 1 } };
+  function drawAnimal(x, it, m, t, gx, gy, U, sty, k, ap, bm, vb) {
+    const A = ANIM[it.k], f = m.f, st = m.state, d = t - (m.ts || 0), LY = [], sd = it.seed || 1;
+    const X = (a) => gx + a * f * U, Y = (b) => gy + b * U, pt = (a, b) => [X(a), Y(b)], ar = (cx, cy, r, a0, a1, n, ry) => { const o = []; for (let i = 0; i <= n; i++) { const q = (a0 + (a1 - a0) * i / n) * D; o.push([cx + Math.cos(q) * r, cy + Math.sin(q) * (ry ?? r)]); } return o; };
+    const add = (p, o = {}) => LY.push({ p, ...o });
+    const talk = st === "talk" ? (ENV ? ENV(t) : (.5 + .5 * Math.sin(t * 17))) : 0, happy = ["cheer", "dance", "jump"].includes(st) || m.face === "happy", sad = st === "sad" || m.face === "sad", blink = ((t + sd * .77) % 3.4) < .13;
+    let hc, hr;
+    const eye = (ex, ey, r) => add(blink ? [[ex - r, ey], [ex + r, ey]] : happy ? ar(ex, ey + r * .5, r * 1.2, 200, 340, 6) : st === "shock" ? ar(ex, ey, r * 1.8, 0, 360, 10) : ar(ex, ey, r, 0, 360, 8), { dot: !blink && !happy });
+    if (A.bird) { const fly = m.moving || st === "jump" || st === "cheer", up = fly ? 1.5 + .12 * Math.sin(t * 4 + sd) : 0, cy = -.5 - up, flap = fly ? Math.sin(t * 22) : Math.sin(t * 2 + sd) * .15;
+      if (!fly) { add([[-.04, cy + .2], [-.07, 0], [.03, 0]]); add([[.1, cy + .2], [.08, 0], [.18, 0]]); }
+      add([[-.28, cy - .06], [-.6, cy - .2], [-.58, cy - .02], [-.62, cy + .1], [-.28, cy + .08]], { f: 1 });
+      add(ar(0, cy, .36, 0, 360, 22, .27), { f: 1 }); hc = [.3, cy - .27]; hr = .19; add(ar(hc[0], hc[1], hr, 0, 360, 16), { f: 1 });
+      add([[hc[0] + .15, hc[1] - .05], [hc[0] + .38, hc[1] + .02], [hc[0] + .15, hc[1] + .08]], { f: 1 });
+      add([[-.16, cy - .02], [-.02, cy - .36 * flap - .04], [.12, cy - .3 * flap], [.2, cy + .02]], { f: 1 });
+      eye(hc[0] + .07, hc[1] - .04, .03); if (talk > .08) add([[hc[0] + .17, hc[1] + .09], [hc[0] + .33, hc[1] + .1 + talk * .1]]); }
+    else {
+      const ph = t * (m.run ? 13 : 7.5) + sd, amp = m.moving ? (m.run ? 40 : 22) : 0, sit = st === "sit" || st === "work" || st === "think", lie = st === "fall" || st === "hang";
+      let lift = 0; if (st === "jump") lift = Math.max(0, Math.sin(clamp(d / .9) * Math.PI)) * 1.1; else if (happy && !m.moving) lift = Math.abs(Math.sin(t * 7)) * .16; else if (A.ear === "long" && m.moving) lift = Math.abs(Math.sin(ph * .5)) * .35;
+      const H = lie ? .04 : A.H, cy0 = -(H + A.bod) - lift + (st === "move" ? Math.abs(Math.sin(ph)) * .03 : Math.sin(t * 1.8 + sd) * .012), rot = sit ? -26 * D : 0, hipB = [-A.L / 2 + .16, cy0 + A.bod * .4];
+      const R = ([a, b]) => { if (!rot) return [a, b]; const ca = Math.cos(rot), sa = Math.sin(rot), dx = a - hipB[0], dy = b - hipB[1]; return [hipB[0] + dx * ca - dy * sa, hipB[1] + dx * sa + dy * ca]; };
+      const legLen = H + A.bod * .6 - lift, LW = Math.max(.1, Math.min(.2, A.bod * .42));
+      const leg = (lx, ly, ang, len, bend) => { const a2 = ang * D, foot = [lx + Math.sin(a2) * len, ly + Math.cos(a2) * len], mid = [(lx + foot[0]) / 2 + bend * .06, (ly + foot[1]) / 2]; return [[lx, ly], mid, foot, [foot[0] + LW * .55, foot[1]]]; };
+      const legs = [];
+      [[0, 0], [Math.PI, 1]].forEach(([o, near]) => { const back = R(hipB), front = R([A.L / 2 - .16, cy0 + A.bod * .4]);
+        if (lie) { legs.push({ near, p: [back, [back[0] + .3, -.06], [back[0] + .5, -.05]] }, { near, p: [front, [front[0] + .3, -.06], [front[0] + .5, -.05]] }); return; }
+        legs.push({ near, p: sit ? [back, [back[0] + .3, -.1 - A.H * .3], [back[0] + .34, -.02], [back[0] + .5, -.02]] : leg(back[0], back[1], Math.sin(ph + o) * amp + (st === "jump" ? -25 : 0), legLen, -1) });
+        legs.push({ near, p: leg(front[0], front[1], Math.sin(ph + o + Math.PI) * amp + (st === "jump" ? 25 : 0), sit ? Math.max(.1, -front[1]) : legLen, 1) }); });
+      const tb = R([-A.L / 2 + .04, cy0 - A.bod * .25]), wag = (st === "move" || happy ? Math.sin(t * (happy ? 18 : 9)) : Math.sin(t * 2 + sd) * .3) * (sad ? .2 : 1), dn = sad ? .35 : 0;
+      const TAIL = { wag: [tb, [tb[0] - .25, tb[1] - .22 + dn + wag * .06], [tb[0] - .36 + wag * .1, tb[1] - .48 + dn * 1.6]], curl: [tb, [tb[0] - .28, tb[1] - .05 + dn], [tb[0] - .42, tb[1] - .38 + dn], [tb[0] - .3 + wag * .05, tb[1] - .6 + dn], [tb[0] - .14, tb[1] - .52 + dn]],
+        bush: [tb, [tb[0] - .32, tb[1] + .08], [tb[0] - .62, tb[1] - .08 + wag * .04], [tb[0] - .74, tb[1] - .32], [tb[0] - .52, tb[1] - .34], [tb[0] - .3, tb[1] - .16], tb], puff: ar(tb[0] - .06, tb[1], .1, 0, 360, 10),
+        long: [tb, [tb[0] - .3, tb[1] + .15], [tb[0] - .55, tb[1] + .05 + wag * .05], [tb[0] - .8, tb[1] - .12]], hang: [tb, [tb[0] - .12, tb[1] + .3 + wag * .03], [tb[0] - .14, tb[1] + .62], [tb[0] - .2, tb[1] + .72], [tb[0] - .08, tb[1] + .72], [tb[0] - .14, tb[1] + .62]], stub: [tb, [tb[0] - .14, tb[1] - .1]] }[A.tail];
+      let body = ar(0, cy0, A.L / 2 + .08, 0, 360, 34, A.bod); if (A.wool) body = body.map(([a, b], i) => { const r = 1 + (i % 2 ? .08 : -.02); return [a * r, cy0 + (b - cy0) * r]; }); body = body.map(R);
+      const nk = A.neck || 0, hx = A.L / 2 + A.hd * .35 + nk * .4, hy = cy0 - A.bod * .55 - A.hd * .3 - nk + (sad ? .2 : 0) + (st === "talk" ? Math.sin(t * 9) * .02 : 0);
+      hc = R([hx, hy]); hr = A.hd;
+      const far = legs.filter((o) => !o.near), near = legs.filter((o) => o.near);
+      far.forEach((o) => add(o.p, { tube: LW * .92, dim: 1 }));
+      if (TAIL) add(TAIL, A.tail === "bush" || A.tail === "puff" ? { f: 1 } : { tube: A.tail === "wag" || A.tail === "curl" ? LW * .55 : 0 });
+      if (nk) { const n1 = R([A.L / 2 - .14, cy0 - A.bod * .6]), n2 = R([A.L / 2 + .14, cy0 + .02]); add([n1, [hc[0] - hr * .55, hc[1] + hr * .2], [hc[0] + hr * .25, hc[1] + hr * .8], n2], { f: 1 }); }
+      add(body, { f: 1 }); if (A.spots) [[-.3, -.08], [.18, .1], [-.05, -.2]].forEach(([a, b2]) => add(ar(a, cy0 + b2, .13, 0, 360, 10, .08).map(R), { f: 2 }));
+      near.forEach((o) => add(o.p, { tube: LW }));
+      const [H0, H1] = hc, eT = sad ? .25 : 0;
+      const EARS = { flop: [[[H0 - hr * .25, H1 - hr * .85], [H0 - hr * .85, H1 - hr * .35 + eT * .2], [H0 - hr * .78, H1 + hr * .5 + eT * .2], [H0 - hr * .45, H1 + hr * .45], [H0 - hr * .35, H1 - hr * .4]]],
+        point: [[[H0 - hr * .7, H1 - hr * .5], [H0 - hr * .62 - eT * .3, H1 - hr * 1.45 + eT], [H0 - hr * .18, H1 - hr * .92]], [[H0 + hr * .02, H1 - hr * .98], [H0 + hr * .25, H1 - hr * 1.55 + eT], [H0 + hr * .5, H1 - hr * .78]]],
+        long: [ar(H0 - hr * .38, H1 - hr * 1.6 + eT, hr * .22, 0, 360, 12, hr * .78), ar(H0 + hr * .08, H1 - hr * 1.72 + eT, hr * .22, 0, 360, 12, hr * .8)],
+        round: [ar(H0 - hr * .6, H1 - hr * .75, hr * .32, 0, 360, 12), ar(H0 + hr * .15, H1 - hr * .92, hr * .28, 0, 360, 12)], side: [[[H0 - hr * .55, H1 - hr * .45], [H0 - hr * 1.15, H1 - hr * .55 + eT * .3], [H0 - hr * .95, H1 - hr * .25], [H0 - hr * .6, H1 - hr * .15]]] }[A.ear] || [];
+      if (A.horn) add([[H0 - hr * .3, H1 - hr * .88], [H0 - hr * .42, H1 - hr * 1.35], [H0 - hr * .18, H1 - hr * 1.45]]);
+      EARS.forEach((e) => add(e, { f: 1 }));
+      add(ar(H0, H1, hr, 0, 360, 24), { f: 1 });
+      const mo = talk > .08 ? .05 + talk * .14 : 0;
+      if (A.pig) { add(ar(H0 + hr * .98, H1 + hr * .18, hr * .25, 0, 360, 12, hr * .3), { f: 1 }); add(ar(H0 + hr * 1.03, H1 + hr * .08, .028, 0, 360, 5), { dot: 1 }); add(ar(H0 + hr * 1.03, H1 + hr * .28, .028, 0, 360, 5), { dot: 1 });
+        add(mo ? ar(H0 + hr * .6, H1 + hr * .62, .05, 0, 360, 8, mo) : [[H0 + hr * .45, H1 + hr * .58], [H0 + hr * .7, H1 + hr * .62]]); }
+      else if (A.sn) { const tip = H0 + hr * .72 + A.sn; add([[H0 + hr * .55, H1 - hr * .05], [tip - .04, H1 + hr * .02], [tip, H1 + hr * .12], [tip, H1 + hr * .38], [tip - .05, H1 + hr * .48 + mo], [H0 + hr * .5, H1 + hr * .62 + mo * .6]], { f: 1 });
+        add(ar(tip - .02, H1 + hr * .1, .055, 0, 360, 8, .045), { dot: 1 }); add([[tip - .02, H1 + hr * .3], [H0 + hr * .62, H1 + hr * .38]]); }
+      else { add([[H0 + hr * .82, H1 + hr * .08], [H0 + hr * .98, H1 + hr * .14], [H0 + hr * .84, H1 + hr * .22]], { dot: 1 }); add(mo ? ar(H0 + hr * .7, H1 + hr * .45, .05, 0, 360, 8, mo) : [[H0 + hr * .55, H1 + hr * .38], [H0 + hr * .72, H1 + hr * .46], [H0 + hr * .88, H1 + hr * .36]]); }
+      if (A.wh) add([[H0 + hr * .75, H1 + hr * .26], [H0 + hr * 1.45, H1 + hr * .14]], { thin: 1 }), add([[H0 + hr * .75, H1 + hr * .34], [H0 + hr * 1.42, H1 + hr * .44]], { thin: 1 });
+      eye(H0 + hr * .35, H1 - hr * .18, hr * .1); if (sad) add([[H0 + hr * .2, H1 - hr * .45], [H0 + hr * .5, H1 - hr * .36]]);
+      if (A.ear === "point" || A.ear === "round") { const e2 = A.ear === "point" ? [[H0 - hr * .6, H1 - hr * .62], [H0 - hr * .55, H1 - hr * 1.15], [H0 - hr * .32, H1 - hr * .86]] : null; if (e2) add(e2, { thin: 1 }); } }
+    // малюємо шарами: заливка (контур/об'єм), «трубки» лап, лінії
+    const mp = (arr) => arr.map(([a, b]) => pt(a, b)), fillC = bm === "line" ? (sty.paper || sty.bg) : vb, acc2 = { ...sty, ink: sty.ink };
+    LY.forEach((o, i) => { const q = jit(mp(o.p), sd * 11 + i * 5, k);
+      if (o.f && ap > .25) { x.save(); x.globalAlpha *= clamp((ap - .25) * 2) * (o.f === 2 ? .35 : 1); x.fillStyle = o.f === 2 ? sty.ink : fillC; x.beginPath(); q.forEach(([a, b], j) => j ? x.lineTo(a, b) : x.moveTo(a, b)); x.closePath(); x.fill(); x.restore(); }
+      if (o.dot && ap > .6) { x.save(); x.fillStyle = sty.ink; x.beginPath(); q.forEach(([a, b], j) => j ? x.lineTo(a, b) : x.moveTo(a, b)); x.closePath(); x.fill(); x.restore(); }
+      if (o.tube && bm !== "line") { const w = o.tube * U / k; strokes(x, [q], ap, acc2, k, w + 4.5); strokes(x, [q], ap, { ...sty, ink: fillC, glow: null }, k, Math.max(1, w - 4.5)); }
+      else strokes(x, [q], ap, sty, k, o.thin ? 3 : o.tube ? 6 : bm === "volume" ? 6 : 5.5); });
+    return { hc: pt(hc[0], hc[1]), hr: hr * U, top: Y(hc[1] - hr * 2.2) };
+  }
+  /* ---------- бібліотека ліній: Tabler Icons (MIT) + Lucide (ISC), ~5300 предметів ---------- */
+  let ICO = null, ICOP = null; const ICOC = new Map(), ICOS = new Map(), ICOMISS = new Set();
+  function loadIcons() { if (window.YVIcons) { ICO = window.YVIcons; return Promise.resolve(); } if (ICOP) return ICOP;
+    ICOP = new Promise((ok) => { const sc = document.createElement("script"); sc.src = "a/icons.js?v=" + (window.YV_BUILD || "1"); sc.onload = () => { ICO = window.YVIcons || null; ok(); }; sc.onerror = () => { ICOP = null; ok(); }; document.head.appendChild(sc); }); return ICOP; }
+  const SYN = { money: "cash", dollar: "currency-dollar", euro: "currency-euro", hryvnia: "currency-hryvnia", phone: "device-mobile", smartphone: "device-mobile", computer: "device-desktop", tv: "device-tv", television: "device-tv", watch: "device-watch", tablet: "device-tablet", headphones: "headphones", car: "car", auto: "car", bike: "bike", bicycle: "bike", plane: "plane", airplane: "plane", ship: "ship", boat: "sailboat", train: "train", shop: "building-store", store: "building-store", school: "school", hospital: "building-hospital", bank: "building-bank", church: "building-church", castle: "building-castle", factory: "building-factory", tree: "tree", forest: "trees", flower: "flower", sun: "sun", moon: "moon", rain: "cloud-rain", snow: "snowflake", fire: "flame", water: "droplet", food: "tools-kitchen-2", pizza: "pizza", burger: "burger", coffee: "coffee", tea: "cup", beer: "beer", wine: "glass-full", cake: "cake", apple: "apple", bread: "bread", egg: "egg", fish: "fish", candy: "candy", ice_cream: "ice-cream", gift: "gift", present: "gift", key: "key", door: "door", window: "window", bed: "bed", sofa: "sofa", couch: "sofa", lamp: "bulb", fridge: "fridge", microwave: "microwave", toilet: "toilet-paper", bath: "bath", shower: "bath", chair: "armchair", table: "table", book: "book", notebook: "notebook", pen: "pencil", guitar: "guitar-pick", music: "music", camera: "camera", video: "video", photo: "photo", instagram: "camera", like: "thumb-up", dislike: "thumb-down", comment: "message-circle", chat: "messages", message: "message", email: "mail", letter: "mail", bell: "bell", notification: "bell", calendar: "calendar", clock: "clock", alarm: "alarm", hourglass: "hourglass", wallet: "wallet", card: "credit-card", creditcard: "credit-card", bag: "shopping-bag", cart: "shopping-cart", basket: "basket", box: "box", package: "package", ball: "ball-football", football: "ball-football", basketball: "ball-basketball", trophy: "trophy", medal: "medal", crown: "crown", diamond: "diamond", rocket: "rocket", target: "target", idea: "bulb", brain: "brain", heart: "heart", star: "star", fireworks: "confetti", party: "confetti", graph: "chart-line", growth: "trending-up", chart: "chart-bar", map: "map", world: "world", globe: "world", house: "home", home: "home", tent: "tent", mountain: "mountain", sea: "ripple", wave: "ripple", umbrella: "umbrella", glasses: "eyeglass", shirt: "shirt", shoe: "shoe", tooth: "dental", pill: "pill", medicine: "pill", doctor: "stethoscope", syringe: "vaccine", lock: "lock", shield: "shield", warning: "alert-triangle", question: "help-circle", search: "search", magnifier: "search", tool: "tool", hammer: "hammer", scissors: "scissors", paint: "brush", brush: "brush", palette: "palette", microphone: "microphone", mic: "microphone", speaker: "speakerphone", wifi: "wifi", battery: "battery", plug: "plug", robot: "robot", ai: "robot", ghost: "ghost", skull: "skull", bug: "bug", butterfly: "butterfly", spider: "spider", dog: "dog", cat: "cat", horse: "horse", pig: "pig", fish2: "fish", bird: "feather", turtle: "turtle", deer: "deer", baby: "baby-carriage", stroller: "baby-carriage", money_bag: "moneybag", moneybag: "moneybag", piggy_bank: "pig-money", coin: "coin", coins: "coins", receipt: "receipt", tag: "tag", price: "tag", discount: "discount", percent: "percentage", sale: "discount" };
+  function iconIdx(q) { if (!ICO) return -1; q = String(q || "").toLowerCase().trim().replace(/[\s_]+/g, "-"); if (!q) return -1; if (ICOS.has(q)) return ICOS.get(q);
+    if (!ICO._m) { ICO._m = new Map(); ICO.n.forEach((n, i) => ICO._m.set(n, i)); }
+    const M = ICO._m, sy = SYN[q] || SYN[q.replace(/-/g, "_")]; let r = M.get(q) ?? (sy && M.get(sy)) ?? M.get(q.replace(/s$/, "")) ?? M.get(q.replace(/es$/, ""));
+    if (r == null) { const tk = q.split("-").filter((w) => w.length > 1); let best = -1, bs = 0;
+      ICO.n.forEach((n, i) => { const nt = n.split("-"), tg = " " + ICO.t[i] + " "; let sc2 = 0; for (const w of tk) { if (nt.includes(w)) sc2 += 4; else if (nt.includes(w.replace(/s$/, ""))) sc2 += 3.5; else if (tg.includes(" " + w + " ")) sc2 += 2; else if (w.length > 3 && tg.includes(" " + w)) sc2 += 1; } sc2 -= nt.length * .15; if (sc2 > bs) { bs = sc2; best = i; } });
+      r = bs >= 1.8 ? best : -1; }
+    ICOS.set(q, r); if (r < 0 && !ICOMISS.has(q)) { ICOMISS.add(q); track("icon_miss", { v: q.slice(0, 40) }); } return r; }
+  function iconShape(it) { const q = it.q || it.k, i = iconIdx(q); if (i < 0) return null; if (ICOC.has(i)) return ICOC.get(i);
+    const pl = ICO.p[i].map((str) => { const o = []; for (let j = 0; j + 1 < str.length; j += 2) o.push([((str.charCodeAt(j) - 40) / 4 - 12) / 10.5, ((str.charCodeAt(j + 1) - 40) / 4 - 12) / 10.5]); return o; }), fn = () => pl; ICOC.set(i, fn); return fn; }
+  // готові місця: декорації, що стоять позаду (бліді), — щоб кадр не був порожнім
+  const PLACESETS = {
+    kitchen: [["fridge", .1, .74, 1.45], ["window", .5, .3, 1.2], ["microwave", .82, .55, .8], ["tools-kitchen-2", .9, .3, .6]], room: [["window", .25, .32, 1.2], ["sofa", .78, .8, 1.3], ["lamp", .93, .45, .9], ["photo", .6, .2, .6]],
+    bedroom: [["bed", .78, .8, 1.5], ["window", .25, .3, 1.1], ["moon", .25, .3, .4], ["lamp", .08, .7, .8]], office: [["device-desktop", .82, .62, .95], ["chart-bar", .2, .25, .8], ["plant", .08, .78, .9], ["clock", .55, .15, .55]],
+    classroom: [["school", .5, .17, .7], ["notebook", .12, .72, .6], ["clock", .88, .2, .55], ["world", .86, .7, .7]], shop: [["building-store", .5, .22, 1.1], ["shopping-cart", .85, .8, .9], ["tag", .12, .55, .6], ["basket", .15, .82, .7]],
+    cafe: [["coffee", .15, .7, .8], ["cup", .88, .72, .6], ["armchair", .85, .82, 1], ["window", .5, .25, 1.1]], street: [["building", .1, .5, 1.6], ["building-skyscraper", .88, .45, 1.7], ["traffic-lights", .65, .62, 1.1], ["car", .3, .86, .9]],
+    park: [["tree", .1, .65, 1.6], ["trees", .88, .65, 1.4], ["sun", .8, .14, .7], ["bike", .5, .84, .9]], forest: [["trees", .1, .62, 1.7], ["tree", .9, .6, 1.8], ["mushroom", .7, .86, .5], ["leaf", .35, .2, .4]],
+    beach: [["sun", .82, .14, .8], ["sailboat", .2, .55, .9], ["beach", .6, .82, 1], ["ripple", .4, .7, .9]], village: [["home", .15, .7, 1.4], ["fence", .6, .84, 1], ["tree", .9, .62, 1.5], ["sun", .55, .14, .6]],
+    city: [["building-skyscraper", .1, .5, 1.8], ["buildings", .5, .55, 1.4], ["building", .9, .55, 1.6], ["moon", .7, .12, .4]] };
+  function drawPlace(x, place, t, sty, k, G, ap) { const set = PLACESETS[place]; if (!set || !ICO) return; x.save(); x.globalAlpha *= .3 * ap;
+    set.forEach(([q, px, py, ps], i) => { const fn = iconShape({ q }); if (!fn) return; const sz = 135 * k * ps, cx = G.X0 + px * G.SW, cy = G.stY + py * G.stH;
+      strokes(x, fn().map((pp) => jit(pp.map(([a, b]) => [cx + a * sz, cy + b * sz]), i * 17 + 3, k)), 1, { ...sty, glow: null }, k, 4); }); x.restore(); }
   // стан персонажа в момент t: позиція, напрям, поза
   function manAt(it, t, SW) {
     let x = it.x ?? .5, f = it.f ?? 1, state = "stand", ts = it.ta, prev = "stand", pts = it.ta, from = null;
@@ -313,11 +422,19 @@
   function drawItems(x, items, t, sty, k, G) {
     const { X0, SW, stY, stH, U } = G, W = SW;
     for (const it of items) { if (t < it.ta) continue; const ap = clamp((t - it.ta) / (it.k === "man" ? .7 : .55));
-      if (it.k === "man") { const m = manAt(it, t, SW), gx = X0 + m.x * SW, gy = stY + (it.y ?? .92) * stH, s = (it.s ?? 1);
+      if (ANIM[it.k]) { const m = manAt(it, t, SW), gx = X0 + m.x * SW, gy = stY + (it.y ?? .92) * stH, s = (it.s ?? 1) * (it.k === "horse" || it.k === "cow" ? 1.05 : 1);
+        const hid = it.mv.find((v) => v.m === "hide" && v.t <= t), al = hid ? 1 - clamp((t - hid.t) / .35) : 1; if (al <= 0) continue; x.save(); x.globalAlpha *= al;
+        const bm = sty.lk?.body || (TUBE ? "outline" : "line"), vb = bm === "volume" ? (sty.body || sty.acc) : (sty.paper || sty.bg);
+        if (it.floor !== false) { const xs = [it.x ?? .5, ...it.mv.filter((v) => v.x != null && /_to$/.test(v.m)).map((v) => v.x)]; strokes(x, [jit([[X0 + Math.min(...xs) * SW - U * s, gy + 4 * k], [X0 + Math.max(...xs) * SW + U * s, gy + 4 * k]], it.seed * 3, k)], ap, sty, k, 4); }
+        x.save(); x.globalAlpha *= .13 * ap; x.fillStyle = sty.ink; x.beginPath(); x.ellipse(gx, gy + 2 * k, U * s * .9, U * s * .12, 0, 0, 7); x.fill(); x.restore();
+        const r = drawAnimal(x, it, m, t, gx, gy, U * s, sty, k, ap, bm, vb); if (ap >= 1) fx(x, m, t, it, r.hc, r.hr, gx, gy, U * s * .6, sty, k);
+        if (it.label) label(x, it.label, gx, r.top, ap, sty, k); x.restore(); continue; }
+      if (it.k === "man") { const m = manAt(it, t, SW), gx = X0 + m.x * SW, gy = stY + (it.y ?? .92) * stH, CS = CAST[it.who] || null, s = (it.s ?? 1) * (CS?.s || 1);
+        if (CS?.stoop && !m.moving) m.pose.b = (m.pose.b || 0) + CS.stoop;
         const hang = (it.mv.filter((v) => v.t <= t && (POSE[v.m] || v.m === "stand")).pop() || {}).m === "hang";
         const hid = it.mv.find((v) => v.m === "hide" && v.t <= t), al = hid ? 1 - clamp((t - hid.t) / .35) : 1; if (al <= 0) continue; x.save(); x.globalAlpha *= al;
         const blink = ((t + it.seed * .77) % (3.1 + (it.seed % 5) * .37)) < .13, mouth = m.state === "talk" ? (ENV ? ENV(t) : (.5 + .5 * Math.sin(t * 17)) * (.5 + .5 * Math.sin(t * 5.3))) : 0;
-        const hy = stY + stH * .62, parts = figure(m.pose, gx, hang ? hy : gy, U * s, m.f, m.face, it.wear, { blink, mouth }).map((p, i) => jit(p, it.seed * 11 + i * 5, k));
+        const hy = stY + stH * .62, parts = figure(m.pose, gx, hang ? hy : gy, U * s, m.f, m.face, it.wear?.length ? it.wear : CS?.wear, { blink, mouth, hs: CS?.hs }).map((p, i) => jit(p, it.seed * 11 + i * 5, k));
         if (hang) strokes(x, [jit([[gx, stY - 90 * k], [gx, hy - 3.3 * U * s]], it.seed, k)], ap, sty, k, 4);
         if (!hang && it.floor !== false) { const xs = [it.x ?? .5, ...it.mv.filter((v) => v.x != null && /_to$/.test(v.m)).map((v) => v.x)], a = X0 + Math.min(...xs) * SW - 1.25 * U * s, b2 = X0 + Math.max(...xs) * SW + 1.25 * U * s;
           strokes(x, [jit([[a, gy + 4 * k], [b2, gy + 4 * k]], it.seed * 3, k)], ap, sty, k, 4); }
@@ -336,7 +453,7 @@
             x.restore(); }
           strokes(x, [hp], ap, sty, k, bm === "line" ? 6 : 6.5); strokes(x, parts.slice(6), ap, sty, k, 5);
           if (ap >= 1) fx(x, m, t, it, hc2, hr, gx, gy, U * s, sty, k); }
-        if (it.label && !hang) label(x, it.label, gx, gy - 4.15 * U * s, ap, sty, k);
+        if (it.label && !hang) label(x, it.label, gx, gy - (4.15 + ((CS?.hs || 1) - 1) * .9) * U * s, ap, sty, k);
         x.restore(); continue; }
       // репліка / думка в бульбашці
       if (it.k === "say" || it.k === "thinkb") { const p = propAt(it, t); if (p.alpha <= 0) continue; const cx = X0 + p.x * SW, cy = stY + p.y * stH; x.save(); x.globalAlpha *= p.alpha;
@@ -351,7 +468,7 @@
       if (it.k === "text") { const p = propAt(it, t); x.save(); x.globalAlpha *= p.alpha * clamp(ap * 1.6); x.translate(X0 + p.x * SW, stY + p.y * stH); x.rotate(p.rot); x.scale(p.s, p.s);
         x.font = `800 ${Math.round(96 * k)}px "${sty.font}", system-ui, sans-serif`; x.textAlign = "center"; x.textBaseline = "middle"; const tw = x.measureText(it.t || "").width;
         x.beginPath(); x.rect(-tw / 2 - 10 * k, -80 * k, (tw + 20 * k) * clamp(ap * 1.3), 160 * k); x.clip(); x.fillStyle = it.acc ? sty.acc : sty.ink; if (sty.glow) { x.shadowColor = it.acc ? sty.acc : sty.glow; x.shadowBlur = 20 * k; } x.fillText(it.t || "", 0, 0); x.restore(); continue; }
-      const fnS = SH[it.k]; if (!fnS) continue; const p = propAt(it, t), sz = 135 * k * p.s, cx = X0 + p.x * SW, gY = stY + .92 * stH;
+      const fnS = SH[it.k] || (it.k === "icon" ? iconShape(it) : null); if (!fnS) continue; const p = propAt(it, t), sz = 135 * k * p.s, cx = X0 + p.x * SW, gY = stY + .92 * stH;
       const cy = it.k === "wall" ? gY - 1.6 * sz : it.k === "desk" ? gY - .9 * sz : stY + p.y * stH;
       if (it.k === "lamp") { const ty = stY - 60 * k, w = 70 * k * p.s; const on = clamp((t - it.ta - .3) / .4);
         strokes(x, [jit([[cx, ty - 60 * k], [cx, ty]], it.seed, k), jit([[cx - w * .45, ty], [cx + w * .45, ty], [cx + w * .7, ty + 50 * k], [cx - w * .7, ty + 50 * k], [cx - w * .45, ty]], it.seed + 1, k)], ap, sty, k, 5);
@@ -382,6 +499,7 @@
       const ly = top + bh / 2 + 42 * k, ticks = []; for (let i = 0; i < 10; i++) { const tx = W * .1 + i * W * .088; ticks.push(jit([[tx, ly], [tx + 26 * k, ly + 26 * k]], q.n * 9 + i, k)); }
       strokes(x, [jit([[W * .06, ly], [W * .94, ly]], q.n * 7, k), ...ticks], clamp((t - q.t0 - .15) / .5), sty, k, 3.5); }
     { const zz = 1 + .045 * clamp((t - q.t0) / Math.max(1, q.t1 - q.t0)), cY = stY + stH * .6; x.save(); x.translate(W / 2, cY); x.scale(zz, zz); x.translate(-W / 2, -cY);
+      if (q.s.place) drawPlace(x, q.s.place, t, sty, k, { X0: 0, SW: W, stY, stH }, clamp((t - q.t0) / .6));
       drawItems(x, q.items, t, { ...sty, paper: sty.bg }, k, { X0: 0, SW: W, stY, stH, U }); x.restore(); }
     // плашка сцени (з розкадровки): з'являється з пружинкою
     if (q.s.plaque && sty.lk.plaque !== "none") drawPlaque(x, q.s.plaque, q.s.color, t - q.t0 - .15, W, k, sty);
@@ -485,7 +603,10 @@
 
   /* ---------- AI: сцени з деталей ---------- */
   const numbered = () => L.words.map((w, i) => `${i}:${w.w}`).join(" ");
-  const SPEC = `Деталі: "man" — чоловічок-паличка (x — 0…1 по ширині, y — земля 0…1, зазвичай 0.92; f — 1 дивиться вправо, -1 вліво); face — "neutral"|"happy"|"sad" (обличчя за замовчуванням); предмети: ${KINDS.join(", ")} (x, y — центр 0…1; s — розмір 0.6…2; acc:true — акцентний колір; t — слово на картці card («ЗАДАЧА») або «?»/«!» у вкладці tab; sub — маленький підпис біля предмета, напр. «5 хвилин», «+6 год»; wall і desk стоять на землі; lamp — лампа зверху зі світлом на людину, став по x людини); "text" — короткий напис до 3 слів або число («500 грн», «x10»), поле t. Кілька tab навколо людини — «багато вкладок у голові».
+  const CASTSPEC = `Люди: "man" з полем who — man, woman, girl, boy, baby, grandma, grandpa, boss (вік і стать видно одразу; може бути кілька людей у сцені). Тварини — окремі деталі, рухаються тими самими рухами, що й людина (walk_to, run_to, jump, sit, sad, cheer, talk — гавкає/нявкає, fall — лягає): dog, cat, fox, rabbit, mouse, bear, horse, pig, cow, sheep, bird (bird при walk_to/jump летить). БУДЬ-ЯКИЙ інший предмет пиши в k англійським словом (pizza, guitar, tractor, umbrella, laptop, bus, tree, cake…) — він є серед 5000 малюнків-ліній; не вигадуй дивних назв, бери прості іменники.`;
+  const SPEC = `${CASTSPEC}
+Місце сцени — поле place у сцені (бліді декорації позаду): ${Object.keys(PLACESETS).join(", ")} або без place.
+Деталі: "man" — чоловічок-паличка (x — 0…1 по ширині, y — земля 0…1, зазвичай 0.92; f — 1 дивиться вправо, -1 вліво); face — "neutral"|"happy"|"sad" (обличчя за замовчуванням); предмети: ${KINDS.join(", ")} (x, y — центр 0…1; s — розмір 0.6…2; acc:true — акцентний колір; t — слово на картці card («ЗАДАЧА») або «?»/«!» у вкладці tab; sub — маленький підпис біля предмета, напр. «5 хвилин», «+6 год»; wall і desk стоять на землі; lamp — лампа зверху зі світлом на людину, став по x людини); "text" — короткий напис до 3 слів або число («500 грн», «x10»), поле t. Кілька tab навколо людини — «багато вкладок у голові».
 Рухи (moves: [{"i":номер слова, коли почати,"m":рух, ...}]): для man — talk (говорить; став разом із say), walk_to (x), run_to (x), jump, wave, cheer, think, point, shrug, sad, sit, stand, fall, hang (висить догори ногами), dance, push (штовхає стіну — став wall впритул спереду), work (сидить і працює за desk), shock, happy_face, sad_face; для предметів і написів — pop, bounce, spin, shake, fly_to (x, y), grow, hide. Поле "at" — номер слова, коли деталь з'являється (інакше — на початку сцени).`;
   async function aiScenes(extra = "") {
     const r = await sample.json(`Ти режисер коротких анімаційних відео в стилі «малюнок лініями» (як інструкція-креслення, але з гумором). Людина говорить за кадром — ось дослівні слова з номерами:
@@ -512,7 +633,7 @@ ${SPEC}
   }
   function normalize(list) { const n = L.words.length, okI = (v) => Number.isInteger(v) && v >= 0 && v < n;
     return (Array.isArray(list) ? list : []).filter((s) => s && okI(s.a)).sort((a, b) => a.a - b.a).slice(0, 40).map((s) => ({ a: s.a, title: String(s.title || "").slice(0, 32), caption: String(s.caption || "").slice(0, 40), plaque: s.plaque ? String(s.plaque).slice(0, 40) : "", color: PLC[s.color] ? s.color : "red",
-      items: (s.items || []).filter((it) => it && (it.k === "man" || it.k === "text" || SH[it.k])).slice(0, 5).map((it) => ({ k: it.k, x: clamp(+it.x || .5, .05, .95), y: clamp(it.y == null ? (it.k === "man" ? .92 : .5) : +it.y, .05, .98), s: clamp(+it.s || 1, .4, 2.4), f: +it.f === -1 ? -1 : 1, acc: !!it.acc, t: ["text", "card", "tab"].includes(it.k) && it.t ? String(it.t).slice(0, 18) : undefined, sub: it.sub ? String(it.sub).slice(0, 18) : undefined, face: ["neutral", "happy", "sad"].includes(it.face) ? it.face : undefined, at: okI(it.at) ? it.at : undefined,
+      place: PLACESETS[s.place] ? s.place : undefined, items: (s.items || []).map(fixK).filter((it) => it && (it.k === "man" || it.k === "text" || it.k === "icon" || SH[it.k] || ANIM[it.k])).slice(0, 6).map((it) => ({ k: it.k, ...WHO(it), x: clamp(+it.x || .5, .05, .95), y: clamp(it.y == null ? (it.k === "man" || ANIM[it.k] ? (ANIM[it.k]?.bird ? .92 : .92) : .5) : +it.y, .05, .98), s: clamp(+it.s || 1, .4, 2.4), f: +it.f === -1 ? -1 : 1, acc: !!it.acc, t: ["text", "card", "tab"].includes(it.k) && it.t ? String(it.t).slice(0, 18) : undefined, sub: it.sub ? String(it.sub).slice(0, 18) : undefined, face: ["neutral", "happy", "sad"].includes(it.face) ? it.face : undefined, at: okI(it.at) ? it.at : undefined,
         moves: (it.moves || []).filter((m) => m && okI(m.i) && MOVES.includes(m.m)).slice(0, 6).map((m) => ({ i: m.i, m: m.m, x: m.x != null ? clamp(+m.x, .05, .95) : undefined, y: m.y != null ? clamp(+m.y, .05, .95) : undefined })) })) })); }
 
   /* ---------- AI: фрази, що вистрибують, і фото-вставки ---------- */
@@ -954,12 +1075,13 @@ ${SPEC}
 ${board.map((b, i) => `${i + 1}. фраза: «${b.phrase}»; малюнок: ${b.draw || b.phrase}`).join("\n")}
 Тема: ${topic || "—"}.
 Для КОЖНОЇ сцени (рівно ${board.length}, у тому ж порядку) намалюй задум «малюнок» з деталей: майже завжди чоловічок, що щось робить, + 1–3 предмети або напис. Час — частка тривалості сцени від 0 до 1: "at" — коли деталь з'являється, "p" у русі — коли почати рух (рухи на тих моментах фрази, про які йдеться).
-Деталі: "man" — чоловічок (x 0…1, y — земля, зазвичай 0.92; f — 1 вправо / -1 вліво; face "neutral"|"happy"|"sad"); предмети: ${KINDS.join(", ")} (x, y — центр 0…1; s — розмір 0.6…2; acc:true — червоний акцент; t — слово на card або «?»/«!» у tab; sub — маленький підпис «5 хвилин», «+6 год»); "text" — напис до 3 слів чи число, поле t.
+${CASTSPEC}
+Деталі: "man" — людина (x 0…1, y — земля, зазвичай 0.92; f — 1 вправо / -1 вліво; face "neutral"|"happy"|"sad"; who); предмети: ${KINDS.join(", ")} (x, y — центр 0…1; s — розмір 0.6…2; acc:true — червоний акцент; t — слово на card або «?»/«!» у tab; sub — маленький підпис «5 хвилин», «+6 год»); "text" — напис до 3 слів чи число, поле t.
 Рухи man: talk (говорить — рот рухається; став, коли персонаж каже say), walk_to (x), run_to (x), jump, wave, cheer, think, point, shrug, sad, sit, stand, fall, hang, dance, push, work, shock, happy_face, sad_face; рухи предметів: pop, bounce, spin, shake, fly_to (x, y), grow, hide.
 Простота й рух важливіші за кількість. Не дублюй текст плашки написом.
 Відповідай тільки JSON: {"scenes":[{"items":[{"k":"man","x":0.4,"y":0.92,"moves":[{"p":0.3,"m":"walk_to","x":0.6}]},{"k":"money","x":0.75,"y":0.4,"at":0.4,"moves":[{"p":0.4,"m":"pop"}]}]}]}`, { cache: false, kb: true, max: 4000 });
     const cl = (v, a = 0, b = 1) => clamp(+v || 0, a, b);
-    return (r?.scenes || []).slice(0, board.length).map((s) => ({ items: (s?.items || []).filter((it) => it && (it.k === "man" || it.k === "text" || SH[it.k])).slice(0, 5).map((it) => ({ k: it.k, x: cl(it.x ?? .5, .05, .95), y: cl(it.y == null ? (it.k === "man" ? .92 : .5) : it.y, .05, .98), s: clamp(+it.s || 1, .4, 2.4), f: +it.f === -1 ? -1 : 1, acc: !!it.acc, t: it.t ? String(it.t).slice(0, 18) : undefined, sub: it.sub ? String(it.sub).slice(0, 18) : undefined, face: ["neutral", "happy", "sad"].includes(it.face) ? it.face : undefined, at: it.at != null ? cl(it.at, 0, .95) : undefined,
+    return (r?.scenes || []).slice(0, board.length).map((s) => ({ items: (s?.items || []).map(fixK).filter((it) => it && (it.k === "man" || it.k === "text" || it.k === "icon" || SH[it.k] || ANIM[it.k])).slice(0, 6).map((it) => ({ k: it.k, ...WHO(it), x: cl(it.x ?? .5, .05, .95), y: cl(it.y == null ? (it.k === "man" || ANIM[it.k] ? (ANIM[it.k]?.bird ? .92 : .92) : .5) : it.y, .05, .98), s: clamp(+it.s || 1, .4, 2.4), f: +it.f === -1 ? -1 : 1, acc: !!it.acc, t: it.t ? String(it.t).slice(0, 18) : undefined, sub: it.sub ? String(it.sub).slice(0, 18) : undefined, face: ["neutral", "happy", "sad"].includes(it.face) ? it.face : undefined, at: it.at != null ? cl(it.at, 0, .95) : undefined,
       moves: (it.moves || []).filter((m) => m && MOVES.includes(m.m)).slice(0, 6).map((m) => ({ p: cl(m.p, 0, .98), m: m.m, x: m.x != null ? cl(m.x, .05, .95) : undefined, y: m.y != null ? cl(m.y, .05, .95) : undefined })) })) }));
   }
   /* ---------- «Рілс маркером»: один безперервний світ на весь ролик, камера переїжджає ---------- */
@@ -984,7 +1106,8 @@ ${board.map((b, i) => `${i + 1}. [${T[i].s.toFixed(1)}–${T[i].e.toFixed(1)} с
 Тема: ${topic || "—"}. Тривалість ${tot.toFixed(1)} с.
 Зроби ОДНУ БЕЗПЕРЕРВНУ анімацію на весь ролик — живий світ, а не слайди. Ті самі персонажі живуть від початку до кінця: рухаються, реагують, взаємодіють; нові деталі з'являються, коли про них кажуть; зайве прибирай рухом hide. Світ має ширину ${areas} екран(и) (x від 0 до ${areas}); якщо історія переходить в інше місце — камера плавно переїжджає (cam).
 Відео має бути ЗРОЗУМІЛЕ БЕЗ ЗВУКУ: кожну думку показуй дією і підписами — label на персонажах і предметах («мама», «дитинча»), репліки say і думки thinkb (1–4 слова), лічильники count (from → to, t — одиниця: «років»), стрілки (arrow з r — кут), написи text, числа. Не повторюй дослівно субтитри — доповнюй картинкою.
-Персонажам давай зовнішність wear, щоб їх розрізняти: hair, longhair, bun, bow, hat, cap, crown, glasses, beard, tie, cape, skirt; тварина — ears+tail (мавпа), cat (кіт); малюк — s 0.5–0.6.
+${CASTSPEC}
+Додатково можна дати wear, щоб розрізняти однакових: hair, longhair, bun, bow, hat, cap, crown, glasses, beard, tie, cape, skirt; тварина — ears+tail (мавпа), cat (кіт); малюк — s 0.5–0.6.
 Деталі: "man" (x — 0…${areas}, y — земля 0.92; f 1/-1; face neutral|happy|sad; wear; label; s); предмети ${KINDS.join(", ")} (x, y 0…1 — висота на аркуші; s 0.5–2; r — кут; acc:true — червоний; t — слово на card/«?» у tab; sub; label); "text" (t); "say"/"thinkb" (t, x, y — над головою персонажа ≈0.25–0.4); "count" (from, to, t).
 Рухи man: talk (говорить — рот рухається; став, коли персонаж каже say), walk_to (x), run_to (x), jump, wave, cheer, think, point, shrug, sad, sit, stand, fall, hang, dance, push, work, shock, happy_face, sad_face, hide. Рухи предметів: pop, bounce, spin, shake, fly_to (x, y), grow, hide.
 Час: "at" — секунда появи деталі, у рухах "t" — секунда початку (точно на словах, про які йдеться). cam: [{"t":сек,"x":центр кадру 0.5…${areas - .5},"z":1–1.5 (наближення на важливому)}].
@@ -992,7 +1115,7 @@ ${board.map((b, i) => `${i + 1}. [${T[i].s.toFixed(1)}–${T[i].e.toFixed(1)} с
 Відповідай тільки JSON: {"cam":[{"t":0,"x":0.5,"z":1}],"items":[{"k":"man","x":0.35,"y":0.92,"wear":["longhair","skirt"],"label":"мама","at":0.3,"moves":[{"t":1.5,"m":"wave"}]},{"k":"say","x":0.4,"y":0.3,"t":"Нарешті!","at":2,"moves":[{"t":4,"m":"hide"}]}]}`, { cache: false, kb: true, max: 4000 });
     const cl = (v, a, b) => clamp(+v || 0, a, b), WEAR = ["hair", "longhair", "bun", "bow", "hat", "cap", "crown", "glasses", "beard", "ears", "cat", "tail", "skirt", "tie", "cape"];
     const KS = new Set(["man", "text", "say", "thinkb", "count", ...KINDS]);
-    const items = (r?.items || []).filter((it) => it && KS.has(it.k)).slice(0, 24).map((it) => ({ k: it.k, x: cl(it.x ?? .5, .05, areas - .05), y: cl(it.y == null ? (it.k === "man" ? .92 : .5) : it.y, .05, .98), s: cl(it.s || 1, .35, 2.4), r: it.r ? cl(it.r, -360, 360) : undefined, f: +it.f === -1 ? -1 : 1, acc: it.acc === true ? true : undefined,
+    const items = (r?.items || []).map(fixK).filter((it) => it && (KS.has(it.k) || KOK(it))).slice(0, 24).map((it) => ({ k: it.k, ...WHO(it), x: cl(it.x ?? .5, .05, areas - .05), y: cl(it.y == null ? (it.k === "man" || ANIM[it.k] ? (ANIM[it.k]?.bird ? .92 : .92) : .5) : it.y, .05, .98), s: cl(it.s || 1, .35, 2.4), r: it.r ? cl(it.r, -360, 360) : undefined, f: +it.f === -1 ? -1 : 1, acc: it.acc === true ? true : undefined,
       t: it.t != null ? String(it.t).slice(0, 24) : undefined, sub: it.sub ? String(it.sub).slice(0, 18) : undefined, label: it.label ? String(it.label).slice(0, 18) : undefined, face: ["neutral", "happy", "sad"].includes(it.face) ? it.face : undefined,
       wear: Array.isArray(it.wear) ? it.wear.filter((w) => WEAR.includes(w)).slice(0, 4) : undefined, from: it.from != null ? +it.from || 0 : undefined, to: it.to != null ? +it.to || 0 : undefined,
       at: toIP(cl(it.at ?? 0, 0, tot), T), moves: (it.moves || []).filter((m) => m && MOVES.includes(m.m)).slice(0, 8).map((m) => ({ at: toIP(cl(m.t ?? 0, 0, tot), T), m: m.m, x: m.x != null ? cl(m.x, .05, areas - .05) : undefined, y: m.y != null ? cl(m.y, .05, .95) : undefined })) }));
@@ -1080,14 +1203,15 @@ ${cast.length ? `Персонажі, які вже є в історії (про�
 Світ — довга стрічка вліво-вправо; ця частина займає x від ${x0} до ${x1} (1 = ширина екрана). Камера сама їде за головним героєм, тож щоб показати нове місце — веди героя туди walk_to/run_to. Історія має йти без розривів: персонажі ходять між місцями, нові деталі з'являються саме тоді, коли про них кажуть, зайве прибирай hide.
 Місця (places) — фон, що пролітає позаду: ${Object.entries(PLACES).map(([k, v]) => `${k} (${v})`).join(", ")}; поділи [${x0}, ${x1}] на 1–3 місця під сюжет.
 Відео має бути ЗРОЗУМІЛЕ БЕЗ ЗВУКУ: дії, підписи label, репліки say і думки thinkb (1–4 слова), лічильники count (from → to, t — одиниця), стрілки arrow (r — кут), написи text, предмети, що вилітають (fly_to за межі кадру).
-Нові деталі: "man" (id — коротке ім'я; x; y 0.92; f; face; wear: hair, longhair, bun, bow, hat, cap, crown, glasses, beard, tie, cape, skirt, ears+tail — мавпа, cat — кіт; s — розмір, малюк 0.55; hero:true — головний, лише один на весь ролик), предмети ${KINDS.join(", ")} (x, y 0…1 — висота; s; r; acc; t; sub; label), "text", "say"/"thinkb" (t; x, y ≈ 0.3 над головою), "count" (from, to, t).
+${CASTSPEC}
+Нові деталі: "man" (who; id — коротке ім'я; x; y 0.92; f; face; wear: hair, longhair, bun, bow, hat, cap, crown, glasses, beard, tie, cape, skirt, ears+tail — мавпа, cat — кіт; s — розмір, малюк 0.55; hero:true — головний, лише один на весь ролик), предмети ${KINDS.join(", ")} (x, y 0…1 — висота; s; r; acc; t; sub; label), "text", "say"/"thinkb" (t; x, y ≈ 0.3 над головою), "count" (from, to, t).
 Рухи man: talk (говорить — рот рухається; став, коли персонаж каже say), walk_to (x), run_to (x), jump, wave, cheer, think, point, shrug, sad, sit, stand, fall, hang, dance, push, work, shock, happy_face, sad_face, hide. Предмети: pop, bounce, spin, shake, fly_to (x, y), grow, hide.
 Час — секунди з тексту вище: "at" — поява, "t" у рухах — початок руху точно на потрібних словах. Наближення камери: cam [{"t":сек,"z":1–1.6}] на важливих моментах.
 ${extra}
 Відповідай тільки JSON: {"places":[{"x0":${x0},"x1":${x1},"kind":"field"}],"items":[{"k":"man","id":"Олег","hero":true,"x":${(x0 + .4).toFixed(2)},"y":0.92,"wear":["cap"],"label":"Олег","at":${seg.t0.toFixed(1)},"moves":[{"t":${(seg.t0 + 1).toFixed(1)},"m":"walk_to","x":${(x0 + 1).toFixed(2)}}]}],"moves":[{"id":"ім'я наявного персонажа","t":0,"m":"walk_to","x":0}],"cam":[{"t":0,"z":1.2}]}`, { cache: false, kb: true, max: 4000 });
     const cl = (v, a, b) => clamp(+v || 0, a, b), T0 = seg.t0, T1 = seg.t1, WEAR = ["hair", "longhair", "bun", "bow", "hat", "cap", "crown", "glasses", "beard", "ears", "cat", "tail", "skirt", "tie", "cape"], KS = new Set(["man", "text", "say", "thinkb", "count", ...KINDS]);
     const mv = (m) => ({ t: cl(m.t, T0, T1), m: m.m, x: m.x != null ? cl(m.x, .05, x1 + 1) : undefined, y: m.y != null ? cl(m.y, .02, .98) : undefined, seg: i });
-    const items = (r?.items || []).filter((it) => it && KS.has(it.k)).slice(0, 22).map((it) => ({ k: it.k, id: it.id ? String(it.id).slice(0, 16) : undefined, hero: !!it.hero, seg: i, x: cl(it.x ?? x0 + .5, .05, x1 + 1), y: cl(it.y == null ? (it.k === "man" ? .92 : .5) : it.y, .02, .98), s: cl(it.s || 1, .35, 2.4), r: it.r ? cl(it.r, -360, 360) : undefined, f: +it.f === -1 ? -1 : 1, acc: it.acc === true ? true : undefined,
+    const items = (r?.items || []).map(fixK).filter((it) => it && (KS.has(it.k) || KOK(it))).slice(0, 22).map((it) => ({ k: it.k, ...WHO(it), id: it.id ? String(it.id).slice(0, 16) : undefined, hero: !!it.hero, seg: i, x: cl(it.x ?? x0 + .5, .05, x1 + 1), y: cl(it.y == null ? (it.k === "man" || ANIM[it.k] ? (ANIM[it.k]?.bird ? .92 : .92) : .5) : it.y, .02, .98), s: cl(it.s || 1, .35, 2.4), r: it.r ? cl(it.r, -360, 360) : undefined, f: +it.f === -1 ? -1 : 1, acc: it.acc === true ? true : undefined,
       t: it.t != null ? String(it.t).slice(0, 26) : undefined, sub: it.sub ? String(it.sub).slice(0, 18) : undefined, label: it.label ? String(it.label).slice(0, 18) : undefined, face: ["neutral", "happy", "sad"].includes(it.face) ? it.face : undefined,
       wear: Array.isArray(it.wear) ? it.wear.filter((w) => WEAR.includes(w)).slice(0, 4) : undefined, from: it.from != null ? +it.from || 0 : undefined, to: it.to != null ? +it.to || 0 : undefined,
       at: cl(it.at ?? T0, T0, T1), moves: (it.moves || []).filter((m) => m && MOVES.includes(m.m)).slice(0, 10).map(mv) }));
@@ -1120,5 +1244,6 @@ ${extra}
     const th = Object.entries(THEMES).find(([k, v]) => new RegExp(v.n, "i").test(text)); if (th && /фон|стиль|тем/i.test(text)) { L.style = th[0]; return `Фон: ${th[1].n}`; }
     const t = POS || 0, i = Math.max(0, L.world.segs.findIndex((g) => t >= g.t0 && t < g.t1)); await regenSeg(i, `Людина просить змінити цю частину: «${text}». Збережи все інше, зміни саме це.`); return `Змінено частину ${i + 1}`; }
   async function regenSeg(i, extra) { const sg = L.world.segs[i]; const res = await aiSegment(sg, i, L.world.segs.length, castOf(sg.t0), extra); mergeSeg(i, res); }
+  loadIcons();
   window.YVLines = { open(o = {}) { FMT = o.wide ? "wide" : "tall"; screenSetup(); track(o.wide ? "open_yt" : "open"); }, fromMarker, drawBox, boardLines, drawWorld, boardWorld, _t: { set: (l) => { L = l; prep(); }, drawFrame, prep, exportVideo, figure, POSE, SH, STYLES, tot: () => TOT, screenEdit, aiScenes, L: () => L } };
 })();
