@@ -118,59 +118,67 @@
   let TOT = 0, ST = [], CH = [];
   // теми фону: лінії й рухи ті самі, змінюється все навколо
   const THEMES = {
-    neon: { n: "Неон", bg: "#06070b", ink: "#f2f4ff", acc: "#ffd60a", glow: "rgba(190,210,255,.95)", grid: "lines", gc: "rgba(160,180,255,.06)", vig: 1 },
-    blueprint: { n: "Креслення", bg: "#0e3a6c", ink: "#eaf3ff", acc: "#ffd60a", glow: "rgba(200,230,255,.45)", grid: "lines", gc: "rgba(255,255,255,.1)", vig: 1 },
-    night: { n: "Нічний неон", bg: "#0b0613", ink: "#ffffff", acc: "#2ef2ff", glow: "rgba(255,70,200,.95)", grid: "dots", gc: "rgba(255,120,220,.16)", vig: 1 },
-    gold: { n: "Золото", bg: "#0c0b09", ink: "#f3d27a", acc: "#ffffff", glow: "rgba(243,200,110,.7)", vig: 1 },
-    chalk: { n: "Крейда", bg: "#203b2f", ink: "#f3f1e7", acc: "#ffe27a", tex: "chalk", vig: 1 },
-    marker: { n: "Маркер", bg: "#fbfaf6", ink: "#151515", acc: "#d0312d" },
-    notebook: { n: "Зошит", bg: "#fdfdfb", ink: "#1b2a59", acc: "#d0312d", grid: "notebook", gc: "rgba(60,120,200,.2)" },
-    cream: { n: "Крем", bg: "#f4ead7", ink: "#2a2118", acc: "#c2410c", tex: "noise" },
-    kraft: { n: "Крафт", bg: "#c9a57a", ink: "#2b1d10", acc: "#fff8e7", tex: "noise" },
-    mint: { n: "М'ята", bg: "#e4f5ec", ink: "#10352a", acc: "#e8590c" },
-    navy: { n: "Синя ніч", bg: "#16213e", ink: "#ffffff", acc: "#ffd60a", glow: "rgba(170,190,255,.5)", vig: 1 },
-    plum: { n: "Слива", bg: "#2a1335", ink: "#ffffff", acc: "#ffd60a", glow: "rgba(220,170,255,.5)", vig: 1 },
-    comic: { n: "Комікс", bg: "#ffd60a", ink: "#111111", acc: "#e5383b", grid: "dots", gc: "rgba(0,0,0,.09)" },
-    terminal: { n: "Хакер", bg: "#020a04", ink: "#8dffab", acc: "#ffffff", glow: "rgba(80,255,140,.8)", grid: "lines", gc: "rgba(80,255,140,.07)", vig: 1 },
-    sunset: { n: "Захід сонця", bg: "#b5566f", grad: ["#ff8a5c", "#5b2a86"], ink: "#ffffff", acc: "#ffe66d", glow: "rgba(255,225,205,.55)", vig: 1 },
-    pastel: { n: "Пастель", bg: "#ffe4ec", ink: "#3b1f2b", acc: "#ff4d8d" },
-    ice: { n: "Лід", bg: "#e8f4ff", ink: "#0d2b4a", acc: "#3a86ff", grid: "dots", gc: "rgba(13,43,74,.12)" },
-    sepia: { n: "Старий папір", bg: "#efe2c4", ink: "#3d2b1f", acc: "#9c2a1a", tex: "noise" },
-    red: { n: "Червоний", bg: "#c1121f", ink: "#ffffff", acc: "#ffd60a", vig: 1 },
+    neon: { n: "Неон", body: "#4f66d1", bg: "#06070b", ink: "#f2f4ff", acc: "#ffd60a", glow: "rgba(190,210,255,.95)", grid: "lines", gc: "rgba(160,180,255,.06)", vig: 1 },
+    blueprint: { n: "Креслення", body: "#6aa6e8", bg: "#0e3a6c", ink: "#eaf3ff", acc: "#ffd60a", glow: "rgba(200,230,255,.45)", grid: "lines", gc: "rgba(255,255,255,.1)", vig: 1 },
+    night: { n: "Нічний неон", body: "#b23aa6", bg: "#0b0613", ink: "#ffffff", acc: "#2ef2ff", glow: "rgba(255,70,200,.95)", grid: "dots", gc: "rgba(255,120,220,.16)", vig: 1 },
+    gold: { n: "Золото", body: "#b08a3a", bg: "#0c0b09", ink: "#f3d27a", acc: "#ffffff", glow: "rgba(243,200,110,.7)", vig: 1 },
+    chalk: { n: "Крейда", body: "#7fae95", bg: "#203b2f", ink: "#f3f1e7", acc: "#ffe27a", tex: "chalk", vig: 1 },
+    marker: { n: "Маркер", body: "#ffd8a8", bg: "#fbfaf6", ink: "#151515", acc: "#d0312d" },
+    notebook: { n: "Зошит", body: "#cfe3ff", bg: "#fdfdfb", ink: "#1b2a59", acc: "#d0312d", grid: "notebook", gc: "rgba(60,120,200,.2)" },
+    cream: { n: "Крем", body: "#f6c79a", bg: "#f4ead7", ink: "#2a2118", acc: "#c2410c", tex: "noise" },
+    kraft: { n: "Крафт", body: "#e8cfa6", bg: "#c9a57a", ink: "#2b1d10", acc: "#fff8e7", tex: "noise" },
+    mint: { n: "М'ята", body: "#a8e6c4", bg: "#e4f5ec", ink: "#10352a", acc: "#e8590c" },
+    navy: { n: "Синя ніч", body: "#5d77c9", bg: "#16213e", ink: "#ffffff", acc: "#ffd60a", glow: "rgba(170,190,255,.5)", vig: 1 },
+    plum: { n: "Слива", body: "#a159c4", bg: "#2a1335", ink: "#ffffff", acc: "#ffd60a", glow: "rgba(220,170,255,.5)", vig: 1 },
+    comic: { n: "Комікс", body: "#ffffff", bg: "#ffd60a", ink: "#111111", acc: "#e5383b", grid: "dots", gc: "rgba(0,0,0,.09)" },
+    terminal: { n: "Хакер", body: "#21803f", bg: "#020a04", ink: "#8dffab", acc: "#ffffff", glow: "rgba(80,255,140,.8)", grid: "lines", gc: "rgba(80,255,140,.07)", vig: 1 },
+    sunset: { n: "Захід сонця", body: "#ffc49a", bg: "#b5566f", grad: ["#ff8a5c", "#5b2a86"], ink: "#ffffff", acc: "#ffe66d", glow: "rgba(255,225,205,.55)", vig: 1 },
+    pastel: { n: "Пастель", body: "#ffffff", bg: "#ffe4ec", ink: "#3b1f2b", acc: "#ff4d8d" },
+    ice: { n: "Лід", body: "#bcdcff", bg: "#e8f4ff", ink: "#0d2b4a", acc: "#3a86ff", grid: "dots", gc: "rgba(13,43,74,.12)" },
+    sepia: { n: "Старий папір", body: "#e2c79a", bg: "#efe2c4", ink: "#3d2b1f", acc: "#9c2a1a", tex: "noise" },
+    red: { n: "Червоний", body: "#ff8a8a", bg: "#c1121f", ink: "#ffffff", acc: "#ffd60a", vig: 1 },
   };
   // готові стилі: фон + шрифт + заголовок + товщина ліній (людина обирає один — і все разом змінюється)
   const PRESETS = [
-    { id: "neon", n: "Неон", th: "neon", font: "Manrope", frame: "box" },
-    { id: "marker", n: "Маркер", th: "marker", font: "Manrope", frame: "box" },
-    { id: "comic", n: "Комікс", th: "comic", font: "Unbounded", frame: "pill", lw: 1.45 },
-    { id: "club", n: "Нічний клуб", th: "night", font: "Unbounded", frame: "pill" },
-    { id: "blueprint", n: "Креслення", th: "blueprint", font: "Manrope", frame: "under" },
-    { id: "chalk", n: "Шкільна дошка", th: "chalk", font: "Neucha", frame: "under", lw: 1.2 },
-    { id: "notebook", n: "Зошит", th: "notebook", font: "Caveat", frame: "under" },
-    { id: "sunset", n: "Захід сонця", th: "sunset", font: "Unbounded", frame: "under" },
-    { id: "gold", n: "Золото", th: "gold", font: "Unbounded", frame: "box" },
-    { id: "terminal", n: "Хакер", th: "terminal", font: "JetBrains Mono", frame: "box" },
-    { id: "cream", n: "Затишок", th: "cream", font: "Comfortaa", frame: "pill" },
-    { id: "pastel", n: "Пастель", th: "pastel", font: "Comfortaa", frame: "pill" },
-    { id: "kraft", n: "Крафт", th: "kraft", font: "Kurale", frame: "box", lw: 1.3 },
-    { id: "sepia", n: "Старий папір", th: "sepia", font: "Bad Script", frame: "under" },
-    { id: "mint", n: "М'ята", th: "mint", font: "Rubik", frame: "pill" },
-    { id: "ice", n: "Лід", th: "ice", font: "Manrope", frame: "under" },
-    { id: "navy", n: "Синя ніч", th: "navy", font: "Unbounded", frame: "box" },
-    { id: "plum", n: "Слива", th: "plum", font: "Comfortaa", frame: "pill" },
-    { id: "red", n: "Червоний", th: "red", font: "Unbounded", frame: "pill", lw: 1.2 },
-    { id: "thin", n: "Мінімал", th: "marker", font: "Manrope", frame: "none", lw: .7, boil: false },
+    { id: "neon", n: "Неон", th: "neon", font: "Manrope", frame: "box", pq: "neon", sb: "classic", pal: ["#ffd60a", "#2ef2ff", "#ff4d8d"] },
+    { id: "marker", n: "Маркер", th: "marker", font: "Manrope", frame: "box", pq: "marker", sb: "classic", pal: ["#e5383b", "#2fb36d", "#3a86ff"] },
+    { id: "comic", n: "Комікс", th: "comic", font: "Unbounded", frame: "pill", lw: 1.35, pq: "punch", sb: "box", pal: ["#e5383b", "#3a86ff", "#111111"] },
+    { id: "youtube", n: "Як у YouTube", th: "marker", font: "Unbounded", frame: "pill", pq: "punch", sb: "yellow", pal: ["#ffd60a", "#2fb36d", "#e5383b"] },
+    { id: "club", n: "Нічний клуб", th: "night", font: "Unbounded", frame: "pill", pq: "neon", sb: "classic", pal: ["#ff4d8d", "#2ef2ff", "#ffd60a"] },
+    { id: "blueprint", n: "Креслення", th: "blueprint", font: "Manrope", frame: "under", pq: "pill", sb: "minimal", pal: ["#ffd60a", "#2fb36d", "#e5383b"] },
+    { id: "chalk", n: "Шкільна дошка", th: "chalk", font: "Neucha", frame: "under", lw: 1.2, pq: "sticker", sb: "hand", pal: ["#ffe27a", "#9be7a5", "#ff9e9e"] },
+    { id: "notebook", n: "Зошит", th: "notebook", font: "Caveat", frame: "under", pq: "sticker", sb: "hand", pal: ["#ffe27a", "#9be7a5", "#ff9e9e"] },
+    { id: "sunset", n: "Захід сонця", th: "sunset", font: "Unbounded", frame: "under", pq: "punch", sb: "yellow", pal: ["#ffe66d", "#5b2a86", "#ff3d68"] },
+    { id: "gold", n: "Золото", th: "gold", font: "Unbounded", frame: "box", pq: "neon", sb: "classic", pal: ["#f3d27a", "#ffffff", "#e8a33d"] },
+    { id: "terminal", n: "Хакер", th: "terminal", font: "JetBrains Mono", frame: "box", pq: "neon", sb: "minimal", pal: ["#39ff14", "#2ef2ff", "#ff3b3b"] },
+    { id: "cream", n: "Затишок", th: "cream", font: "Comfortaa", frame: "pill", pq: "marker", sb: "classic", pal: ["#c2410c", "#2f7d4f", "#9c2a1a"] },
+    { id: "pastel", n: "Пастель", th: "pastel", font: "Comfortaa", frame: "pill", pq: "pill", sb: "classic", pal: ["#ff4d8d", "#8e5cf7", "#3a86ff"] },
+    { id: "kraft", n: "Крафт", th: "kraft", font: "Kurale", frame: "box", lw: 1.25, pq: "sticker", sb: "hand", pal: ["#fff3a3", "#c8f7c5", "#ffd2cf"] },
+    { id: "sepia", n: "Старий папір", th: "sepia", font: "Bad Script", frame: "under", pq: "marker", sb: "hand", pal: ["#9c2a1a", "#3d5a2a", "#3d2b1f"] },
+    { id: "mint", n: "М'ята", th: "mint", font: "Rubik", frame: "pill", pq: "marker", sb: "classic", pal: ["#e8590c", "#10352a", "#3a86ff"] },
+    { id: "ice", n: "Лід", th: "ice", font: "Manrope", frame: "under", pq: "pill", sb: "minimal", pal: ["#3a86ff", "#2fb36d", "#e5383b"] },
+    { id: "navy", n: "Синя ніч", th: "navy", font: "Unbounded", frame: "box", pq: "punch", sb: "yellow", pal: ["#ffd60a", "#2fb36d", "#e5383b"] },
+    { id: "plum", n: "Слива", th: "plum", font: "Comfortaa", frame: "pill", pq: "marker", sb: "classic", pal: ["#ffd60a", "#2ef2ff", "#ff4d8d"] },
+    { id: "red", n: "Червоний", th: "red", font: "Unbounded", frame: "pill", lw: 1.2, pq: "punch", sb: "yellow", pal: ["#111111", "#ffd60a", "#ffffff"] },
+    { id: "thin", n: "Мінімал", th: "marker", font: "Manrope", frame: "none", lw: .75, boil: false, pq: "pill", sb: "minimal", pal: ["#111111", "#2fb36d", "#e5383b"] },
   ];
   const SUBS_OPTS = [["classic", "Класика"], ["yellow", "Жовте слово"], ["box", "На плашці"], ["minimal", "Мінімал"], ["hand", "Від руки"], ["off", "Без субтитрів"]];
-  const POPS_OPTS = [["punch", "Великий текст"], ["marker", "Маркер"], ["pill", "Біла плашка"], ["neon", "Неон"], ["sticker", "Стікер"], ["off", "Без плашок"]];
+  // кольори плашок: AI каже «yellow — головне, green — плюс, red — мінус», шаблон підставляє свої відтінки
+  const PNAMES = ["yellow", "green", "red", "blue", "purple", "orange", "pink", "gray"];
+  const colOf = (col, lk) => /^#/.test(col || "") ? col : lk?.pal?.length ? lk.pal[Math.max(0, PNAMES.indexOf(col)) % lk.pal.length] : (PLC[col] || PLC.red);
+  const rgbOf = (h) => { const v = parseInt(String(h).slice(1, 7), 16); return [v >> 16 & 255, v >> 8 & 255, v & 255]; };
+  const lumOf = (h) => { const [r, g, b] = rgbOf(h); return (r * .299 + g * .587 + b * .114) / 255; };
+  const mixW = (h, f) => { const [r, g, b] = rgbOf(h); return `rgb(${Math.round(r + (255 - r) * f)},${Math.round(g + (255 - g) * f)},${Math.round(b + (255 - b) * f)})`; };
   const VOICE_OPTS = [["none", "Без озвучки", "Лише анімація, написи й субтитри — без голосу"], ["ai", "AI-голос", "Пишеш текст — його озвучує голос студії"], ["clone", "Мій AI-голос", "Текст звучить твоїм голосом (потрібен зразок 1 хв)"], ["rec", "Свій голос", "Записуєш або завантажуєш — як є, без обробки"], ["recplus", "Свій голос + покращення", "Чистий звук, вирізані паузи й «е-е»", "найкраще"]];
-  const OPT0 = { preset: "neon", voice: "none", subs: "classic", ins: false, pops: "punch" };
-  let OPT = (() => { try { return { ...OPT0, ...JSON.parse(localStorage.getItem("yv_ln_opt") || "{}") }; } catch (e) { return { ...OPT0 }; } })();
+  const BODIES = [["line", "Лінії", "Класичний чоловічок-паличка"], ["outline", "Контур", "Тіло обведене, всередині — фон"], ["volume", "Об'ємне", "Тіло з кольором і світлом"]];
+  const THICK = [[.75, "Тонкі"], [1, "Звичайні"], [1.35, "Товсті"]];
+  const OPT0 = { preset: "neon", body: "outline", lw: 1, voice: "none", subs: true, pops: true, ins: false };
+  let OPT = (() => { try { const o = { ...OPT0, ...JSON.parse(localStorage.getItem("yv_ln_opt") || "{}") }; if (typeof o.subs === "string") o.subs = o.subs !== "off"; if (typeof o.pops === "string") o.pops = o.pops !== "off"; return o; } catch (e) { return { ...OPT0 }; } })();
   const saveOpt = () => { try { localStorage.setItem("yv_ln_opt", JSON.stringify(OPT)); } catch (e) {} };
   const presetOf = (id) => PRESETS.find((p) => p.id === id) || PRESETS[0];
   // що вибрано на старті → вигляд проєкту
   function optLook(o = OPT, base = {}) { const p = presetOf(o.preset);
-    return { style: p.th, look: { ...LOOK0, ...base, font: p.font, frame: p.frame, lw: p.lw || 1, boil: p.boil !== false, glow: true, subs: o.subs === "off" ? (base.subs || "classic") : o.subs, plaque: o.pops === "off" ? "none" : o.pops }, subs: o.subs !== "off" }; }
+    return { style: p.th, look: { ...LOOK0, ...base, font: p.font, frame: p.frame, lw: (p.lw || 1) * (+o.lw || 1), boil: p.boil !== false, glow: true, subs: p.sb, plaque: o.pops ? p.pq : "none", pal: p.pal, body: o.body || "outline" }, subs: !!o.subs }; }
   function applyOpt() { const r = optLook(OPT); L.style = r.style; L.look = r.look; L.subs = r.subs; L.opt = { ...OPT }; }
   const STYLES = THEMES;
   const LOOK0 = { lw: 1, boil: true, glow: true, frame: "box", plaque: "marker", subs: "classic", font: "Manrope", fig: true };
@@ -314,14 +322,19 @@
         if (!hang && it.floor !== false) { const xs = [it.x ?? .5, ...it.mv.filter((v) => v.x != null && /_to$/.test(v.m)).map((v) => v.x)], a = X0 + Math.min(...xs) * SW - 1.25 * U * s, b2 = X0 + Math.max(...xs) * SW + 1.25 * U * s;
           strokes(x, [jit([[a, gy + 4 * k], [b2, gy + 4 * k]], it.seed * 3, k)], ap, sty, k, 4); }
         if (!hang) { x.save(); x.globalAlpha *= .13 * ap; x.fillStyle = sty.ink; x.beginPath(); x.ellipse(gx, gy + 2 * k, U * s * .8, U * s * .12, 0, 0, 7); x.fill(); x.restore(); }
-        if (TUBE) { const body = [parts[4], parts[5], parts[0], parts[2], parts[3]], bw = 15 * s, inner = { ...sty, ink: sty.paper || sty.bg, glow: null };
-          strokes(x, [parts[4], parts[5]], ap, sty, k, bw); strokes(x, [parts[4], parts[5]], ap, inner, k, bw - 9);
-          strokes(x, [parts[0]], ap, sty, k, bw * 1.9); strokes(x, [parts[0]], ap, inner, k, bw * 1.9 - 9);
-          strokes(x, [parts[2], parts[3]], ap, sty, k, bw * .9); strokes(x, [parts[2], parts[3]], ap, inner, k, bw * .9 - 9); void body; }
+        const bm = sty.lk?.body || (TUBE ? "outline" : "line"), vb = bm === "volume" ? (sty.body || sty.acc) : (sty.paper || sty.bg);
+        if (bm !== "line") { const bw = (bm === "volume" ? 18 : 15) * s, inner = { ...sty, ink: vb, glow: null }, tube = (L2, w) => { strokes(x, L2, ap, sty, k, w); strokes(x, L2, ap, inner, k, w - 9); };
+          tube([parts[4], parts[5]], bw); tube([parts[0]], bw * 1.9); tube([parts[2], parts[3]], bw * .9);
+          // світло з лівого верху — об'єм
+          if (bm === "volume" && ap > .5) { const hl = { ...sty, ink: lumOf(vb) > .75 ? "rgba(0,0,0,.12)" : "rgba(255,255,255,.4)", glow: null, lk: { ...sty.lk, lw: 1 } }, ofs = (L2, f) => L2.map((p) => p.map(([a, b]) => [a - bw * f * k, b - bw * f * .6 * k]));
+            x.save(); x.globalAlpha *= clamp((ap - .5) * 2); if (lumOf(vb) > .75) { strokes(x, ofs([parts[0]], -.3), 1, hl, k, bw * .5); strokes(x, ofs([parts[4], parts[5], parts[2], parts[3]], -.14), 1, hl, k, bw * .22); }
+            else { strokes(x, ofs([parts[0]], .3), 1, hl, k, bw * .45); strokes(x, ofs([parts[4], parts[5], parts[2], parts[3]], .14), 1, hl, k, bw * .2); } x.restore(); } }
         else strokes(x, [parts[0], parts[2], parts[3], parts[4], parts[5]], ap, sty, k, 6);
         { const hp = parts[1], hc2 = hp.reduce((a, q) => [a[0] + q[0] / hp.length, a[1] + q[1] / hp.length], [0, 0]), hr = Math.hypot(hp[0][0] - hc2[0], hp[0][1] - hc2[1]);
-          if (ap > .3) { x.save(); x.fillStyle = sty.paper || sty.bg; x.beginPath(); x.arc(hc2[0], hc2[1], hr, 0, 7); x.fill(); x.restore(); }
-          strokes(x, [hp], ap, sty, k, 6); strokes(x, parts.slice(6), ap, sty, k, 5);
+          if (ap > .3) { x.save(); x.fillStyle = vb; x.beginPath(); x.arc(hc2[0], hc2[1], hr, 0, 7); x.fill();
+            if (bm === "volume") { x.globalAlpha *= .9; const g = x.createRadialGradient(hc2[0] - hr * .4, hc2[1] - hr * .45, hr * .1, hc2[0], hc2[1], hr * 1.05); g.addColorStop(0, lumOf(vb) > .75 ? "rgba(255,255,255,0)" : "rgba(255,255,255,.35)"); g.addColorStop(1, "rgba(0,0,0,.18)"); x.fillStyle = g; x.beginPath(); x.arc(hc2[0], hc2[1], hr, 0, 7); x.fill(); }
+            x.restore(); }
+          strokes(x, [hp], ap, sty, k, bm === "line" ? 6 : 6.5); strokes(x, parts.slice(6), ap, sty, k, 5);
           if (ap >= 1) fx(x, m, t, it, hc2, hr, gx, gy, U * s, sty, k); }
         if (it.label && !hang) label(x, it.label, gx, gy - 4.15 * U * s, ap, sty, k);
         x.restore(); continue; }
@@ -378,21 +391,21 @@
   }
   const rrp = (x, a, b, w, h, r) => { x.beginPath(); x.roundRect ? x.roundRect(a, b, w, h, r) : x.rect(a, b, w, h); };
   function drawPlaque(x, txt, col, lt, W, k, sty, cy0) {
-    if (lt <= 0) return; const v = sty.lk.plaque, c = PLC[col] || PLC.red, p = clamp(lt / .35), sc = .55 + .45 * back(p), cy = cy0 ?? 335 * k;
+    if (lt <= 0) return; const v = sty.lk.plaque, c = colOf(col, sty.lk), p = clamp(lt / .35), sc = .55 + .45 * back(p), cy = cy0 ?? 335 * k;
     if (v === "punch") return drawPunch(x, txt, col, lt, W, k, sty, cy);
     const font = v === "sticker" ? "Caveat" : v === "marker" ? "Pangolin" : sty.font, px = Math.round((v === "sticker" ? 70 : 54) * k);
     x.save(); x.font = `${v === "marker" || v === "sticker" ? 400 : 800} ${px}px "${font}", system-ui, sans-serif`; const tx = v === "pill" || v === "neon" ? String(txt).toUpperCase() : String(txt);
     const tw = Math.min(W * .8, x.measureText(tx).width), w = tw + 64 * k, h = px * 1.55; x.translate(W / 2, cy); x.rotate(v === "sticker" ? -.035 : v === "marker" ? -.02 : 0); x.scale(sc, sc); x.globalAlpha *= clamp(p * 2);
     x.textAlign = "center"; x.textBaseline = "middle";
-    if (v === "marker") { x.fillStyle = c; rrp(x, -w / 2, -h / 2, w, h, h * .32); x.fill(); x.lineWidth = 4 * k; x.strokeStyle = "rgba(0,0,0,.55)"; x.stroke(); x.fillStyle = col === "yellow" ? "#141414" : "#ffffff"; }
+    if (v === "marker") { x.fillStyle = c; rrp(x, -w / 2, -h / 2, w, h, h * .32); x.fill(); x.lineWidth = 4 * k; x.strokeStyle = "rgba(0,0,0,.55)"; x.stroke(); x.fillStyle = lumOf(c) > .6 ? "#141414" : "#ffffff"; }
     else if (v === "pill") { x.shadowColor = "rgba(0,0,0,.35)"; x.shadowBlur = 24 * k; x.shadowOffsetY = 8 * k; x.fillStyle = "#ffffff"; rrp(x, -w / 2, -h / 2, w, h, h / 2); x.fill(); x.shadowColor = "transparent"; x.fillStyle = c; rrp(x, -w / 2 + 14 * k, -10 * k, 14 * k, 20 * k, 7 * k); x.fill(); x.fillStyle = "#111111"; }
     else if (v === "neon") { x.shadowColor = c; x.shadowBlur = 26 * k; x.lineWidth = 5 * k; x.strokeStyle = c; rrp(x, -w / 2, -h / 2, w, h, 14 * k); x.stroke(); x.fillStyle = "#ffffff"; }
-    else if (v === "sticker") { x.shadowColor = "rgba(0,0,0,.3)"; x.shadowBlur = 18 * k; x.shadowOffsetY = 10 * k; x.fillStyle = col === "green" ? "#c8f7c5" : col === "red" ? "#ffd2cf" : "#fff3a3"; x.fillRect(-w / 2, -h / 2, w, h); x.shadowColor = "transparent"; x.fillStyle = "rgba(255,255,255,.55)"; x.fillRect(-40 * k, -h / 2 - 14 * k, 80 * k, 26 * k); x.fillStyle = "#1d1d1f"; }
+    else if (v === "sticker") { x.shadowColor = "rgba(0,0,0,.3)"; x.shadowBlur = 18 * k; x.shadowOffsetY = 10 * k; x.fillStyle = lumOf(c) > .8 ? c : mixW(c, .62); x.fillRect(-w / 2, -h / 2, w, h); x.shadowColor = "transparent"; x.fillStyle = "rgba(255,255,255,.55)"; x.fillRect(-40 * k, -h / 2 - 14 * k, 80 * k, 26 * k); x.fillStyle = "#1d1d1f"; }
     x.fillText(tx, 0, 3 * k, W * .8); x.restore();
   }
   // «Великий текст» — як на прев'ю YouTube: жирно, з обводкою, «вбивається» в кадр
   function drawPunch(x, txt, col, lt, W, k, sty, cy) {
-    const c = PLC[col] || PLC.yellow, p = clamp(lt / .28), sc = p < 1 ? 1.45 - .45 * ease(p) : 1, sh = lt < .45 ? Math.sin(lt * 70) * 5 * k * (1 - lt / .45) : 0;
+    const c = colOf(col, sty.lk), p = clamp(lt / .28), sc = p < 1 ? 1.45 - .45 * ease(p) : 1, sh = lt < .45 ? Math.sin(lt * 70) * 5 * k * (1 - lt / .45) : 0;
     let px = Math.round(104 * k); const tx = String(txt).toUpperCase(), fnt = (n) => `900 ${n}px "Unbounded", "Manrope", system-ui, sans-serif`;
     x.save(); x.font = fnt(px); const maxW = W * .86, ws = tx.split(/\s+/); let lines = [tx];
     if (x.measureText(tx).width > maxW && ws.length > 1) { let best = null; for (let i = 1; i < ws.length; i++) { const a = ws.slice(0, i).join(" "), b = ws.slice(i).join(" "), m = Math.max(x.measureText(a).width, x.measureText(b).width); if (!best || m < best.m) best = { m, l: [a, b] }; } lines = best.l; }
@@ -402,7 +415,7 @@
     // підкладка-мазок кольором під останнім рядком
     const lw2 = x.measureText(lines[lines.length - 1]).width; x.fillStyle = c; x.globalAlpha *= .95; x.beginPath(); x.moveTo(-lw2 / 2 - 22 * k, y0 + (lines.length - 1) * lh + px * .22); x.lineTo(lw2 / 2 + 26 * k, y0 + (lines.length - 1) * lh + px * .12); x.lineTo(lw2 / 2 + 18 * k, y0 + (lines.length - 1) * lh + px * .5); x.lineTo(-lw2 / 2 - 14 * k, y0 + (lines.length - 1) * lh + px * .58); x.closePath(); x.fill();
     lines.forEach((l, i) => { const y = y0 + i * lh; x.shadowColor = "rgba(0,0,0,.45)"; x.shadowOffsetY = 9 * k; x.shadowBlur = 0; x.lineWidth = 17 * k; x.strokeStyle = "#0b0b0d"; x.strokeText(l, 0, y); x.shadowColor = "transparent";
-      x.fillStyle = i === lines.length - 1 && lines.length > 1 && col === "yellow" ? "#ffd60a" : "#ffffff"; x.fillText(l, 0, y); });
+      x.fillStyle = "#ffffff"; x.fillText(l, 0, y); });
     x.restore();
   }
   // фрази, що вистрибують (L.pops): з'являються на своєму слові й зникають
@@ -623,7 +636,7 @@ ${want.ins ? `ins — ${nI} вставок-ФОТО до наочних слів
 #yvln .sec{margin-top:16px}#yvln .sec h4{margin:0 0 8px;font-size:13.5px;color:#d4d4d8;font-weight:800;display:flex;gap:7px;align-items:center}#yvln .sec h4 i{font-style:normal;width:20px;height:20px;border-radius:50%;background:#f5f5f7;color:#0b0b0d;display:grid;place-items:center;font-size:11.5px;font-weight:800;flex:none}
 #yvln .pst{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px;scroll-snap-type:x proximity;scrollbar-width:none}#yvln .pst::-webkit-scrollbar{display:none}
 #yvln .pst button{flex:none;scroll-snap-align:start;padding:3px 3px 6px;border:2px solid transparent;border-radius:15px;background:none;color:#e4e4e7;font-weight:700;font-size:11.5px;line-height:1.2;font-family:inherit;cursor:pointer;display:grid;gap:5px;justify-items:center}#yvln .pst button[aria-pressed=true]{border-color:#f5f5f7;background:rgba(255,255,255,.06)}
-#yvln .pst canvas{width:84px;height:149px;border-radius:11px;display:block;background:#222}#yvln .pst.w canvas{width:150px;height:84px}
+#yvln .pst canvas{width:84px;height:149px;border-radius:11px;display:block;background:#222}#yvln .pst.w canvas{width:150px;height:84px}#yvln .pst.bd{overflow:visible}#yvln .pst.bd button{flex:1}#yvln .pst.bd canvas{width:96px;height:128px}
 #yvln .vopt{display:grid;gap:6px}#yvln .vopt>button{display:flex;align-items:center;gap:10px;text-align:left;padding:10px 12px;border-radius:14px;border:1.5px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:inherit;font-family:inherit;cursor:pointer}
 #yvln .vopt>button[aria-pressed=true]{border-color:#f5f5f7;background:rgba(255,255,255,.1)}#yvln .vopt b{display:block;font-size:14.5px}#yvln .vopt span{display:block;font-size:12.5px;color:#a1a1aa;margin-top:1px}
 #yvln .vopt em{margin-left:auto;flex:none;font-style:normal;font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:999px;background:rgba(48,209,88,.16);color:#30d158;white-space:nowrap}#yvln .vopt em.pl{background:rgba(255,255,255,.1);color:#f5f5f7;font-size:13px;padding:6px 11px}
@@ -666,17 +679,22 @@ ${""}`;
   function demoL(o = OPT) { const r = optLook(o); demoImg();
     if (FMT === "wide") { const words = "Олег іде полем і думає а якщо почати сьогодні і вже за тиждень перший заробіток".split(" ").map((w, i) => ({ w, s: .4 + i * .8, e: .4 + i * .8 + .6 }));
       return { ...DEMOW(), aud: new Float32Array(Math.round(14 * E().SR)), words, style: r.style, look: r.look, subs: r.subs, opt: o, _len: 14,
-        pops: o.pops !== "off" ? [{ at: 5.2, d: 2, t: "Перший крок", c: "yellow" }, { at: 12, d: 1.9, t: "+500 грн", c: "green" }] : [], ins: o.ins ? [{ at: 8.3, d: 2.4, src: "demo" }] : [] }; }
+        pops: o.pops ? [{ at: 5.2, d: 2, t: "Перший крок", c: "yellow" }, { at: 12, d: 1.9, t: "+500 грн", c: "green" }] : [], ins: o.ins ? [{ at: 8.3, d: 2.4, src: "demo" }] : [] }; }
     const words = "Більшість чекає тисячі підписників щоб почати заробляти а гроші приходять з одного вдалого відео".split(" ").map((w, i) => ({ w, s: .3 + i * .42, e: .3 + i * .42 + .38 }));
     return { aud: new Float32Array(Math.round(8 * E().SR)), words, style: r.style, look: r.look, subs: r.subs, opt: o, _len: 7.5, title: "Чекати — дивно", cta: "Збережи, якщо впізнав себе",
-      pops: o.pops !== "off" ? [{ at: 1.2, d: 1.7, t: "1000 вкладок", c: "red" }, { at: 5.3, d: 1.9, t: "Одне відео = гроші", c: "yellow" }] : [], ins: o.ins ? [{ at: 3.1, d: 1.9, src: "demo" }] : [],
+      pops: o.pops ? [{ at: 2.3, d: 1.9, t: "1000 вкладок", c: "red" }, { at: 5.3, d: 1.9, t: "Одне відео = гроші", c: "yellow" }] : [], ins: o.ins ? [{ at: 3.1, d: 1.9, src: "demo" }] : [],
       scenes: [{ a: 0, title: "Тисяча вкладок", items: [{ k: "man", x: .5, y: .92, face: "sad", moves: [{ i: 6, m: "shock" }] }, { k: "tab", x: .2, y: .25, at: 1 }, { k: "tab", x: .8, y: .22, at: 2 }, { k: "tab", x: .17, y: .55, at: 3 }, { k: "tab", x: .83, y: .52, at: 4, t: "?" }, { k: "tab", x: .5, y: .1, at: 5, t: "!" }] },
         { a: 9, title: "Одне відео", items: [{ k: "man", x: .35, y: .92, moves: [{ i: 11, m: "jump" }, { i: 13, m: "cheer" }] }, { k: "money", x: .72, y: .35, at: 11, acc: true, moves: [{ i: 11, m: "pop" }, { i: 12, m: "fly_to", x: .5, y: .25 }] }, { k: "text", t: "+1 відео", x: .5, y: .1, at: 14, moves: [{ i: 14, m: "pop" }] }] }], hist: [] }; }
   function demo(cv) {
     cancelAnimationFrame(DEMO); const keep = L, DL = demoL(), x = cv.getContext("2d"), t0 = performance.now();
     const loop = () => { if (!cv.isConnected) return; L = DL; prep(); WKEY = ""; const t = ((performance.now() - t0) / 1000) % DL._len; drawFrame(x, t, cv.width, cv.height); L = keep; DEMO = requestAnimationFrame(loop); }; loop();
   }
-  function thumb(cv, id) { const keep = L; try { L = demoL({ ...OPT, preset: id, subs: "off", pops: "off", ins: false }); prep(); WKEY = ""; drawFrame(cv.getContext("2d"), FMT === "wide" ? 7 : 3.3, cv.width, cv.height); } catch (e) { console.warn(e); } L = keep; if (keep) prep(); WKEY = ""; }
+  function thumb(cv, id) { const keep = L; try { L = demoL({ ...OPT, preset: id, subs: true, pops: true, ins: false }); prep(); WKEY = ""; drawFrame(cv.getContext("2d"), FMT === "wide" ? 7 : 3.3, cv.width, cv.height); } catch (e) { console.warn(e); } L = keep; if (keep) prep(); WKEY = ""; }
+  const OFF = { c: null };
+  function bodyThumb(cv, body) { const keep = L; try { const off = OFF.c ||= Object.assign(document.createElement("canvas"), { width: 540, height: 960 }), r = optLook({ ...OPT, body });
+      L = { aud: new Float32Array(Math.round(3 * E().SR)), words: [{ w: "а", s: 0, e: .3 }, { w: "б", s: .4, e: .7 }, { w: "в", s: .8, e: 1 }], style: r.style, look: { ...r.look, frame: "hide", fig: false }, subs: false, hist: [],
+        scenes: [{ a: 0, title: "", items: [{ k: "man", x: .5, y: .92, face: "happy", moves: [{ i: 0, m: "wave" }] }] }] }; prep();
+      drawFrame(off.getContext("2d"), 1.35, 540, 960); cv.getContext("2d").drawImage(off, 150, 318, 240, 320, 0, 0, cv.width, cv.height); } catch (e) { console.warn(e); } L = keep; if (keep) prep(); }
   let STYLE = "neon";
   const DRAFT = { topic: "", text: "", len: 3, vid: "" };
   /* ---------- крок 1: як виглядатиме ---------- */
@@ -684,30 +702,34 @@ ${""}`;
     stopPlay(); if (!fromEdit) L = null; const d = shell(TITLE()), B = $(d, ".lb"), F = $(d, ".lf"), wide = FMT === "wide"; $(d, "#lundo").hidden = true;
     const keepOpt = { ...OPT };
     B.innerHTML = `<div class="setup"><div class="steps"><i class="on"></i><i></i><i></i></div><div class="pv"><div class="cvw"><canvas id="lcv" width="${wide ? 960 : 540}" height="${wide ? 540 : 960}"></canvas></div></div><div class="scr">
-      <div class="sec" style="margin-top:6px"><h4><i>1</i>Стиль</h4><div class="pst${wide ? " w" : ""}">${PRESETS.map((p) => `<button type="button" data-ps="${p.id}" aria-pressed="${OPT.preset === p.id}"><canvas width="${wide ? 300 : 168}" height="${wide ? 168 : 298}"></canvas>${p.n}</button>`).join("")}</div></div>
-      <div class="sec"><h4><i>2</i>Озвучка</h4><div class="vopt">${VOICE_OPTS.map(([k, n, dd, tag]) => `<button type="button" data-vo="${k}" aria-pressed="${OPT.voice === k}"><div><b>${n}</b><span>${dd}</span></div>${tag ? `<em>${tag}</em>` : ""}</button>`).join("")}</div></div>
-      <div class="sec"><h4><i>3</i>Субтитри</h4><div class="chips l">${SUBS_OPTS.map(([v, n]) => `<button class="chip" type="button" data-so="${v}" aria-pressed="${OPT.subs === v}">${n}</button>`).join("")}</div></div>
-      <div class="sec"><h4><i>4</i>Фрази, що вистрибують</h4><div class="chips l">${POPS_OPTS.map(([v, n]) => `<button class="chip" type="button" data-po="${v}" aria-pressed="${OPT.pops === v}">${n}</button>`).join("")}</div></div>
-      <div class="sec"><h4><i>5</i>Вставки фото</h4><div class="tg"><div><b>Додавати фото</b><span>AI підбере фото з бібліотеки до важливих слів. Будь-яке потім заміниш</span></div><button class="sw" type="button" role="switch" id="lins" aria-checked="${!!OPT.ins}" aria-label="Вставки фото"></button></div></div>
+      <div class="sec" style="margin-top:6px"><h4><i>1</i>Шаблон</h4><p class="cnt" style="margin:-4px 0 8px">Фон, шрифт, плашки, їхні кольори й субтитри вже підібрані одне до одного</p><div class="pst${wide ? " w" : ""}">${PRESETS.map((p) => `<button type="button" data-ps="${p.id}" aria-pressed="${OPT.preset === p.id}"><canvas width="${wide ? 300 : 168}" height="${wide ? 168 : 298}"></canvas>${p.n}</button>`).join("")}</div></div>
+      <div class="sec"><h4><i>2</i>Персонаж</h4><div class="pst bd">${BODIES.map(([v, n]) => `<button type="button" data-bo="${v}" aria-pressed="${OPT.body === v}"><canvas width="240" height="320"></canvas>${n}</button>`).join("")}</div>
+        <div class="chips l" style="margin-top:4px">${THICK.map(([v, n]) => `<button class="chip" type="button" data-lw="${v}" aria-pressed="${+OPT.lw === v}">${n} лінії</button>`).join("")}</div></div>
+      <div class="sec"><h4><i>3</i>Озвучка</h4><div class="vopt">${VOICE_OPTS.map(([k, n, dd, tag]) => `<button type="button" data-vo="${k}" aria-pressed="${OPT.voice === k}"><div><b>${n}</b><span>${dd}</span></div>${tag ? `<em>${tag}</em>` : ""}</button>`).join("")}</div></div>
+      <div class="sec"><h4><i>4</i>Що додати</h4><div style="display:grid;gap:6px">
+        <div class="tg"><div><b>Субтитри</b><span>У стилі шаблону, слово, яке звучить, підсвічується</span></div><button class="sw" type="button" role="switch" data-sw="subs" aria-checked="${!!OPT.subs}" aria-label="Субтитри"></button></div>
+        <div class="tg"><div><b>Фрази, що вистрибують</b><span>Головні думки великим текстом — плашки в стилі шаблону</span></div><button class="sw" type="button" role="switch" data-sw="pops" aria-checked="${!!OPT.pops}" aria-label="Фрази, що вистрибують"></button></div>
+        <div class="tg"><div><b>Вставки фото</b><span>AI підбере фото з бібліотеки до важливих слів</span></div><button class="sw" type="button" role="switch" data-sw="ins" aria-checked="${!!OPT.ins}" aria-label="Вставки фото"></button></div></div></div>
       <p class="hint" style="margin:16px 0 4px">Потім у редакторі будуть лише ті налаштування, які ти тут увімкнув. Повернутися сюди можна будь-коли.</p></div></div>`;
     F.innerHTML = fromEdit ? `<div class="rowf"><button class="btn main" type="button" id="lnext">Застосувати</button><button class="btn bk" type="button" id="lprev" aria-label="Назад">‹</button></div>` : `<button class="btn main" type="button" id="lnext">Далі →</button>`;
     const pv = $(B, ".pv"), cv = $(B, "#lcv"); fitCanvas(pv, $(B, ".cvw"), 0, wide); demo(cv);
-    const thumbs = () => B.querySelectorAll("[data-ps]").forEach((b) => thumb($(b, "canvas"), b.dataset.ps)); thumbs();
+    const bodies = () => B.querySelectorAll("[data-bo]").forEach((b) => bodyThumb($(b, "canvas"), b.dataset.bo));
+    const thumbs = () => { B.querySelectorAll("[data-ps]").forEach((b) => thumb($(b, "canvas"), b.dataset.ps)); bodies(); }; thumbs();
     try { Promise.all([...new Set(PRESETS.map((p) => p.font)), "Unbounded"].map((f) => document.fonts.load(`800 40px "${f}"`))).then(() => { if (cv.isConnected) thumbs(); }).catch(() => {}); } catch (e) {}
     const pick = (sel, key, val) => { OPT[key] = val; saveOpt(); B.querySelectorAll(sel).forEach((o) => o.setAttribute("aria-pressed", o.matches(`[${sel.slice(1, -1)}="${val}"]`))); demo(cv); };
-    B.querySelectorAll("[data-ps]").forEach((b) => b.onclick = () => pick("[data-ps]", "preset", b.dataset.ps));
+    B.querySelectorAll("[data-ps]").forEach((b) => b.onclick = () => { pick("[data-ps]", "preset", b.dataset.ps); bodies(); });
+    B.querySelectorAll("[data-bo]").forEach((b) => b.onclick = () => pick("[data-bo]", "body", b.dataset.bo));
+    B.querySelectorAll("[data-lw]").forEach((b) => b.onclick = () => { OPT.lw = +b.dataset.lw; saveOpt(); B.querySelectorAll("[data-lw]").forEach((o) => o.setAttribute("aria-pressed", o === b)); demo(cv); thumbs(); });
     B.querySelectorAll("[data-vo]").forEach((b) => b.onclick = () => pick("[data-vo]", "voice", b.dataset.vo));
-    B.querySelectorAll("[data-so]").forEach((b) => b.onclick = () => pick("[data-so]", "subs", b.dataset.so));
-    B.querySelectorAll("[data-po]").forEach((b) => b.onclick = () => pick("[data-po]", "pops", b.dataset.po));
-    $(B, "#lins").onclick = (e) => { OPT.ins = !OPT.ins; saveOpt(); e.currentTarget.setAttribute("aria-checked", OPT.ins); demo(cv); };
+    B.querySelectorAll("[data-sw]").forEach((b) => b.onclick = () => { const k2 = b.dataset.sw; OPT[k2] = !OPT[k2]; saveOpt(); b.setAttribute("aria-checked", OPT[k2]); demo(cv); });
     if (fromEdit) { $(F, "#lprev").onclick = () => { OPT = keepOpt; saveOpt(); cancelAnimationFrame(DEMO); screenEdit(); };
       $(F, "#lnext").onclick = async () => { cancelAnimationFrame(DEMO); const prev = L.opt || {};
         if (OPT.voice !== (L.voice || prev.voice)) { DRAFT.text = L.text || L.words.map((w) => w.w).join(" "); L = null; screenContent("Озвучку змінено — перевір текст і створи анімацію заново"); return; }
-        pushHist(); const r = optLook(OPT); if (OPT.preset !== prev.preset) { L.style = r.style; L.look = { ...r.look }; } else L.look = { ...(L.look || {}), subs: r.look.subs, plaque: r.look.plaque }; L.subs = r.subs; L.opt = { ...OPT };
-        const want = { pops: OPT.pops !== "off" && !L.pops?.length, ins: OPT.ins && !L.ins?.length }; let m = "Налаштування застосовано";
+        pushHist(); const r = optLook(OPT); L.style = r.style; L.look = { ...r.look }; L.subs = r.subs; L.opt = { ...OPT };
+        const want = { pops: OPT.pops && !L.pops?.length, ins: OPT.ins && !L.ins?.length }; let m = "Налаштування застосовано";
         if (want.pops || want.ins) { try { await E().busyRun("montage", async () => { await aiExtras(want); if (want.ins) await loadIns(); }); if (want.ins && !L.ins?.length) m = LIBE || "Фото не знайшлись"; } catch (e) { m = "Не вийшло додати — спробуй ще раз"; } }
         prep(); screenEdit(m); };
-    } else $(F, "#lnext").onclick = () => { cancelAnimationFrame(DEMO); track("setup", { v: `${OPT.preset}|${OPT.voice}|${OPT.subs}|${OPT.pops}|${OPT.ins ? 1 : 0}` }); screenContent(); };
+    } else $(F, "#lnext").onclick = () => { cancelAnimationFrame(DEMO); track("setup", { v: `${OPT.preset}|${OPT.body}|${OPT.lw}|${OPT.voice}|${OPT.subs ? 1 : 0}${OPT.pops ? 1 : 0}${OPT.ins ? 1 : 0}` }); screenContent(); };
     track("open_setup");
   }
   /* ---------- крок 2: про що відео + текст/голос ---------- */
@@ -743,7 +765,7 @@ ${""}`;
       <div class="sec"><h4>${rec ? "Текст, який прочитаєш (можна без нього)" : v === "none" ? "Текст на екрані" : "Текст для озвучки"}</h4><button class="btn" type="button" id="lwr" style="margin-bottom:8px">✨ ${DRAFT.text ? "Написати інакше" : "Написати текст з AI"}</button>
         <textarea id="ltext" rows="${rec ? 6 : 8}" placeholder="${rec ? "Напиши або згенеруй — текст буде перед очима, поки записуєш" : "Встав свій текст або натисни «Написати з AI»"}">${escH(DRAFT.text)}</textarea><p class="cnt" id="lcnt"></p></div>
       ${v === "ai" || v === "clone" ? `<div class="sec"><h4>Голос</h4><div class="vopt" id="lvl"><p class="cnt" style="margin:0">Завантажую голоси…</p></div></div>` : ""}
-      <p class="hint" style="margin:14px 0 2px">Стиль: ${escH(presetOf(OPT.preset).n)} · ${escH(VOICE_OPTS.find((o) => o[0] === v)?.[1] || "")} · субтитри ${OPT.subs === "off" ? "вимк." : "увімк."} · плашки ${OPT.pops === "off" ? "вимк." : "увімк."}${OPT.ins ? " · фото" : ""}</p></div></div>`;
+      <p class="hint" style="margin:14px 0 2px">Шаблон: ${escH(presetOf(OPT.preset).n)} · ${escH(BODIES.find((o) => o[0] === OPT.body)?.[1] || "")} · ${escH(VOICE_OPTS.find((o) => o[0] === v)?.[1] || "")} · субтитри ${OPT.subs ? "увімк." : "вимк."} · фрази ${OPT.pops ? "увімк." : "вимк."}${OPT.ins ? " · фото" : ""}</p></div></div>`;
     F.innerHTML = rec ? `<div class="rowf"><button class="btn main" type="button" id="lrec">${IC.mic} ${v === "recplus" ? "Записати голос" : "Записати"}</button><button class="btn bk" type="button" id="lprev" aria-label="Назад">‹</button></div><label class="btn" for="lfile">Завантажити готовий запис</label><input type="file" id="lfile" accept="audio/*,video/*" hidden>`
       : `<div class="rowf"><button class="btn main" type="button" id="lgo">Створити анімацію</button><button class="btn bk" type="button" id="lprev" aria-label="Назад">‹</button></div>`;
     const ta = $(B, "#ltext"), tp = $(B, "#ltopic"), cnt = $(B, "#lcnt");
@@ -785,7 +807,7 @@ ${""}`;
         L = { aud: y, words, scenes: [], hist: [], wide, silent: !!src.silent, text: src.text || src.tts?.text || "", voice: OPT.voice }; applyOpt(); prep();
         stage("Малюю анімацію…");
         await Promise.all([wide ? aiWorld((i, n) => stage(`Малюю частину ${i + 1} з ${n}…`)) : aiScenes().then((sc) => { L.scenes = sc; }),
-          aiExtras({ pops: OPT.pops !== "off", ins: OPT.ins }).catch((e) => console.warn("extras", e))]);
+          aiExtras({ pops: !!OPT.pops, ins: OPT.ins }).catch((e) => console.warn("extras", e))]);
         if (OPT.ins && L.ins?.length) { stage("Підбираю фото…"); await loadIns(); } });
       prep(); track("ready", { v: `${OPT.voice}|${L.wide ? "wide:" + L.world.items.length : L.scenes.length}sc/${Math.round(TOT)}s` });
       screenEdit(LIBE || "Тапни ▶, щоб подивитись. Правки — голосом або кнопкою ✎");
@@ -793,16 +815,21 @@ ${""}`;
   }
   // шторка «Стиль»: фон, лінії, заголовок, плашки, субтитри, шрифт — лінії й рухи не змінюються
   function styleSheet(B, still, dirty) {
-    const S = E().sheet(B, "Стиль", ""), b = S.body;
+    const S = E().sheet(B, L.opt ? "Шаблон" : "Стиль", ""), b = S.body;
     const row = (t, key, opts, cur) => `<div class="lbl2">${t}</div><div class="chips l">${opts.map(([v, n]) => `<button class="chip" type="button" data-lk="${key}" data-v="${v}" aria-pressed="${String(cur) === String(v)}">${n}</button>`).join("")}</div>`;
     const draw = () => { const lk = lookOf();
-      const curP = L.opt?.preset || (PRESETS.find((p) => p.th === L.style) || {}).id, showSubs = !L.opt || L.subs !== false, showPl = !L.opt || L.opt.pops !== "off";
+      const curP = (PRESETS.find((p) => p.th === L.style) || {}).id, showSubs = true, showPl = true;
+      if (L.opt) { const setO = (k2, v) => { pushHist(); OPT[k2] = v; saveOpt(); const r = optLook(OPT); L.style = STYLE = r.style; L.look = r.look; L.opt = { ...OPT }; track("look", { v: k2 + ":" + v }); dirty(); still(); draw(); };
+        b.innerHTML = `<div class="psw">${PRESETS.map((p) => { const v = THEMES[p.th]; return `<button type="button" data-pr="${p.id}" aria-pressed="${OPT.preset === p.id}"><i style="background:${v.grad ? `linear-gradient(160deg,${v.grad[0]},${v.grad[1]})` : v.bg};color:${v.ink};font-family:'${p.font}',sans-serif;box-shadow:${v.glow ? `0 0 10px ${v.glow}` : "none"}">Аа</i><span>${p.n}</span></button>`; }).join("")}</div>
+          ${row("Персонаж", "body", BODIES.map(([v, n]) => [v, n]), OPT.body)}${row("Лінії", "lw", THICK, +OPT.lw)}`;
+        b.querySelectorAll("[data-pr]").forEach((x) => x.onclick = () => setO("preset", x.dataset.pr));
+        b.querySelectorAll("[data-lk]").forEach((x) => x.onclick = () => setO(x.dataset.lk, x.dataset.lk === "lw" ? +x.dataset.v : x.dataset.v)); return; }
       b.innerHTML = `<div class="lbl2" style="margin-top:0">Стиль</div><div class="psw">${PRESETS.map((p) => { const v = THEMES[p.th]; return `<button type="button" data-pr="${p.id}" aria-pressed="${curP === p.id}"><i style="background:${v.grad ? `linear-gradient(160deg,${v.grad[0]},${v.grad[1]})` : v.bg};color:${v.ink};font-family:'${p.font}',sans-serif;box-shadow:${v.glow ? `0 0 10px ${v.glow}` : "none"}">Аа</i><span>${p.n}</span></button>`; }).join("")}</div>
         ${row("Лінії", "lw", [[.7, "Тонкі"], [1, "Звичайні"], [1.45, "Товсті"]], lk.lw)}
         <div class="chips l" style="margin-top:6px"><button class="chip" type="button" data-tg="boil" aria-pressed="${lk.boil !== false}">Живі лінії</button>${THEMES[L.style]?.glow ? `<button class="chip" type="button" data-tg="glow" aria-pressed="${lk.glow !== false}">Світіння</button>` : ""}<button class="chip" type="button" data-tg="fig" aria-pressed="${lk.fig !== false}">Підписи «ФІГ.»</button></div>
         ${row("Заголовок", "frame", [["box", "Рамка"], ["pill", "Плашка"], ["under", "Підкреслення"], ["none", "Лише текст"], ["hide", "Без заголовка"]], lk.frame)}
-        ${showPl ? row(L.opt ? "Фрази, що вистрибують" : "Плашки сцен", "plaque", L.opt ? POPS_OPTS.filter((o) => o[0] !== "off") : [["punch", "Великий текст"], ["marker", "Маркер"], ["pill", "Біла"], ["neon", "Неон"], ["sticker", "Стікер"], ["none", "Без"]], lk.plaque) : ""}
-        ${showSubs ? row("Субтитри", "subs", L.opt ? SUBS_OPTS.filter((o) => o[0] !== "off") : SUBS_OPTS.map(([v2, n]) => [v2, v2 === "off" ? "Без" : n]), L.subs === false ? "off" : lk.subs) : ""}
+        ${showPl ? row("Плашки сцен", "plaque", [["punch", "Великий текст"], ["marker", "Маркер"], ["pill", "Біла"], ["neon", "Неон"], ["sticker", "Стікер"], ["none", "Без"]], lk.plaque) : ""}
+        ${showSubs ? row("Субтитри", "subs", SUBS_OPTS.map(([v2, n]) => [v2, v2 === "off" ? "Без" : n]), L.subs === false ? "off" : lk.subs) : ""}
         ${row("Шрифт", "font", [["Manrope", "Гротеск"], ["Unbounded", "Широкий"], ["Comfortaa", "Округлий"], ["Rubik", "Rubik"], ["Caveat", "Рукописний"]], lk.font)}`;
       const set = (k2, v) => { pushHist(); L.look = { ...(L.look || {}), [k2]: v }; if (k2 === "subs") L.subs = v !== "off"; track("look", { v: k2 + ":" + v }); dirty(); still(); draw(); };
       b.querySelectorAll("[data-pr]").forEach((x) => x.onclick = () => { pushHist(); const p = presetOf(x.dataset.pr); L.style = STYLE = p.th; L.look = { ...(L.look || {}), font: p.font, frame: p.frame, lw: p.lw || 1, boil: p.boil !== false }; if (L.opt) { L.opt.preset = p.id; OPT.preset = p.id; saveOpt(); } track("look", { v: "pr:" + p.id }); dirty(); still(); draw(); });
@@ -815,7 +842,7 @@ ${""}`;
   function screenEdit(msg) {
     const d = UI.root?.querySelector(".lb .bar") ? UI.root : shell(TITLE()), B = $(d, ".lb"), F = $(d, ".lf");
     stopPlay(); POS = Math.min(POS, Math.max(0, TOT - .05)); $(d, "#lundo").hidden = !L.hist.length; B.className = "lb";
-    B.innerHTML = `<div class="stage"><div class="bar">${tool("style", '<svg viewBox="0 0 24 24"><path d="M5 7h14M9 7v12M15 12h5M17.5 12v7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', "Стиль")}${tool("scn", '<svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3.5 10h17M9 4.5v15" stroke="currentColor" stroke-width="2"/></svg>', "Сцени")}${L.opt && L.opt.pops !== "off" ? tool("pops", '<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="2" transform="rotate(-6 12 12)"/><path d="M8 11.5h8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>', "Плашки") : ""}${L.opt?.ins ? tool("ins", '<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 17l5-5 4 4 3-3 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="15.5" cy="9.5" r="1.6" fill="currentColor"/></svg>', "Фото") : ""}</div>
+    B.innerHTML = `<div class="stage"><div class="bar">${tool("style", '<svg viewBox="0 0 24 24"><path d="M5 7h14M9 7v12M15 12h5M17.5 12v7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', L.opt ? "Шаблон" : "Стиль")}${tool("scn", '<svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3.5 10h17M9 4.5v15" stroke="currentColor" stroke-width="2"/></svg>', "Сцени")}${L.opt?.pops ? tool("pops", '<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="2" transform="rotate(-6 12 12)"/><path d="M8 11.5h8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>', "Плашки") : ""}${L.opt?.ins ? tool("ins", '<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 17l5-5 4 4 3-3 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="15.5" cy="9.5" r="1.6" fill="currentColor"/></svg>', "Фото") : ""}</div>
       <div class="cvw"><canvas id="lcv" width="${L.wide ? 960 : 540}" height="${L.wide ? 540 : 960}"></canvas><button class="pb" type="button" id="lpb"><i>${IC.play}</i></button></div>
       <div class="bar">${L.opt ? tool("set", '<svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="7" r="2.3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="17" r="2.3" fill="none" stroke="currentColor" stroke-width="2"/></svg>', "Налашт.") : ""}${tool("neu", '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>', "Нове")}</div></div>
       <div class="seek"><input type="range" id="lseek" min="0" max="1000" value="${Math.round(POS / Math.max(.1, TOT) * 1000)}"><span id="ltm">${fmt(POS)} / ${fmt(TOT)}</span></div>${msg ? `<div class="msg">${escH(msg)}</div>` : ""}`;
@@ -839,12 +866,12 @@ ${""}`;
         S.body.querySelectorAll("[data-q]").forEach((x) => x.onclick = () => { stopPlay(); show(ST[+x.dataset.q].t0 + .9); still(); });
         $(S.body, "#lregen").onclick = async () => { S.close(true); try { pushHist(); L.scenes = await E().busyRun("montage", () => aiScenes("Зроби зовсім інші сцени, ніж були: інші предмети, рухи й жарти.")); track("regen"); refresh("Нові сцени готові"); } catch (e) { say("Не вийшло. Спробуй ще раз"); } }; }
       if (k === "set") { b.classList.remove("on"); screenSetup(true); return; }
-      if (k === "pops") { const S = E().sheet(B, "Фрази, що вистрибують", ""), CL = Object.keys(PLC);
-        const draw = () => { S.body.innerHTML = `<div class="scn">${(L.pops || []).map((p, i) => `<div class="prow"><b data-ps="${i}">${fmt(p.at)}</b><input class="tx" data-pt="${i}" value="${escH(p.t)}" maxlength="34"><button type="button" class="pc" data-pc="${i}" style="background:${PLC[p.c] || PLC.yellow}" aria-label="Колір"></button><button type="button" class="pdel" data-pd="${i}" aria-label="Прибрати">×</button></div>`).join("") || `<p class="hint">Поки немає жодної фрази</p>`}</div>
+      if (k === "pops") { const S = E().sheet(B, "Фрази, що вистрибують", ""), lk0 = lookOf(), CL = lk0.pal?.length ? PNAMES.slice(0, lk0.pal.length) : PNAMES, cc = (c) => colOf(c, lookOf());
+        const draw = () => { S.body.innerHTML = `<div class="scn">${(L.pops || []).map((p, i) => `<div class="prow"><b data-ps="${i}">${fmt(p.at)}</b><input class="tx" data-pt="${i}" value="${escH(p.t)}" maxlength="34"><button type="button" class="pc" data-pc="${i}" style="background:${cc(p.c)}" aria-label="Колір"></button><button type="button" class="pdel" data-pd="${i}" aria-label="Прибрати">×</button></div>`).join("") || `<p class="hint">Поки немає жодної фрази</p>`}</div>
             <button class="btn" type="button" id="padd" style="margin-top:10px">+ Фраза на ${fmt(POS)}</button><button class="btn" type="button" id="pai" style="margin-top:8px">↻ Підібрати фрази заново</button>`;
           S.body.querySelectorAll("[data-ps]").forEach((x) => x.onclick = () => { stopPlay(); show(L.pops[+x.dataset.ps].at + .5); still(); });
           S.body.querySelectorAll("[data-pt]").forEach((x) => x.onchange = () => { pushHist(); $(d, "#lundo").hidden = false; L.pops[+x.dataset.pt].t = x.value.trim().slice(0, 34) || "…"; show(L.pops[+x.dataset.pt].at + .5); still(); });
-          S.body.querySelectorAll("[data-pc]").forEach((x) => x.onclick = () => { pushHist(); const p = L.pops[+x.dataset.pc]; p.c = CL[(CL.indexOf(p.c) + 1) % CL.length]; x.style.background = PLC[p.c]; show(p.at + .5); still(); });
+          S.body.querySelectorAll("[data-pc]").forEach((x) => x.onclick = () => { pushHist(); const p = L.pops[+x.dataset.pc]; p.c = CL[(CL.indexOf(p.c) + 1) % CL.length]; x.style.background = cc(p.c); show(p.at + .5); still(); });
           S.body.querySelectorAll("[data-pd]").forEach((x) => x.onclick = () => { pushHist(); $(d, "#lundo").hidden = false; L.pops.splice(+x.dataset.pd, 1); still(); draw(); });
           $(S.body, "#padd").onclick = () => { pushHist(); $(d, "#lundo").hidden = false; L.pops = [...(L.pops || []), { at: POS, d: 2.2, t: "НОВА ФРАЗА", c: "yellow" }].sort((a, c) => a.at - c.at); L.pops.forEach((o, j) => { o.d = clamp((L.pops[j + 1]?.at ?? o.at + 9) - o.at - .15, .8, 2.4); }); show(POS + .5); still(); draw(); setTimeout(() => S.body.querySelector(`[data-pt="${L.pops.findIndex((o) => o.t === "НОВА ФРАЗА")}"]`)?.select(), 50); };
           $(S.body, "#pai").onclick = async () => { try { pushHist(); await E().busyRun("montage", () => aiExtras({ pops: true })); track("pops_regen"); draw(); still(); } catch (e) { say("Не вийшло. Спробуй ще раз"); } }; };
