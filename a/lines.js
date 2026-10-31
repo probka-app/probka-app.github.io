@@ -458,6 +458,7 @@ ${""}`;
   const pushHist = () => { L.hist.push(JSON.stringify({ scenes: L.scenes, style: L.style, subs: L.subs, title: L.title, cta: L.cta, look: L.look, world: L.world })); if (L.hist.length > 20) L.hist.shift(); };
   const fitCanvas = (stage, cw, extra = 0, wide = false) => { const r = wide ? 16 / 9 : 9 / 16; const f = () => { const h = stage.clientHeight - 8, w = Math.max(90, Math.min(h * r, stage.clientWidth - extra - 12)); cw.style.width = w + "px"; cw.style.height = w / r + "px"; }; f(); requestAnimationFrame(f); new ResizeObserver(f).observe(stage); };
   let FMT = "tall";
+  const TITLE = () => FMT === "wide" ? "YouTube-анімація" : "Анімація лініями";
   const DEMOW = () => ({ wide: true, title: "Шлях до першого заробітку", cta: "Підпишись, щоб не пропустити", subs: true, hist: [],
     world: { end: 3, cam: [{ t: 6.5, z: 1.25 }, { t: 8.5, z: 1 }], places: [{ x0: 0, kind: "field" }, { x0: 1.4, kind: "road" }, { x0: 2.2, kind: "city" }],
       items: [{ k: "man", id: "Олег", hero: true, x: .4, y: .92, wear: ["cap"], label: "Олег", at: 0, moves: [{ t: .8, m: "walk_to", x: 1.6 }, { t: 6.2, m: "think" }, { t: 7.6, m: "run_to", x: 2.6 }, { t: 12, m: "cheer" }] },
@@ -480,13 +481,12 @@ ${""}`;
   }
   let STYLE = "neon";
   function screenStart() {
-    L = null; const d = shell("Анімація лініями"), B = $(d, ".lb"), F = $(d, ".lf");
+    L = null; const d = shell(TITLE()), B = $(d, ".lb"), F = $(d, ".lf");
     const wide = FMT === "wide";
-    B.innerHTML = `<div class="modes3"><button type="button" data-fm="tall" aria-pressed="${!wide}">Reels 9:16</button><button type="button" data-fm="wide" aria-pressed="${wide}">YouTube 16:9</button></div><div class="stage"><div class="cvw"><canvas id="lcv" width="${wide ? 960 : 540}" height="${wide ? 540 : 960}"></canvas></div></div><p class="hint">${wide ? "Розкажи історію до 10 хв — один безперервний сюжет: герой іде крізь світ, фон пролітає позаду" : "Наговори думку — сцени, рухи й написи складуться самі"}</p>`;
+    B.innerHTML = `<div class="stage"><div class="cvw"><canvas id="lcv" width="${wide ? 960 : 540}" height="${wide ? 540 : 960}"></canvas></div></div><p class="hint">${wide ? "Розкажи історію до 10 хв — один безперервний сюжет: герой іде крізь світ, фон пролітає позаду" : "Наговори думку до 1,5 хв — сцени, рухи й написи складуться самі"}</p>`;
     F.innerHTML = `<div class="chips">${["neon", "blueprint", "night", "marker", "chalk", "kraft"].map((k) => `<button class="chip" type="button" data-st="${k}" aria-pressed="${STYLE === k}">${THEMES[k].n}</button>`).join("")}</div>
       <button class="btn main" type="button" id="lrec">${IC.mic} Наговорити</button><label class="btn" for="lfile">Завантажити запис</label><input type="file" id="lfile" accept="audio/*,video/*" hidden>`;
     const cv = $(B, "#lcv"); fitCanvas($(B, ".stage"), $(B, ".cvw"), 0, wide); demo(cv, STYLE);
-    B.querySelectorAll("[data-fm]").forEach((b) => b.onclick = () => { if (FMT === b.dataset.fm) return; FMT = b.dataset.fm; cancelAnimationFrame(DEMO); screenStart(); });
     F.querySelectorAll("[data-st]").forEach((b) => b.onclick = () => { STYLE = b.dataset.st; F.querySelectorAll("[data-st]").forEach((o) => o.setAttribute("aria-pressed", o === b)); demo(cv, STYLE); });
     // запис через «Озвучку»: там чистка, вирізання паразитів, правки голосом — сюди повертається готовий голос
     $(F, "#lrec").onclick = () => { cancelAnimationFrame(DEMO); UI.root.style.display = "none";
@@ -497,8 +497,8 @@ ${""}`;
   }
   async function start(buf, raw) {
     try {
-      const wide = FMT === "wide", MAX = wide ? 600 : 185;
-      const go = async () => { let y = await E().decode(buf); if (raw) y = await E().processTake(y); if (y.length / E().SR > MAX) { y = y.subarray(0, Math.round(MAX * E().SR)).slice(); say(`Беру перші ${MAX / 60} хв`); }
+      const wide = FMT === "wide", MAX = wide ? 600 : 90;
+      const go = async () => { let y = await E().decode(buf); if (raw) y = await E().processTake(y); if (y.length / E().SR > MAX) { y = y.subarray(0, Math.round(MAX * E().SR)).slice(); say(wide ? "Беру перші 10 хв" : "Для Reels — до 1,5 хв. Беру перші 90 с"); }
         // довгий запис розпізнаємо шматками по 3,3 хв
         const small = await E().resample(y, E().SR, 16000), dur = y.length / E().SR, WIN = 200 * 16000, words = [];
         for (let o = 0; o < small.length; o += WIN) { const r = await SRV.stt({ audio: E().b64(E().wav(small.subarray(o, Math.min(small.length, o + WIN)), 16000)), mime: "audio/wav", quiet: true }), off = o / 16000;
@@ -531,7 +531,7 @@ ${""}`;
   }
   let POS = 0;
   function screenEdit(msg) {
-    const d = UI.root?.querySelector(".lb .bar") ? UI.root : shell("Анімація лініями"), B = $(d, ".lb"), F = $(d, ".lf");
+    const d = UI.root?.querySelector(".lb .bar") ? UI.root : shell(TITLE()), B = $(d, ".lb"), F = $(d, ".lf");
     stopPlay(); POS = Math.min(POS, Math.max(0, TOT - .05)); $(d, "#lundo").hidden = !L.hist.length; B.className = "lb";
     B.innerHTML = `<div class="stage"><div class="bar">${tool("style", '<svg viewBox="0 0 24 24"><path d="M5 7h14M9 7v12M15 12h5M17.5 12v7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', "Стиль")}${tool("scn", '<svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3.5 10h17M9 4.5v15" stroke="currentColor" stroke-width="2"/></svg>', "Сцени")}</div>
       <div class="cvw"><canvas id="lcv" width="${L.wide ? 960 : 540}" height="${L.wide ? 540 : 960}"></canvas><button class="pb" type="button" id="lpb"><i>${IC.play}</i></button></div>
@@ -786,5 +786,5 @@ ${extra}
     const th = Object.entries(THEMES).find(([k, v]) => new RegExp(v.n, "i").test(text)); if (th && /фон|стиль|тем/i.test(text)) { L.style = th[0]; return `Фон: ${th[1].n}`; }
     const t = POS || 0, i = Math.max(0, L.world.segs.findIndex((g) => t >= g.t0 && t < g.t1)); await regenSeg(i, `Людина просить змінити цю частину: «${text}». Збережи все інше, зміни саме це.`); return `Змінено частину ${i + 1}`; }
   async function regenSeg(i, extra) { const sg = L.world.segs[i]; const res = await aiSegment(sg, i, L.world.segs.length, castOf(sg.t0), extra); mergeSeg(i, res); }
-  window.YVLines = { open() { screenStart(); track("open"); }, fromMarker, drawBox, boardLines, drawWorld, boardWorld, _t: { set: (l) => { L = l; prep(); }, drawFrame, prep, exportVideo, figure, POSE, SH, STYLES, tot: () => TOT, screenEdit, aiScenes, L: () => L } };
+  window.YVLines = { open(o = {}) { FMT = o.wide ? "wide" : "tall"; screenStart(); track(o.wide ? "open_yt" : "open"); }, fromMarker, drawBox, boardLines, drawWorld, boardWorld, _t: { set: (l) => { L = l; prep(); }, drawFrame, prep, exportVideo, figure, POSE, SH, STYLES, tot: () => TOT, screenEdit, aiScenes, L: () => L } };
 })();
