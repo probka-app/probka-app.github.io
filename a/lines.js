@@ -23,12 +23,12 @@
   const arc = (cx, cy, r, a0 = 0, a1 = 360, n = 28) => { const p = []; for (let i = 0; i <= n; i++) { const a = (a0 + (a1 - a0) * i / n) * D; p.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]); } return p; };
   const rect = (x, y, w, h) => [[x, y], [x + w, y], [x + w, y + h], [x, y + h], [x, y]];
   const SH = {
-    money: () => [rect(-1, -.55, 2, 1.1), arc(0, 0, .3), [[-.78, -.32], [-.78, .32]], [[.78, -.32], [.78, .32]]],
+    money: () => [rect(-1, -.55, 2, 1.1), rect(-.88, -.43, 1.76, .86), arc(0, 0, .3), [...arc(.02, -.08, .1, 200, 390, 8), [-.08, .14], [.1, .14]], [[-.12, -.02], [.12, -.02]], [[-.7, -.25], [-.7, .25]], [[.7, -.25], [.7, .25]]],
     coin: () => [arc(0, 0, .8), arc(0, 0, .55, 0, 360, 22)],
     coins: () => [arc(-.35, .25, .5), arc(.4, .1, .5), arc(0, -.35, .5)],
     bag: () => [[[-.3, -.75], [-.55, -1], [.55, -1], [.3, -.75]], [[-.3, -.75], [-.85, -.1], [-.9, .45], [-.6, .85], [.6, .85], [.9, .45], [.85, -.1], [.3, -.75], [-.3, -.75]], arc(0, .15, .28)],
-    phone: () => [[[-.5, -1], [.5, -1], [.5, 1], [-.5, 1], [-.5, -1]], [[-.12, .8], [.12, .8]], [[-.5, -.75], [.5, -.75]]],
-    laptop: () => [rect(-.85, -.8, 1.7, 1.15), [[-1.15, .45], [1.15, .45], [1, .62], [-1, .62], [-1.15, .45]]],
+    phone: () => [[...arc(-.38, -.88, .12, 180, 270, 4), ...arc(.38, -.88, .12, 270, 360, 4), ...arc(.38, .88, .12, 0, 90, 4), ...arc(-.38, .88, .12, 90, 180, 4), [-.5, -.88]], rect(-.4, -.72, .8, 1.36), [[-.1, .82], [.1, .82]], rect(-.3, -.6, .6, .35), [[-.3, -.1], [.3, -.1]], [[-.3, .08], [.15, .08]], [[-.3, .26], [.25, .26]]],
+    laptop: () => [rect(-.85, -.8, 1.7, 1.15), rect(-.72, -.68, 1.44, .9), [[-.5, -.4], [.3, -.4]], [[-.5, -.2], [.45, -.2]], [[-1.15, .45], [1.15, .45], [1, .62], [-1, .62], [-1.15, .45]], [[-.2, .53], [.2, .53]]],
     camera: () => [rect(-.9, -.5, 1.8, 1.2), arc(0, .1, .4), [[-.35, -.5], [-.2, -.75], [.2, -.75], [.35, -.5]]],
     arrow: () => [[[-1, 0], [1, 0]], [[.55, -.4], [1, 0], [.55, .4]]],
     up: () => [[[-1, .8], [-.35, .05], [.05, .4], [1, -.7]], [[.5, -.72], [1, -.7], [.97, -.2]]],
@@ -38,7 +38,7 @@
     exclaim: () => [[[0, -1], [0, .45]], arc(0, .82, .09, 0, 360, 10)],
     heart: () => [[[0, .9], [-.85, 0], ...arc(-.45, -.35, .45, 140, 340, 10).slice(1), ...arc(.45, -.35, .45, 200, 400, 10).slice(1), [.85, 0], [0, .9]]],
     star: () => { const p = []; for (let i = 0; i <= 10; i++) { const a = (-90 + i * 36) * D, r = i % 2 ? .42 : 1; p.push([Math.cos(a) * r, Math.sin(a) * r]); } return [p]; },
-    house: () => [[[-.8, -.1], [0, -.9], [.8, -.1]], [[-.65, -.25], [-.65, .9], [.65, .9], [.65, -.25]], rect(-.18, .35, .36, .55)],
+    house: () => [[[-.9, -.05], [0, -.9], [.9, -.05]], [[-.7, -.2], [-.7, .9], [.7, .9], [.7, -.2]], rect(-.2, .35, .4, .55), rect(-.55, .0, .25, .25), rect(.3, .0, .25, .25), [[-.425, 0], [-.425, .25]], [[.425, 0], [.425, .25]], [[.4, -.5], [.4, -.82], [.6, -.82], [.6, -.33]]],
     bulb: () => [[...arc(0, -.25, .62, 135, 405, 24), [.25, .55], [-.25, .55], [-.44, .19]], [[-.22, .72], [.22, .72]], [[-.15, .88], [.15, .88]]],
     clock: () => [arc(0, 0, .95)],
     box: () => [[[-.8, -.3], [0, -.7], [.8, -.3], [0, .1], [-.8, -.3]], [[-.8, -.3], [-.8, .55], [0, .95], [.8, .55], [.8, -.3]], [[0, .1], [0, .95]]],
@@ -63,6 +63,21 @@
     ball: () => [arc(0, 0, .32, 0, 360, 18)],
     spiral: () => { const p = []; for (let i = 0; i <= 50; i++) { const a = i / 50 * Math.PI * 6, r = .05 + i / 50 * .9; p.push([Math.cos(a) * r, Math.sin(a) * r]); } return [p]; },
     lamp: () => [],
+    car: () => [[[-1.1, .3], [-1.1, -.05], [-.75, -.12], [-.45, -.5], [.4, -.5], [.7, -.12], [1.1, -.05], [1.1, .3], [-1.1, .3]], [[-.38, -.44], [-.38, -.12], [.05, -.12], [.05, -.44]], [[.12, -.44], [.12, -.12], [.6, -.12], [.38, -.44], [.12, -.44]], arc(-.6, .32, .2, 0, 360, 14), arc(.6, .32, .2, 0, 360, 14)],
+    cup: () => [[[-.5, -.3], [-.42, .55], [.42, .55], [.5, -.3], [-.5, -.3]], arc(.62, .1, .2, 270, 450, 10), [[-.65, .6], [.65, .6]]],
+    calendar: () => [rect(-.75, -.7, 1.5, 1.45), [[-.75, -.35], [.75, -.35]], [[-.4, -.85], [-.4, -.55]], [[.4, -.85], [.4, -.55]]],
+    piggy: () => [arc(0, .05, .62, 0, 360, 24), arc(.68, .02, .14, 0, 360, 10), [[-.3, -.5], [-.18, -.78], [-.05, -.55]], [[-.35, .6], [-.35, .82]], [[.3, .6], [.3, .82]], [[-.12, -.62], [.12, -.62]], [[-.62, .0], [-.85, -.12], [-.8, -.3]]],
+    trophy: () => [[[-.5, -.8], [.5, -.8], [.42, -.15], [.15, .1], [-.15, .1], [-.42, -.15], [-.5, -.8]], arc(-.55, -.55, .2, 90, 270, 8), arc(.55, -.55, .2, -90, 90, 8), [[0, .1], [0, .5]], rect(-.35, .5, .7, .25)],
+    mail: () => [rect(-.95, -.6, 1.9, 1.2), [[-.95, -.6], [0, .1], [.95, -.6]]],
+    mic: () => [rect(-.25, -.95, .5, .85), arc(0, -.35, .45, 0, 180, 12), [[0, .1], [0, .55]], [[-.3, .55], [.3, .55]]],
+    plant: () => [[[-.4, .2], [-.3, .9], [.3, .9], [.4, .2], [-.4, .2]], [[0, .2], [0, -.6]], [[0, -.2], ...arc(-.3, -.35, .3, 0, 180, 8)], [[0, -.4], ...arc(.3, -.55, .3, 180, 360, 8)], arc(0, -.75, .2, 0, 360, 10)],
+    chair: () => [[[-.4, -.9], [-.4, .9]], [[-.4, .1], [.45, .1], [.45, .9]], [[-.4, -.9], [-.2, -.9]]],
+    door: () => [rect(-.5, -1.2, 1, 2.2), arc(.3, .05, .06, 0, 360, 8)],
+    globe: () => [arc(0, 0, .85, 0, 360, 28), [[-.85, 0], [.85, 0]], arc(0, 0, .85, 0, 360, 28).map(([a, b]) => [a * .45, b]), [[-.75, -.4], [.75, -.4]], [[-.75, .4], [.75, .4]]],
+    shopbag: () => [[[-.6, -.4], [-.7, .85], [.7, .85], [.6, -.4], [-.6, -.4]], arc(0, -.4, .3, 180, 360, 10)],
+    raincloud: () => [[...arc(-.4, 0, .35, 90, 270, 10), ...arc(0, -.25, .42, 200, 340, 10), ...arc(.45, 0, .33, 260, 450, 10), [-.4, .35]], [[-.4, .5], [-.5, .8]], [[0, .5], [-.1, .8]], [[.4, .5], [.3, .8]]],
+    pencil: () => [[[-.9, .3], [.6, -.6], [.85, -.35], [-.65, .55], [-.9, .3]], [[-.9, .3], [-1, .65], [-.65, .55]]],
+    hryvnia: () => [[...arc(.05, -.45, .38, 200, 400, 12), [-.3, .55], [.4, .55]], [[-.45, -.12], [.45, -.12]], [[-.45, .15], [.45, .15]]],
   };
   const KINDS = Object.keys(SH);
 
@@ -72,6 +87,7 @@
   const P0 = { b: 0, h: 0, la1: 14, la2: 6, ra1: 14, ra2: 6, ll1: 7, ll2: 0, rl1: 7, rl2: 0, y: 0, r: 0, sv: 0 };
   const POSE = {
     stand: () => ({}),
+    talk: (t) => ({ ra1: 30 + 12 * Math.sin(t * 2.6), ra2: 55 + 15 * Math.sin(t * 3.1), h: 4 * Math.sin(t * 2.1) }),
     walk: (t) => { const s = Math.sin(t * 7); return { sv: 1, ll1: 28 * s, rl1: -28 * s, ll2: Math.max(0, -s) * 40, rl2: Math.max(0, s) * 40, la1: -24 * s, ra1: 24 * s, la2: 20, ra2: 20, y: -Math.abs(Math.cos(t * 7)) * .08 + .06, b: 4 }; },
     run: (t) => { const s = Math.sin(t * 11); return { sv: 1, ll1: 50 * s, rl1: -50 * s, ll2: 25 + Math.max(0, -s) * 75, rl2: 25 + Math.max(0, s) * 75, la1: -50 * s, ra1: 50 * s, la2: 85, ra2: 85, y: -Math.abs(Math.cos(t * 11)) * .22 + .14, b: 14 }; },
     jump: (t, d) => { const p = clamp(t / d); if (p < .25) { const q = p / .25; return { sv: 1, y: .45 * q, ll1: 35 * q, rl1: 35 * q, ll2: 70 * q, rl2: 70 * q, la1: -45 * q, ra1: -45 * q, b: 18 * q }; }
@@ -92,9 +108,9 @@
   POSE.work = (t) => ({ sv: 1, y: .8, ll1: 88, rl1: 82, ll2: 88, rl2: 88, b: 14, h: 14, la1: 62 + 5 * Math.sin(t * 13), ra1: 70 - 5 * Math.sin(t * 13), la2: 35, ra2: 30 });
   POSE.shock = (t) => ({ la1: 62, ra1: 62, la2: 70, ra2: 70, y: -.06 + .03 * Math.sin(t * 30) * clamp(1 - t), h: -4 });
   const FACE = { sad: "sad", cheer: "happy", dance: "happy", jump: "happy", fall: "shock", shock: "shock", push: "strain", work: "strain", hang: "neutral", think: "neutral", wave: "happy" };
-  const LASTING = new Set(["think", "point", "sad", "sit", "fall", "hang", "push", "work", "shock"]);
+  const LASTING = new Set(["talk", "think", "point", "sad", "sit", "fall", "hang", "push", "work", "shock"]);
   const DUR = { jump: .95, wave: 1.6, cheer: 1.6, shrug: 1.2, dance: 2.4 };
-  const MOVES = ["walk_to", "run_to", "jump", "wave", "cheer", "think", "point", "shrug", "sad", "sit", "stand", "fall", "hang", "dance", "push", "work", "shock", "happy_face", "sad_face", "pop", "bounce", "spin", "shake", "fly_to", "grow", "hide"];
+  const MOVES = ["talk", "walk_to", "run_to", "jump", "wave", "cheer", "think", "point", "shrug", "sad", "sit", "stand", "fall", "hang", "dance", "push", "work", "shock", "happy_face", "sad_face", "pop", "bounce", "spin", "shake", "fly_to", "grow", "hide"];
   const mixPose = (a, b, w) => { const o = {}; for (const k in P0) o[k] = (a[k] ?? P0[k]) * (1 - w) + (b[k] ?? P0[k]) * w; o.sv = w < .5 ? (a.sv || 0) : (b.sv || 0); return o; };
 
   /* ---------- стан ---------- */
@@ -121,6 +137,9 @@
   const lookOf = () => ({ ...LOOK0, ...(L?.look || {}) });
   function styOf() { const th = THEMES[L.style] || THEMES.neon, lk = lookOf(); return { ...th, glow: lk.glow ? th.glow : null, font: lk.font, lk }; }
   function prep() {
+    ENV = null; if (L.aud?.length) { const SR = E().SR, hop = Math.round(SR / 50), n = Math.ceil(L.aud.length / hop), ev = new Float32Array(n); let mx = 1e-4;
+      for (let i = 0; i < n; i++) { let a = 0; for (let j = i * hop, e = Math.min(L.aud.length, j + hop); j < e; j += 4) a = Math.max(a, Math.abs(L.aud[j])); ev[i] = a; mx = Math.max(mx, a); }
+      ENV = (t) => clamp((ev[Math.min(n - 1, Math.max(0, Math.round(t * 50)))] || 0) / mx * 1.4); }
     const W = L.words; TOT = (L.aud?.length || 0) / E().SR;
     const at = (i) => W[clamp(i | 0, 0, W.length - 1)]?.s ?? 0;
     ST = []; (L.scenes || []).forEach((s) => { const t0 = ST.length ? at(s.a) : 0; if (ST.length && t0 <= ST[ST.length - 1].t0 + .4) return; ST.push({ s, t0 }); });
@@ -147,7 +166,7 @@
   // «живі» лінії: легке тремтіння, нове 8 разів на секунду
   let NOBOIL = false;
   const jit = (pts, seed, k) => NOBOIL ? pts : pts.map((p, i) => [p[0] + (rnd(seed + i * 1.7, BOIL) - .5) * 2.4 * k, p[1] + (rnd(seed * 3.1 + i, BOIL + 9) - .5) * 2.4 * k]);
-  function figure(pose, x0, y0, U, f, face = "", wear = null) {
+  function figure(pose, x0, y0, U, f, face = "", wear = null, fo = {}) {
     const P = { ...P0, ...pose }, sv = P.sv > .5;
     const hip = [0, -1.65 + P.y], tb = P.b * D, neck = [hip[0] + Math.sin(tb) * 1.3, hip[1] - Math.cos(tb) * 1.3], sh = [neck[0] + (hip[0] - neck[0]) * .16, neck[1] + (hip[1] - neck[1]) * .16];
     // напрям кінцівки: збоку — уперед, спереду — у свій бік (s = −1 ліва, +1 права)
@@ -155,12 +174,21 @@
     const limb = (o, a1, a2, l1, l2, s, leg) => { const off = leg ? 0 : (sv ? P.b : 0), d1 = dir(a1 + off, s), e = [o[0] + d1[0] * l1, o[1] + d1[1] * l1], d2 = dir(a1 + off + (leg && sv ? -a2 : a2), s); return [o, e, [e[0] + d2[0] * l2, e[1] + d2[1] * l2]]; };
     const ht = (P.b + P.h) * D, hc = [neck[0] + Math.sin(ht) * .5, neck[1] - Math.cos(ht) * .5];
     let parts = [[hip, neck], arc(hc[0], hc[1], .42, 0, 360, 20), limb(sh, P.la1, P.la2, .72, .66, -1), limb(sh, P.ra1, P.ra2, .72, .66, 1), limb(hip, P.ll1, P.ll2, .85, .82, -1, 1), limb(hip, P.rl1, P.rl2, .85, .82, 1, 1)];
-    // обличчя: очі й рот (спереду — двоє очей, збоку — одне, зміщене вперед)
-    if (face) { const ex = sv ? [.17] : [-.14, .14], o = sv ? .1 : 0, fc = [hc[0] + o, hc[1]];
-      ex.forEach((e) => parts.push(face === "shock" ? arc(fc[0] + e, fc[1] - .07, .055, 0, 360, 8) : [[fc[0] + e, fc[1] - .1], [fc[0] + e, fc[1] - .03]]));
-      if (face === "happy") parts.push(arc(fc[0], fc[1] + .02, .19, 25, 155, 10)); else if (face === "sad") parts.push(arc(fc[0], fc[1] + .3, .17, 215, 325, 10));
-      else if (face === "shock") parts.push(arc(fc[0], fc[1] + .17, .07, 0, 360, 10)); else if (face === "strain") parts.push([[fc[0] - .13, fc[1] + .18], [fc[0] - .04, fc[1] + .13], [fc[0] + .04, fc[1] + .18], [fc[0] + .13, fc[1] + .13]]);
-      else parts.push([[fc[0] - .1, fc[1] + .16], [fc[0] + .1, fc[1] + .16]]); }
+    // долоні й черевики
+    const end = (l) => l[2], la = parts[2], ra = parts[3], ll = parts[4], rl = parts[5];
+    parts.push(arc(end(la)[0], end(la)[1], .1, 0, 360, 10), arc(end(ra)[0], end(ra)[1], .1, 0, 360, 10));
+    [[ll, -1], [rl, 1]].forEach(([l, s]) => { const e = end(l), fx = sv ? .24 : s * .17; parts.push([[e[0] - (sv ? .04 : s * .02), e[1]], [e[0] + fx, e[1] + .02]]); });
+    // обличчя: очі-зіниці (кліпають, дивляться вперед), брови за емоцією, рот (говорить — рухається)
+    if (face) { const ex = sv ? [.17] : [-.15, .15], o = sv ? .1 : 0, fc = [hc[0] + o, hc[1]], lk = sv ? .04 : 0;
+      ex.forEach((e) => parts.push(fo.blink ? [[fc[0] + e - .06, fc[1] - .07], [fc[0] + e + .06, fc[1] - .07]] : face === "shock" ? arc(fc[0] + e, fc[1] - .07, .075, 0, 360, 10) : arc(fc[0] + e + lk, fc[1] - .07, .045, 0, 360, 8)));
+      if (face === "shock") ex.forEach((e) => parts.push(arc(fc[0] + e + lk, fc[1] - .07, .02, 0, 360, 6)));
+      const br = { happy: [-.2, -.24, .02], sad: [-.18, -.2, -.06], shock: [-.27, -.27, 0], strain: [-.2, -.16, .06] }[face];
+      if (br) ex.forEach((e) => { const sg = e < 0 ? -1 : 1; parts.push([[fc[0] + e - .08, fc[1] + br[0] + (sg < 0 ? 0 : br[2])], [fc[0] + e + .08, fc[1] + br[1] + (sg < 0 ? br[2] : 0)]]); });
+      const mo = fo.mouth || 0;
+      if (mo > .06) parts.push(arc(fc[0] + o * .4, fc[1] + .19, .1, 0, 360, 12).map(([a, b]) => [a, fc[1] + .19 + (b - fc[1] - .19) * (.25 + mo)]));
+      else if (face === "happy") parts.push(arc(fc[0], fc[1] + .04, .19, 25, 155, 10)); else if (face === "sad") parts.push(arc(fc[0], fc[1] + .32, .17, 215, 325, 10));
+      else if (face === "shock") parts.push(arc(fc[0], fc[1] + .2, .08, 0, 360, 10)); else if (face === "strain") parts.push([[fc[0] - .13, fc[1] + .2], [fc[0] - .04, fc[1] + .15], [fc[0] + .04, fc[1] + .2], [fc[0] + .13, fc[1] + .15]]);
+      else parts.push([[fc[0] - .09, fc[1] + .18], [fc[0] + .09, fc[1] + .18]]); }
     // зовнішність: щоб персонажів можна було розрізнити без звуку (мама/дитина/начальник/мавпа…)
     if (wear?.length) { const Wr = new Set(wear), hr = .42, H0 = hc[0], H1 = hc[1];
       if (Wr.has("hair")) for (let i = -2; i <= 2; i++) { const a = (-90 + i * 24) * D; parts.push([[H0 + Math.cos(a) * hr, H1 + Math.sin(a) * hr], [H0 + Math.cos(a) * (hr + .17), H1 + Math.sin(a) * (hr + .17)]]); }
@@ -191,10 +219,13 @@
       if (POSE[m.m] || m.m === "stand") { prev = state; pts = ts; state = m.m; ts = m.t; if (!LASTING.has(m.m) && m.m !== "stand" && t > m.t + (DUR[m.m] || 1.2)) { prev = state; state = "stand"; ts = m.t + (DUR[m.m] || 1.2); } } }
     const poseOf = (s, t0) => s === "move" ? POSE[from.run ? "run" : "walk"](t - t0) : (POSE[s] || POSE.stand)(t - t0, DUR[s] || 1.2);
     const cur = poseOf(state, ts), w = clamp((t - ts) / .25);
-    const pose = w < 1 && prev !== state ? mixPose(poseOf(prev === "move" ? "stand" : prev, pts), cur, ease(w)) : cur;
+    const pose = w < 1 && prev !== state ? mixPose(poseOf(prev === "move" ? "stand" : prev, pts), cur, ease(w)) : { ...cur };
+    // живий у спокої: дихає, ледь погойдує руками
+    if (state !== "move" && !["fall", "hang", "jump", "sit", "work"].includes(state)) { const sd = (it.seed || 1) * 1.7; pose.y = (pose.y || 0) + Math.sin(t * 1.9 + sd) * .025; pose.la1 = (pose.la1 ?? P0.la1) + Math.sin(t * 1.3 + sd) * 2.5; pose.ra1 = (pose.ra1 ?? P0.ra1) + Math.sin(t * 1.1 + sd + 1) * 2.5; pose.h = (pose.h || 0) + Math.sin(t * .9 + sd) * 2; }
     let face = it.face || "neutral"; for (const m of it.mv) { if (m.t > t) break; if (m.m === "happy_face") face = "happy"; else if (m.m === "sad_face") face = "sad"; }
     const fs = state === "move" ? "" : FACE[state]; if (fs && state !== "stand") face = fs;
-    return { x, f, pose, face };
+    if (state === "talk") face = face === "neutral" ? "happy" : face;
+    return { x, f, pose, face, state, ts, run: !!from?.run, moving: state === "move" };
   }
   function propAt(it, t) {
     let x = it.x ?? .5, y = it.y ?? .5, s = it.s ?? 1, rot = 0, dy = 0, alpha = 1;
@@ -209,6 +240,25 @@
     if (it.k === "gear") rot += t * 1.2; rot += (+it.r || 0) * D;
     return { x, y: y + dy, s, rot, alpha };
   }
+  let ENV = null, TUBE = true;
+  // мультяшні ефекти: лінії швидкості, «!», «…», крапля поту, іскорки, зірочки, хмарка з дощем
+  const star4 = (cx, cy, r) => [[cx, cy - r], [cx + r * .25, cy - r * .25], [cx + r, cy], [cx + r * .25, cy + r * .25], [cx, cy + r], [cx - r * .25, cy + r * .25], [cx - r, cy], [cx - r * .25, cy - r * .25], [cx, cy - r]];
+  function fx(x, m, t, it, hc, hr, gx, gy, U, sty, k) {
+    const d = t - (m.ts || 0), st = m.state, acc = { ...sty, ink: sty.acc }, pulse = .5 + .5 * Math.sin(t * 9 + it.seed);
+    x.save();
+    if (m.moving && m.run) { const b = -m.f; x.globalAlpha *= .6; strokes(x, [0, 1, 2].map((i) => { const y = gy - U * (1.4 + i * .55), x0 = gx + b * U * (.8 + i * .15), L2 = U * (.6 + .25 * Math.sin(t * 20 + i)); return [[x0, y], [x0 + b * L2, y]]; }), 1, sty, k, 3.5);
+      if (Math.sin(t * 11) > 0) strokes(x, [arc(gx + b * U * .9, gy - U * .1, U * .14, 0, 360, 10), arc(gx + b * U * 1.25, gy - U * .2, U * .09, 0, 360, 8)], 1, sty, k, 3); }
+    else if (st === "jump" && d > .75 && d < 1.15) { strokes(x, [-50, -20, 20, 50].map((a) => { const r1 = U * .45, r2 = U * .75, aa = (a - 90) * D; return [[gx + Math.cos(aa) * r1, gy + 4 * k + Math.sin(aa) * r1 * .3], [gx + Math.cos(aa) * r2, gy + 4 * k + Math.sin(aa) * r2 * .3]]; }), 1, sty, k, 4); }
+    else if (st === "shock" || (st === "fall" && d < 1)) { const sc = clamp(d / .25); x.font = `900 ${Math.round(U * 1.1 * (.6 + .4 * back(sc)))}px "Manrope", sans-serif`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillStyle = sty.acc; x.fillText("!", hc[0], hc[1] - hr * 2.6);
+      if (d < 1.2) strokes(x, [-60, -30, 30, 60].map((a) => { const aa = (a - 90) * D; return [[hc[0] + Math.cos(aa) * hr * 1.4, hc[1] + Math.sin(aa) * hr * 1.4], [hc[0] + Math.cos(aa) * hr * 2, hc[1] + Math.sin(aa) * hr * 2]]; }), 1, sty, k, 4); }
+    if (st === "think") { [0, 1, 2].forEach((i) => { if (((d * 2.2) % 4) > i) { x.fillStyle = sty.ink; x.beginPath(); x.arc(hc[0] + m.f * hr * (.6 + i * .5), hc[1] - hr * (1.5 + i * .35), (4 + i * 1.5) * k, 0, 7); x.fill(); } }); }
+    if (st === "work" || st === "push" || m.face === "strain") { const yy = hc[1] - hr * .3 + (d * 40 * k) % (hr * 1.2), xx = hc[0] - m.f * hr * 1.15; strokes(x, [[[xx, yy - hr * .35], ...arc(xx, yy, hr * .17, -30, 210, 10), [xx, yy - hr * .35]]], 1, sty, k, 3.5); }
+    if (st === "cheer" || st === "dance" || (m.face === "happy" && st === "jump")) { x.globalAlpha *= pulse; strokes(x, [star4(hc[0] - hr * 2, hc[1] - hr * .6, hr * .45), star4(hc[0] + hr * 2.1, hc[1] - hr * 1.1, hr * .35), star4(hc[0] + hr * 1.2, hc[1] - hr * 2.1, hr * .28)], 1, acc, k, 3.5); }
+    if (st === "fall" && d > .6) { [0, 1, 2].forEach((i) => { const a = t * 3 + i * 2.1, sx = hc[0] + Math.cos(a) * hr * 1.6, sy = hc[1] - hr * .8 + Math.sin(a) * hr * .4; strokes(x, [star4(sx, sy, hr * .25)], 1, acc, k, 3); }); }
+    if (st === "sad") { const cx = hc[0], cy = hc[1] - hr * 2.4, cl = [...arc(cx - hr * .5, cy, hr * .4, 90, 270, 8), ...arc(cx, cy - hr * .25, hr * .5, 200, 340, 8), ...arc(cx + hr * .5, cy, hr * .4, 270, 450, 8), [cx - hr * .5, cy + hr * .4]];
+      strokes(x, [cl, ...[-.4, 0, .4].map((o, i) => { const yy = cy + hr * .5 + ((t * 2 + i * .3) % 1) * hr * .7; return [[cx + o * hr, yy], [cx + o * hr - hr * .08, yy + hr * .25]]; })], 1, sty, k, 3.5); }
+    x.restore();
+  }
   function label(x, txt, cx, y, ap, sty, k) { x.save(); x.globalAlpha *= clamp((ap - .4) * 2.5); x.font = `700 ${Math.round(34 * k)}px "${sty.font}", system-ui, sans-serif`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillStyle = sty.ink; if (sty.glow) { x.shadowColor = sty.glow; x.shadowBlur = 10 * k; } x.fillText(String(txt), cx, y); x.restore(); }
   // деталі сцени в заданій області (і для формату «Анімація лініями», і для «Рілс маркером»)
   function drawItems(x, items, t, sty, k, G) {
@@ -217,11 +267,21 @@
       if (it.k === "man") { const m = manAt(it, t, SW), gx = X0 + m.x * SW, gy = stY + (it.y ?? .92) * stH, s = (it.s ?? 1);
         const hang = (it.mv.filter((v) => v.t <= t && (POSE[v.m] || v.m === "stand")).pop() || {}).m === "hang";
         const hid = it.mv.find((v) => v.m === "hide" && v.t <= t), al = hid ? 1 - clamp((t - hid.t) / .35) : 1; if (al <= 0) continue; x.save(); x.globalAlpha *= al;
-        const hy = stY + stH * .62, parts = figure(m.pose, gx, hang ? hy : gy, U * s, m.f, m.face, it.wear).map((p, i) => jit(p, it.seed * 11 + i * 5, k));
+        const blink = ((t + it.seed * .77) % (3.1 + (it.seed % 5) * .37)) < .13, mouth = m.state === "talk" ? (ENV ? ENV(t) : (.5 + .5 * Math.sin(t * 17)) * (.5 + .5 * Math.sin(t * 5.3))) : 0;
+        const hy = stY + stH * .62, parts = figure(m.pose, gx, hang ? hy : gy, U * s, m.f, m.face, it.wear, { blink, mouth }).map((p, i) => jit(p, it.seed * 11 + i * 5, k));
         if (hang) strokes(x, [jit([[gx, stY - 90 * k], [gx, hy - 3.3 * U * s]], it.seed, k)], ap, sty, k, 4);
         if (!hang && it.floor !== false) { const xs = [it.x ?? .5, ...it.mv.filter((v) => v.x != null && /_to$/.test(v.m)).map((v) => v.x)], a = X0 + Math.min(...xs) * SW - 1.25 * U * s, b2 = X0 + Math.max(...xs) * SW + 1.25 * U * s;
           strokes(x, [jit([[a, gy + 4 * k], [b2, gy + 4 * k]], it.seed * 3, k)], ap, sty, k, 4); }
-        strokes(x, parts, ap, sty, k, 6);
+        if (!hang) { x.save(); x.globalAlpha *= .13 * ap; x.fillStyle = sty.ink; x.beginPath(); x.ellipse(gx, gy + 2 * k, U * s * .8, U * s * .12, 0, 0, 7); x.fill(); x.restore(); }
+        if (TUBE) { const body = [parts[4], parts[5], parts[0], parts[2], parts[3]], bw = 15 * s, inner = { ...sty, ink: sty.paper || sty.bg, glow: null };
+          strokes(x, [parts[4], parts[5]], ap, sty, k, bw); strokes(x, [parts[4], parts[5]], ap, inner, k, bw - 9);
+          strokes(x, [parts[0]], ap, sty, k, bw * 1.9); strokes(x, [parts[0]], ap, inner, k, bw * 1.9 - 9);
+          strokes(x, [parts[2], parts[3]], ap, sty, k, bw * .9); strokes(x, [parts[2], parts[3]], ap, inner, k, bw * .9 - 9); void body; }
+        else strokes(x, [parts[0], parts[2], parts[3], parts[4], parts[5]], ap, sty, k, 6);
+        { const hp = parts[1], hc2 = hp.reduce((a, q) => [a[0] + q[0] / hp.length, a[1] + q[1] / hp.length], [0, 0]), hr = Math.hypot(hp[0][0] - hc2[0], hp[0][1] - hc2[1]);
+          if (ap > .3) { x.save(); x.fillStyle = sty.paper || sty.bg; x.beginPath(); x.arc(hc2[0], hc2[1], hr, 0, 7); x.fill(); x.restore(); }
+          strokes(x, [hp], ap, sty, k, 6); strokes(x, parts.slice(6), ap, sty, k, 5);
+          if (ap >= 1) fx(x, m, t, it, hc2, hr, gx, gy, U * s, sty, k); }
         if (it.label && !hang) label(x, it.label, gx, gy - 4.15 * U * s, ap, sty, k);
         x.restore(); continue; }
       // репліка / думка в бульбашці
@@ -243,7 +303,11 @@
         strokes(x, [jit([[cx, ty - 60 * k], [cx, ty]], it.seed, k), jit([[cx - w * .45, ty], [cx + w * .45, ty], [cx + w * .7, ty + 50 * k], [cx - w * .7, ty + 50 * k], [cx - w * .45, ty]], it.seed + 1, k)], ap, sty, k, 5);
         if (on > 0) { x.save(); x.globalAlpha *= on; strokes(x, [jit([[cx - w * .7, ty + 50 * k], [cx - 1.7 * w * p.s * 1.6, gY]], it.seed + 2, k), jit([[cx + w * .7, ty + 50 * k], [cx + 1.7 * w * p.s * 1.6, gY]], it.seed + 3, k)], 1, sty, k, 3.5); x.restore(); }
         continue; }
-      let list = fnS(it).map((pp) => pp.map(([a, b]) => { const ca = Math.cos(p.rot), sa = Math.sin(p.rot); return [cx + (a * ca - b * sa) * sz, cy + (a * sa + b * ca) * sz]; }));
+      const FL = new Set(["money", "coins", "coin", "heart", "star", "question", "exclaim", "bulb", "cloud", "tab", "card", "hryvnia", "mail", "globe", "trophy"]), app = ap < 1 ? .82 + .18 * back(ap) : 1, fy = FL.has(it.k) ? Math.sin(t * 1.7 + it.seed) * 6 * k : 0;
+      const sz2 = sz * app; void sz2;
+      let list = fnS(it).map((pp) => pp.map(([a, b]) => { const ca = Math.cos(p.rot), sa = Math.sin(p.rot); return [cx + (a * ca - b * sa) * sz * app, cy + fy + (a * sa + b * ca) * sz * app]; }));
+      if (it.k === "cup" || it.k === "house") { const bx = it.k === "cup" ? cx : cx + .5 * sz, by = it.k === "cup" ? cy - .4 * sz : cy - .9 * sz; [0, 1].forEach((i) => { const ph = (t * .7 + i * .5) % 1; list.push(Array.from({ length: 8 }, (_, j) => [bx + (i ? .18 : -.12) * sz + Math.sin(j * .9 + t * 3 + i) * .08 * sz, by - (ph * .5 + j * .08) * sz])); }); }
+      if (["money", "coins", "coin", "bag", "trophy", "star", "hryvnia"].includes(it.k) && t - it.ta > .2 && t - it.ta < 1.6) { const q = (t - it.ta - .2) / 1.4; list.push(...[0, 1, 2].map((i) => star4(cx + Math.cos(i * 2.1 + 1) * sz * 1.1, cy + Math.sin(i * 2.1 + 1) * sz * .8, sz * .22 * Math.sin(q * Math.PI)))); }
       if (it.k === "clock") { const a1 = t * 2, a2 = t * .2; list.push([[cx, cy], [cx + Math.sin(a1) * sz * .7, cy - Math.cos(a1) * sz * .7]], [[cx, cy], [cx + Math.sin(a2) * sz * .45, cy - Math.cos(a2) * sz * .45]]); }
       x.save(); x.globalAlpha *= p.alpha; strokes(x, list.map((pp, i) => jit(pp, it.seed * 13 + i * 3, k)), ap, it.acc ? { ...sty, ink: sty.acc } : sty, k, 5);
       // напис на предметі (картка «ЗАДАЧА», «?» у вкладці) і підпис під/над ним (поле sub: «5 хвилин», «+6 год»)
@@ -263,7 +327,8 @@
       x.save(); x.globalAlpha *= clamp((t - q.t0 - .2) / .3); x.fillStyle = sty.ink; if (sty.glow) { x.shadowColor = sty.glow; x.shadowBlur = 18 * k; } x.fillText(tt, W / 2, top + 4 * k, tw - 50 * k); x.restore();
       const ly = top + bh / 2 + 42 * k, ticks = []; for (let i = 0; i < 10; i++) { const tx = W * .1 + i * W * .088; ticks.push(jit([[tx, ly], [tx + 26 * k, ly + 26 * k]], q.n * 9 + i, k)); }
       strokes(x, [jit([[W * .06, ly], [W * .94, ly]], q.n * 7, k), ...ticks], clamp((t - q.t0 - .15) / .5), sty, k, 3.5); }
-    drawItems(x, q.items, t, sty, k, { X0: 0, SW: W, stY, stH, U });
+    { const zz = 1 + .045 * clamp((t - q.t0) / Math.max(1, q.t1 - q.t0)), cY = stY + stH * .6; x.save(); x.translate(W / 2, cY); x.scale(zz, zz); x.translate(-W / 2, -cY);
+      drawItems(x, q.items, t, { ...sty, paper: sty.bg }, k, { X0: 0, SW: W, stY, stH, U }); x.restore(); }
     // плашка сцени (з розкадровки): з'являється з пружинкою
     if (q.s.plaque && sty.lk.plaque !== "none") drawPlaque(x, q.s.plaque, q.s.color, t - q.t0 - .15, W, k, sty);
     const cap = sty.lk.fig === false ? "" : L.title ? (q.s.title || q.s.caption) : (q.s.caption || q.s.title); if (cap) { const cy = stY + stH + 64 * k; x.save(); x.globalAlpha *= clamp((t - q.t0 - .3) / .4); x.font = `700 ${Math.round(34 * k)}px "Manrope", system-ui, sans-serif`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillStyle = sty.ink;
@@ -337,7 +402,7 @@
   /* ---------- AI: сцени з деталей ---------- */
   const numbered = () => L.words.map((w, i) => `${i}:${w.w}`).join(" ");
   const SPEC = `Деталі: "man" — чоловічок-паличка (x — 0…1 по ширині, y — земля 0…1, зазвичай 0.92; f — 1 дивиться вправо, -1 вліво); face — "neutral"|"happy"|"sad" (обличчя за замовчуванням); предмети: ${KINDS.join(", ")} (x, y — центр 0…1; s — розмір 0.6…2; acc:true — акцентний колір; t — слово на картці card («ЗАДАЧА») або «?»/«!» у вкладці tab; sub — маленький підпис біля предмета, напр. «5 хвилин», «+6 год»; wall і desk стоять на землі; lamp — лампа зверху зі світлом на людину, став по x людини); "text" — короткий напис до 3 слів або число («500 грн», «x10»), поле t. Кілька tab навколо людини — «багато вкладок у голові».
-Рухи (moves: [{"i":номер слова, коли почати,"m":рух, ...}]): для man — walk_to (x), run_to (x), jump, wave, cheer, think, point, shrug, sad, sit, stand, fall, hang (висить догори ногами), dance, push (штовхає стіну — став wall впритул спереду), work (сидить і працює за desk), shock, happy_face, sad_face; для предметів і написів — pop, bounce, spin, shake, fly_to (x, y), grow, hide. Поле "at" — номер слова, коли деталь з'являється (інакше — на початку сцени).`;
+Рухи (moves: [{"i":номер слова, коли почати,"m":рух, ...}]): для man — talk (говорить; став разом із say), walk_to (x), run_to (x), jump, wave, cheer, think, point, shrug, sad, sit, stand, fall, hang (висить догори ногами), dance, push (штовхає стіну — став wall впритул спереду), work (сидить і працює за desk), shock, happy_face, sad_face; для предметів і написів — pop, bounce, spin, shake, fly_to (x, y), grow, hide. Поле "at" — номер слова, коли деталь з'являється (інакше — на початку сцени).`;
   async function aiScenes(extra = "") {
     const r = await sample.json(`Ти режисер коротких анімаційних відео в стилі «малюнок лініями» (як інструкція-креслення, але з гумором). Людина говорить за кадром — ось дослівні слова з номерами:
 ${numbered()}
@@ -610,8 +675,8 @@ ${SPEC}
     const it = (spec.items || []).map((o, ii) => ({ ...o, ta: clamp(+o.at || 0, 0, .95) * d + (o.at == null ? ii * .2 : 0), mv: (o.moves || []).map((m) => ({ ...m, t: clamp(+m.p || 0, 0, .98) * d })).sort((a, b) => a.t - b.t), seed: seed * 31 + ii * 7 + 1 }));
     if (BOXC.size > 200) BOXC.clear(); BOXC.set(key, it); return it; }
   function drawBox(x, spec, lt, d, o) {
-    if (!spec?.items?.length || lt < 0) return; BOIL = Math.floor(o.t * 8); NOBOIL = o.boil === false;
-    const sty = { ink: o.ink, acc: o.acc || "#d0312d", bg: o.dark ? "#000" : "#fff", glow: null, font: o.font || "Pangolin", lk: { lw: o.lw || 1 } };
+    if (!spec?.items?.length || lt < 0) return; ENV = null; BOIL = Math.floor(o.t * 8); NOBOIL = o.boil === false;
+    const sty = { ink: o.ink, acc: o.acc || "#d0312d", bg: o.paper || (o.dark ? "#000" : "#fff"), paper: o.paper, glow: null, font: o.font || "Pangolin", lk: { lw: o.lw || 1 } };
     const U = 138 * o.boxH / 900; x.save(); x.globalAlpha *= o.alpha ?? 1;
     drawItems(x, boxItems(spec, d, o.seed || 1), lt, sty, 1, { X0: o.cx - o.boxW / 2, SW: o.boxW, stY: o.cy - o.boxH / 2, stH: o.boxH, U });
     x.restore();
@@ -622,7 +687,7 @@ ${board.map((b, i) => `${i + 1}. фраза: «${b.phrase}»; малюнок: ${
 Тема: ${topic || "—"}.
 Для КОЖНОЇ сцени (рівно ${board.length}, у тому ж порядку) намалюй задум «малюнок» з деталей: майже завжди чоловічок, що щось робить, + 1–3 предмети або напис. Час — частка тривалості сцени від 0 до 1: "at" — коли деталь з'являється, "p" у русі — коли почати рух (рухи на тих моментах фрази, про які йдеться).
 Деталі: "man" — чоловічок (x 0…1, y — земля, зазвичай 0.92; f — 1 вправо / -1 вліво; face "neutral"|"happy"|"sad"); предмети: ${KINDS.join(", ")} (x, y — центр 0…1; s — розмір 0.6…2; acc:true — червоний акцент; t — слово на card або «?»/«!» у tab; sub — маленький підпис «5 хвилин», «+6 год»); "text" — напис до 3 слів чи число, поле t.
-Рухи man: walk_to (x), run_to (x), jump, wave, cheer, think, point, shrug, sad, sit, stand, fall, hang, dance, push, work, shock, happy_face, sad_face; рухи предметів: pop, bounce, spin, shake, fly_to (x, y), grow, hide.
+Рухи man: talk (говорить — рот рухається; став, коли персонаж каже say), walk_to (x), run_to (x), jump, wave, cheer, think, point, shrug, sad, sit, stand, fall, hang, dance, push, work, shock, happy_face, sad_face; рухи предметів: pop, bounce, spin, shake, fly_to (x, y), grow, hide.
 Простота й рух важливіші за кількість. Не дублюй текст плашки написом.
 Відповідай тільки JSON: {"scenes":[{"items":[{"k":"man","x":0.4,"y":0.92,"moves":[{"p":0.3,"m":"walk_to","x":0.6}]},{"k":"money","x":0.75,"y":0.4,"at":0.4,"moves":[{"p":0.4,"m":"pop"}]}]}]}`, { cache: false, kb: true, max: 4000 });
     const cl = (v, a = 0, b = 1) => clamp(+v || 0, a, b);
@@ -639,8 +704,8 @@ ${board.map((b, i) => `${i + 1}. фраза: «${b.phrase}»; малюнок: ${
   function camAt(w, t, T) { const K = (w.cam || []).map((c) => ({ t: fromIP(c.at, T), x: +c.x || .5, z: clamp(+c.z || 1, .8, 1.7) })).sort((a, b) => a.t - b.t); let cur = { x: .5, z: 1 };
     for (const c of K) { if (c.t > t) break; const p = ease(clamp((t - c.t) / 1.3)); cur = { x: cur.x + (c.x - cur.x) * p, z: cur.z + (c.z - cur.z) * p }; } return cur; }
   function drawWorld(x, w, t, o) {
-    if (!w?.items?.length) return; BOIL = Math.floor(t * 8); NOBOIL = o.boil === false;
-    const sty = { ink: o.ink, acc: o.acc || "#d0312d", bg: o.dark ? "#000" : "#fff", glow: null, font: o.font || "Manrope", lk: { lw: o.lw || 1 } }, cam = camAt(w, t, o.T), U = 138 * o.boxH / 900;
+    if (!w?.items?.length) return; ENV = null; BOIL = Math.floor(t * 8); NOBOIL = o.boil === false;
+    const sty = { ink: o.ink, acc: o.acc || "#d0312d", bg: o.paper || (o.dark ? "#000" : "#fff"), paper: o.paper, glow: null, font: o.font || "Manrope", lk: { lw: o.lw || 1 } }, cam = camAt(w, t, o.T), U = 138 * o.boxH / 900;
     x.save(); x.translate(o.cx, o.cy); x.scale(cam.z, cam.z); x.translate(-o.cx, -o.cy);
     drawItems(x, worldItems(w, o.T), t, sty, 1, { X0: o.cx - cam.x * o.boxW, SW: o.boxW, stY: o.cy - o.boxH / 2, stH: o.boxH, U }); x.restore();
   }
@@ -653,7 +718,7 @@ ${board.map((b, i) => `${i + 1}. [${T[i].s.toFixed(1)}–${T[i].e.toFixed(1)} с
 Відео має бути ЗРОЗУМІЛЕ БЕЗ ЗВУКУ: кожну думку показуй дією і підписами — label на персонажах і предметах («мама», «дитинча»), репліки say і думки thinkb (1–4 слова), лічильники count (from → to, t — одиниця: «років»), стрілки (arrow з r — кут), написи text, числа. Не повторюй дослівно субтитри — доповнюй картинкою.
 Персонажам давай зовнішність wear, щоб їх розрізняти: hair, longhair, bun, bow, hat, cap, crown, glasses, beard, tie, cape, skirt; тварина — ears+tail (мавпа), cat (кіт); малюк — s 0.5–0.6.
 Деталі: "man" (x — 0…${areas}, y — земля 0.92; f 1/-1; face neutral|happy|sad; wear; label; s); предмети ${KINDS.join(", ")} (x, y 0…1 — висота на аркуші; s 0.5–2; r — кут; acc:true — червоний; t — слово на card/«?» у tab; sub; label); "text" (t); "say"/"thinkb" (t, x, y — над головою персонажа ≈0.25–0.4); "count" (from, to, t).
-Рухи man: walk_to (x), run_to (x), jump, wave, cheer, think, point, shrug, sad, sit, stand, fall, hang, dance, push, work, shock, happy_face, sad_face, hide. Рухи предметів: pop, bounce, spin, shake, fly_to (x, y), grow, hide.
+Рухи man: talk (говорить — рот рухається; став, коли персонаж каже say), walk_to (x), run_to (x), jump, wave, cheer, think, point, shrug, sad, sit, stand, fall, hang, dance, push, work, shock, happy_face, sad_face, hide. Рухи предметів: pop, bounce, spin, shake, fly_to (x, y), grow, hide.
 Час: "at" — секунда появи деталі, у рухах "t" — секунда початку (точно на словах, про які йдеться). cam: [{"t":сек,"x":центр кадру 0.5…${areas - .5},"z":1–1.5 (наближення на важливому)}].
 8–20 деталей на весь ролик, постійний рух, але без хаосу.
 Відповідай тільки JSON: {"cam":[{"t":0,"x":0.5,"z":1}],"items":[{"k":"man","x":0.35,"y":0.92,"wear":["longhair","skirt"],"label":"мама","at":0.3,"moves":[{"t":1.5,"m":"wave"}]},{"k":"say","x":0.4,"y":0.3,"t":"Нарешті!","at":2,"moves":[{"t":4,"m":"hide"}]}]}`, { cache: false, kb: true, max: 4000 });
@@ -747,7 +812,7 @@ ${cast.length ? `Персонажі, які вже є в історії (про�
 Місця (places) — фон, що пролітає позаду: ${Object.entries(PLACES).map(([k, v]) => `${k} (${v})`).join(", ")}; поділи [${x0}, ${x1}] на 1–3 місця під сюжет.
 Відео має бути ЗРОЗУМІЛЕ БЕЗ ЗВУКУ: дії, підписи label, репліки say і думки thinkb (1–4 слова), лічильники count (from → to, t — одиниця), стрілки arrow (r — кут), написи text, предмети, що вилітають (fly_to за межі кадру).
 Нові деталі: "man" (id — коротке ім'я; x; y 0.92; f; face; wear: hair, longhair, bun, bow, hat, cap, crown, glasses, beard, tie, cape, skirt, ears+tail — мавпа, cat — кіт; s — розмір, малюк 0.55; hero:true — головний, лише один на весь ролик), предмети ${KINDS.join(", ")} (x, y 0…1 — висота; s; r; acc; t; sub; label), "text", "say"/"thinkb" (t; x, y ≈ 0.3 над головою), "count" (from, to, t).
-Рухи man: walk_to (x), run_to (x), jump, wave, cheer, think, point, shrug, sad, sit, stand, fall, hang, dance, push, work, shock, happy_face, sad_face, hide. Предмети: pop, bounce, spin, shake, fly_to (x, y), grow, hide.
+Рухи man: talk (говорить — рот рухається; став, коли персонаж каже say), walk_to (x), run_to (x), jump, wave, cheer, think, point, shrug, sad, sit, stand, fall, hang, dance, push, work, shock, happy_face, sad_face, hide. Предмети: pop, bounce, spin, shake, fly_to (x, y), grow, hide.
 Час — секунди з тексту вище: "at" — поява, "t" у рухах — початок руху точно на потрібних словах. Наближення камери: cam [{"t":сек,"z":1–1.6}] на важливих моментах.
 ${extra}
 Відповідай тільки JSON: {"places":[{"x0":${x0},"x1":${x1},"kind":"field"}],"items":[{"k":"man","id":"Олег","hero":true,"x":${(x0 + .4).toFixed(2)},"y":0.92,"wear":["cap"],"label":"Олег","at":${seg.t0.toFixed(1)},"moves":[{"t":${(seg.t0 + 1).toFixed(1)},"m":"walk_to","x":${(x0 + 1).toFixed(2)}}]}],"moves":[{"id":"ім'я наявного персонажа","t":0,"m":"walk_to","x":0}],"cam":[{"t":0,"z":1.2}]}`, { cache: false, kb: true, max: 4000 });

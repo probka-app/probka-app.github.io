@@ -1099,7 +1099,7 @@ body{background:radial-gradient(900px 640px at 8% -12%,var(--yv-glow-1),transpar
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="YuVi">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>window.YV_DEV=false;window.YV_BUILD="31.10 18:04";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
+<script>window.YV_DEV=false;window.YV_BUILD="31.10 18:14";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="server.js?v=4cb72239"></script>
@@ -1621,7 +1621,7 @@ function drawScene(x,i,lt,d,alpha,t){ if(S.scenes[i]?.ad){ drawAd(x,lt,alpha); d
         if(tipX!==null){ fx=tipX+2*Math.sin(lt*53); fy=tipY+2*Math.cos(lt*47); } else if(ink._lastTip&&reveal>=1){ [fx,fy]=ink._lastTip; } if(tipX!==null) ink._lastTip=[fx,fy];
         x.save(); x.globalAlpha=op*(1-out); x.translate(fx+out*520,fy+out*620); x.rotate(.95+.05*Math.sin(lt*7)); x.scale(1/s,1/s); drawTool(x,ST.tool,dr==="hand"); x.restore(); } }
     x.restore(); }
-  if(!ink&&!S.world&&sc.lines&&window.YVLines&&lt>0) YVLines.drawBox(x,sc.lines,lt,d,{cx:540,cy,boxW,boxH,alpha,t,ink:inkColor(),dark:isDark(),lw:(THICK[ST.thick]?.w||3.5)/3.5*1.15,boil:S.mon.boil!==false,seed:i+1});
+  if(!ink&&!S.world&&sc.lines&&window.YVLines&&lt>0) YVLines.drawBox(x,sc.lines,lt,d,{cx:540,cy,boxW,boxH,alpha,t,ink:inkColor(),dark:isDark(),paper:(BGS[ST.bg]||BGS.white).c,lw:(THICK[ST.thick]?.w||3.5)/3.5*1.15,boil:S.mon.boil!==false,seed:i+1});
   lt=lt0;
   if(sc.plaque){ const k=clamp((lt-.15)/.3); if(k>0){ const c=plaqueFor(sc.plaque,colOf(sc)); let s=(.6+.4*backOut(k))*.95, py=plY;
     if(isHook(i)){ const f=clamp((lt-HOOK_HOLD)/HOOK_FLY), e=f<1?1-Math.pow(1-f,3):1; s=(.6+.4*backOut(k))*(1.25-.3*e); py=960+(plY-960)*e; }
@@ -1646,7 +1646,7 @@ function drawPreviewMark(x,t){ x.save(); x.setTransform(.5,0,0,.5,0,0); const da
   for(let r=-6;r<=6;r++){ const y=r*190, off=(r%2?sh:-sh)-tw*2+(r*137)%tw; for(let k=0;k<5;k++) x.fillText(txt,off+k*tw-700,y); }
   x.restore(); }
 function drawFrame(x,t,scale){ x.setTransform(scale,0,0,scale,0,0); { let ox=0,oy=0; if(ST.gridMove!==false&&hasGrid()){ ox=Math.sin(t*.21)*90+t*6; oy=Math.cos(t*.17)*70+t*14; } paintBg(x,VW,VH,54,oy,ox); } const T=timings(), total=totalDur();
-  if(S.world&&window.YVLines&&T.length){ const top=S.tlPos==="top"; YVLines.drawWorld(x,S.world,t,{T,cx:540,cy:top?1060:930,boxW:960,boxH:top?820:900,ink:inkColor(),dark:isDark(),lw:(THICK[ST.thick]?.w||3.5)/3.5*1.15,boil:S.mon.boil!==false}); }
+  if(S.world&&window.YVLines&&T.length){ const top=S.tlPos==="top"; YVLines.drawWorld(x,S.world,t,{T,cx:540,cy:top?1060:930,boxW:960,boxH:top?820:900,ink:inkColor(),dark:isDark(),paper:(BGS[ST.bg]||BGS.white).c,lw:(THICK[ST.thick]?.w||3.5)/3.5*1.15,boil:S.mon.boil!==false}); }
   if(T.length){ let i=T.findIndex(o=>t<o.e); if(i<0) i=T.length-1; const lt=t-T[i].s, d=T[i].e-T[i].s;
     if(i>0&&lt<.25){ const p=T[i-1]; drawScene(x,i-1,p.e-p.s,p.e-p.s,1-lt/.25,t); }
     drawScene(x,i,lt,d,1,t); }
