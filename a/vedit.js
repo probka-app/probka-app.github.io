@@ -31,8 +31,8 @@
   /* ---------- стан ---------- */
   let P = null; // проєкт
   // що додавати під час монтажу — галочки на старті (запам'ятовуємо)
-  const OPTS = [["subs", "Субтитри"], ["hook", "Плашка-хук"], ["stock", "Фото й відео-вставки"], ["music", "Музика"], ["amb", "Фонові звуки"]];
-  const loadOpt = () => { let o = {}; try { o = JSON.parse(localStorage.getItem("yv_ved_opt") || "{}"); } catch (e) {} return { subs: true, hook: true, stock: true, music: true, amb: false, ...o }; };
+  const OPTS = [["subs", "Субтитри"], ["hook", "Плашка-хук"], ["stock", "Фото й відео-вставки"], ["music", "Музика"], ["amb", "Фонові звуки"], ["board", "Дошка з малюнками над тобою"]];
+  const loadOpt = () => { let o = {}; try { o = JSON.parse(localStorage.getItem("yv_ved_opt") || "{}"); } catch (e) {} return { subs: true, hook: true, stock: true, music: true, amb: false, board: false, ...o }; };
   const saveOpt = (o) => { try { localStorage.setItem("yv_ved_opt", JSON.stringify(o)); } catch (e) {} };
   const fresh = () => ({ opt: loadOpt(), main: null, media: [], styleImgs: [], wish: "", aud: null, words: [], cut: new Set(), zoom: new Set(), emph: new Set(), broll: [], hook: "", style: { ...BASE, ...PRESETS.yellow.s }, preset: "yellow", hist: [] });
   const snapState = () => JSON.stringify({ cut: [...P.cut], zoom: [...P.zoom], emph: [...P.emph], broll: P.broll, hook: P.hook, style: P.style, preset: P.preset });
@@ -40,7 +40,7 @@
   const popHist = () => { const s = P.hist.pop(); if (!s) return false; const o = JSON.parse(s); P.cut = new Set(o.cut); P.zoom = new Set(o.zoom); P.emph = new Set(o.emph); P.broll = o.broll; P.hook = o.hook; P.style = o.style; P.preset = o.preset; return true; };
 
   /* ---------- таймлайн: які шматки відео лишаються ---------- */
-  let SEG = [], TOT = 0, OUTA = null, CHUNKS = [], WOUT = [];
+  let SEG = [], TOT = 0, OUTA = null, CHUNKS = [], WOUT = [], BT = [];
   function build() {
     const W = P.words, keep = W.map((w, i) => i).filter((i) => !P.cut.has(i)), SR = E().SR, src = { x: P.aud };
     const runs = []; let r = null;
@@ -68,6 +68,10 @@
       else { c.idx.push(i); c.e = t.e; } });
     c && CHUNKS.push(c);
     CHUNKS.forEach((q, k) => { q.until = CHUNKS[k + 1] ? Math.min(CHUNKS[k + 1].s, q.e + .6) : q.e + .6; });
+    // дошка: час кожної сторінки у фінальному відео
+    const firstOut = (i) => { for (let j = Math.max(0, i); j < WOUT.length; j++) if (WOUT[j]) return WOUT[j].s; return null; };
+    BT = []; (P.board || []).forEach((g) => { const t0 = firstOut(g.a); if (t0 == null || (BT.length && t0 <= BT[BT.length - 1].t0 + .3)) return; BT.push({ g, t0: BT.length ? t0 : 0 }); });
+    BT.forEach((b, k) => { b.t1 = BT[k + 1] ? BT[k + 1].t0 : TOT + 1; b.words = b.g.words.map((w) => ({ t: w.t, s: WOUT[w.i]?.s })).filter((w) => w.s != null); });
   }
   // «Звук голосу» (пресети з озвучки) — накладаємо на готове аудіо перед програванням/збереженням
   let OUTB = null, FXK = "";
@@ -128,11 +132,11 @@
     x.restore();
   }
   function hexA(h, a) { const m = /^#?([0-9a-f]{6})$/i.exec(String(h || "")); if (!m) return `rgba(0,0,0,${a})`; const n = parseInt(m[1], 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; }
-  function drawHook(x, t, W, H) {
+  function drawHook(x, t, W, H, cyF = .17) {
     if (!P.hook || t > 2.9) return; const k = W / OW, a = t < .25 ? t / .25 : t > 2.6 ? (2.9 - t) / .3 : 1, s = t < .25 ? .8 + .2 * (1 - Math.pow(1 - t / .25, 3)) : 1;
     const px = Math.round(58 * k), maxW = W * .8; x.font = `600 ${px}px "Unbounded", "Manrope", sans-serif`;
     const ws = P.hook.split(/\s+/), lines = [""]; ws.forEach((w) => { const tt = lines[lines.length - 1] ? lines[lines.length - 1] + " " + w : w; if (x.measureText(tt).width > maxW && lines[lines.length - 1]) lines.push(w); else lines[lines.length - 1] = tt; });
-    const lh = px * 1.28, bw = Math.max(...lines.map((l) => x.measureText(l).width)) + px * 1.1, bh = lines.length * lh + px * .7, cx = W / 2, cy = H * .17;
+    const lh = px * 1.28, bw = Math.max(...lines.map((l) => x.measureText(l).width)) + px * 1.1, bh = lines.length * lh + px * .7, cx = W / 2, cy = H * cyF;
     x.save(); x.globalAlpha = clamp(a); x.translate(cx, cy); x.scale(s, s); x.rotate(-.025);
     x.shadowColor = "rgba(0,0,0,.35)"; x.shadowBlur = 30 * k; x.shadowOffsetY = 10 * k; x.fillStyle = "#FFFFFF"; rr(x, -bw / 2, -bh / 2, bw, bh, px * .35); x.fill(); x.shadowColor = "transparent";
     x.fillStyle = "#0B0B0D"; x.textAlign = "center"; x.textBaseline = "middle"; lines.forEach((l, i) => x.fillText(l, 0, (i - (lines.length - 1) / 2) * lh)); x.restore();
@@ -151,8 +155,66 @@
     else { const r = 26 * W / OW; x.shadowColor = "rgba(0,0,0,.45)"; x.shadowBlur = 30 * W / OW; x.shadowOffsetY = 8 * W / OW; rr(x, -w / 2, -h / 2, w, h, r); x.fillStyle = "#000"; x.fill(); x.shadowColor = "transparent"; x.clip(); x.drawImage(el, -w / 2, -h / 2, w, h); }
     x.restore();
   }
+  /* ---------- «Дошка над тобою»: вгорі маркерна дошка малює кожну думку, внизу людина ---------- */
+  const easeIO = (v) => v < .5 ? 4 * v * v * v : 1 - Math.pow(-2 * v + 2, 3) / 2;
+  function coverFocus(x, el, X, Y, w, h, zoom, fy) {
+    const vw = el.videoWidth || el.naturalWidth || el.width, vh = el.videoHeight || el.naturalHeight || el.height; if (!vw || !vh) return;
+    const s = Math.max(w / vw, h / vh) * zoom, dw = vw * s, dh = vh * s; let dy = Y + h * .42 - fy * dh; dy = Math.min(Y, Math.max(Y + h - dh, dy));
+    x.drawImage(el, X + (w - dw) / 2, dy, dw, dh);
+  }
+  function drawMarker(x, px, py, k, col = "#1d1d1f") {
+    x.save(); x.translate(px, py); x.rotate(-.62); x.shadowColor = "rgba(0,0,0,.28)"; x.shadowBlur = 14 * k; x.shadowOffsetY = 6 * k;
+    x.fillStyle = "#f2f2f0"; rr(x, -15 * k, -205 * k, 30 * k, 170 * k, 10 * k); x.fill(); x.shadowColor = "transparent"; x.strokeStyle = "#8e8e8a"; x.lineWidth = 2.5 * k; x.stroke();
+    x.fillStyle = col; rr(x, -16 * k, -215 * k, 32 * k, 46 * k, 10 * k); x.fill(); x.fillRect(-15 * k, -60 * k, 30 * k, 8 * k);
+    x.fillStyle = "#cfcfcc"; x.beginPath(); x.moveTo(-12 * k, -36 * k); x.lineTo(12 * k, -36 * k); x.lineTo(5 * k, -8 * k); x.lineTo(-5 * k, -8 * k); x.closePath(); x.fill();
+    x.fillStyle = col; x.beginPath(); x.moveTo(-5 * k, -9 * k); x.lineTo(5 * k, -9 * k); x.lineTo(0, 0); x.closePath(); x.fill(); x.restore();
+  }
+  let MC = null;
+  // малюнок «з'являється під маркером»: зигзаг рядками зліва направо, справа наліво…
+  function drawSketch(x, img, bx, by, bw, bh, pr, k) {
+    const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height; if (!iw) return null;
+    const s = Math.min(bw / iw, bh / ih), w = iw * s, h = ih * s, X = bx + (bw - w) / 2, Y = by + (bh - h) / 2;
+    x.save(); x.globalCompositeOperation = "multiply";
+    if (pr >= 1) { x.drawImage(img, X, Y, w, h); x.restore(); return null; }
+    const Rn = 6, rh = h / Rn, L = Rn * w + (Rn - 1) * rh; let left = pr * L, hx = X, hy = Y + rh / 2;
+    MC ||= document.createElement("canvas"); if (MC.width !== Math.ceil(x.canvas.width) || MC.height !== Math.ceil(x.canvas.height)) { MC.width = x.canvas.width; MC.height = x.canvas.height; }
+    const m = MC.getContext("2d"); m.setTransform(x.getTransform()); m.globalCompositeOperation = "source-over"; m.clearRect(-1e4, -1e4, 3e4, 3e4);
+    m.lineWidth = rh * 1.35; m.lineCap = "round"; m.lineJoin = "round"; m.strokeStyle = "#000"; m.beginPath(); m.moveTo(X, hy);
+    for (let r = 0; r < Rn && left > 0; r++) { const y = Y + rh * (r + .5), x1 = r % 2 ? X : X + w, d = Math.min(left, w); hx = r % 2 ? X + w - d : X + d; hy = y; m.lineTo(hx, y); left -= d;
+      if (left > 0 && r < Rn - 1) { const d2 = Math.min(left, rh); hy = y + d2; m.lineTo(x1, hy); left -= d2; } }
+    m.stroke(); m.globalCompositeOperation = "source-in"; m.drawImage(img, X, Y, w, h); m.setTransform(1, 0, 0, 1, 0, 0);
+    x.setTransform(1, 0, 0, 1, 0, 0); x.drawImage(MC, 0, 0); x.restore(); return { hx, hy };
+  }
+  function drawBoard(x, t, W, BH, k) {
+    x.fillStyle = "#fbfaf6"; x.fillRect(0, 0, W, BH);
+    const b = BT.find((q) => t >= q.t0 && t < q.t1) || (t < (BT[0]?.t0 ?? 0) ? null : BT[BT.length - 1]); if (!b) return;
+    const pad = 54 * k, band = b.words.length ? 120 * k : 0, loc = t - b.t0, dur = Math.min(1.5, Math.max(.6, (b.t1 - b.t0) * .45));
+    let head = null;
+    if (b.g.img) head = drawSketch(x, b.g.img, pad, pad * .8, W - pad * 2, BH - pad * 1.6 - band, clamp(loc / dur), k);
+    // ключові слова «пишуться» маркером на своєму слові
+    if (b.words.length) { const px = Math.round(78 * k); x.font = `600 ${px}px "Caveat", "Pangolin", cursive`; x.textBaseline = "middle"; x.textAlign = "left";
+      const gap = 46 * k, ws = b.words.map((w) => ({ ...w, w: x.measureText(w.t).width })), tw = ws.reduce((a, w) => a + w.w, 0) + gap * (ws.length - 1); let xx = (W - tw) / 2; const y = BH - pad * .55 - band / 2;
+      ws.forEach((w, wi) => { const p = clamp((t - Math.max(b.t0 + .15, w.s - .05)) / .5);
+        if (p > 0) { x.save(); x.beginPath(); x.rect(xx - 10 * k, y - px, w.w * p + 10 * k, px * 2); x.clip(); x.fillStyle = ["#1d1d1f", "#d0312d", "#1f5fbf"][wi % 3]; x.fillText(w.t, xx, y); x.restore();
+          if (wi === ws.length - 1 || ws[wi + 1] && clamp((t - ws[wi + 1].s) / .5) <= 0) { x.save(); x.strokeStyle = x.fillStyle = ["#1d1d1f", "#d0312d", "#1f5fbf"][wi % 3]; x.lineWidth = 6 * k; x.lineCap = "round"; x.beginPath(); x.moveTo(xx, y + px * .5); x.lineTo(xx + w.w * clamp((p - .6) / .4), y + px * .5); if (p > .6) x.stroke(); x.restore(); }
+          if (p < 1) head = { hx: xx + w.w * p, hy: y + px * .25 }; }
+        xx += w.w + gap; }); }
+    // стирання перед наступною сторінкою
+    const ew = .28; if (b.t1 <= TOT && t > b.t1 - ew) { const p = easeIO(clamp((t - (b.t1 - ew)) / ew)); x.fillStyle = "#fbfaf6"; x.fillRect(0, 0, W * p, BH);
+      x.save(); x.fillStyle = "#3a3a3c"; rr(x, W * p - 30 * k, BH * .5 - 70 * k, 60 * k, 140 * k, 14 * k); x.fill(); x.fillStyle = "#e9e3d3"; rr(x, W * p - 30 * k, BH * .5 - 70 * k, 60 * k, 28 * k, 10 * k); x.fill(); x.restore(); return; }
+    if (head) drawMarker(x, head.hx, head.hy, k);
+  }
+  function drawBoardFrame(x, t, W, H, vEl) {
+    const k = W / OW, e = easeIO(clamp((t - .45) / .42)), bh = H * .5 * e;
+    x.save(); x.beginPath(); x.rect(0, bh, W, H - bh); x.clip(); coverFocus(x, vEl, 0, bh, W, H - bh, zoomAt(t) * (1 + .1 * e), .36); x.restore();
+    if (bh > 1) { x.save(); x.beginPath(); x.rect(0, 0, W, bh); x.clip(); x.translate(0, bh - H * .5); drawBoard(x, t, W, H * .5, k); x.restore();
+      x.fillStyle = "rgba(0,0,0,.18)"; x.fillRect(0, bh, W, 6 * k); }
+    // плашка-хук — під дошкою, субтитри тоді нижче; потім субтитри на межі дошки
+    const hk = !!P.hook && t < 2.9, keep = P.style.pos; P.style.pos = hk ? .8 : clamp((bh + (H - bh) * .1) / H, .12, .9); drawSubs(x, t, W, H); P.style.pos = keep; drawHook(x, t, W, H, .62);
+  }
   function drawFrame(x, t, W, H, vEl, brEl) {
     x.fillStyle = "#000"; x.fillRect(0, 0, W, H);
+    if (P.opt?.board && BT.length && !P.boardOff) { drawBoardFrame(x, t, W, H, vEl); return; }
     const br = brollAt(t), z = zoomAt(t);
     drawMain(x, vEl, W, H, z);
     if (br) { const m = P.media[br.b.m]; if (m) drawLayer(x, m, br, t, W, H, brEl); }
@@ -287,10 +349,11 @@ ${RULES}
 - zoom: 1–3 номери слів, на яких зробити легкий наїзд камери (лише найсильніші моменти, не більше 3 на ролик).
 - emph: 2–6 номерів ключових слів, які виділити кольором у субтитрах.
 - broll: куди поставити вставки людини [{"m":номер вставки,"a":номер слова початку,"b":номер слова кінця}] — тільки якщо зрозуміло з назви вставки або з побажань; інакше [].
-- stock: ${P.opt.stock ? "ОБОВ'ЯЗКОВО 3–6" : "НЕ ПОТРІБНО, поверни []. Інакше"} місць, де доречна вставка з бібліотеки безкоштовних відео/фото (наочні речі: гроші, кава, місто, телефон, природа, люди за роботою…): одна вставка на думку, разом 20–35% тривалості, не частіше ніж раз на 4–6 секунд і не на першій фразі; якщо фразу нічим наочно не показати — без вставки: [{"a":слово початку,"b":слово кінця (1.5–3 с),"q":"2–4 англійські слова для пошуку","kind":"video" або "photo","full":true (на весь екран) або false (віконцем поверх людини)}]. Чергуй: частіше video, іноді photo; частіше віконцем (full:false), щоб людину було видно.
+- stock: ${P.opt.stock && !P.opt.board ? "ОБОВ'ЯЗКОВО 3–6" : "НЕ ПОТРІБНО, поверни []. Інакше"} місць, де доречна вставка з бібліотеки безкоштовних відео/фото (наочні речі: гроші, кава, місто, телефон, природа, люди за роботою…): одна вставка на думку, разом 20–35% тривалості, не частіше ніж раз на 4–6 секунд і не на першій фразі; якщо фразу нічим наочно не показати — без вставки: [{"a":слово початку,"b":слово кінця (1.5–3 с),"q":"2–4 англійські слова для пошуку","kind":"video" або "photo","full":true (на весь екран) або false (віконцем поверх людини)}]. Чергуй: частіше video, іноді photo; частіше віконцем (full:false), щоб людину було видно.
 - music: ${P.opt.music ? "ОБОВ'ЯЗКОВО" : "не потрібна — поверни \"\". Формат:"} 2–4 англійські слова — настрій фонової музики під зміст і темп (напр. "calm lofi", "upbeat energetic", "inspiring piano", "funny quirky", "cinematic tension", "corporate motivational").
 - amb: ${P.opt.amb ? "ОБОВ'ЯЗКОВО" : "не потрібен — поверни \"\". Формат:"} 2–3 англійські слова — фоновий звук атмосфери під зміст (напр. "forest birds", "city street", "cafe ambience", "rain", "office ambience").
-Відповідай тільки JSON: {"keep":[[a,b],...],"hook":"...","zoom":[...],"emph":[...],"broll":[...],"stock":[...],"music":"...","amb":"..."}`, { cache: false, kb: true });
+${P.opt.board ? `- board: над людиною маркерна дошка; для кожної думки — своя сторінка (одна на 4–8 секунд, по черзі на весь ролик, починаючи з першої фрази): [{"a":слово початку думки,"draw":"англійською 6–14 слів: простий наочний малюнок цієї думки — предмети, людина-паличка, стрілки, схема; без тексту","words":[{"i":номер слова,"t":"1–2 ключові слова з цієї думки, як їх написати маркером"}]}] — words: 1–2 на сторінку, на тих словах, коли їх кажуть.
+` : ""}Відповідай тільки JSON: {"keep":[[a,b],...],"hook":"...","zoom":[...],"emph":[...],"broll":[...],"stock":[...],"music":"...","amb":"..."${P.opt.board ? ',"board":[...]' : ""}}`, { cache: false, kb: true, max: 4000 });
     } catch (e) { r = null; }
     const n = P.words.length, keep = new Set();
     if (Array.isArray(r?.keep)) for (const [a, b] of r.keep) for (let i = Math.max(0, a | 0); i <= Math.min(n - 1, b | 0); i++) keep.add(i);
@@ -300,10 +363,13 @@ ${RULES}
     const okI = (v) => Number.isInteger(v) && v >= 0 && v < n;
     P.zoom = new Set((r?.zoom || []).filter(okI)); P.emph = new Set((r?.emph || []).filter(okI));
     P.broll = (r?.broll || []).filter((b) => okI(b.a) && okI(b.b) && b.b >= b.a && P.media[b.m]).map((b) => ({ m: b.m, a: b.a, b: b.b, full: true, size: .6, x: 0, y: -.3 }));
-    P.plan = { stock: P.opt.stock ? (r?.stock || []).filter((q) => okI(q.a) && okI(q.b) && q.b >= q.a && typeof q.q === "string" && q.q.trim()).slice(0, 6) : [],
+    P.board = P.opt.board ? (r?.board || []).filter((g) => okI(g.a) && typeof g.draw === "string").sort((x, y) => x.a - y.a).filter((g, k, A) => !k || g.a > A[k - 1].a).slice(0, 24)
+      .map((g) => ({ a: g.a, q: g.draw.slice(0, 200), img: null, words: (g.words || []).filter((w) => okI(w.i) && typeof w.t === "string" && w.t.trim()).slice(0, 2).map((w) => ({ i: w.i, t: w.t.trim().slice(0, 18) })) })) : [];
+    if (P.opt.board && !P.board.length && n) for (let a = 0; a < n; a += 12) P.board.push({ a, q: "", img: null, words: [] });
+    P.plan = { stock: P.opt.stock && !P.opt.board ? (r?.stock || []).filter((q) => okI(q.a) && okI(q.b) && q.b >= q.a && typeof q.q === "string" && q.q.trim()).slice(0, 6) : [],
       music: P.opt.music ? String(r?.music || "").trim() || "upbeat inspiring" : "", amb: P.opt.amb ? String(r?.amb || "").trim() || "cafe ambience" : "" };
     // якщо AI не запропонував вставок, а людина їх хоче — рівномірно по відео, пошук за змістом фрази
-    if (P.opt.stock && !P.plan.stock.length && n > 12) for (let k = 1; k <= 3; k++) { const a = Math.floor(n * k / 4); P.plan.stock.push({ a, b: Math.min(n - 1, a + 4), q: "", kind: k % 2 ? "video" : "photo", full: k !== 2 }); }
+    if (P.opt.stock && !P.opt.board && !P.plan.stock.length && n > 12) for (let k = 1; k <= 3; k++) { const a = Math.floor(n * k / 4); P.plan.stock.push({ a, b: Math.min(n - 1, a + 4), q: "", kind: k % 2 ? "video" : "photo", full: k !== 2 }); }
     for (const q of P.plan.stock) if (!q.q) q.q = await toEn(P.words.slice(q.a, q.b + 1).map((w) => w.w).join(" ")).catch(() => "lifestyle");
   }
   /* ---------- бібліотеки: найкращий варіант одразу + 7 на заміну ---------- */
@@ -331,6 +397,15 @@ ${RULES}
     LIBERR = ""; if (!SRV.media || !P.plan) return;
     await Promise.all(P.plan.stock.map((q) => addStock(q.q, q.a, q.b, q.kind, q.full).catch(libFail)));
     await Promise.all([["music", P.plan.music], ["amb", P.plan.amb]].map(([k, q]) => q && setBed(k, q).catch(libFail)));
+  }
+  // малюнки для дошки: дешева генерація в стилі маркера, по 3 одночасно
+  async function fillBoard() {
+    if (!P.opt.board || !P.board?.length || !SRV.genImage) return; let ok = 0, fail = 0, i = 0;
+    const one = async () => { while (i < P.board.length) { const g = P.board[i++]; if (!g.q || g.img) continue;
+      try { const r = await SRV.genImage({ prompt: `simple black marker drawing on pure white background, minimal doodle, thick clean lines, a few accents in red and blue: ${g.q}`, style: "whiteboard marker sketch, white background, no text, no letters", aspect: "4:3", quiet: true });
+        const im = new Image(); im.src = `data:${r.mime};base64,${r.image}`; await im.decode().catch(() => {}); g.img = im; ok++; } catch (e) { fail++; console.warn("board", e); } } };
+    await Promise.all([one(), one(), one()]);
+    if (!ok && fail) LIBERR = "Малюнки для дошки зараз не вдалися — лишив лише слова";
   }
   const BEDS = new Map();
   async function bedBuf(item) { if (BEDS.has(item.src)) return BEDS.get(item.src); const u = await SRV.mediaFile(item.src); const ab = await (await fetch(u)).arrayBuffer(); const x = await E().decode(ab); BEDS.set(item.src, x); return x; }
@@ -724,7 +799,7 @@ ${parts[k].join("\n")}
         P.aud = await E().processTake(await rangeAudio(C.file, s, e, E().SR));
         if (base.style && base.preset === "shot") { P.style = { ...base.style }; P.preset = "shot"; } else if (P.styleImgs.length && !SH.styled) { await aiStyleFromShots(); SH.style = P.style; SH.styled = true; } else if (SH.style) { P.style = { ...SH.style }; P.preset = "shot"; }
         await aiPlan(); if (P.opt.hook && it.c.hook) P.hook = it.c.hook; P.style.off = !P.opt.subs;
-        await fillStock(); await Promise.all(P.clips[0].vids.map((v) => loadMeta(v).catch(() => {})));
+        await fillStock(); await fillBoard(); await Promise.all(P.clips[0].vids.map((v) => loadMeta(v).catch(() => {})));
         it.P = P; build();
       });
       track("short_ready", { v: `${i + 1}/${SH.length}` });
@@ -741,7 +816,7 @@ ${parts[k].join("\n")}
       await aiStyleFromShots();
       if (P.words.length) await aiPlan(); else P.plan = { stock: [], music: P.opt.music ? "upbeat energetic" : "", amb: P.opt.amb ? "city street" : "" };
       P.style.off = !P.opt.subs;
-      await busyRun("montage", () => fillStock());
+      await busyRun("montage", () => fillStock()); await busyRun("image", () => fillBoard());
       await Promise.all(P.clips.flatMap((c) => c.vids.map((v) => loadMeta(v).catch(() => {}))));
       build(); track("ready", { v: P.styleImgs.length ? "shot" : P.preset });
       const got = P.broll.some((b) => b.stock) || P.music || P.amb;
@@ -845,9 +920,10 @@ ${parts[k].join("\n")}
     const redraw = () => { build(); if (!PL) still(POS, cv); };
     const refresh = (m) => { build(); screenEdit(m); };
     wireTools(B, {
-      style: () => { const S = E().sheet(B, "Субтитри", `<div class="chips"><button class="chip" type="button" id="vsoff" aria-pressed="${!!P.style.off}">Без субтитрів</button>${Object.entries(PRESETS).map(([k, v]) => `<button class="chip" type="button" data-pr="${k}" aria-pressed="${P.preset === k}">${v.n}</button>`).join("")}${P.preset === "shot" ? `<button class="chip" type="button" aria-pressed="true">Як на скріні</button>` : ""}</div>
+      style: () => { const S = E().sheet(B, "Субтитри", `<div class="chips"><button class="chip" type="button" id="vsoff" aria-pressed="${!!P.style.off}">Без субтитрів</button>${P.board?.length ? `<button class="chip" type="button" id="vbrd" aria-pressed="${!P.boardOff}">Дошка над тобою</button>` : ""}${Object.entries(PRESETS).map(([k, v]) => `<button class="chip" type="button" data-pr="${k}" aria-pressed="${P.preset === k}">${v.n}</button>`).join("")}${P.preset === "shot" ? `<button class="chip" type="button" aria-pressed="true">Як на скріні</button>` : ""}</div>
           <div class="lbl">Розмір</div><input type="range" id="vsz" min="60" max="150" value="${Math.round(P.style.size * 100)}"><div class="lbl">Висота</div><input type="range" id="vps" min="12" max="88" value="${Math.round(P.style.pos * 100)}">
           <div class="lbl">Слів на екрані</div><div class="chips">${[1, 2, 3, 4].map((n) => `<button class="chip" type="button" data-wn="${n}" aria-pressed="${P.style.words === n}">${n}</button>`).join("")}</div>`), b = S.body;
+        $(b, "#vbrd")?.addEventListener("click", (e) => { P.boardOff = !P.boardOff; e.currentTarget.setAttribute("aria-pressed", !P.boardOff); redraw(); });
         $(b, "#vsoff").onclick = (e) => { pushHist(); P.style.off = !P.style.off; e.currentTarget.setAttribute("aria-pressed", P.style.off); redraw(); };
         b.querySelectorAll("[data-pr]").forEach((x) => x.onclick = () => { pushHist(); P.preset = x.dataset.pr; track("style", { v: P.preset }); P.style = sanitizeStyle({ ...BASE, ...PRESETS[P.preset].s }); $(b, "#vsoff").setAttribute("aria-pressed", "false"); b.querySelectorAll("[data-pr]").forEach((o) => o.setAttribute("aria-pressed", o === x)); $(b, "#vsz").value = Math.round(P.style.size * 100); $(b, "#vps").value = Math.round(P.style.pos * 100); redraw(); $(d, "#vundo").hidden = false; });
         $(b, "#vsz").oninput = (e) => { P.style.size = e.target.value / 100; redraw(); };
