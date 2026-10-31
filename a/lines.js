@@ -52,6 +52,16 @@
     book: () => [[[0, -.6], [-.9, -.8], [-.9, .7], [0, .9], [.9, .7], [.9, -.8], [0, -.6], [0, .9]]],
     lock: () => [rect(-.6, -.1, 1.2, 1), [...arc(0, -.25, .38, 180, 360, 12)], [[0, .25], [0, .55]]],
     rope: () => [[[0, -1], [0, 1]]],
+    // вікно-вкладка браузера (значок — лінії / графік / плей / перемикач; або «?»/«!» у полі t)
+    tab: (it) => { const b = [rect(-1, -.62, 2, 1.24), [[-1, -.3], [1, -.3]], arc(-.8, -.46, .05, 0, 360, 6)], v = it?.t ? -1 : (it?.v ?? (it?.seed || 0)) % 4;
+      if (v === 0) b.push([[-.6, .02], [.6, .02]], [[-.6, .3], [.25, .3]]); else if (v === 1) b.push([[-.6, .38], [-.2, 0], [.1, .2], [.6, -.12]]); else if (v === 2) b.push([[-.2, -.12], [.28, .12], [-.2, .36], [-.2, -.12]]); else if (v === 3) b.push(arc(-.35, .12, .17, 0, 360, 12), [[-.05, .12], [.6, .12]]);
+      return b; },
+    wall: () => { const p = [rect(-.75, -1.6, 1.5, 3.2)]; for (let r = 1; r < 8; r++) p.push([[-.75, -1.6 + r * .4], [.75, -1.6 + r * .4]]); for (let r = 0; r < 8; r++) { const o = r % 2 ? 0 : -.375; for (let c = 0; c < 3; c++) { const xx = o + c * .75 - .375; if (xx > -.74 && xx < .74) p.push([[xx, -1.6 + r * .4], [xx, -1.2 + r * .4]]); } } return p; },
+    card: () => [rect(-1.05, -.62, 2.1, 1.24), rect(-.85, .12, .25, .25), [[-.45, .25], [.8, .25]]],
+    desk: () => [[[-1.3, -.35], [1.3, -.35]], [[-1.1, -.35], [-1.1, .9]], [[1.1, -.35], [1.1, .9]]],
+    ball: () => [arc(0, 0, .32, 0, 360, 18)],
+    spiral: () => { const p = []; for (let i = 0; i <= 50; i++) { const a = i / 50 * Math.PI * 6, r = .05 + i / 50 * .9; p.push([Math.cos(a) * r, Math.sin(a) * r]); } return [p]; },
+    lamp: () => [],
   };
   const KINDS = Object.keys(SH);
 
@@ -77,9 +87,13 @@
     hang: (t) => ({ r: 180, la1: 70 + 8 * Math.sin(t * 2.4), ra1: 70 - 8 * Math.sin(t * 2.4), la2: 10, ra2: 10, ll1: 4, rl1: 4, h: 8 * Math.sin(t * 1.7) }),
     dance: (t) => { const s = Math.sin(t * 8); return { la1: s > 0 ? 140 : 40, ra1: s > 0 ? 40 : 140, la2: 50, ra2: 50, ll1: 12 + 10 * s, rl1: 12 - 10 * s, ll2: -15, rl2: -15, y: Math.abs(s) * .15, b: 6 * s }; },
   };
-  const LASTING = new Set(["think", "point", "sad", "sit", "fall", "hang"]);
+  POSE.push = (t) => ({ sv: 1, b: 26, la1: 82 + 3 * Math.sin(t * 9), ra1: 92 - 3 * Math.sin(t * 9), la2: 12, ra2: 12, ll1: 22, ll2: 35, rl1: -34, rl2: 0, y: .12, h: -6 });
+  POSE.work = (t) => ({ sv: 1, y: .8, ll1: 88, rl1: 82, ll2: 88, rl2: 88, b: 14, h: 14, la1: 62 + 5 * Math.sin(t * 13), ra1: 70 - 5 * Math.sin(t * 13), la2: 35, ra2: 30 });
+  POSE.shock = (t) => ({ la1: 62, ra1: 62, la2: 70, ra2: 70, y: -.06 + .03 * Math.sin(t * 30) * clamp(1 - t), h: -4 });
+  const FACE = { sad: "sad", cheer: "happy", dance: "happy", jump: "happy", fall: "shock", shock: "shock", push: "strain", work: "strain", hang: "neutral", think: "neutral", wave: "happy" };
+  const LASTING = new Set(["think", "point", "sad", "sit", "fall", "hang", "push", "work", "shock"]);
   const DUR = { jump: .95, wave: 1.6, cheer: 1.6, shrug: 1.2, dance: 2.4 };
-  const MOVES = ["walk_to", "run_to", "jump", "wave", "cheer", "think", "point", "shrug", "sad", "sit", "stand", "fall", "hang", "dance", "pop", "bounce", "spin", "shake", "fly_to", "grow", "hide"];
+  const MOVES = ["walk_to", "run_to", "jump", "wave", "cheer", "think", "point", "shrug", "sad", "sit", "stand", "fall", "hang", "dance", "push", "work", "shock", "happy_face", "sad_face", "pop", "bounce", "spin", "shake", "fly_to", "grow", "hide"];
   const mixPose = (a, b, w) => { const o = {}; for (const k in P0) o[k] = (a[k] ?? P0[k]) * (1 - w) + (b[k] ?? P0[k]) * w; o.sv = w < .5 ? (a.sv || 0) : (b.sv || 0); return o; };
 
   /* ---------- стан ---------- */
@@ -95,7 +109,7 @@
         const mv = (it.moves || []).map((m) => ({ ...m, t: Math.max(q.t0, at(m.i) - .05) })).sort((a, b) => a.t - b.t); return { ...it, ta: t, mv, seed: k * 31 + ii * 7 + 1 }; }); });
     // субтитри: по 2–4 слова
     CH = []; let c = null;
-    W.forEach((w, i) => { if (!c || c.idx.length >= 3 || /[.!?…,:;]$/.test(W[c.idx[c.idx.length - 1]].w) || w.s - c.e > .5) { c && CH.push(c); c = { idx: [i], s: w.s, e: w.e }; } else { c.idx.push(i); c.e = w.e; } });
+    W.forEach((w, i) => { if (!c || c.idx.length >= 7 || /[.!?…]$/.test(W[c.idx[c.idx.length - 1]].w) || (c.idx.length >= 4 && /[,:;—]$/.test(W[c.idx[c.idx.length - 1]].w)) || w.s - c.e > .6) { c && CH.push(c); c = { idx: [i], s: w.s, e: w.e }; } else { c.idx.push(i); c.e = w.e; } });
     c && CH.push(c); CH.forEach((q, k) => { q.until = CH[k + 1] ? Math.min(CH[k + 1].s, q.e + .5) : q.e + .6; });
   }
 
@@ -112,7 +126,7 @@
   }
   // «живі» лінії: легке тремтіння, нове 8 разів на секунду
   const jit = (pts, seed, k) => pts.map((p, i) => [p[0] + (rnd(seed + i * 1.7, BOIL) - .5) * 2.4 * k, p[1] + (rnd(seed * 3.1 + i, BOIL + 9) - .5) * 2.4 * k]);
-  function figure(pose, x0, y0, U, f) {
+  function figure(pose, x0, y0, U, f, face = "") {
     const P = { ...P0, ...pose }, sv = P.sv > .5;
     const hip = [0, -1.65 + P.y], tb = P.b * D, neck = [hip[0] + Math.sin(tb) * 1.3, hip[1] - Math.cos(tb) * 1.3], sh = [neck[0] + (hip[0] - neck[0]) * .16, neck[1] + (hip[1] - neck[1]) * .16];
     // напрям кінцівки: збоку — уперед, спереду — у свій бік (s = −1 ліва, +1 права)
@@ -120,6 +134,12 @@
     const limb = (o, a1, a2, l1, l2, s, leg) => { const off = leg ? 0 : (sv ? P.b : 0), d1 = dir(a1 + off, s), e = [o[0] + d1[0] * l1, o[1] + d1[1] * l1], d2 = dir(a1 + off + (leg && sv ? -a2 : a2), s); return [o, e, [e[0] + d2[0] * l2, e[1] + d2[1] * l2]]; };
     const ht = (P.b + P.h) * D, hc = [neck[0] + Math.sin(ht) * .5, neck[1] - Math.cos(ht) * .5];
     let parts = [[hip, neck], arc(hc[0], hc[1], .42, 0, 360, 20), limb(sh, P.la1, P.la2, .72, .66, -1), limb(sh, P.ra1, P.ra2, .72, .66, 1), limb(hip, P.ll1, P.ll2, .85, .82, -1, 1), limb(hip, P.rl1, P.rl2, .85, .82, 1, 1)];
+    // обличчя: очі й рот (спереду — двоє очей, збоку — одне, зміщене вперед)
+    if (face) { const ex = sv ? [.17] : [-.14, .14], o = sv ? .1 : 0, fc = [hc[0] + o, hc[1]];
+      ex.forEach((e) => parts.push(face === "shock" ? arc(fc[0] + e, fc[1] - .07, .055, 0, 360, 8) : [[fc[0] + e, fc[1] - .1], [fc[0] + e, fc[1] - .03]]));
+      if (face === "happy") parts.push(arc(fc[0], fc[1] + .02, .19, 25, 155, 10)); else if (face === "sad") parts.push(arc(fc[0], fc[1] + .3, .17, 215, 325, 10));
+      else if (face === "shock") parts.push(arc(fc[0], fc[1] + .17, .07, 0, 360, 10)); else if (face === "strain") parts.push([[fc[0] - .13, fc[1] + .18], [fc[0] - .04, fc[1] + .13], [fc[0] + .04, fc[1] + .18], [fc[0] + .13, fc[1] + .13]]);
+      else parts.push([[fc[0] - .1, fc[1] + .16], [fc[0] + .1, fc[1] + .16]]); }
     if (P.r) { const c = P.r > 120 ? [0, -1.65] : [0, 0], a = P.r * D; parts = parts.map((p) => p.map(([x, y]) => [c[0] + (x - c[0]) * Math.cos(a) - (y - c[1]) * Math.sin(a), c[1] + (x - c[0]) * Math.sin(a) + (y - c[1]) * Math.cos(a)])); }
     return parts.map((p) => p.map(([x, y]) => [x0 + x * f * U, y0 + y * U]));
   }
@@ -134,7 +154,9 @@
     const poseOf = (s, t0) => s === "move" ? POSE[from.run ? "run" : "walk"](t - t0) : (POSE[s] || POSE.stand)(t - t0, DUR[s] || 1.2);
     const cur = poseOf(state, ts), w = clamp((t - ts) / .25);
     const pose = w < 1 && prev !== state ? mixPose(poseOf(prev === "move" ? "stand" : prev, pts), cur, ease(w)) : cur;
-    return { x, f, pose };
+    let face = it.face || "neutral"; for (const m of it.mv) { if (m.t > t) break; if (m.m === "happy_face") face = "happy"; else if (m.m === "sad_face") face = "sad"; }
+    const fs = state === "move" ? "" : FACE[state]; if (fs && state !== "stand") face = fs;
+    return { x, f, pose, face };
   }
   function propAt(it, t) {
     let x = it.x ?? .5, y = it.y ?? .5, s = it.s ?? 1, rot = 0, dy = 0, alpha = 1;
@@ -153,7 +175,7 @@
     const top = 200 * k, stH = 900 * k, stY = 400 * k, U = 118 * k;
     x.save(); x.globalAlpha = fade;
     // заголовок у рамці + «стеля» зі штрихами
-    if (q.s.title) { const pr = clamp((t - q.t0) / .5); x.font = `800 ${Math.round(74 * k)}px "${sty.font === "Caveat" ? "Caveat" : "Manrope"}", system-ui, sans-serif`; x.textAlign = "center"; x.textBaseline = "middle";
+    if (q.s.title && !L.title) { const pr = clamp((t - q.t0) / .5); x.font = `800 ${Math.round(74 * k)}px "${sty.font === "Caveat" ? "Caveat" : "Manrope"}", system-ui, sans-serif`; x.textAlign = "center"; x.textBaseline = "middle";
       const tt = String(q.s.title).toUpperCase(), tw = Math.min(W * .86, x.measureText(tt).width + 90 * k), bh = 130 * k, bx = (W - tw) / 2, by = top - bh / 2;
       strokes(x, [jit(rect(bx, by, tw, bh), q.n * 5, k)], pr, sty, k, 4.5);
       x.save(); x.globalAlpha *= clamp((t - q.t0 - .2) / .3); x.fillStyle = sty.ink; if (sty.glow) { x.shadowColor = "rgba(190,210,255,.9)"; x.shadowBlur = 18 * k; } x.fillText(tt, W / 2, top + 4 * k, tw - 50 * k); x.restore();
@@ -163,35 +185,57 @@
     for (const it of q.items) { if (t < it.ta) continue; const ap = clamp((t - it.ta) / (it.k === "man" ? .7 : .55));
       if (it.k === "man") { const m = manAt(it, t, W), gx = m.x * W, gy = stY + (it.y ?? .92) * stH, s = (it.s ?? 1);
         const hang = (it.mv.filter((v) => v.t <= t && (POSE[v.m] || v.m === "stand")).pop() || {}).m === "hang";
-        const hy = stY + stH * .62, parts = figure(m.pose, gx, hang ? hy : gy, U * s, m.f).map((p, i) => jit(p, it.seed * 11 + i * 5, k));
+        const hy = stY + stH * .62, parts = figure(m.pose, gx, hang ? hy : gy, U * s, m.f, m.face).map((p, i) => jit(p, it.seed * 11 + i * 5, k));
         if (hang) strokes(x, [jit([[gx, stY - 90 * k], [gx, hy - 3.3 * U * s]], it.seed, k)], ap, sty, k, 4);
+        if (!hang && it.floor !== false) { const xs = [it.x ?? .5, ...it.mv.filter((v) => v.x != null && /_to$/.test(v.m)).map((v) => v.x)], a = Math.min(...xs) * W - 1.25 * U * s, b2 = Math.max(...xs) * W + 1.25 * U * s;
+          strokes(x, [jit([[a, gy + 4 * k], [b2, gy + 4 * k]], it.seed * 3, k)], ap, sty, k, 4); }
         strokes(x, parts, ap, sty, k, 6); continue; }
       if (it.k === "text") { const p = propAt(it, t); x.save(); x.globalAlpha *= p.alpha * clamp(ap * 1.6); x.translate(p.x * W, stY + p.y * stH); x.rotate(p.rot); x.scale(p.s, p.s);
         x.font = `800 ${Math.round(96 * k)}px "${sty.font}", system-ui, sans-serif`; x.textAlign = "center"; x.textBaseline = "middle"; const tw = x.measureText(it.t || "").width;
         x.beginPath(); x.rect(-tw / 2 - 10 * k, -80 * k, (tw + 20 * k) * clamp(ap * 1.3), 160 * k); x.clip(); x.fillStyle = it.acc ? sty.acc : sty.ink; if (sty.glow) { x.shadowColor = it.acc ? sty.acc : "rgba(190,210,255,.9)"; x.shadowBlur = 20 * k; } x.fillText(it.t || "", 0, 0); x.restore(); continue; }
-      const fnS = SH[it.k]; if (!fnS) continue; const p = propAt(it, t), sz = 135 * k * p.s, cx = p.x * W, cy = stY + p.y * stH;
-      let list = fnS().map((pp) => pp.map(([a, b]) => { const ca = Math.cos(p.rot), sa = Math.sin(p.rot); return [cx + (a * ca - b * sa) * sz, cy + (a * sa + b * ca) * sz]; }));
+      const fnS = SH[it.k]; if (!fnS) continue; const p = propAt(it, t), sz = 135 * k * p.s, cx = p.x * W, gY = stY + .92 * stH;
+      const cy = it.k === "wall" ? gY - 1.6 * sz : it.k === "desk" ? gY - .9 * sz : stY + p.y * stH;
+      if (it.k === "lamp") { const ty = stY - 60 * k, w = 70 * k * p.s; const on = clamp((t - it.ta - .3) / .4);
+        strokes(x, [jit([[cx, ty - 60 * k], [cx, ty]], it.seed, k), jit([[cx - w * .45, ty], [cx + w * .45, ty], [cx + w * .7, ty + 50 * k], [cx - w * .7, ty + 50 * k], [cx - w * .45, ty]], it.seed + 1, k)], ap, sty, k, 5);
+        if (on > 0) { x.save(); x.globalAlpha *= on; strokes(x, [jit([[cx - w * .7, ty + 50 * k], [cx - 1.7 * w * p.s * 1.6, gY]], it.seed + 2, k), jit([[cx + w * .7, ty + 50 * k], [cx + 1.7 * w * p.s * 1.6, gY]], it.seed + 3, k)], 1, sty, k, 3.5); x.restore(); }
+        continue; }
+      let list = fnS(it).map((pp) => pp.map(([a, b]) => { const ca = Math.cos(p.rot), sa = Math.sin(p.rot); return [cx + (a * ca - b * sa) * sz, cy + (a * sa + b * ca) * sz]; }));
       if (it.k === "clock") { const a1 = t * 2, a2 = t * .2; list.push([[cx, cy], [cx + Math.sin(a1) * sz * .7, cy - Math.cos(a1) * sz * .7]], [[cx, cy], [cx + Math.sin(a2) * sz * .45, cy - Math.cos(a2) * sz * .45]]); }
-      x.save(); x.globalAlpha *= p.alpha; strokes(x, list.map((pp, i) => jit(pp, it.seed * 13 + i * 3, k)), ap, it.acc ? { ...sty, ink: sty.acc } : sty, k, 5); x.restore(); }
+      x.save(); x.globalAlpha *= p.alpha; strokes(x, list.map((pp, i) => jit(pp, it.seed * 13 + i * 3, k)), ap, it.acc ? { ...sty, ink: sty.acc } : sty, k, 5);
+      // напис на предметі (картка «ЗАДАЧА», «?» у вкладці) і підпис під/над ним (поле sub: «5 хвилин», «+6 год»)
+      if ((it.t && (it.k === "card" || it.k === "tab")) || it.sub) { x.globalAlpha *= clamp((ap - .5) * 2); x.fillStyle = it.acc ? sty.acc : sty.ink; x.textAlign = "center"; x.textBaseline = "middle"; if (sty.glow) { x.shadowColor = "rgba(190,210,255,.9)"; x.shadowBlur = 12 * k; }
+        if (it.t && (it.k === "card" || it.k === "tab")) { x.font = `800 ${Math.round((it.k === "tab" ? 60 : 40) * k * p.s)}px "Manrope", system-ui, sans-serif`; x.fillText(String(it.t).toUpperCase(), cx, cy + (it.k === "tab" ? .16 : -.24) * sz, 1.8 * sz); }
+        if (it.sub) { x.font = `700 ${Math.round(32 * k)}px "Manrope", system-ui, sans-serif`; x.fillText(String(it.sub), cx, it.k === "clock" ? cy + 1.25 * sz : cy - (it.k === "wall" ? 1.85 : .85) * sz, 2.4 * sz); } }
+      x.restore(); }
     // підпис «ФІГ. N — …»
-    const cap = q.s.caption || q.s.title; if (cap) { const cy = stY + stH + 64 * k; x.save(); x.globalAlpha *= clamp((t - q.t0 - .3) / .4); x.font = `700 ${Math.round(34 * k)}px "Manrope", system-ui, sans-serif`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillStyle = sty.ink;
+    const cap = L.title ? (q.s.title || q.s.caption) : (q.s.caption || q.s.title); if (cap) { const cy = stY + stH + 64 * k; x.save(); x.globalAlpha *= clamp((t - q.t0 - .3) / .4); x.font = `700 ${Math.round(34 * k)}px "Manrope", system-ui, sans-serif`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillStyle = sty.ink;
       const ct = `ФІГ. ${q.n} — ${String(cap).toUpperCase()}`; x.globalAlpha *= .75; x.fillText(ct, W / 2, cy, W * .85); const cw = Math.min(W * .85, x.measureText(ct).width); x.fillRect((W - cw) / 2, cy + 28 * k, cw, 2.5 * k); x.restore(); }
     x.restore();
   }
   function drawSubs(x, t, W, H, sty, k) {
+    if (L.cta && t > TOT - 3) { x.save(); x.globalAlpha = clamp((t - (TOT - 3)) / .4) * .8; x.font = `700 ${Math.round(38 * k)}px "Manrope", system-ui, sans-serif`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillStyle = sty.ink; x.fillText(L.cta, W / 2, 1640 * k, W * .86); x.restore(); }
     if (L.subs === false) return; const ch = CH.find((c) => t >= c.s - .05 && t < c.until); if (!ch) return;
-    const px = Math.round(66 * k), y = 1500 * H / OH; x.font = `800 ${px}px "Manrope", system-ui, sans-serif`; x.textBaseline = "middle"; x.textAlign = "left";
-    const ws = ch.idx.map((i) => ({ i, t: L.words[i].w.replace(/[,]+$/, "") })), sp = x.measureText(" ").width; ws.forEach((w) => w.w = x.measureText(w.t).width);
-    const tw = ws.reduce((a, w) => a + w.w, 0) + sp * (ws.length - 1); let xx = (W - tw) / 2;
-    ws.forEach((w) => { const cur = t >= L.words[w.i].s - .03 && t < L.words[w.i].e + .1; x.fillStyle = cur ? sty.acc : sty.ink;
-      if (sty.glow) { x.shadowColor = cur ? sty.acc : "rgba(190,210,255,.8)"; x.shadowBlur = 16 * k; } else { x.lineWidth = 7 * k; x.strokeStyle = sty.bg; x.lineJoin = "round"; x.strokeText(w.t, xx, y); }
-      x.fillText(w.t, xx, y); x.shadowBlur = 0; xx += w.w + sp; });
+    const px = Math.round(58 * k), lh = px * 1.22; x.font = `800 ${px}px "Manrope", system-ui, sans-serif`; x.textBaseline = "middle"; x.textAlign = "left";
+    const ws = ch.idx.map((i) => ({ i, t: L.words[i].w })), sp = x.measureText(" ").width, maxW = W * .84; ws.forEach((w) => w.w = x.measureText(w.t).width);
+    const lines = [[]]; let lw = 0; ws.forEach((w) => { if (lines[lines.length - 1].length && lw + sp + w.w > maxW) { lines.push([]); lw = 0; } lines[lines.length - 1].push(w); lw += (lw ? sp : 0) + w.w; });
+    x.save(); x.globalAlpha = clamp((t - ch.s + .05) / .15);
+    lines.forEach((Ln, li) => { const tw = Ln.reduce((a, w) => a + w.w, 0) + sp * (Ln.length - 1), y = 1478 * k + li * lh; let xx = (W - tw) / 2;
+      Ln.forEach((w) => { const cur = t >= L.words[w.i].s - .03 && t < L.words[w.i].e + .1; x.fillStyle = cur ? sty.acc : sty.ink;
+        if (sty.glow) { x.shadowColor = cur ? sty.acc : "rgba(190,210,255,.8)"; x.shadowBlur = 14 * k; } else { x.lineWidth = 7 * k; x.strokeStyle = sty.bg; x.lineJoin = "round"; x.strokeText(w.t, xx, y); }
+        x.fillText(w.t, xx, y); x.shadowBlur = 0; xx += w.w + sp; }); });
+    x.restore();
   }
   function drawFrame(x, t, W, H) {
     const sty = STYLES[L.style] || STYLES.neon, k = W / OW; BOIL = Math.floor(t * 8);
     x.fillStyle = sty.bg; x.fillRect(0, 0, W, H);
     if (sty.grid) { x.strokeStyle = "rgba(160,180,255,.06)"; x.lineWidth = 1.5 * k; x.beginPath(); for (let gx = 0; gx <= W; gx += 54 * k) { x.moveTo(gx, 0); x.lineTo(gx, H); } for (let gy = 0; gy <= H; gy += 54 * k) { x.moveTo(0, gy); x.lineTo(W, gy); } x.stroke();
       const g = x.createRadialGradient(W / 2, H * .4, H * .1, W / 2, H * .45, H * .75); g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, "rgba(0,0,0,.65)"); x.fillStyle = g; x.fillRect(0, 0, W, H); }
+    // один заголовок на весь ролик + лінія-розділювач над підписом
+    if (L.title) { const top = 200 * k, pr = clamp(t / .6); x.font = `800 ${Math.round(74 * k)}px "${sty.font === "Caveat" ? "Caveat" : "Manrope"}", system-ui, sans-serif`; x.textAlign = "center"; x.textBaseline = "middle";
+      const tt = String(L.title).toUpperCase(), tw = Math.min(W * .88, x.measureText(tt).width + 90 * k), bh = 130 * k, bx = (W - tw) / 2;
+      strokes(x, [jit(rect(bx, top - bh / 2, tw, bh), 5, k)], pr, sty, k, 4.5);
+      x.save(); x.globalAlpha = clamp((t - .25) / .3); x.fillStyle = sty.ink; if (sty.glow) { x.shadowColor = "rgba(190,210,255,.9)"; x.shadowBlur = 18 * k; } x.fillText(tt, W / 2, top + 4 * k, tw - 50 * k); x.restore(); }
+    strokes(x, [jit([[0, 1310 * k], [W, 1310 * k]], 77, k)], clamp(t / .8), sty, k, 3);
     const i = ST.findIndex((q) => t >= q.t0 && t < q.t1); if (i >= 0) { const q = ST[i], d = t - q.t0;
       if (i > 0 && d < .25) drawScene(x, ST[i - 1], t, W, H, sty, k, 1 - d / .25);
       drawScene(x, q, t, W, H, sty, k, i > 0 ? clamp(d / .2) : 1); }
@@ -200,31 +244,34 @@
 
   /* ---------- AI: сцени з деталей ---------- */
   const numbered = () => L.words.map((w, i) => `${i}:${w.w}`).join(" ");
-  const SPEC = `Деталі: "man" — чоловічок-паличка (x — 0…1 по ширині, y — земля 0…1, зазвичай 0.92; f — 1 дивиться вправо, -1 вліво); предмети: ${KINDS.join(", ")} (x, y — центр 0…1; s — розмір 0.6…2; acc:true — акцентний колір); "text" — короткий напис до 3 слів або число («500 грн», «x10»), поле t.
-Рухи (moves: [{"i":номер слова, коли почати,"m":рух, ...}]): для man — walk_to (x), run_to (x), jump, wave, cheer, think, point, shrug, sad, sit, stand, fall, hang (висить догори ногами), dance; для предметів і написів — pop, bounce, spin, shake, fly_to (x, y), grow, hide. Поле "at" — номер слова, коли деталь з'являється (інакше — на початку сцени).`;
+  const SPEC = `Деталі: "man" — чоловічок-паличка (x — 0…1 по ширині, y — земля 0…1, зазвичай 0.92; f — 1 дивиться вправо, -1 вліво); face — "neutral"|"happy"|"sad" (обличчя за замовчуванням); предмети: ${KINDS.join(", ")} (x, y — центр 0…1; s — розмір 0.6…2; acc:true — акцентний колір; t — слово на картці card («ЗАДАЧА») або «?»/«!» у вкладці tab; sub — маленький підпис біля предмета, напр. «5 хвилин», «+6 год»; wall і desk стоять на землі; lamp — лампа зверху зі світлом на людину, став по x людини); "text" — короткий напис до 3 слів або число («500 грн», «x10»), поле t. Кілька tab навколо людини — «багато вкладок у голові».
+Рухи (moves: [{"i":номер слова, коли почати,"m":рух, ...}]): для man — walk_to (x), run_to (x), jump, wave, cheer, think, point, shrug, sad, sit, stand, fall, hang (висить догори ногами), dance, push (штовхає стіну — став wall впритул спереду), work (сидить і працює за desk), shock, happy_face, sad_face; для предметів і написів — pop, bounce, spin, shake, fly_to (x, y), grow, hide. Поле "at" — номер слова, коли деталь з'являється (інакше — на початку сцени).`;
   async function aiScenes(extra = "") {
     const r = await sample.json(`Ти режисер коротких анімаційних відео в стилі «малюнок лініями» (як інструкція-креслення, але з гумором). Людина говорить за кадром — ось дослівні слова з номерами:
 ${numbered()}
 ${extra}
-Розбий на сцени: одна сцена — одна думка, 3–8 секунд, по черзі на весь ролик, перша починається зі слова 0. Для кожної сцени: a — номер слова початку; title — заголовок у рамці, 2–4 слова (суть думки); caption — підпис під сценою, 2–5 слів (можна як title); items — 1–4 деталі, які наочно й смішно показують думку: майже завжди чоловічок, що щось робить, і 1–2 предмети або напис. Рухи став точно на ті слова, про які йдеться. Не захаращуй: простота й рух важливіші.
+Придумай title — заголовок усього ролика в рамці зверху, 2–4 слова (суть, як «СДВГ — це дивно»), і cta — заклик у кінці до 5 слів («Збережи, якщо впізнав себе»).
+Розбий на сцени: одна сцена — одна думка, 3–8 секунд, по черзі на весь ролик, перша починається зі слова 0. Для кожної сцени: a — номер слова початку; title — назва цієї «фігури» 2–4 слова (буде «ФІГ. N — назва»), конкретна й з гумором («47 відкритих вкладок», «Невидима стіна»); items — 1–4 деталі, які наочно й смішно показують думку: майже завжди чоловічок, що щось робить, і 1–2 предмети або напис. Рухи став точно на ті слова, про які йдеться. Не захаращуй: простота й рух важливіші.
 ${SPEC}
-Відповідай тільки JSON: {"scenes":[{"a":0,"title":"…","caption":"…","items":[{"k":"man","x":0.3,"y":0.92,"moves":[{"i":3,"m":"walk_to","x":0.6}]},{"k":"money","x":0.75,"y":0.5,"at":5,"moves":[{"i":5,"m":"pop"}]}]}]}`, { cache: false, kb: true, max: 4000 });
-    const sc = normalize(r?.scenes || []); if (!sc.length) throw new Error("plan"); return sc;
+Відповідай тільки JSON: {"title":"…","cta":"…","scenes":[{"a":0,"title":"…","items":[{"k":"man","x":0.3,"y":0.92,"moves":[{"i":3,"m":"walk_to","x":0.6}]},{"k":"money","x":0.75,"y":0.5,"at":5,"moves":[{"i":5,"m":"pop"}]}]}]}`, { cache: false, kb: true, max: 4000 });
+    const sc = normalize(r?.scenes || []); if (!sc.length) throw new Error("plan");
+    if (typeof r?.title === "string") L.title = r.title.slice(0, 32); if (typeof r?.cta === "string") L.cta = r.cta.slice(0, 48); return sc;
   }
   async function aiEdit(text) {
     const r = await sample.json(`Ти режисер анімації лініями. Слова озвучки з номерами:
 ${numbered()}
-Поточні сцени (JSON): ${JSON.stringify(L.scenes)}
+Заголовок ролика: «${L.title || ""}», заклик у кінці: «${L.cta || ""}». Поточні сцени (JSON): ${JSON.stringify(L.scenes)}
 ${SPEC}
 Людина просить змінити: «${text}». Зміни лише те, про що просять (додай/прибери деталі, рухи, заголовки, перестав сцени). Якщо просить змінити стиль на маркер/неон або субтитри — поле "style":"neon"|"marker", "subs":true|false.
-Відповідай тільки JSON: {"scenes":[…повний новий список…],"style":"…","subs":true,"say":"одне коротке речення — що зроблено"}`, { cache: false, kb: true, max: 4000 });
+Відповідай тільки JSON: {"title":"…","cta":"…","scenes":[…повний новий список…],"style":"…","subs":true,"say":"одне коротке речення — що зроблено"}`, { cache: false, kb: true, max: 4000 });
     if (Array.isArray(r?.scenes) && r.scenes.length) { const sc = normalize(r.scenes); if (sc.length) L.scenes = sc; }
+    if (typeof r?.title === "string") L.title = r.title.slice(0, 32); if (typeof r?.cta === "string") L.cta = r.cta.slice(0, 48);
     if (r?.style && STYLES[r.style]) L.style = r.style; if (typeof r?.subs === "boolean") L.subs = r.subs;
     return r?.say || "Готово.";
   }
   function normalize(list) { const n = L.words.length, okI = (v) => Number.isInteger(v) && v >= 0 && v < n;
     return (Array.isArray(list) ? list : []).filter((s) => s && okI(s.a)).sort((a, b) => a.a - b.a).slice(0, 40).map((s) => ({ a: s.a, title: String(s.title || "").slice(0, 32), caption: String(s.caption || "").slice(0, 40),
-      items: (s.items || []).filter((it) => it && (it.k === "man" || it.k === "text" || SH[it.k])).slice(0, 5).map((it) => ({ k: it.k, x: clamp(+it.x || .5, .05, .95), y: clamp(it.y == null ? (it.k === "man" ? .92 : .5) : +it.y, .05, .98), s: clamp(+it.s || 1, .4, 2.4), f: +it.f === -1 ? -1 : 1, acc: !!it.acc, t: it.k === "text" ? String(it.t || "").slice(0, 18) : undefined, at: okI(it.at) ? it.at : undefined,
+      items: (s.items || []).filter((it) => it && (it.k === "man" || it.k === "text" || SH[it.k])).slice(0, 5).map((it) => ({ k: it.k, x: clamp(+it.x || .5, .05, .95), y: clamp(it.y == null ? (it.k === "man" ? .92 : .5) : +it.y, .05, .98), s: clamp(+it.s || 1, .4, 2.4), f: +it.f === -1 ? -1 : 1, acc: !!it.acc, t: ["text", "card", "tab"].includes(it.k) && it.t ? String(it.t).slice(0, 18) : undefined, sub: it.sub ? String(it.sub).slice(0, 18) : undefined, face: ["neutral", "happy", "sad"].includes(it.face) ? it.face : undefined, at: okI(it.at) ? it.at : undefined,
         moves: (it.moves || []).filter((m) => m && okI(m.i) && MOVES.includes(m.m)).slice(0, 6).map((m) => ({ i: m.i, m: m.m, x: m.x != null ? clamp(+m.x, .05, .95) : undefined, y: m.y != null ? clamp(+m.y, .05, .95) : undefined })) })) })); }
 
   /* ---------- програвач ---------- */
@@ -308,11 +355,11 @@ ${""}`;
     UI.root?.remove(); const d = document.createElement("div"); d.id = "yvln";
     d.innerHTML = `<div class="lh"><b>${title}<span class="ldev">ТЕСТ</span></b><span style="display:flex;gap:8px"><button class="lx" type="button" id="lundo" aria-label="Скасувати" hidden>${IC.undo}</button><button class="lx" type="button" id="lclose" aria-label="Закрити">×</button></span></div><div class="lb"></div><div class="lf"></div>`;
     document.body.appendChild(d); UI.root = d; $(d, "#lclose").onclick = close;
-    $(d, "#lundo").onclick = () => { const h = L?.hist?.pop(); if (!h) return; const o = JSON.parse(h); L.scenes = o.scenes; L.style = o.style; L.subs = o.subs; prep(); screenEdit("Скасовано"); };
+    $(d, "#lundo").onclick = () => { const h = L?.hist?.pop(); if (!h) return; const o = JSON.parse(h); L.scenes = o.scenes; L.style = o.style; L.subs = o.subs; L.title = o.title; L.cta = o.cta; prep(); screenEdit("Скасовано"); };
     return d;
   }
   function close() { stopPlay(); cancelAnimationFrame(DEMO); UI.root?.remove(); UI.root = null; }
-  const pushHist = () => { L.hist.push(JSON.stringify({ scenes: L.scenes, style: L.style, subs: L.subs })); if (L.hist.length > 20) L.hist.shift(); };
+  const pushHist = () => { L.hist.push(JSON.stringify({ scenes: L.scenes, style: L.style, subs: L.subs, title: L.title, cta: L.cta })); if (L.hist.length > 20) L.hist.shift(); };
   const fitCanvas = (stage, cw, extra = 0) => { const f = () => { const h = stage.clientHeight - 8, w = Math.max(90, Math.min(h * 9 / 16, stage.clientWidth - extra - 12)); cw.style.width = w + "px"; cw.style.height = w * 16 / 9 + "px"; }; f(); requestAnimationFrame(f); new ResizeObserver(f).observe(stage); };
 
   // приклад на старті — показує стиль, поки людина не записала голос
@@ -320,9 +367,9 @@ ${""}`;
   function demo(cv, style) {
     cancelAnimationFrame(DEMO); const keep = L;
     const words = "Більшість чекає тисячі підписників щоб почати заробляти а гроші приходять з одного вдалого відео".split(" ").map((w, i) => ({ w, s: .3 + i * .42, e: .3 + i * .42 + .38 }));
-    const DL = { aud: new Float32Array(Math.round(8 * E().SR)), words, style, subs: true,
-      scenes: [{ a: 0, title: "Чекати — дивно", caption: "очікування", items: [{ k: "man", x: .3, y: .92, moves: [{ i: 1, m: "think" }, { i: 6, m: "walk_to", x: .62 }] }, { k: "clock", x: .78, y: .45, at: 2, moves: [{ i: 2, m: "pop" }] }, { k: "question", x: .2, y: .35, at: 3, moves: [{ i: 3, m: "bounce" }] }] },
-        { a: 9, title: "Одне відео", caption: "результат", items: [{ k: "man", x: .35, y: .92, moves: [{ i: 11, m: "jump" }, { i: 13, m: "cheer" }] }, { k: "money", x: .72, y: .35, at: 11, acc: true, moves: [{ i: 11, m: "pop" }, { i: 12, m: "fly_to", x: .5, y: .25 }] }, { k: "text", t: "+1 відео", x: .5, y: .1, at: 14, moves: [{ i: 14, m: "pop" }] }] }], hist: [] };
+    const DL = { aud: new Float32Array(Math.round(8 * E().SR)), words, style, subs: true, title: "Чекати — дивно", cta: "Збережи, якщо впізнав себе",
+      scenes: [{ a: 0, title: "Тисяча вкладок", items: [{ k: "man", x: .5, y: .92, face: "sad", moves: [{ i: 6, m: "shock" }] }, { k: "tab", x: .2, y: .25, at: 1 }, { k: "tab", x: .8, y: .22, at: 2 }, { k: "tab", x: .17, y: .55, at: 3 }, { k: "tab", x: .83, y: .52, at: 4, t: "?" }, { k: "tab", x: .5, y: .1, at: 5, t: "!" }] },
+        { a: 9, title: "Одне відео", items: [{ k: "man", x: .35, y: .92, moves: [{ i: 11, m: "jump" }, { i: 13, m: "cheer" }] }, { k: "money", x: .72, y: .35, at: 11, acc: true, moves: [{ i: 11, m: "pop" }, { i: 12, m: "fly_to", x: .5, y: .25 }] }, { k: "text", t: "+1 відео", x: .5, y: .1, at: 14, moves: [{ i: 14, m: "pop" }] }] }], hist: [] };
     const x = cv.getContext("2d"), t0 = performance.now();
     const loop = () => { if (!cv.isConnected) return; L = DL; prep(); const t = ((performance.now() - t0) / 1000) % 7.5; drawFrame(x, t, cv.width, cv.height); L = keep; DEMO = requestAnimationFrame(loop); };
     loop();
