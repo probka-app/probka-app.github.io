@@ -1099,7 +1099,7 @@ body{background:radial-gradient(900px 640px at 8% -12%,var(--yv-glow-1),transpar
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="YuVi">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>window.YV_DEV=false;window.YV_BUILD="31.10 17:16";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
+<script>window.YV_DEV=false;window.YV_BUILD="31.10 17:22";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="server.js?v=f7af69dc"></script>
@@ -2262,12 +2262,21 @@ const IOS=/iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==="
 function geminiHref(){ const web="https://gemini.google.com/app";
   if(/Android/i.test(navigator.userAgent)) return `intent://gemini.google.com/app#Intent;scheme=https;package=com.google.android.apps.bard;S.browser_fallback_url=${encodeURIComponent(web)};end`;
   return web; }
+function addLinesBtn(el){ if(!el.isConnected||el.querySelector("#s-lines")) return; const h=el.querySelector("h3");
+  (h||el).insertAdjacentHTML(h?"afterend":"afterbegin",`<button class="talkgo" type="button" id="s-lines"><b>✨ Зібрати відео лініями</b><span>Без генерації картинок: сцени з розкадровки оживуть лініями, плашки — твої. Далі міняєш фон, плашки, субтитри<i>ТЕСТ</i></span></button>`);
+  el.querySelector("#s-lines").onclick=async()=>{ if(!VOICE){ toast("Спершу додай озвучку на кроці «Текст для озвучки»"); return; }
+    const load=src=>new Promise((ok,no)=>{ const sc=document.createElement("script"); sc.src=src+"?v="+(window.YV_BUILD||Date.now()); sc.onload=ok; sc.onerror=no; document.head.appendChild(sc); });
+    try{ if(!window.YVTalk) await load("a/talk.js"); if(!window.YVLines) await load("a/lines.js"); }catch(e){ toast("Не вдалося завантажити"); return; }
+    const th={white:"marker",cream:"cream",blue:"notebook",grid:"notebook",board:"chalk",black:"neon",navy:"navy",plum:"plum"}[ST.bg]||"neon";
+    yvTrack("marker","lines_open"); YVLines.fromMarker({ data:VOICE.getChannelData(0), sr:VOICE.sampleRate, board:S.scenes.filter(x=>!x.ad).map(x=>({phrase:x.phrase,draw:x.draw,plaque:x.plaque,color:colOf(x)})), topic:S.topic||S.hook, style:th }); }; }
 function stVisual(el){
   if(S.format==="film"){
     el.innerHTML += `${S.scenes.length? P(S.scenes.map(shotLine).join("\n")) + S.scenes.map((s,i)=>s.broll?`<p><b>Вставка до кадру ${i+1}:</b> ${esc(s.broll)}</p>`:"").join("") : `<p class="status">Кадрів ще немає.</p>`}`;
     return;
   }
   if(!S.scenes.length){ el.innerHTML += `<p class="status">Сцен ще немає. Повернись на крок назад і розбий сценарій.</p>`; return; }
+  // ТЕСТ (власник): відео лініями з розкадровки — без генерації картинок (кнопка зверху, після того як крок намалюється)
+  if(uiOwner()) setTimeout(()=>addLinesBtn(el),0);
   if(window.SRV&&window.PROBKA_CONFIG?.imageGen) return stGen(el);   // генератор на сайті вимкнено, поки не вирішимо платити за картинки
   const n=S.scenes.filter(x=>!x.ad).length;
   el.innerHTML += `<p class="note">Ми вже підготували для Gemini завдання: опис усіх ${n} кадрів твого відео в одному стилі. Писати його самому не треба.</p>
