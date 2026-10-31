@@ -86,7 +86,7 @@
     return E().master(y);
   }
   const clipIx = (t) => { const C = P.clips; for (let i = C.length - 1; i >= 0; i--) if (t >= C[i].off - 1e-6) return i; return 0; };
-  const local = (seg, src) => Math.max(0, src - P.clips[seg.c].off);
+  const local = (seg, src) => Math.max(0, src - P.clips[seg.c].off + (P.clips[seg.c].base || 0));
   const outToSrc = (t) => { for (const s of SEG) if (t < s.o + (s.b - s.a)) return { seg: s, src: s.a + Math.max(0, t - s.o) }; const l = SEG[SEG.length - 1]; return { seg: l, src: l.b }; };
   const wordAt = (t) => { let best = -1; P.words.forEach((w, i) => { const o = WOUT[i]; if (o && t >= o.s - .03 && t < o.e + .12) best = i; }); return best; };
 
@@ -467,6 +467,14 @@ ${RULES}
 #yvved .alt.on{border-color:#30d158}#yvved .alt.load{opacity:.4}#yvved .alt.more{background:rgba(255,255,255,.08);border:1px dashed rgba(255,255,255,.3)}
 #yvved .alt.snd{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.08)}#yvved .alt.snd.on{background:#30d158;color:#0b0b0d}
 #yvved .attr{margin:10px 0 0;font-size:11px;color:#71717a;text-align:center}#yvved .attr a{color:#a1a1aa}
+#yvved .modes{flex:none;display:flex;gap:4px;margin:2px 14px 6px;padding:4px;border-radius:14px;background:rgba(255,255,255,.06)}#yvved .modes button{flex:1;padding:9px 6px;border-radius:11px;border:0;background:none;color:#a1a1aa;font-weight:700;font-size:13.5px;font-family:inherit;cursor:pointer}#yvved .modes button[aria-pressed=true]{background:#f5f5f7;color:#0b0b0d}
+#yvved .shl{flex:1;min-height:0;overflow-y:auto;padding:4px 12px 8px;display:grid;gap:8px;align-content:start}
+#yvved .shc{display:flex;gap:10px;padding:8px;border-radius:16px;border:1.5px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);text-align:left;color:inherit;font-family:inherit;cursor:pointer}#yvved .shc.on{border-color:#30d158;background:rgba(48,209,88,.08)}
+#yvved .shc .th{position:relative;flex:none;width:62px;height:110px;border-radius:10px;overflow:hidden;background:#222}#yvved .shc .th canvas{width:100%;height:100%;object-fit:cover;display:block}#yvved .shc .th i{position:absolute;inset:0;display:grid;place-items:center;font-style:normal;font-size:22px;text-shadow:0 2px 6px #000}
+#yvved .shc .tx{flex:1;min-width:0;display:grid;gap:3px;align-content:start}#yvved .shc .tm{font-size:12px;color:#a1a1aa;display:flex;gap:6px;align-items:center}#yvved .shc .sc{padding:1px 7px;border-radius:8px;background:#30d158;color:#0b0b0d;font-weight:800;font-size:11.5px}#yvved .shc .sc.mid{background:#ffd60a}
+#yvved .shc b{font-size:14.5px;line-height:1.3}#yvved .shc small{font-size:12.5px;color:#a1a1aa;line-height:1.35}#yvved .shc .ck2{flex:none;width:24px;height:24px;border-radius:8px;border:1.5px solid rgba(255,255,255,.3);display:grid;place-items:center;font-weight:900;font-size:14px}#yvved .shc.on .ck2{background:#30d158;border-color:#30d158;color:#0b0b0d}
+#yvved .shnav{display:flex;align-items:center;gap:4px}#yvved .shnav:empty{display:none}#yvved .shnav span{font-size:13px;font-weight:800;min-width:34px;text-align:center}
+#yvpv{position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.85);display:grid;place-items:center}#yvpv video{max-width:92vw;max-height:80vh;border-radius:16px}
 #yvved .opts{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
 #yvved .chip.ck{padding:7px 11px 7px 7px}#yvved .chip.ck i{width:18px;height:18px;border-radius:6px;border:1.5px solid rgba(255,255,255,.35);display:grid;place-items:center;font-style:normal;font-size:12px;font-weight:900}
 #yvved .chip.ck[aria-pressed=true]{background:rgba(48,209,88,.16);color:#f5f5f7;border-color:rgba(48,209,88,.55)}#yvved .chip.ck[aria-pressed=true] i{background:#30d158;border-color:#30d158;color:#0b0b0d}
@@ -486,7 +494,7 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
   function shell(title) {
     if (!document.getElementById("yvvedcss")) { const st = document.createElement("style"); st.id = "yvvedcss"; st.textContent = CSS; document.head.appendChild(st); }
     UI.root?.remove(); const d = document.createElement("div"); d.id = "yvved";
-    d.innerHTML = `<div class="vh"><b>${title}<span class="vdev">ТЕСТ</span></b><span style="display:flex;gap:8px"><button class="vx" type="button" id="vundo" aria-label="Скасувати" hidden>${E().IC.undo}</button><button class="vx" type="button" id="vclose" aria-label="Закрити">×</button></span></div><div class="vb"></div><div class="vf"></div>`;
+    d.innerHTML = `<div class="vh"><b>${title}<span class="vdev">ТЕСТ</span></b><span style="display:flex;gap:8px"><span class="shnav" id="shnav"></span><button class="vx" type="button" id="vundo" aria-label="Скасувати" hidden>${E().IC.undo}</button><button class="vx" type="button" id="vclose" aria-label="Закрити">×</button></span></div><div class="vb"></div><div class="vf"></div>`;
     document.body.appendChild(d); UI.root = d; $(d, "#vclose").onclick = close;
     $(d, "#vundo").onclick = () => { if (popHist()) { build(); screenEdit("Скасовано"); } }; return d;
   }
@@ -552,18 +560,24 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
   }
 
   function screenStart() {
-    P = fresh(); P.clips = []; const d = shell("Монтаж відео"), B = $(d, ".vb"), F = $(d, ".vf");
-    B.innerHTML = `<div class="clips" id="clips"></div><div class="prep" id="prep"></div><div class="tools"></div><input type="file" id="vmain" accept="video/*" multiple hidden>`;
-    F.innerHTML = `<div class="opts" id="vopts"></div><button class="btn main" type="button" id="vgo" disabled>Змонтувати</button>`;
+    P = fresh(); P.clips = []; P.mode = MODE; SH = null; const d = shell("Монтаж відео"), B = $(d, ".vb"), F = $(d, ".vf");
+    B.innerHTML = `<div class="modes"><button type="button" data-md="one" aria-pressed="${MODE === "one"}">Змонтувати відео</button><button type="button" data-md="shorts" aria-pressed="${MODE === "shorts"}">Нарізати на шортси</button></div><div class="clips" id="clips"></div><div class="prep" id="prep"></div><div class="tools"></div><input type="file" id="vmain" accept="video/*" multiple hidden>`;
+    F.innerHTML = `<div class="opts" id="vopts"></div><button class="btn main" type="button" id="vgo" disabled>${MODE === "shorts" ? "Знайти шортси" : "Змонтувати"}</button>`;
     const drawOpts = () => { const o = $(F, "#vopts"); o.innerHTML = OPTS.map(([k, n]) => `<button class="chip ck" type="button" data-o="${k}" aria-pressed="${!!P.opt[k]}"><i>${P.opt[k] ? "✓" : ""}</i>${n}</button>`).join("");
       o.querySelectorAll("[data-o]").forEach((b) => b.onclick = () => { P.opt[b.dataset.o] = !P.opt[b.dataset.o]; saveOpt(P.opt); drawOpts(); }); };
     drawOpts();
     const st = $(B, "#prep"); let deb = 0;
     const stage = (t, p, det) => { st.innerHTML = t ? `<span>${escH(t)}</span>${p >= 0 && p < 1 ? `<i><b style="width:${Math.round(p * 100)}%"></b></i>` : ""}${det ? `<small style="opacity:.6;font-size:11px">${escH(det)}</small>` : ""}` : ""; st.className = "prep" + (p < 0 ? " err" : p >= 1 ? " ok" : ""); };
-    const restart = () => { clearTimeout(deb); PREP = null; PREPK++; if (!P.clips.length) { stage(""); return; } stage("Готую…", 0); deb = setTimeout(() => prepare(stage), 350); };
+    const LIM = () => MODE === "shorts" ? 5405 : 305;
+    const restart = () => { clearTimeout(deb); PREP = null; PREPK++; if (!P.clips.length) { stage(""); return; }
+      if (MODE === "shorts") { const tot = P.clips.reduce((a, c) => a + c.dur, 0); stage(tot < 120 ? "Для нарізки потрібне довше відео — від 2 хвилин" : `Знайдемо найкращі шматки на 15–60 с у ${fmt(tot)} відео`, tot < 120 ? -1 : 1); return; }
+      stage("Готую…", 0); deb = setTimeout(() => prepare(stage), 350); };
+    B.querySelectorAll("[data-md]").forEach((b) => b.onclick = () => { if (MODE === b.dataset.md) return; const tot = P.clips.reduce((a, c) => a + c.dur, 0);
+      if (b.dataset.md === "one" && tot > 305) { say("Для монтажу одного відео — до 5 хв. Прибери зайві кліпи або нарізай на шортси"); return; }
+      MODE = P.mode = b.dataset.md; B.querySelectorAll("[data-md]").forEach((x) => x.setAttribute("aria-pressed", x === b)); $(F, "#vgo").textContent = MODE === "shorts" ? "Знайти шортси" : "Змонтувати"; drawClips(); restart(); });
     const drawClips = () => {
       const box = $(B, "#clips"), total = P.clips.reduce((a, c) => a + c.dur, 0);
-      if (!P.clips.length) { box.className = "clips empty"; box.innerHTML = `<label class="up" for="vmain">${ICON.film}<span>Додати відео</span><small>одне або кілька · до 5 хв разом</small><small style="opacity:.75">Кілька: тапни відео, потім «Додати» вгорі</small></label>`; }
+      if (!P.clips.length) { box.className = "clips empty"; box.innerHTML = (MODE === "shorts" ? `<label class="up" for="vmain">${ICON.film}<span>Додати довге відео</span><small>подкаст, ефір, лекція, інтерв'ю · до 90 хв</small><small style="opacity:.75">Знайдемо найкращі шматки і змонтуємо з них Reels</small></label>` : `<label class="up" for="vmain">${ICON.film}<span>Додати відео</span><small>одне або кілька · до 5 хв разом</small><small style="opacity:.75">Кілька: тапни відео, потім «Додати» вгорі</small></label>`); }
       else { box.className = "clips"; box.innerHTML = `<div class="crow">${P.clips.map((c, i) => `<div class="clip" data-i="${i}"><span class="cdur">${fmt(c.dur)}</span>${i ? `<button type="button" class="cmv" data-mv="${i}" aria-label="Раніше">‹</button>` : ""}<button type="button" class="cx" data-x="${i}" aria-label="Прибрати">×</button></div>`).join("")}<label class="clip add" for="vmain">+</label></div><div class="ctot">${P.clips.length} ${P.clips.length === 1 ? "відео" : "відео"} · ${fmt(total)}</div>`;
         box.querySelectorAll(".clip[data-i]").forEach((el) => { const c = P.clips[+el.dataset.i]; el.prepend(c.thumb); });
         box.querySelectorAll("[data-x]").forEach((b) => b.onclick = () => { P.clips.splice(+b.dataset.x, 1); drawClips(); restart(); });
@@ -585,7 +599,7 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
         const url = URL.createObjectURL(f), v = mkVideo(url); v.className = "cth"; v.style.cssText = "position:fixed;left:-9999px;width:2px;height:2px"; document.body.appendChild(v);
         try { await loadMeta(v); } catch (x) {} v.remove(); v.style.cssText = "";
         if (!(v.duration > 0)) { say(`«${f.name.slice(0, 20)}» не відкривається тут`); continue; }
-        const total = P.clips.reduce((a, c) => a + c.dur, 0); if (total + v.duration > 305) { say("Разом до 5 хвилин — решту не додав"); break; }
+        const total = P.clips.reduce((a, c) => a + c.dur, 0); if (total + v.duration > LIM()) { say(MODE === "shorts" ? "Разом до 90 хвилин — решту не додав" : "Разом до 5 хвилин — решту не додав. Для довгого — «Нарізати на шортси»"); break; }
         try { v.currentTime = Math.min(.6, v.duration / 3); } catch (x) {}
         const C = { file: f, url, dur: v.duration, w: v.videoWidth, h: v.videoHeight, thumb: v, vids: [v, mkVideo(url)] }; P.clips.push(C);
         thumbOf(f).then((cv) => { if (cv && P.clips.includes(C)) { C.thumb = cv; drawClips(); } }).catch(() => {});
@@ -599,12 +613,123 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
       const ta = $(S.body, "#vwish"); ta.oninput = () => { P.wish = ta.value.trim(); };
       const wr = $(S.body, "#vwrec"), wl = wr.innerHTML;
       wr.onclick = () => E().record(wr, wl, async (buf) => { try { const t = await sttBuf(buf); ta.value = (ta.value + " " + t).trim(); P.wish = ta.value; } catch (x) { say("Не вийшло розпізнати"); } }); return S; };
-    $(F, "#vgo").onclick = () => { B.querySelectorAll(".yvsh").forEach((x) => x._close(true)); track("start", { v: `${P.clips.length}clips` + (P.media.length ? "+ins" : "") + (P.wish ? "+wish" : "") + "|" + OPTS.filter(([k]) => P.opt[k]).map(([k]) => k).join(",") }); run(stage); };
+    $(F, "#vgo").onclick = () => { B.querySelectorAll(".yvsh").forEach((x) => x._close(true)); track("start", { v: `${P.clips.length}clips` + (P.media.length ? "+ins" : "") + (P.wish ? "+wish" : "") + "|" + OPTS.filter(([k]) => P.opt[k]).map(([k]) => k).join(",") }); MODE === "shorts" ? findShorts(stage) : run(stage); };
     drawClips(); draw();
   }
   async function sttBuf(buf) {
     const raw = await E().decode(buf), small = await E().resample(raw, E().SR, 16000);
     const r = await SRV.stt({ audio: E().b64(E().wav(small, 16000)), mime: "audio/wav" }); return (r.words || []).map((w) => w.w).join(" ");
+  }
+
+  /* ---------- ШОРТСИ з довгого відео: звук шматками → слова → AI шукає найкращі шматки → вибір → монтаж кожного ---------- */
+  let MODE = "one", SH = null, SHI = 0, LW = null;
+  const INPUTS = new Map();
+  async function inputOf(file) { const M = await (MB ||= import(MBURL)); if (!INPUTS.has(file)) INPUTS.set(file, new M.Input({ formats: M.ALL_FORMATS, source: new M.BlobSource(file) })); return { M, input: INPUTS.get(file) }; }
+  // звук відрізка [t0, t1) файлу з потрібною частотою — без читання всього файлу
+  async function rangeAudio(file, t0, t1, rate) {
+    const { M, input } = await inputOf(file), tr = await input.getPrimaryAudioTrack(), n = Math.max(1, Math.ceil((t1 - t0) * rate));
+    if (!tr) return new Float32Array(n);
+    let y = null, r0 = 0;
+    if (await tr.canDecode().catch(() => false)) {
+      try { r0 = await tr.getSampleRate(); y = new Float32Array(Math.ceil((t1 - t0) * r0) + 8); const sink = new M.AudioBufferSink(tr);
+        for await (const w of sink.buffers(t0, t1)) { const b = w.buffer, ch = b.numberOfChannels, L = b.length, o = Math.round(((w.timestamp || 0) - t0) * r0);
+          const d0 = b.getChannelData(0), d1 = ch > 1 ? b.getChannelData(1) : null; for (let i = Math.max(0, -o); i < L && o + i < y.length; i++) y[o + i] = d1 ? (d0[i] + d1[i]) / 2 : d0[i]; }
+      } catch (e) { y = null; }
+    }
+    if (!y) { // запасний шлях (iPhone без розкодування звуку): лише цей відрізок у маленький m4a
+      const o = new M.Output({ format: new M.Mp4OutputFormat(), target: new M.BufferTarget() });
+      const c = await M.Conversion.init({ input, output: o, video: { discard: true }, trim: { start: t0, end: t1 }, showWarnings: false }); if (!c.isValid) throw new Error("audio");
+      await c.execute(); y = await E().decode(o.target.buffer); r0 = E().SR; }
+    const z = r0 === rate ? y : await E().resample(y, r0, rate); if (z.length >= n) return z.subarray(0, n).slice(); const q = new Float32Array(n); q.set(z); return q;
+  }
+  // усі слова довгого відео: по 3,5 хв на запит
+  async function longWords(onStage) {
+    const W = []; let off = 0; const tot = P.clips.reduce((a, c) => a + c.dur, 0), WIN = 210;
+    for (let ci = 0; ci < P.clips.length; ci++) { const C = P.clips[ci];
+      for (let t0 = 0; t0 < C.dur - .5; t0 += WIN) { const t1 = Math.min(C.dur, t0 + WIN);
+        onStage(`Слухаю відео… ${fmt(off + t0)} з ${fmt(tot)}`, (off + t0) / tot * .8);
+        const y = await rangeAudio(C.file, t0, t1, 16000); let r = null;
+        for (let a = 0; a < 2 && !r; a++) { try { r = await SRV.stt({ audio: E().b64(E().wav(y, 16000)), mime: "audio/wav", quiet: true }); } catch (e) { if (e?.code === "limit" || /limit/.test(e?.message)) throw new Error("limit"); if (a) throw e; } }
+        for (const w of r.words || []) { const s = +w.s || 0; if (!String(w.w).trim()) continue; W.push({ w: String(w.w), s: off + t0 + s, e: off + t0 + Math.max(s + .05, +w.e || 0), c: ci }); } }
+      off += C.dur; }
+    return W;
+  }
+  // AI оцінює шматки (правила з Claude Shorts): хук 30%, зрозуміло без контексту 25%, емоція 20%, користь 15%, фінал 10%
+  async function scoreShorts(W, onStage) {
+    const lines = []; let cur = null;
+    W.forEach((w) => { if (!cur || /[.!?…]$/.test(cur.t) || w.s - cur.e > .8 || cur.n >= 14) { cur && lines.push(cur); cur = { s: w.s, e: w.e, t: w.w, n: 1 }; } else { cur.t += " " + w.w; cur.e = w.e; cur.n++; } });
+    cur && lines.push(cur);
+    const parts = []; let buf = [], len = 0;
+    for (const l of lines) { const s = `[${Math.round(l.s)}] ${l.t}`; if (len + s.length > 9000 && buf.length) { parts.push(buf); buf = []; len = 0; } buf.push(s); len += s.length + 1; }
+    buf.length && parts.push(buf);
+    const out = [];
+    for (let k = 0; k < parts.length; k++) { onStage(`Шукаю найкращі моменти… ${k + 1} з ${parts.length}`, .8 + .18 * k / parts.length);
+      try { const r = await sample.json(`Ти продюсер коротких вертикальних відео. Ось частина розшифровки довгого відео (у дужках — секунда початку фрази):
+${parts[k].join("\n")}
+
+Знайди ${parts.length > 1 ? "2–4" : "4–8"} найкращих шматків, які стануть окремими Reels/TikTok/Shorts по 15–55 с (найкраще 25–40 с).
+Оціни кожен 0–100 за вагами: хук у перших 3 секундах 30% (сміливе твердження, інтрига, конкретна цифра, «я перевірив»; слабко — «сьогодні хочу розповісти»), зрозуміло без решти відео 25% (без «як я казав раніше», займенників без пояснення, обриву думки), емоція 20%, користь 15%, сильний фінал 10%. Нижче 60 — не бери. Шматки про різне, не перетинаються.
+Для кожного: s і e — секунди початку і кінця (початок фрази, кінець — кінець речення), score, hook — плашка-хук до 7 слів (не повторює перші сказані слова, а доповнює), why — чому спрацює (до 12 слів).
+Відповідай тільки JSON: {"clips":[{"s":0,"e":0,"score":0,"hook":"…","why":"…"}]}`, { cache: false, kb: true, max: 1500 });
+        for (const c of r?.clips || []) if (+c.e - +c.s >= 10 && +c.score >= 50) out.push({ s: +c.s, e: +c.e, score: Math.round(+c.score), hook: String(c.hook || "").slice(0, 60), why: String(c.why || "").slice(0, 120) });
+      } catch (e) { if (e?.code === "rate_limited") throw new Error("limit"); console.warn("score", e); } }
+    // межі — по словах: початок речення, кінець речення (до +3 с), 15–60 с, усередині одного кліпу
+    const snap = (c) => { let i = W.findIndex((w) => w.s >= c.s - .6); if (i < 0) return null; for (let k = i; k > 0 && k > i - 6; k--) if (/[.!?…]$/.test(W[k - 1].w)) { if (c.s - W[k].s < 2.5) i = k; break; }
+      let j = W.length - 1; for (let k = i; k < W.length; k++) { if (W[k].c !== W[i].c) { j = k - 1; break; } if (W[k].e > c.e + .3) { j = k - 1; break; } j = k; }
+      for (let k = j; k < W.length && W[k].e < W[j].e + 3 && W[k].c === W[i].c; k++) if (/[.!?…]$/.test(W[k].w)) { j = k; break; }
+      while (j > i && W[j].e - W[i].s > 60) j--; if (W[j].e - W[i].s < 12) return null;
+      return { ...c, a: i, b: j, s: W[i].s, e: W[j].e }; };
+    const res = []; for (const c of out.sort((x, y) => y.score - x.score)) { const q = snap(c); if (q && !res.some((r) => q.s < r.e && q.e > r.s)) res.push(q); if (res.length >= 10) break; }
+    return res.sort((x, y) => x.s - y.s);
+  }
+  async function findShorts(stage) {
+    const tot = P.clips.reduce((a, c) => a + c.dur, 0); if (tot < 120) { say("Для нарізки потрібне відео від 2 хвилин"); return; }
+    const go = UI.root?.querySelector("#vgo"); if (go) go.disabled = true;
+    try {
+      if (!LW || LW.key !== P.clips.map((c) => c.file.name + c.dur).join("|")) { const W = await longWords(stage); LW = { key: P.clips.map((c) => c.file.name + c.dur).join("|"), W }; }
+      if (LW.W.length < 30) { stage("Майже не чути слів — нарізка працює для відео, де говорять", -1); return; }
+      const cands = await scoreShorts(LW.W, stage);
+      if (!cands.length) { stage("Не знайшов шматків, які спрацюють окремо. Спробуй інше відео", -1); return; }
+      track("shorts_found", { v: `${cands.length}/${Math.round(tot / 60)}m` }); stage("", 1); screenShorts(cands);
+    } catch (e) { console.error(e); stage(e?.message === "limit" ? "Ліміт на сьогодні вичерпано" : e?.message === "login" ? "Увійди в акаунт" : "Не вдалося обробити відео. Спробуй ще раз", -1, String(e?.message || "").slice(0, 80)); }
+    finally { if (go) go.disabled = false; }
+  }
+  async function thumbAt(file, t) { const { M, input } = await inputOf(file), tr = await input.getPrimaryVideoTrack(); if (!tr || !(await tr.canDecode())) return null; const w = await new M.CanvasSink(tr, { width: 160 }).getCanvas(t); return w?.canvas || null; }
+  function preview(C, s, e) { document.getElementById("yvpv")?.remove(); const d = document.createElement("div"); d.id = "yvpv"; const v = document.createElement("video"); v.src = C.url; v.playsInline = true; v.setAttribute("playsinline", ""); v.controls = true; d.appendChild(v); document.body.appendChild(d);
+    const end = () => { v.pause(); d.remove(); }; d.onclick = (x) => { if (x.target === d) end(); }; v.addEventListener("loadedmetadata", () => { v.currentTime = s; v.play().catch(() => {}); }, { once: true }); v.ontimeupdate = () => { if (v.currentTime >= e) end(); }; }
+  function screenShorts(cands) {
+    const base = P, d = UI.root, B = $(d, ".vb"), F = $(d, ".vf"), sel = new Set(cands.slice().sort((x, y) => y.score - x.score).slice(0, 3).map((c) => c));
+    const clipOf = (c) => { const ci = LW.W[c.a].c; let off = 0; for (let i = 0; i < ci; i++) off += base.clips[i].dur; return { C: base.clips[ci], s: c.s - off, e: c.e - off }; };
+    B.className = "vb"; B.innerHTML = `<div class="prep ok" style="min-height:0"><span>Знайшов ${cands.length} ${cands.length < 5 ? "шматки" : "шматків"} — вибери, які змонтувати</span></div><div class="shl">${cands.map((c, i) => `<div class="shc${sel.has(c) ? " on" : ""}" data-k="${i}"><div class="th" data-pv="${i}"><i>▶</i></div><div class="tx"><div class="tm"><span class="sc${c.score < 75 ? " mid" : ""}">${c.score}</span>${fmt(c.s)}–${fmt(c.e)} · ${Math.round(c.e - c.s)} с</div><b>${escH(c.hook || LW.W.slice(c.a, c.a + 8).map((w) => w.w).join(" "))}</b><small>${escH(c.why)}</small></div><span class="ck2">${sel.has(c) ? "✓" : ""}</span></div>`).join("")}</div>`;
+    const upd = () => { B.querySelectorAll("[data-k]").forEach((el) => { const on = sel.has(cands[+el.dataset.k]); el.classList.toggle("on", on); el.querySelector(".ck2").textContent = on ? "✓" : ""; }); const g = $(F, "#shgo"); g.disabled = !sel.size; g.textContent = `Змонтувати ${sel.size || ""} ${sel.size === 1 ? "шортс" : sel.size >= 2 && sel.size <= 4 ? "шортси" : "шортсів"}`; };
+    F.innerHTML = `<button class="btn main" type="button" id="shgo"></button><button class="btn" type="button" id="shbk">← Інше відео</button>`;
+    B.querySelectorAll("[data-k]").forEach((el) => el.onclick = (e) => { const c = cands[+el.dataset.k]; if (e.target.closest("[data-pv]")) { const q = clipOf(c); preview(q.C, q.s, q.e); return; } sel.has(c) ? sel.delete(c) : sel.add(c); upd(); });
+    cands.forEach((c, i) => { const q = clipOf(c); thumbAt(q.C.file, q.s + 1).then((cv) => { const th = B.querySelector(`[data-pv="${i}"]`); if (cv && th) th.prepend(cv); }).catch(() => {}); });
+    $(F, "#shbk").onclick = () => { MODE = "shorts"; screenStart(); };
+    $(F, "#shgo").onclick = () => { const pick = cands.filter((c) => sel.has(c)); track("shorts_pick", { v: `${pick.length}/${cands.length}` });
+      SH = pick.map((c) => ({ c, q: clipOf(c), P: null })); SH.base = base; openShort(0); };
+    upd();
+  }
+  async function openShort(i) {
+    stopPlay(); if (SH[SHI]?.P === P) build();
+    SHI = i; const it = SH[i], base = SH.base;
+    if (it.P) { P = it.P; build(); screenEdit(); return; }
+    try {
+      await busyRun("montage", async () => {
+        const { C, s, e } = it.q, url = C.url, np = fresh();
+        Object.assign(np, { opt: base.opt, wish: [base.wish, it.c.hook ? `Плашка-хук: «${it.c.hook}»` : ""].filter(Boolean).join(". "), styleImgs: base.styleImgs, media: base.media.slice(), mode: "short" });
+        np.clips = [{ file: C.file, url, dur: e - s, base: s, off: 0, w: C.w, h: C.h, vids: [mkVideo(url), mkVideo(url)] }];
+        np.words = LW.W.slice(it.c.a, it.c.b + 1).map((w) => ({ w: w.w, s: Math.max(0, w.s - it.c.s), e: Math.min(e - s, w.e - it.c.s) }));
+        P = np; P.main = { dur: e - s };
+        P.aud = await E().processTake(await rangeAudio(C.file, s, e, E().SR));
+        if (base.style && base.preset === "shot") { P.style = { ...base.style }; P.preset = "shot"; } else if (P.styleImgs.length && !SH.styled) { await aiStyleFromShots(); SH.style = P.style; SH.styled = true; } else if (SH.style) { P.style = { ...SH.style }; P.preset = "shot"; }
+        await aiPlan(); if (P.opt.hook && it.c.hook) P.hook = it.c.hook; P.style.off = !P.opt.subs;
+        await fillStock(); await Promise.all(P.clips[0].vids.map((v) => loadMeta(v).catch(() => {})));
+        it.P = P; build();
+      });
+      track("short_ready", { v: `${i + 1}/${SH.length}` });
+      screenEdit(LIBERR ? LIBERR + " — змонтував без них" : `Шортс ${i + 1} з ${SH.length}. Перемикай стрілками вгорі`);
+    } catch (e) { console.error(e); say(e?.message === "limit" ? "Ліміт на сьогодні вичерпано" : "Не вийшло змонтувати цей шортс"); if (it.P) { P = it.P; build(); screenEdit(); } }
   }
 
   async function run(stage) {
@@ -696,6 +821,8 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
   function screenEdit(msg) {
     const d = UI.root?.querySelector(".vstage") ? UI.root : shell("Монтаж відео"), B = $(d, ".vb"), F = $(d, ".vf");
     stopPlay(); SELW = -1; POS = Math.min(POS, Math.max(0, TOT - .05)); $(d, "#vundo").hidden = !P.hist.length;
+    const nav = $(d, "#shnav"); if (nav) { nav.innerHTML = SH && SH.length > 1 ? `<button class="vx" type="button" data-sh2="-1" aria-label="Попередній"${SHI ? "" : " disabled"}>‹</button><span>${SHI + 1}/${SH.length}</span><button class="vx" type="button" data-sh2="1" aria-label="Наступний"${SHI < SH.length - 1 ? "" : " disabled"}>›</button>` : "";
+      nav.querySelectorAll("[data-sh2]").forEach((b) => b.onclick = () => { POS = 0; openShort(SHI + +b.dataset.sh2); }); }
     B.className = "vb";
     B.innerHTML = `<div class="vstage"><div class="bar">${tool("style", IC2.style, "Стиль")}${tool("hook", IC2.plaque, "Плашка")}${tool("text", E().IC.text, "Текст")}</div>
         <div class="cvw"><canvas id="vcv" width="540" height="960"></canvas><button class="pb" type="button" id="vpb" aria-label="Дивитись"><i>${ICON.play}</i></button></div>
@@ -732,7 +859,7 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
       text: () => textSheet(B, cv, playIt, refresh),
       ins: () => insSheet(B, cv, () => POS, redraw, refresh, playIt),
       fx: () => soundSheet(B, () => POS, playIt),
-      neu: () => { const S = E().sheet(B, "Почати нове відео?", `<p style="margin:0 0 10px;color:#a1a1aa;font-size:13.5px">Поточний монтаж не збережеться.</p><button class="btn" type="button" id="vnew">Так, нове відео</button>`); $(S.body, "#vnew").onclick = () => { stopPlay(); screenStart(); }; return S; },
+      neu: () => { const S = E().sheet(B, "Почати нове відео?", `<p style="margin:0 0 10px;color:#a1a1aa;font-size:13.5px">Поточний монтаж не збережеться.</p><button class="btn" type="button" id="vnew">Так, нове відео</button>`); $(S.body, "#vnew").onclick = () => { stopPlay(); SH = null; screenStart(); }; return S; },
     }, fit);
     $(F, "#vwrite").onclick = () => { B.querySelectorAll(".yvsh").forEach((x) => x._close(true)); const S = E().sheet(B, "Що змінити?", `<textarea id="vcmd" rows="3" placeholder="Напр.: субтитри більші й жовті, прибери частину про ціни"></textarea><button class="btn main" type="button" id="vgo2" style="margin-top:8px">Застосувати</button>`); fit();
       const ta = $(S.body, "#vcmd"); setTimeout(() => ta.focus(), 50);
@@ -745,7 +872,7 @@ ${E().SHEET_CSS.replace(/^\./gm, "#yvved .")}`;
       try { const out = await exportVideo((p) => { const e = $(F, "#vpp"); if (e) e.textContent = Math.round(clamp(p) * 100) + "%"; });
         track("save", { v: P.preset + "|" + out.ext }); if (out.ext === "webm") say("Вийшов webm — для Instagram краще зберігати в Safari на iPhone");
         // iPhone дозволяє «Зберегти відео» в Фото лише після свіжого тапу — тому окрема кнопка, коли файл готовий
-        E().offerSave(F, [new File([out.blob], `yuvi_montazh_${new Date().toISOString().slice(0, 10)}.${out.ext}`, { type: out.blob.type })], () => screenEdit(), () => track("saved"));
+        E().offerSave(F, [new File([out.blob], `yuvi_${SH ? "short" + (SHI + 1) : "montazh"}_${new Date().toISOString().slice(0, 10)}.${out.ext}`, { type: out.blob.type })], () => screenEdit(), () => track("saved"));
         still(POS, cv); return;
       } catch (x) { console.error(x); say("Не вдалося зберегти відео"); }
       sv.disabled = false; sv.textContent = "Зберегти відео"; still(POS, cv); };
