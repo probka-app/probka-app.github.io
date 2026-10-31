@@ -146,7 +146,7 @@
   // «живі» лінії: легке тремтіння, нове 8 разів на секунду
   let NOBOIL = false;
   const jit = (pts, seed, k) => NOBOIL ? pts : pts.map((p, i) => [p[0] + (rnd(seed + i * 1.7, BOIL) - .5) * 2.4 * k, p[1] + (rnd(seed * 3.1 + i, BOIL + 9) - .5) * 2.4 * k]);
-  function figure(pose, x0, y0, U, f, face = "") {
+  function figure(pose, x0, y0, U, f, face = "", wear = null) {
     const P = { ...P0, ...pose }, sv = P.sv > .5;
     const hip = [0, -1.65 + P.y], tb = P.b * D, neck = [hip[0] + Math.sin(tb) * 1.3, hip[1] - Math.cos(tb) * 1.3], sh = [neck[0] + (hip[0] - neck[0]) * .16, neck[1] + (hip[1] - neck[1]) * .16];
     // напрям кінцівки: збоку — уперед, спереду — у свій бік (s = −1 ліва, +1 права)
@@ -160,6 +160,23 @@
       if (face === "happy") parts.push(arc(fc[0], fc[1] + .02, .19, 25, 155, 10)); else if (face === "sad") parts.push(arc(fc[0], fc[1] + .3, .17, 215, 325, 10));
       else if (face === "shock") parts.push(arc(fc[0], fc[1] + .17, .07, 0, 360, 10)); else if (face === "strain") parts.push([[fc[0] - .13, fc[1] + .18], [fc[0] - .04, fc[1] + .13], [fc[0] + .04, fc[1] + .18], [fc[0] + .13, fc[1] + .13]]);
       else parts.push([[fc[0] - .1, fc[1] + .16], [fc[0] + .1, fc[1] + .16]]); }
+    // зовнішність: щоб персонажів можна було розрізнити без звуку (мама/дитина/начальник/мавпа…)
+    if (wear?.length) { const Wr = new Set(wear), hr = .42, H0 = hc[0], H1 = hc[1];
+      if (Wr.has("hair")) for (let i = -2; i <= 2; i++) { const a = (-90 + i * 24) * D; parts.push([[H0 + Math.cos(a) * hr, H1 + Math.sin(a) * hr], [H0 + Math.cos(a) * (hr + .17), H1 + Math.sin(a) * (hr + .17)]]); }
+      if (Wr.has("longhair")) parts.push(arc(H0, H1, hr + .07, 175, 365, 14), [[H0 - hr - .06, H1 + .02], [H0 - hr - .12, H1 + .6]], [[H0 + hr + .06, H1 + .02], [H0 + hr + .12, H1 + .6]]);
+      if (Wr.has("bun")) parts.push(arc(H0, H1 - hr - .14, .15, 0, 360, 10));
+      if (Wr.has("bow")) parts.push([[H0 + .12, H1 - hr + .02], [H0 + .38, H1 - hr - .14], [H0 + .38, H1 - hr + .14], [H0 + .12, H1 - hr + .02], [H0 - .14, H1 - hr - .14], [H0 - .14, H1 - hr + .14], [H0 + .12, H1 - hr + .02]]);
+      if (Wr.has("hat")) parts.push([[H0 - .62, H1 - hr + .06], [H0 + .62, H1 - hr + .06]], rect(H0 - .34, H1 - hr - .42, .68, .48));
+      if (Wr.has("cap")) parts.push(arc(H0, H1 - .04, hr + .03, 180, 360, 12), [[H0 + hr + .02, H1 - .07], [H0 + hr + .38, H1 - .03]]);
+      if (Wr.has("crown")) parts.push([[H0 - .34, H1 - hr + .02], [H0 - .34, H1 - hr - .3], [H0 - .17, H1 - hr - .12], [H0, H1 - hr - .34], [H0 + .17, H1 - hr - .12], [H0 + .34, H1 - hr - .3], [H0 + .34, H1 - hr + .02], [H0 - .34, H1 - hr + .02]]);
+      if (Wr.has("glasses")) parts.push(arc(H0 - .15, H1 - .06, .11, 0, 360, 10), arc(H0 + .15, H1 - .06, .11, 0, 360, 10), [[H0 - .04, H1 - .06], [H0 + .04, H1 - .06]]);
+      if (Wr.has("beard")) parts.push(arc(H0, H1 + .1, .32, 15, 165, 12));
+      if (Wr.has("ears")) parts.push(arc(H0 - hr - .1, H1 - .02, .16, 0, 360, 10), arc(H0 + hr + .1, H1 - .02, .16, 0, 360, 10));
+      if (Wr.has("cat")) parts.push([[H0 - .38, H1 - .2], [H0 - .3, H1 - .62], [H0 - .1, H1 - .4]], [[H0 + .38, H1 - .2], [H0 + .3, H1 - .62], [H0 + .1, H1 - .4]]);
+      if (Wr.has("tail")) parts.push([[hip[0], hip[1]], [hip[0] - .45, hip[1] + .12], [hip[0] - .78, hip[1] - .18], [hip[0] - .7, hip[1] - .55], [hip[0] - .42, hip[1] - .5]]);
+      if (Wr.has("skirt")) parts.push([[hip[0] - .12, hip[1] - .22], [hip[0] - .58, hip[1] + .6], [hip[0] + .58, hip[1] + .6], [hip[0] + .12, hip[1] - .22]]);
+      if (Wr.has("tie")) parts.push([[neck[0], neck[1] + .14], [neck[0] - .09, neck[1] + .36], [neck[0], neck[1] + .78], [neck[0] + .09, neck[1] + .36], [neck[0], neck[1] + .14]]);
+      if (Wr.has("cape")) parts.push([[sh[0] - .1, sh[1]], [sh[0] - .75, hip[1] + .5], [sh[0] - .2, hip[1] + .35]]); }
     if (P.r) { const c = P.r > 120 ? [0, -1.65] : [0, 0], a = P.r * D; parts = parts.map((p) => p.map(([x, y]) => [c[0] + (x - c[0]) * Math.cos(a) - (y - c[1]) * Math.sin(a), c[1] + (x - c[0]) * Math.sin(a) + (y - c[1]) * Math.cos(a)])); }
     return parts.map((p) => p.map(([x, y]) => [x0 + x * f * U, y0 + y * U]));
   }
@@ -167,7 +184,7 @@
   function manAt(it, t, SW) {
     let x = it.x ?? .5, f = it.f ?? 1, state = "stand", ts = it.ta, prev = "stand", pts = it.ta, from = null;
     for (const m of it.mv) { if (m.t > t) break;
-      if (m.m === "walk_to" || m.m === "run_to") { const tx = clamp(m.x ?? x, .08, .92), d = Math.abs(tx - x), dur = Math.max(.4, d / (m.m === "run_to" ? .55 : .22));
+      if (m.m === "walk_to" || m.m === "run_to") { const tx = clamp(m.x ?? x, .08, (it._W || 1) - .08), d = Math.abs(tx - x), dur = Math.max(.4, d / (m.m === "run_to" ? .55 : .22));
         if (t < m.t + dur) { const p = (t - m.t) / dur; f = tx >= x ? 1 : -1; from = { x0: x, x1: tx, p, run: m.m === "run_to", tt: t - m.t }; x = x + (tx - x) * p; prev = state; state = "move"; ts = m.t; break; }
         f = tx >= x ? 1 : -1; x = tx; prev = state; state = "stand"; ts = m.t + dur; continue; }
       if (POSE[m.m] || m.m === "stand") { prev = state; pts = ts; state = m.m; ts = m.t; if (!LASTING.has(m.m) && m.m !== "stand" && t > m.t + (DUR[m.m] || 1.2)) { prev = state; state = "stand"; ts = m.t + (DUR[m.m] || 1.2); } } }
@@ -188,20 +205,34 @@
       else if (m.m === "shake") rot += Math.sin(d * 40) * .18 * (1 - clamp(d / .7));
       else if (m.m === "hide") alpha = 1 - clamp(d / .3);
       else if (m.m === "pop") s *= .6 + .4 * back(clamp(d / .4)); }
-    if (it.k === "gear") rot += t * 1.2;
+    if (it.k === "gear") rot += t * 1.2; rot += (+it.r || 0) * D;
     return { x, y: y + dy, s, rot, alpha };
   }
+  function label(x, txt, cx, y, ap, sty, k) { x.save(); x.globalAlpha *= clamp((ap - .4) * 2.5); x.font = `700 ${Math.round(34 * k)}px "${sty.font}", system-ui, sans-serif`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillStyle = sty.ink; if (sty.glow) { x.shadowColor = sty.glow; x.shadowBlur = 10 * k; } x.fillText(String(txt), cx, y); x.restore(); }
   // деталі сцени в заданій області (і для формату «Анімація лініями», і для «Рілс маркером»)
   function drawItems(x, items, t, sty, k, G) {
     const { X0, SW, stY, stH, U } = G, W = SW;
     for (const it of items) { if (t < it.ta) continue; const ap = clamp((t - it.ta) / (it.k === "man" ? .7 : .55));
       if (it.k === "man") { const m = manAt(it, t, SW), gx = X0 + m.x * SW, gy = stY + (it.y ?? .92) * stH, s = (it.s ?? 1);
         const hang = (it.mv.filter((v) => v.t <= t && (POSE[v.m] || v.m === "stand")).pop() || {}).m === "hang";
-        const hy = stY + stH * .62, parts = figure(m.pose, gx, hang ? hy : gy, U * s, m.f, m.face).map((p, i) => jit(p, it.seed * 11 + i * 5, k));
+        const hid = it.mv.find((v) => v.m === "hide" && v.t <= t), al = hid ? 1 - clamp((t - hid.t) / .35) : 1; if (al <= 0) continue; x.save(); x.globalAlpha *= al;
+        const hy = stY + stH * .62, parts = figure(m.pose, gx, hang ? hy : gy, U * s, m.f, m.face, it.wear).map((p, i) => jit(p, it.seed * 11 + i * 5, k));
         if (hang) strokes(x, [jit([[gx, stY - 90 * k], [gx, hy - 3.3 * U * s]], it.seed, k)], ap, sty, k, 4);
         if (!hang && it.floor !== false) { const xs = [it.x ?? .5, ...it.mv.filter((v) => v.x != null && /_to$/.test(v.m)).map((v) => v.x)], a = X0 + Math.min(...xs) * SW - 1.25 * U * s, b2 = X0 + Math.max(...xs) * SW + 1.25 * U * s;
           strokes(x, [jit([[a, gy + 4 * k], [b2, gy + 4 * k]], it.seed * 3, k)], ap, sty, k, 4); }
-        strokes(x, parts, ap, sty, k, 6); continue; }
+        strokes(x, parts, ap, sty, k, 6);
+        if (it.label && !hang) label(x, it.label, gx, gy - 4.15 * U * s, ap, sty, k);
+        x.restore(); continue; }
+      // репліка / думка в бульбашці
+      if (it.k === "say" || it.k === "thinkb") { const p = propAt(it, t); if (p.alpha <= 0) continue; const cx = X0 + p.x * SW, cy = stY + p.y * stH; x.save(); x.globalAlpha *= p.alpha;
+        x.font = `800 ${Math.round(46 * k * p.s)}px "${sty.font}", system-ui, sans-serif`; const tx = String(it.t || ""), tw = Math.min(SW * .8, x.measureText(tx).width), w = tw + 60 * k, h = 96 * k * p.s, r = h * .45;
+        const sp = clamp(ap * 1.2), bx = cx - w / 2, by = cy - h / 2, path = [...arc(bx + r, by + r, r, 180, 270, 6), ...arc(bx + w - r, by + r, r, 270, 360, 6), ...arc(bx + w - r, by + h - r, r, 0, 90, 6), ...(it.k === "say" ? [[cx + 18 * k, by + h], [cx - 26 * k, by + h + 46 * k], [cx - 18 * k, by + h]] : []), ...arc(bx + r, by + h - r, r, 90, 180, 6)]; path.push(path[0]);
+        if (it.k === "thinkb") { strokes(x, [jit(arc(cx - 30 * k, by + h + 30 * k, 12 * k, 0, 360, 10), it.seed, k), jit(arc(cx - 50 * k, by + h + 62 * k, 7 * k, 0, 360, 8), it.seed + 1, k)], sp, sty, k, 4); }
+        strokes(x, [jit(path, it.seed * 7, k)], sp, sty, k, 4.5); x.globalAlpha *= clamp((ap - .4) * 2.5); x.fillStyle = it.acc ? sty.acc : sty.ink; x.textAlign = "center"; x.textBaseline = "middle"; if (sty.glow) { x.shadowColor = sty.glow; x.shadowBlur = 12 * k; } x.fillText(tx, cx, cy + 3 * k, SW * .8); x.restore(); continue; }
+      // лічильник: число росте (0 → 8 років)
+      if (it.k === "count") { const p = propAt(it, t); if (p.alpha <= 0) continue; const v = (+it.from || 0) + ((+it.to || 0) - (+it.from || 0)) * ease(clamp((t - it.ta) / 1.3)), txt = `${Math.round(v)}${it.t ? " " + it.t : ""}`;
+        x.save(); x.globalAlpha *= p.alpha * clamp(ap * 2); x.translate(X0 + p.x * SW, stY + p.y * stH); x.scale(p.s, p.s); x.font = `900 ${Math.round(110 * k)}px "${sty.font}", system-ui, sans-serif`; x.textAlign = "center"; x.textBaseline = "middle";
+        x.fillStyle = it.acc === false ? sty.ink : sty.acc; if (sty.glow) { x.shadowColor = sty.acc; x.shadowBlur = 20 * k; } x.fillText(txt, 0, 0); x.restore(); continue; }
       if (it.k === "text") { const p = propAt(it, t); x.save(); x.globalAlpha *= p.alpha * clamp(ap * 1.6); x.translate(X0 + p.x * SW, stY + p.y * stH); x.rotate(p.rot); x.scale(p.s, p.s);
         x.font = `800 ${Math.round(96 * k)}px "${sty.font}", system-ui, sans-serif`; x.textAlign = "center"; x.textBaseline = "middle"; const tw = x.measureText(it.t || "").width;
         x.beginPath(); x.rect(-tw / 2 - 10 * k, -80 * k, (tw + 20 * k) * clamp(ap * 1.3), 160 * k); x.clip(); x.fillStyle = it.acc ? sty.acc : sty.ink; if (sty.glow) { x.shadowColor = it.acc ? sty.acc : sty.glow; x.shadowBlur = 20 * k; } x.fillText(it.t || "", 0, 0); x.restore(); continue; }
@@ -218,8 +249,8 @@
       if ((it.t && (it.k === "card" || it.k === "tab")) || it.sub) { x.globalAlpha *= clamp((ap - .5) * 2); x.fillStyle = it.acc ? sty.acc : sty.ink; x.textAlign = "center"; x.textBaseline = "middle"; if (sty.glow) { x.shadowColor = sty.glow; x.shadowBlur = 12 * k; }
         if (it.t && (it.k === "card" || it.k === "tab")) { x.font = `800 ${Math.round((it.k === "tab" ? 60 : 40) * k * p.s)}px "Manrope", system-ui, sans-serif`; x.fillText(String(it.t).toUpperCase(), cx, cy + (it.k === "tab" ? .16 : -.24) * sz, 1.8 * sz); }
         if (it.sub) { x.font = `700 ${Math.round(32 * k)}px "Manrope", system-ui, sans-serif`; x.fillText(String(it.sub), cx, it.k === "clock" ? cy + 1.25 * sz : cy - (it.k === "wall" ? 1.85 : .85) * sz, 2.4 * sz); } }
+      if (it.label) label(x, it.label, cx, cy + (it.k === "wall" ? 1.85 : it.k === "desk" ? 1.15 : 1.2) * sz, ap, sty, k);
       x.restore(); }
-    // підпис «ФІГ. N — …»
   }
   function drawScene(x, q, t, W, H, sty, k, fade = 1) {
     const top = 200 * k, stH = 900 * k, stY = 400 * k, U = 118 * k;
@@ -569,5 +600,43 @@ ${board.map((b, i) => `${i + 1}. фраза: «${b.phrase}»; малюнок: ${
     return (r?.scenes || []).slice(0, board.length).map((s) => ({ items: (s?.items || []).filter((it) => it && (it.k === "man" || it.k === "text" || SH[it.k])).slice(0, 5).map((it) => ({ k: it.k, x: cl(it.x ?? .5, .05, .95), y: cl(it.y == null ? (it.k === "man" ? .92 : .5) : it.y, .05, .98), s: clamp(+it.s || 1, .4, 2.4), f: +it.f === -1 ? -1 : 1, acc: !!it.acc, t: it.t ? String(it.t).slice(0, 18) : undefined, sub: it.sub ? String(it.sub).slice(0, 18) : undefined, face: ["neutral", "happy", "sad"].includes(it.face) ? it.face : undefined, at: it.at != null ? cl(it.at, 0, .95) : undefined,
       moves: (it.moves || []).filter((m) => m && MOVES.includes(m.m)).slice(0, 6).map((m) => ({ p: cl(m.p, 0, .98), m: m.m, x: m.x != null ? cl(m.x, .05, .95) : undefined, y: m.y != null ? cl(m.y, .05, .95) : undefined })) })) }));
   }
-  window.YVLines = { open() { screenStart(); track("open"); }, fromMarker, drawBox, boardLines, _t: { set: (l) => { L = l; prep(); }, drawFrame, prep, exportVideo, figure, POSE, SH, STYLES, tot: () => TOT, screenEdit, aiScenes, L: () => L } };
+  /* ---------- «Рілс маркером»: один безперервний світ на весь ролик, камера переїжджає ---------- */
+  const toIP = (sec, T) => { let i = T.findIndex((o) => sec < o.e); if (i < 0) i = T.length - 1; const d = Math.max(.01, T[i].e - T[i].s); return { i, p: clamp((sec - T[i].s) / d, 0, 1) }; };
+  const fromIP = (ip, T) => { const o = T[clamp(ip?.i | 0, 0, T.length - 1)]; return o ? o.s + clamp(+ip.p || 0) * (o.e - o.s) : 0; };
+  const WC = new Map();
+  function worldItems(w, T) { const key = JSON.stringify(T) + "|" + (w._v || 0); let c = WC.get(w); if (c?.key === key) return c.items;
+    const items = (w.items || []).map((o, ii) => ({ ...o, _W: w.areas || 1, ta: fromIP(o.at, T), mv: (o.moves || []).map((m) => ({ ...m, t: fromIP(m.at, T) })).sort((a, b) => a.t - b.t), seed: ii * 7 + 1 })).sort((a, b) => (a.k === "man") - (b.k === "man"));
+    WC.set(w, { key, items }); return items; }
+  function camAt(w, t, T) { const K = (w.cam || []).map((c) => ({ t: fromIP(c.at, T), x: +c.x || .5, z: clamp(+c.z || 1, .8, 1.7) })).sort((a, b) => a.t - b.t); let cur = { x: .5, z: 1 };
+    for (const c of K) { if (c.t > t) break; const p = ease(clamp((t - c.t) / 1.3)); cur = { x: cur.x + (c.x - cur.x) * p, z: cur.z + (c.z - cur.z) * p }; } return cur; }
+  function drawWorld(x, w, t, o) {
+    if (!w?.items?.length) return; BOIL = Math.floor(t * 8); NOBOIL = o.boil === false;
+    const sty = { ink: o.ink, acc: o.acc || "#d0312d", bg: o.dark ? "#000" : "#fff", glow: null, font: o.font || "Manrope", lk: { lw: o.lw || 1 } }, cam = camAt(w, t, o.T), U = 138 * o.boxH / 900;
+    x.save(); x.translate(o.cx, o.cy); x.scale(cam.z, cam.z); x.translate(-o.cx, -o.cy);
+    drawItems(x, worldItems(w, o.T), t, sty, 1, { X0: o.cx - cam.x * o.boxW, SW: o.boxW, stY: o.cy - o.boxH / 2, stH: o.boxH, U }); x.restore();
+  }
+  async function boardWorld(board, T, topic) {
+    const tot = T[T.length - 1]?.e || 10, areas = clamp(Math.round(tot / 14) + 1, 1, 3);
+    const r = await sample.json(`Ти режисер короткої анімації «малюнок лініями» (чорний маркер на аркуші). Ось сценарій по фразах із часом звучання:
+${board.map((b, i) => `${i + 1}. [${T[i].s.toFixed(1)}–${T[i].e.toFixed(1)} с] «${b.phrase}» — задум: ${b.draw || "—"}`).join("\n")}
+Тема: ${topic || "—"}. Тривалість ${tot.toFixed(1)} с.
+Зроби ОДНУ БЕЗПЕРЕРВНУ анімацію на весь ролик — живий світ, а не слайди. Ті самі персонажі живуть від початку до кінця: рухаються, реагують, взаємодіють; нові деталі з'являються, коли про них кажуть; зайве прибирай рухом hide. Світ має ширину ${areas} екран(и) (x від 0 до ${areas}); якщо історія переходить в інше місце — камера плавно переїжджає (cam).
+Відео має бути ЗРОЗУМІЛЕ БЕЗ ЗВУКУ: кожну думку показуй дією і підписами — label на персонажах і предметах («мама», «дитинча»), репліки say і думки thinkb (1–4 слова), лічильники count (from → to, t — одиниця: «років»), стрілки (arrow з r — кут), написи text, числа. Не повторюй дослівно субтитри — доповнюй картинкою.
+Персонажам давай зовнішність wear, щоб їх розрізняти: hair, longhair, bun, bow, hat, cap, crown, glasses, beard, tie, cape, skirt; тварина — ears+tail (мавпа), cat (кіт); малюк — s 0.5–0.6.
+Деталі: "man" (x — 0…${areas}, y — земля 0.92; f 1/-1; face neutral|happy|sad; wear; label; s); предмети ${KINDS.join(", ")} (x, y 0…1 — висота на аркуші; s 0.5–2; r — кут; acc:true — червоний; t — слово на card/«?» у tab; sub; label); "text" (t); "say"/"thinkb" (t, x, y — над головою персонажа ≈0.25–0.4); "count" (from, to, t).
+Рухи man: walk_to (x), run_to (x), jump, wave, cheer, think, point, shrug, sad, sit, stand, fall, hang, dance, push, work, shock, happy_face, sad_face, hide. Рухи предметів: pop, bounce, spin, shake, fly_to (x, y), grow, hide.
+Час: "at" — секунда появи деталі, у рухах "t" — секунда початку (точно на словах, про які йдеться). cam: [{"t":сек,"x":центр кадру 0.5…${areas - .5},"z":1–1.5 (наближення на важливому)}].
+8–20 деталей на весь ролик, постійний рух, але без хаосу.
+Відповідай тільки JSON: {"cam":[{"t":0,"x":0.5,"z":1}],"items":[{"k":"man","x":0.35,"y":0.92,"wear":["longhair","skirt"],"label":"мама","at":0.3,"moves":[{"t":1.5,"m":"wave"}]},{"k":"say","x":0.4,"y":0.3,"t":"Нарешті!","at":2,"moves":[{"t":4,"m":"hide"}]}]}`, { cache: false, kb: true, max: 4000 });
+    const cl = (v, a, b) => clamp(+v || 0, a, b), WEAR = ["hair", "longhair", "bun", "bow", "hat", "cap", "crown", "glasses", "beard", "ears", "cat", "tail", "skirt", "tie", "cape"];
+    const KS = new Set(["man", "text", "say", "thinkb", "count", ...KINDS]);
+    const items = (r?.items || []).filter((it) => it && KS.has(it.k)).slice(0, 24).map((it) => ({ k: it.k, x: cl(it.x ?? .5, .05, areas - .05), y: cl(it.y == null ? (it.k === "man" ? .92 : .5) : it.y, .05, .98), s: cl(it.s || 1, .35, 2.4), r: it.r ? cl(it.r, -360, 360) : undefined, f: +it.f === -1 ? -1 : 1, acc: it.acc === true ? true : undefined,
+      t: it.t != null ? String(it.t).slice(0, 24) : undefined, sub: it.sub ? String(it.sub).slice(0, 18) : undefined, label: it.label ? String(it.label).slice(0, 18) : undefined, face: ["neutral", "happy", "sad"].includes(it.face) ? it.face : undefined,
+      wear: Array.isArray(it.wear) ? it.wear.filter((w) => WEAR.includes(w)).slice(0, 4) : undefined, from: it.from != null ? +it.from || 0 : undefined, to: it.to != null ? +it.to || 0 : undefined,
+      at: toIP(cl(it.at ?? 0, 0, tot), T), moves: (it.moves || []).filter((m) => m && MOVES.includes(m.m)).slice(0, 8).map((m) => ({ at: toIP(cl(m.t ?? 0, 0, tot), T), m: m.m, x: m.x != null ? cl(m.x, .05, areas - .05) : undefined, y: m.y != null ? cl(m.y, .05, .95) : undefined })) }));
+    if (!items.length) throw new Error("plan");
+    const cam = (r?.cam || []).slice(0, 16).map((c) => ({ at: toIP(cl(c.t ?? 0, 0, tot), T), x: cl(c.x ?? .5, .5, areas - .5), z: cl(c.z ?? 1, .8, 1.7) }));
+    return { areas, items, cam, _v: Date.now() };
+  }
+  window.YVLines = { open() { screenStart(); track("open"); }, fromMarker, drawBox, boardLines, drawWorld, boardWorld, _t: { set: (l) => { L = l; prep(); }, drawFrame, prep, exportVideo, figure, POSE, SH, STYLES, tot: () => TOT, screenEdit, aiScenes, L: () => L } };
 })();

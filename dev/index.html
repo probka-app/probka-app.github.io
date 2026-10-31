@@ -1100,7 +1100,7 @@ body{background:radial-gradient(900px 640px at 8% -12%,var(--yv-glow-1),transpar
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="YuVi DEV">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>window.YV_DEV=true;window.YV_BUILD="31.10 17:35";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
+<script>window.YV_DEV=true;window.YV_BUILD="31.10 17:47";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="server.js?v=f7af69dc"></script>
@@ -1622,7 +1622,7 @@ function drawScene(x,i,lt,d,alpha,t){ if(S.scenes[i]?.ad){ drawAd(x,lt,alpha); d
         if(tipX!==null){ fx=tipX+2*Math.sin(lt*53); fy=tipY+2*Math.cos(lt*47); } else if(ink._lastTip&&reveal>=1){ [fx,fy]=ink._lastTip; } if(tipX!==null) ink._lastTip=[fx,fy];
         x.save(); x.globalAlpha=op*(1-out); x.translate(fx+out*520,fy+out*620); x.rotate(.95+.05*Math.sin(lt*7)); x.scale(1/s,1/s); drawTool(x,ST.tool,dr==="hand"); x.restore(); } }
     x.restore(); }
-  if(!ink&&sc.lines&&window.YVLines&&lt>0) YVLines.drawBox(x,sc.lines,lt,d,{cx:540,cy,boxW,boxH,alpha,t,ink:inkColor(),dark:isDark(),lw:(THICK[ST.thick]?.w||3.5)/3.5*1.15,boil:S.mon.boil!==false,seed:i+1});
+  if(!ink&&!S.world&&sc.lines&&window.YVLines&&lt>0) YVLines.drawBox(x,sc.lines,lt,d,{cx:540,cy,boxW,boxH,alpha,t,ink:inkColor(),dark:isDark(),lw:(THICK[ST.thick]?.w||3.5)/3.5*1.15,boil:S.mon.boil!==false,seed:i+1});
   lt=lt0;
   if(sc.plaque){ const k=clamp((lt-.15)/.3); if(k>0){ const c=plaqueFor(sc.plaque,colOf(sc)); let s=(.6+.4*backOut(k))*.95, py=plY;
     if(isHook(i)){ const f=clamp((lt-HOOK_HOLD)/HOOK_FLY), e=f<1?1-Math.pow(1-f,3):1; s=(.6+.4*backOut(k))*(1.25-.3*e); py=960+(plY-960)*e; }
@@ -1647,6 +1647,7 @@ function drawPreviewMark(x,t){ x.save(); x.setTransform(.5,0,0,.5,0,0); const da
   for(let r=-6;r<=6;r++){ const y=r*190, off=(r%2?sh:-sh)-tw*2+(r*137)%tw; for(let k=0;k<5;k++) x.fillText(txt,off+k*tw-700,y); }
   x.restore(); }
 function drawFrame(x,t,scale){ x.setTransform(scale,0,0,scale,0,0); { let ox=0,oy=0; if(ST.gridMove!==false&&hasGrid()){ ox=Math.sin(t*.21)*90+t*6; oy=Math.cos(t*.17)*70+t*14; } paintBg(x,VW,VH,54,oy,ox); } const T=timings(), total=totalDur();
+  if(S.world&&window.YVLines&&T.length){ const top=S.tlPos==="top"; YVLines.drawWorld(x,S.world,t,{T,cx:540,cy:top?1060:930,boxW:960,boxH:top?820:900,ink:inkColor(),dark:isDark(),lw:(THICK[ST.thick]?.w||3.5)/3.5*1.15,boil:S.mon.boil!==false}); }
   if(T.length){ let i=T.findIndex(o=>t<o.e); if(i<0) i=T.length-1; const lt=t-T[i].s, d=T[i].e-T[i].s;
     if(i>0&&lt<.25){ const p=T[i-1]; drawScene(x,i-1,p.e-p.s,p.e-p.s,1-lt/.25,t); }
     drawScene(x,i,lt,d,1,t); }
@@ -1709,7 +1710,7 @@ function stAssemble(el){ const ER=document.getElementById("reader")||el;
   el.innerHTML+=`<div class="asm"><div style="min-width:0">
     <div class="chips etabs">${Object.entries(ETABS).map(([k,v],i)=>chip("etab",k,v,i===0)).join("")}</div>
     <div class="epanel" data-panel="scenes">
-      <div class="row" style="margin-top:0"><label class="chip" for="imgsf">Завантажити картинки</label><input type="file" id="imgsf" accept="image/*" multiple class="sr"><button class="chip" type="button" data-redist="1">Розподілити час за словами</button></div>
+      <div class="row" style="margin-top:0"><label class="chip" for="imgsf">Завантажити картинки</label><input type="file" id="imgsf" accept="image/*" multiple class="sr"><button class="chip" type="button" data-redist="1">Розподілити час за словами</button>${S.world?`<button class="chip" type="button" data-reworld="1">↻ Інша анімація</button>`:""}</div>
       <div class="ascenes" id="ascenes"></div></div>
     <div class="epanel" data-panel="look" hidden>${optRow("bg",Object.fromEntries(Object.entries(BGS).filter(([k])=>k!=="grid")),"Фон")}<div class="sgrp"><div class="gl">Клітинки</div><div class="chips"><button class="chip" type="button" data-grid="0" aria-pressed="${!hasGrid()}">Без клітинок</button><button class="chip" type="button" data-grid="1" aria-pressed="${hasGrid()&&!ST.gridWave}">Рівні клітинки</button><button class="chip" type="button" data-grid="2" aria-pressed="${hasGrid()&&!!ST.gridWave}">Хвилясті клітинки</button></div><label class="l2" for="gridsc">Розмір клітинок <span class="status" id="gridsc-v">${ST.gridScV??50}%</span></label><input type="range" id="gridsc" min="1" max="100" value="${ST.gridScV??50}"><label class="l2" for="gridw">Товщина ліній клітинок <span class="status" id="gridw-v">${ST.gridWV??20}%</span></label><input type="range" id="gridw" min="1" max="100" value="${ST.gridWV??20}"><div class="chips" style="margin-top:10px"><button class="chip" type="button" id="gridmv" aria-pressed="${ST.gridMove!==false}">Клітинки рухаються</button></div><div class="gl" style="margin-top:10px">Колір клітинок</div><div class="chips">${[["auto","Блакитні"],["gray","Сірі"],["black","Чорні"],["white","Білі"]].map(([k,n])=>`<button class="chip" type="button" data-gridcol="${k}" aria-pressed="${(ST.gridCol||"auto")===k}">${n}</button>`).join("")}</div></div>${optRow("tool",TOOLS,"Чим малює")}${optRow("thick",THICK,"Товщина ліній")}${optRow("plInk",PLINK,"Текст і рамка плашки")}${optRow("plSize",PLSIZE,"Розмір тексту на плашці")}${pickRow("Шрифт на плашках і субтитрах",curFont().n,"font",`font:${vfont(22)}`)}
       <div class="sgrp"><div class="gl">Анімація</div><div class="chips">${chip("mon","boil","Живі лінії",S.mon.boil)}${chip("mon","parts","Рухомі елементи",S.mon.parts!==false)}</div></div></div>
@@ -1759,7 +1760,8 @@ function stAssemble(el){ const ER=document.getElementById("reader")||el;
   (async()=>{ if(!window.yvBusy) return; yvBusy.start("montage"); try{ await ensureMedia(); await new Promise(r=>setTimeout(r,60)); S.scenes.forEach((_,i)=>{ try{ inkOf(i); }catch(x){} }); await buildMix(); }catch(x){} yvBusy.end(true);
     if(!cv.isConnected) return; setTimeout(()=>{ try{ show(0); if(!PLAY) playB.click(); }catch(x){} },450); })();
   rows(); show(Math.min(1.2,totalDur())); fontReady().then(()=>{ PLQ.clear(); show(pos); });
-  if(S.scenes.some(s=>s.lines)&&!window.YVLines) loadLinesJS().then(()=>{ try{ show(pos); }catch(e){} }).catch(()=>{});
+  ER.querySelector("[data-reworld]")?.addEventListener("click",async e=>{ const bt=e.currentTarget; bt.disabled=true; bt.textContent="Оживляю…"; try{ if(window.yvBusy) yvBusy.start("montage"); await ensureLines(true); if(window.yvBusy) yvBusy.end(true); show(0); }catch(x){ if(window.yvBusy) yvBusy.end(false); toast("Не вийшло. Спробуй ще раз"); } bt.disabled=false; bt.textContent="↻ Інша анімація"; });
+  if((S.world||S.scenes.some(s=>s.lines))&&!window.YVLines) loadLinesJS().then(()=>{ try{ show(pos); }catch(e){} }).catch(()=>{});
   const RB=document.getElementById("rbody"), tabsEl=ER.querySelector(".etabs");
   const scrollToEl=(node,off=10)=>{ if(!RB||!node) return; RB.scrollTo({top:RB.scrollTop+node.getBoundingClientRect().top-RB.getBoundingClientRect().top-off,behavior:"smooth"}); };
   ER.querySelectorAll("[data-etab]").forEach(b=>b.addEventListener("click",()=>{ ER.querySelectorAll("[data-etab]").forEach(o=>o.setAttribute("aria-pressed",o===b)); ER.querySelectorAll(".epanel").forEach(p=>p.hidden=p.dataset.panel!==b.dataset.etab); setTimeout(()=>scrollToEl(tabsEl,62),30); }));
@@ -2387,10 +2389,11 @@ ${list.map((o,k)=>`${k+1}. Фраза: «${o.x.phrase}»\nКадр: «${o.x.draw
 const linesMode=()=>uiOwner()&&S.format==="marker";
 let LINESJS=null; const loadLinesJS=()=>LINESJS||=(async()=>{ const ld=src=>new Promise((ok,no)=>{ const sc=document.createElement("script"); sc.src=src+"?v="+(window.YV_BUILD||Date.now()); sc.onload=ok; sc.onerror=no; document.head.appendChild(sc); });
   if(!window.YVTalk) await ld("a/talk.js"); if(!window.YVLines) await ld("a/lines.js"); })().catch(e=>{ LINESJS=null; throw e; });
-async function ensureLines(){ const list=S.scenes.map((x,i)=>({x,i})).filter(o=>!o.x.ad&&(o.x.draw||o.x.phrase)); if(!list.length) return;
-  const sig=JSON.stringify(list.map(o=>[o.x.phrase,o.x.draw])); if(S.linesSig===sig&&list.every(o=>o.x.lines)) return;
-  await loadLinesJS(); const r=await YVLines.boardLines(list.map(o=>({phrase:o.x.phrase,draw:o.x.draw})),S.topic||S.hook);
-  list.forEach((o,k)=>{ if(r[k]?.items?.length) o.x.lines=r[k]; }); S.linesSig=sig; persist(); yvTrack("marker","lines_gen",{v:String(list.length)}); }
+// один безперервний «світ» на весь ролик: ті самі персонажі від початку до кінця, камера переїжджає
+async function ensureLines(force){ if(!S.scenes.length) return; monDefaults(); if(VOICE_RAW&&VOICE_INFO&&VOICE_INFO.target!==S.dur){ processVoice(); distribute(VOICE.duration); } if(S.scenes.some(s=>!s.dur)) distribute(VOICE?VOICE.duration:S.dur);
+  const sig=JSON.stringify(S.scenes.map(o=>[o.phrase,o.draw,!!o.ad])); if(!force&&S.worldSig===sig&&S.world?.items?.length) return;
+  await loadLinesJS(); const T=timings().map(o=>({s:o.s,e:o.e}));
+  S.world=await YVLines.boardWorld(S.scenes.map(o=>({phrase:o.ad?"(реклама)":o.phrase,draw:o.ad?"":o.draw})),T,S.topic||S.hook); S.worldSig=sig; persist(); yvTrack("marker","lines_gen",{v:String(S.world.items.length)}); }
 document.getElementById("next").addEventListener("click",async e=>{ click(); const b=e.currentTarget;
   if(cur.steps[idx]?.render===stBoard&&linesMode()&&S.scenes.length){ const t=b.textContent; b.disabled=true; b.textContent="Оживляю малюнки…";
     try{ if(window.yvBusy) yvBusy.start("montage"); await ensureLines(); if(window.yvBusy) yvBusy.end(true); }catch(err){ if(window.yvBusy) yvBusy.end(false); toast("Не вийшло оживити малюнки. Спробуй ще раз"); b.disabled=false; b.textContent=t; return; }
