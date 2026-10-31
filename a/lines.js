@@ -191,29 +191,21 @@
     if (it.k === "gear") rot += t * 1.2;
     return { x, y: y + dy, s, rot, alpha };
   }
-  function drawScene(x, q, t, W, H, sty, k, fade = 1) {
-    const top = 200 * k, stH = 900 * k, stY = 400 * k, U = 118 * k;
-    x.save(); x.globalAlpha = fade;
-    // заголовок у рамці + «стеля» зі штрихами
-    if (q.s.title && !L.title) { const pr = clamp((t - q.t0) / .5); x.font = `800 ${Math.round(74 * k)}px "${sty.font}", system-ui, sans-serif`; x.textAlign = "center"; x.textBaseline = "middle";
-      const tt = String(q.s.title).toUpperCase(), tw = Math.min(W * .86, x.measureText(tt).width + 90 * k), bh = 130 * k, bx = (W - tw) / 2, by = top - bh / 2;
-      strokes(x, [jit(rect(bx, by, tw, bh), q.n * 5, k)], pr, sty, k, 4.5);
-      x.save(); x.globalAlpha *= clamp((t - q.t0 - .2) / .3); x.fillStyle = sty.ink; if (sty.glow) { x.shadowColor = sty.glow; x.shadowBlur = 18 * k; } x.fillText(tt, W / 2, top + 4 * k, tw - 50 * k); x.restore();
-      const ly = top + bh / 2 + 42 * k, ticks = []; for (let i = 0; i < 10; i++) { const tx = W * .1 + i * W * .088; ticks.push(jit([[tx, ly], [tx + 26 * k, ly + 26 * k]], q.n * 9 + i, k)); }
-      strokes(x, [jit([[W * .06, ly], [W * .94, ly]], q.n * 7, k), ...ticks], clamp((t - q.t0 - .15) / .5), sty, k, 3.5); }
-    // предмети й люди
-    for (const it of q.items) { if (t < it.ta) continue; const ap = clamp((t - it.ta) / (it.k === "man" ? .7 : .55));
-      if (it.k === "man") { const m = manAt(it, t, W), gx = m.x * W, gy = stY + (it.y ?? .92) * stH, s = (it.s ?? 1);
+  // деталі сцени в заданій області (і для формату «Анімація лініями», і для «Рілс маркером»)
+  function drawItems(x, items, t, sty, k, G) {
+    const { X0, SW, stY, stH, U } = G, W = SW;
+    for (const it of items) { if (t < it.ta) continue; const ap = clamp((t - it.ta) / (it.k === "man" ? .7 : .55));
+      if (it.k === "man") { const m = manAt(it, t, SW), gx = X0 + m.x * SW, gy = stY + (it.y ?? .92) * stH, s = (it.s ?? 1);
         const hang = (it.mv.filter((v) => v.t <= t && (POSE[v.m] || v.m === "stand")).pop() || {}).m === "hang";
         const hy = stY + stH * .62, parts = figure(m.pose, gx, hang ? hy : gy, U * s, m.f, m.face).map((p, i) => jit(p, it.seed * 11 + i * 5, k));
         if (hang) strokes(x, [jit([[gx, stY - 90 * k], [gx, hy - 3.3 * U * s]], it.seed, k)], ap, sty, k, 4);
-        if (!hang && it.floor !== false) { const xs = [it.x ?? .5, ...it.mv.filter((v) => v.x != null && /_to$/.test(v.m)).map((v) => v.x)], a = Math.min(...xs) * W - 1.25 * U * s, b2 = Math.max(...xs) * W + 1.25 * U * s;
+        if (!hang && it.floor !== false) { const xs = [it.x ?? .5, ...it.mv.filter((v) => v.x != null && /_to$/.test(v.m)).map((v) => v.x)], a = X0 + Math.min(...xs) * SW - 1.25 * U * s, b2 = X0 + Math.max(...xs) * SW + 1.25 * U * s;
           strokes(x, [jit([[a, gy + 4 * k], [b2, gy + 4 * k]], it.seed * 3, k)], ap, sty, k, 4); }
         strokes(x, parts, ap, sty, k, 6); continue; }
-      if (it.k === "text") { const p = propAt(it, t); x.save(); x.globalAlpha *= p.alpha * clamp(ap * 1.6); x.translate(p.x * W, stY + p.y * stH); x.rotate(p.rot); x.scale(p.s, p.s);
+      if (it.k === "text") { const p = propAt(it, t); x.save(); x.globalAlpha *= p.alpha * clamp(ap * 1.6); x.translate(X0 + p.x * SW, stY + p.y * stH); x.rotate(p.rot); x.scale(p.s, p.s);
         x.font = `800 ${Math.round(96 * k)}px "${sty.font}", system-ui, sans-serif`; x.textAlign = "center"; x.textBaseline = "middle"; const tw = x.measureText(it.t || "").width;
         x.beginPath(); x.rect(-tw / 2 - 10 * k, -80 * k, (tw + 20 * k) * clamp(ap * 1.3), 160 * k); x.clip(); x.fillStyle = it.acc ? sty.acc : sty.ink; if (sty.glow) { x.shadowColor = it.acc ? sty.acc : sty.glow; x.shadowBlur = 20 * k; } x.fillText(it.t || "", 0, 0); x.restore(); continue; }
-      const fnS = SH[it.k]; if (!fnS) continue; const p = propAt(it, t), sz = 135 * k * p.s, cx = p.x * W, gY = stY + .92 * stH;
+      const fnS = SH[it.k]; if (!fnS) continue; const p = propAt(it, t), sz = 135 * k * p.s, cx = X0 + p.x * SW, gY = stY + .92 * stH;
       const cy = it.k === "wall" ? gY - 1.6 * sz : it.k === "desk" ? gY - .9 * sz : stY + p.y * stH;
       if (it.k === "lamp") { const ty = stY - 60 * k, w = 70 * k * p.s; const on = clamp((t - it.ta - .3) / .4);
         strokes(x, [jit([[cx, ty - 60 * k], [cx, ty]], it.seed, k), jit([[cx - w * .45, ty], [cx + w * .45, ty], [cx + w * .7, ty + 50 * k], [cx - w * .7, ty + 50 * k], [cx - w * .45, ty]], it.seed + 1, k)], ap, sty, k, 5);
@@ -228,6 +220,18 @@
         if (it.sub) { x.font = `700 ${Math.round(32 * k)}px "Manrope", system-ui, sans-serif`; x.fillText(String(it.sub), cx, it.k === "clock" ? cy + 1.25 * sz : cy - (it.k === "wall" ? 1.85 : .85) * sz, 2.4 * sz); } }
       x.restore(); }
     // підпис «ФІГ. N — …»
+  }
+  function drawScene(x, q, t, W, H, sty, k, fade = 1) {
+    const top = 200 * k, stH = 900 * k, stY = 400 * k, U = 118 * k;
+    x.save(); x.globalAlpha = fade;
+    // заголовок у рамці + «стеля» зі штрихами
+    if (q.s.title && !L.title) { const pr = clamp((t - q.t0) / .5); x.font = `800 ${Math.round(74 * k)}px "${sty.font}", system-ui, sans-serif`; x.textAlign = "center"; x.textBaseline = "middle";
+      const tt = String(q.s.title).toUpperCase(), tw = Math.min(W * .86, x.measureText(tt).width + 90 * k), bh = 130 * k, bx = (W - tw) / 2, by = top - bh / 2;
+      strokes(x, [jit(rect(bx, by, tw, bh), q.n * 5, k)], pr, sty, k, 4.5);
+      x.save(); x.globalAlpha *= clamp((t - q.t0 - .2) / .3); x.fillStyle = sty.ink; if (sty.glow) { x.shadowColor = sty.glow; x.shadowBlur = 18 * k; } x.fillText(tt, W / 2, top + 4 * k, tw - 50 * k); x.restore();
+      const ly = top + bh / 2 + 42 * k, ticks = []; for (let i = 0; i < 10; i++) { const tx = W * .1 + i * W * .088; ticks.push(jit([[tx, ly], [tx + 26 * k, ly + 26 * k]], q.n * 9 + i, k)); }
+      strokes(x, [jit([[W * .06, ly], [W * .94, ly]], q.n * 7, k), ...ticks], clamp((t - q.t0 - .15) / .5), sty, k, 3.5); }
+    drawItems(x, q.items, t, sty, k, { X0: 0, SW: W, stY, stH, U });
     // плашка сцени (з розкадровки): з'являється з пружинкою
     if (q.s.plaque && sty.lk.plaque !== "none") drawPlaque(x, q.s.plaque, q.s.color, t - q.t0 - .15, W, k, sty);
     const cap = sty.lk.fig === false ? "" : L.title ? (q.s.title || q.s.caption) : (q.s.caption || q.s.title); if (cap) { const cy = stY + stH + 64 * k; x.save(); x.globalAlpha *= clamp((t - q.t0 - .3) / .4); x.font = `700 ${Math.round(34 * k)}px "Manrope", system-ui, sans-serif`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillStyle = sty.ink;
@@ -540,5 +544,30 @@ ${SPEC}
       prep(); track("from_marker", { v: `${L.scenes.length}sc/${Math.round(TOT)}s` }); screenEdit("Готово! «Стиль» — фон, плашки, субтитри. Лінії й рухи — голосом або ✎");
     } catch (e) { console.error(e); say(e?.message === "nowords" ? "Не почув слів в озвучці" : e?.message === "limit" ? "Ліміт на сьогодні вичерпано" : "Не вийшло зібрати відео. Спробуй ще раз"); close(); }
   }
-  window.YVLines = { open() { screenStart(); track("open"); }, fromMarker, _t: { set: (l) => { L = l; prep(); }, drawFrame, prep, exportVideo, figure, POSE, SH, STYLES, tot: () => TOT, screenEdit, aiScenes, L: () => L } };
+  /* ---------- «Рілс маркером»: малюнок лініями замість згенерованої картинки ---------- */
+  const BOXC = new Map();
+  function boxItems(spec, d, seed) { const key = JSON.stringify(spec) + "|" + d.toFixed(2); if (BOXC.has(key)) return BOXC.get(key);
+    const it = (spec.items || []).map((o, ii) => ({ ...o, ta: clamp(+o.at || 0, 0, .95) * d + (o.at == null ? ii * .2 : 0), mv: (o.moves || []).map((m) => ({ ...m, t: clamp(+m.p || 0, 0, .98) * d })).sort((a, b) => a.t - b.t), seed: seed * 31 + ii * 7 + 1 }));
+    if (BOXC.size > 200) BOXC.clear(); BOXC.set(key, it); return it; }
+  function drawBox(x, spec, lt, d, o) {
+    if (!spec?.items?.length || lt < 0) return; BOIL = Math.floor(o.t * 8); NOBOIL = o.boil === false;
+    const sty = { ink: o.ink, acc: o.acc || "#d0312d", bg: o.dark ? "#000" : "#fff", glow: null, font: o.font || "Pangolin", lk: { lw: o.lw || 1 } };
+    const U = 138 * o.boxH / 900; x.save(); x.globalAlpha *= o.alpha ?? 1;
+    drawItems(x, boxItems(spec, d, o.seed || 1), lt, sty, 1, { X0: o.cx - o.boxW / 2, SW: o.boxW, stY: o.cy - o.boxH / 2, stH: o.boxH, U });
+    x.restore();
+  }
+  async function boardLines(board, topic) {
+    const r = await sample.json(`Ти режисер анімації «малюнок лініями» для короткого відео. Ось розкадровка — сцени по черзі (фраза, що намалювати):
+${board.map((b, i) => `${i + 1}. фраза: «${b.phrase}»; малюнок: ${b.draw || b.phrase}`).join("\n")}
+Тема: ${topic || "—"}.
+Для КОЖНОЇ сцени (рівно ${board.length}, у тому ж порядку) намалюй задум «малюнок» з деталей: майже завжди чоловічок, що щось робить, + 1–3 предмети або напис. Час — частка тривалості сцени від 0 до 1: "at" — коли деталь з'являється, "p" у русі — коли почати рух (рухи на тих моментах фрази, про які йдеться).
+Деталі: "man" — чоловічок (x 0…1, y — земля, зазвичай 0.92; f — 1 вправо / -1 вліво; face "neutral"|"happy"|"sad"); предмети: ${KINDS.join(", ")} (x, y — центр 0…1; s — розмір 0.6…2; acc:true — червоний акцент; t — слово на card або «?»/«!» у tab; sub — маленький підпис «5 хвилин», «+6 год»); "text" — напис до 3 слів чи число, поле t.
+Рухи man: walk_to (x), run_to (x), jump, wave, cheer, think, point, shrug, sad, sit, stand, fall, hang, dance, push, work, shock, happy_face, sad_face; рухи предметів: pop, bounce, spin, shake, fly_to (x, y), grow, hide.
+Простота й рух важливіші за кількість. Не дублюй текст плашки написом.
+Відповідай тільки JSON: {"scenes":[{"items":[{"k":"man","x":0.4,"y":0.92,"moves":[{"p":0.3,"m":"walk_to","x":0.6}]},{"k":"money","x":0.75,"y":0.4,"at":0.4,"moves":[{"p":0.4,"m":"pop"}]}]}]}`, { cache: false, kb: true, max: 4000 });
+    const cl = (v, a = 0, b = 1) => clamp(+v || 0, a, b);
+    return (r?.scenes || []).slice(0, board.length).map((s) => ({ items: (s?.items || []).filter((it) => it && (it.k === "man" || it.k === "text" || SH[it.k])).slice(0, 5).map((it) => ({ k: it.k, x: cl(it.x ?? .5, .05, .95), y: cl(it.y == null ? (it.k === "man" ? .92 : .5) : it.y, .05, .98), s: clamp(+it.s || 1, .4, 2.4), f: +it.f === -1 ? -1 : 1, acc: !!it.acc, t: it.t ? String(it.t).slice(0, 18) : undefined, sub: it.sub ? String(it.sub).slice(0, 18) : undefined, face: ["neutral", "happy", "sad"].includes(it.face) ? it.face : undefined, at: it.at != null ? cl(it.at, 0, .95) : undefined,
+      moves: (it.moves || []).filter((m) => m && MOVES.includes(m.m)).slice(0, 6).map((m) => ({ p: cl(m.p, 0, .98), m: m.m, x: m.x != null ? cl(m.x, .05, .95) : undefined, y: m.y != null ? cl(m.y, .05, .95) : undefined })) })) }));
+  }
+  window.YVLines = { open() { screenStart(); track("open"); }, fromMarker, drawBox, boardLines, _t: { set: (l) => { L = l; prep(); }, drawFrame, prep, exportVideo, figure, POSE, SH, STYLES, tot: () => TOT, screenEdit, aiScenes, L: () => L } };
 })();

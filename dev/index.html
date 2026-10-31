@@ -1100,7 +1100,7 @@ body{background:radial-gradient(900px 640px at 8% -12%,var(--yv-glow-1),transpar
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="YuVi DEV">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>window.YV_DEV=true;window.YV_BUILD="31.10 17:22";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
+<script>window.YV_DEV=true;window.YV_BUILD="31.10 17:35";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="server.js?v=f7af69dc"></script>
@@ -1622,6 +1622,7 @@ function drawScene(x,i,lt,d,alpha,t){ if(S.scenes[i]?.ad){ drawAd(x,lt,alpha); d
         if(tipX!==null){ fx=tipX+2*Math.sin(lt*53); fy=tipY+2*Math.cos(lt*47); } else if(ink._lastTip&&reveal>=1){ [fx,fy]=ink._lastTip; } if(tipX!==null) ink._lastTip=[fx,fy];
         x.save(); x.globalAlpha=op*(1-out); x.translate(fx+out*520,fy+out*620); x.rotate(.95+.05*Math.sin(lt*7)); x.scale(1/s,1/s); drawTool(x,ST.tool,dr==="hand"); x.restore(); } }
     x.restore(); }
+  if(!ink&&sc.lines&&window.YVLines&&lt>0) YVLines.drawBox(x,sc.lines,lt,d,{cx:540,cy,boxW,boxH,alpha,t,ink:inkColor(),dark:isDark(),lw:(THICK[ST.thick]?.w||3.5)/3.5*1.15,boil:S.mon.boil!==false,seed:i+1});
   lt=lt0;
   if(sc.plaque){ const k=clamp((lt-.15)/.3); if(k>0){ const c=plaqueFor(sc.plaque,colOf(sc)); let s=(.6+.4*backOut(k))*.95, py=plY;
     if(isHook(i)){ const f=clamp((lt-HOOK_HOLD)/HOOK_FLY), e=f<1?1-Math.pow(1-f,3):1; s=(.6+.4*backOut(k))*(1.25-.3*e); py=960+(plY-960)*e; }
@@ -1758,6 +1759,7 @@ function stAssemble(el){ const ER=document.getElementById("reader")||el;
   (async()=>{ if(!window.yvBusy) return; yvBusy.start("montage"); try{ await ensureMedia(); await new Promise(r=>setTimeout(r,60)); S.scenes.forEach((_,i)=>{ try{ inkOf(i); }catch(x){} }); await buildMix(); }catch(x){} yvBusy.end(true);
     if(!cv.isConnected) return; setTimeout(()=>{ try{ show(0); if(!PLAY) playB.click(); }catch(x){} },450); })();
   rows(); show(Math.min(1.2,totalDur())); fontReady().then(()=>{ PLQ.clear(); show(pos); });
+  if(S.scenes.some(s=>s.lines)&&!window.YVLines) loadLinesJS().then(()=>{ try{ show(pos); }catch(e){} }).catch(()=>{});
   const RB=document.getElementById("rbody"), tabsEl=ER.querySelector(".etabs");
   const scrollToEl=(node,off=10)=>{ if(!RB||!node) return; RB.scrollTo({top:RB.scrollTop+node.getBoundingClientRect().top-RB.getBoundingClientRect().top-off,behavior:"smooth"}); };
   ER.querySelectorAll("[data-etab]").forEach(b=>b.addEventListener("click",()=>{ ER.querySelectorAll("[data-etab]").forEach(o=>o.setAttribute("aria-pressed",o===b)); ER.querySelectorAll(".epanel").forEach(p=>p.hidden=p.dataset.panel!==b.dataset.etab); setTimeout(()=>scrollToEl(tabsEl,62),30); }));
@@ -2381,10 +2383,21 @@ ${list.map((o,k)=>`${k+1}. Фраза: «${o.x.phrase}»\nКадр: «${o.x.draw
 Відповідай тільки JSON-масивом рядків, по одному промпту на сцену, у тому ж порядку (${list.length} шт.).`,{cache:false});
       if(Array.isArray(r)) list.forEach((o,k)=>{ const t=r[k]; if(typeof t==="string"&&t.trim()) o.x.prompt=t.trim(); }); }catch(e){} }
   S.promptSig=sig; persist(); }
+// «Рілс маркером» лініями (тест, власник): після розкадровки — одразу редактор, малюнки оживають лініями без генерації картинок
+const linesMode=()=>uiOwner()&&S.format==="marker";
+let LINESJS=null; const loadLinesJS=()=>LINESJS||=(async()=>{ const ld=src=>new Promise((ok,no)=>{ const sc=document.createElement("script"); sc.src=src+"?v="+(window.YV_BUILD||Date.now()); sc.onload=ok; sc.onerror=no; document.head.appendChild(sc); });
+  if(!window.YVTalk) await ld("a/talk.js"); if(!window.YVLines) await ld("a/lines.js"); })().catch(e=>{ LINESJS=null; throw e; });
+async function ensureLines(){ const list=S.scenes.map((x,i)=>({x,i})).filter(o=>!o.x.ad&&(o.x.draw||o.x.phrase)); if(!list.length) return;
+  const sig=JSON.stringify(list.map(o=>[o.x.phrase,o.x.draw])); if(S.linesSig===sig&&list.every(o=>o.x.lines)) return;
+  await loadLinesJS(); const r=await YVLines.boardLines(list.map(o=>({phrase:o.x.phrase,draw:o.x.draw})),S.topic||S.hook);
+  list.forEach((o,k)=>{ if(r[k]?.items?.length) o.x.lines=r[k]; }); S.linesSig=sig; persist(); yvTrack("marker","lines_gen",{v:String(list.length)}); }
 document.getElementById("next").addEventListener("click",async e=>{ click(); const b=e.currentTarget;
+  if(cur.steps[idx]?.render===stBoard&&linesMode()&&S.scenes.length){ const t=b.textContent; b.disabled=true; b.textContent="Оживляю малюнки…";
+    try{ if(window.yvBusy) yvBusy.start("montage"); await ensureLines(); if(window.yvBusy) yvBusy.end(true); }catch(err){ if(window.yvBusy) yvBusy.end(false); toast("Не вийшло оживити малюнки. Спробуй ще раз"); b.disabled=false; b.textContent=t; return; }
+    b.disabled=false; b.textContent=t; idx=Math.min(cur.steps.length-1,idx+2); render(); return; }
   if(cur.steps[idx]?.render===stBoard&&S.format==="marker"&&S.scenes.length){ const t=b.textContent; b.disabled=true; b.textContent="Готую промпти…"; await buildPrompts(); b.disabled=false; b.textContent=t; }
   if(idx<cur.steps.length-1){idx++;render();} else closeSec(); });
-document.getElementById("prev").addEventListener("click",()=>{ click(); if(idx>0){idx--;render();} });
+document.getElementById("prev").addEventListener("click",()=>{ click(); if(idx>0){idx--; if(cur.steps[idx]?.render===stVisual&&linesMode()&&idx>0) idx--; render();} });
 document.getElementById("close").addEventListener("click",closeSec);
 document.addEventListener("keydown",e=>{ if(reader.hidden) return; const tag=(e.target.tagName||"").toLowerCase(); if(tag==="input"||tag==="textarea"||tag==="select") return; if(e.key==="ArrowRight") document.getElementById("next").click(); if(e.key==="ArrowLeft") document.getElementById("prev").click(); });
 document.getElementById("music")?.addEventListener("click",toggleMusic);
