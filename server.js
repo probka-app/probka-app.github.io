@@ -99,10 +99,11 @@
     try {
       const me = await rpc("me");
       if (!me || typeof me !== "object") throw new Error("no_profile");
-      SRV.me = me;
+      SRV.me = me; SRV._fails = 0; clearTimeout(SRV._rt);
+      try { localStorage.setItem("yvMe", JSON.stringify({ uid: SRV.session?.user?.id, me, owner: !!SRV.isOwner })); } catch (x) {}
       WL.balance = kop(me.available_kop); WL.pending = kop(me.pending_kop); WL.total = kop(me.earned_kop); WL.refs = me.refs_total;
       WL.unlocked = me.active ? { marker: true } : {};
-      sb.rpc("is_owner").then(({ data }) => { SRV.isOwner = !!data; window.applyUIF?.(); });
+      sb.rpc("is_owner").then(({ data, error }) => { if (error) return; SRV.isOwner = !!data; try { const c = JSON.parse(localStorage.getItem("yvMe") || "null"); if (c) { c.owner = !!data; localStorage.setItem("yvMe", JSON.stringify(c)); } } catch (x) {} window.applyUIF?.(); });
       sb.rpc("is_admin").then(async ({ data }) => { SRV.isAdmin = !!data;
         if (data) { try { const f = await SRV.adminFailed(); const day = new Date().toDateString(); if (f.length && ls.get("yvFailSeen") !== day) { ls.set("yvFailSeen", day); setTimeout(() => toast(`⚠ Виплати не пройшли: ${f.length}. Деталі — у панелі власника`), 1500); } } catch (e) {} } });
       sb.rpc("test_paid").then(({ data, error }) => { SRV.testReady = !error; if (typeof TEST !== "undefined" && data != null) { TEST.paid = !!data; localStorage.setItem("rilsTestPaid", JSON.stringify(!!data)); window.renderTest?.(); } });
@@ -122,7 +123,10 @@
       try { const { data, error } = await sb.auth.getUser();
         bad = (!!error && (error.status === 401 || error.status === 403 || /not found|invalid|expired|does not exist/i.test(error.message || ""))) || (!error && !data?.user); } catch (x) { bad = false; }
       if (bad) { try { await Promise.race([sb.auth.signOut({ scope: "local" }), new Promise((r) => setTimeout(r, 1500))]); } catch (x) {} try { Object.keys(localStorage).filter((k) => /^sb-.*-auth-token/.test(k)).forEach((k) => localStorage.removeItem(k)); } catch (x) {}
-        SRV.session = null; SRV.me = null; try { ls.set("rilsWallet", null); } catch (x) {} toast("Вхід застарів — увійди ще раз"); setTimeout(() => location.reload(), 900); }
+        SRV.session = null; SRV.me = null; try { ls.set("rilsWallet", null); localStorage.removeItem("yvMe"); } catch (x) {} toast("Вхід застарів — увійди ще раз"); setTimeout(() => location.reload(), 900); }
+      // тимчасова помилка (сайт щойно «прокинувся», мережа ще не готова, токен протух) — оновлюємо токен і пробуємо ще, тихо
+      else if (SRV.session) { SRV._fails = (SRV._fails || 0) + 1; clearTimeout(SRV._rt);
+        if (SRV._fails <= 6) SRV._rt = setTimeout(async () => { try { await sb.auth.refreshSession(); const { data } = await sb.auth.getSession(); if (data?.session) SRV.session = data.session; } catch (x) {} SRV.refresh(); }, [800, 2000, 4000, 8000, 15000, 30000][SRV._fails - 1]); }
     }
   };
   SRV.refCode = () => SRV.me?.ref_code || "";
@@ -557,6 +561,8 @@
   document.head.appendChild(authCss);
   const start = () => sb.auth.onAuthStateChange(async (_ev, session) => {
     const was = !!SRV.session; SRV.session = session;
+    // поки свіжі дані акаунта вантажаться — показуємо останні відомі (пошта, нік, власник), щоб не було «Гість»
+    if (session && !SRV.me) { try { const c = JSON.parse(localStorage.getItem("yvMe") || "null"); if (c && c.uid === session.user.id) { SRV.me = c.me; SRV.isOwner = !!c.owner; window.applyUIF?.(); window.renderTop?.(); window.renderBal?.(); } } catch (x) {} }
     if (!document.documentElement.classList.contains("gate")) logOpen(); else { const mo = new MutationObserver(() => { if (!document.documentElement.classList.contains("gate")) { mo.disconnect(); logOpen(); } }); mo.observe(document.documentElement, { attributes: true }); }
     if (_ev === "PASSWORD_RECOVERY") setTimeout(() => newPassSheet(), 300);
     await SRV.refresh();
@@ -570,6 +576,10 @@
     }
   });
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
+  // повернулись у застосунок (з Instagram тощо) — одразу оновлюємо вхід і дані акаунта
+  let resumeT = 0; const resume = async () => { if (document.visibilityState !== "visible" || Date.now() - resumeT < 3000) return; resumeT = Date.now();
+    try { const { data } = await sb.auth.getSession(); if (data?.session) { SRV.session = data.session; SRV._fails = 0; await SRV.refresh(); window.renderTop?.(); } } catch (x) {} };
+  document.addEventListener("visibilitychange", resume); addEventListener("pageshow", resume); addEventListener("online", () => { resumeT = 0; resume(); }); addEventListener("focus", resume);
   // поки сторінка відкрита — раз на 20 с перевіряємо нові зарахування
   setInterval(() => { if (SRV.session && document.visibilityState === "visible") SRV.refresh(); }, 20000);
 })();
