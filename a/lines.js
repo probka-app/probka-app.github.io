@@ -6,6 +6,7 @@
   "use strict";
   const E = () => window.YVTalk._t;
   const OW = 1080, OH = 1920, FPS = 30;
+  const DIMS = () => L?.wide ? [1920, 1080] : [1080, 1920];
   const $ = (r, s) => r.querySelector(s);
   const escH = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const say = (t) => { try { toast(t); } catch (e) {} };
@@ -306,7 +307,16 @@
         x.fillText(w.t, xx, y); x.shadowBlur = 0; xx += w.w + sp; }); });
     x.restore();
   }
+  function paintBg(x, W, H, k, sty) {
+    x.fillStyle = sty.bg; x.fillRect(0, 0, W, H);
+    if (sty.grid === "lines") { x.strokeStyle = sty.gc; x.lineWidth = 1.5 * k; x.beginPath(); for (let gx = 0; gx <= W; gx += 54 * k) { x.moveTo(gx, 0); x.lineTo(gx, H); } for (let gy = 0; gy <= H; gy += 54 * k) { x.moveTo(0, gy); x.lineTo(W, gy); } x.stroke(); }
+    else if (sty.grid === "dots") { x.fillStyle = sty.gc; for (let gx = 27 * k; gx <= W; gx += 54 * k) for (let gy = 27 * k; gy <= H; gy += 54 * k) x.fillRect(gx - 2 * k, gy - 2 * k, 4 * k, 4 * k); }
+    else if (sty.grid === "notebook") { x.strokeStyle = sty.gc; x.lineWidth = 2 * k; x.beginPath(); for (let gy = 90 * k; gy <= H; gy += 60 * k) { x.moveTo(0, gy); x.lineTo(W, gy); } x.stroke(); x.strokeStyle = "rgba(220,60,60,.35)"; x.beginPath(); x.moveTo(110 * k, 0); x.lineTo(110 * k, H); x.stroke(); }
+    if (sty.tex) { for (let i = 0; i < 260; i++) { const a = rnd(i, 3) * W, b = rnd(i, 7) * H, r = (sty.tex === "chalk" ? 30 + rnd(i, 9) * 120 : 1 + rnd(i, 9) * 2.5) * k;
+      x.fillStyle = sty.tex === "chalk" ? `rgba(255,255,255,${.012 + rnd(i, 11) * .02})` : `rgba(0,0,0,${.04 + rnd(i, 11) * .06})`; x.beginPath(); x.arc(a, b, r, 0, 7); x.fill(); } }
+  }
   function drawFrame(x, t, W, H) {
+    if (L.world) return drawWide(x, t, W, H);
     const sty = styOf(), k = W / OW; BOIL = Math.floor(t * 8); NOBOIL = sty.lk.boil === false;
     x.fillStyle = sty.bg; x.fillRect(0, 0, W, H);
     if (sty.grid === "lines") { x.strokeStyle = sty.gc; x.lineWidth = 1.5 * k; x.beginPath(); for (let gx = 0; gx <= W; gx += 54 * k) { x.moveTo(gx, 0); x.lineTo(gx, H); } for (let gy = 0; gy <= H; gy += 54 * k) { x.moveTo(0, gy); x.lineTo(W, gy); } x.stroke(); }
@@ -371,15 +381,15 @@ ${SPEC}
   /* ---------- збереження: покадрово, рівно 30 кадрів/с ---------- */
   async function exportVideo(onProg) {
     try { await document.fonts?.ready; } catch (e) {}
-    const cv = document.createElement("canvas"); cv.width = OW; cv.height = OH; const x = cv.getContext("2d", { alpha: false });
+    const [OW, OH] = DIMS(); const cv = document.createElement("canvas"); cv.width = OW; cv.height = OH; const x = cv.getContext("2d", { alpha: false });
     try {
       const M = await import("https://cdn.jsdelivr.net/npm/mediabunny@1.45.0/+esm");
       if (!window.VideoEncoder) throw new Error("noenc");
-      const can = (c) => M.canEncodeVideo(c, { width: OW, height: OH, bitrate: 8e6 }).catch(() => false);
+      const BR = L.wide ? (TOT > 120 ? 3e6 : 5e6) : 6e6, can = (c) => M.canEncodeVideo(c, { width: OW, height: OH, bitrate: BR }).catch(() => false);
       const vc = (await can("avc")) ? "avc" : (await can("vp9")) ? "vp9" : null; if (!vc) throw new Error("noenc");
       const aac = vc === "avc" && await M.canEncodeAudio("aac").catch(() => false), webm = vc !== "avc";
       const out = new M.Output({ format: webm ? new M.WebMOutputFormat() : aac ? new M.Mp4OutputFormat({ fastStart: "in-memory" }) : new M.MovOutputFormat({ fastStart: "in-memory" }), target: new M.BufferTarget() });
-      const vs = new M.CanvasSource(cv, { codec: vc, bitrate: 8e6, keyFrameInterval: 2 }), as = new M.AudioBufferSource(webm ? { codec: "opus", bitrate: 160e3 } : aac ? { codec: "aac", bitrate: 192e3 } : { codec: "pcm-s16" });
+      const vs = new M.CanvasSource(cv, { codec: vc, bitrate: BR, keyFrameInterval: 2 }), as = new M.AudioBufferSource(webm ? { codec: "opus", bitrate: 160e3 } : aac ? { codec: "aac", bitrate: 192e3 } : { codec: "pcm-s16" });
       out.addVideoTrack(vs, { frameRate: FPS }); out.addAudioTrack(as); await out.start();
       const SR = E().SR, A = L.aud; let aPos = 0;
       const push = async (upto) => { upto = Math.min(A.length, Math.round(upto)); if (upto <= aPos) return; const ab = new AudioBuffer({ length: upto - aPos, numberOfChannels: 2, sampleRate: SR }), part = A.subarray(aPos, upto); ab.copyToChannel(part, 0); ab.copyToChannel(part, 1); aPos = upto; await as.add(ab); };
@@ -431,6 +441,7 @@ ${SPEC}
 #yvln .lbl2{font-size:12.5px;color:#a1a1aa;font-weight:700;margin:12px 0 6px}#yvln .chips.l{justify-content:flex-start}
 #yvln .sws{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}#yvln .sw2{display:grid;justify-items:center;gap:4px;padding:6px 2px;border-radius:14px;border:1.5px solid transparent;background:none;color:#e4e4e7;font-family:inherit;font-size:11.5px;cursor:pointer}#yvln .sw2[aria-pressed=true]{border-color:#f5f5f7}
 #yvln .sw2 i{display:grid;place-items:center;width:46px;height:46px;border-radius:12px;font-style:normal;font-weight:900;font-size:22px;border:1px solid rgba(255,255,255,.15)}
+#yvln .modes3{flex:none;display:flex;gap:4px;margin:2px 14px 6px;padding:4px;border-radius:14px;background:rgba(255,255,255,.06)}#yvln .modes3 button{flex:1;padding:9px 6px;border-radius:11px;border:0;background:none;color:#a1a1aa;font-weight:700;font-size:13.5px;font-family:inherit;cursor:pointer}#yvln .modes3 button[aria-pressed=true]{background:#f5f5f7;color:#0b0b0d}
 #yvln .scn{display:grid;gap:6px}#yvln .scn button{display:flex;gap:10px;align-items:center;text-align:left;padding:9px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:inherit;font-family:inherit;font-size:14px;cursor:pointer}#yvln .scn b{flex:none;color:#a1a1aa;font-size:12px;min-width:38px}
 ${""}`;
   const UI = { root: null };
@@ -440,17 +451,25 @@ ${""}`;
     UI.root?.remove(); const d = document.createElement("div"); d.id = "yvln";
     d.innerHTML = `<div class="lh"><b>${title}<span class="ldev">ТЕСТ</span></b><span style="display:flex;gap:8px"><button class="lx" type="button" id="lundo" aria-label="Скасувати" hidden>${IC.undo}</button><button class="lx" type="button" id="lclose" aria-label="Закрити">×</button></span></div><div class="lb"></div><div class="lf"></div>`;
     document.body.appendChild(d); UI.root = d; $(d, "#lclose").onclick = close;
-    $(d, "#lundo").onclick = () => { const h = L?.hist?.pop(); if (!h) return; const o = JSON.parse(h); L.scenes = o.scenes; L.style = o.style; L.subs = o.subs; L.title = o.title; L.cta = o.cta; L.look = o.look; prep(); screenEdit("Скасовано"); };
+    $(d, "#lundo").onclick = () => { const h = L?.hist?.pop(); if (!h) return; const o = JSON.parse(h); L.scenes = o.scenes; L.style = o.style; L.subs = o.subs; L.title = o.title; L.cta = o.cta; L.look = o.look; if (o.world) L.world = o.world; prep(); screenEdit("Скасовано"); };
     return d;
   }
   function close() { stopPlay(); cancelAnimationFrame(DEMO); UI.root?.remove(); UI.root = null; }
-  const pushHist = () => { L.hist.push(JSON.stringify({ scenes: L.scenes, style: L.style, subs: L.subs, title: L.title, cta: L.cta, look: L.look })); if (L.hist.length > 20) L.hist.shift(); };
-  const fitCanvas = (stage, cw, extra = 0) => { const f = () => { const h = stage.clientHeight - 8, w = Math.max(90, Math.min(h * 9 / 16, stage.clientWidth - extra - 12)); cw.style.width = w + "px"; cw.style.height = w * 16 / 9 + "px"; }; f(); requestAnimationFrame(f); new ResizeObserver(f).observe(stage); };
+  const pushHist = () => { L.hist.push(JSON.stringify({ scenes: L.scenes, style: L.style, subs: L.subs, title: L.title, cta: L.cta, look: L.look, world: L.world })); if (L.hist.length > 20) L.hist.shift(); };
+  const fitCanvas = (stage, cw, extra = 0, wide = false) => { const r = wide ? 16 / 9 : 9 / 16; const f = () => { const h = stage.clientHeight - 8, w = Math.max(90, Math.min(h * r, stage.clientWidth - extra - 12)); cw.style.width = w + "px"; cw.style.height = w / r + "px"; }; f(); requestAnimationFrame(f); new ResizeObserver(f).observe(stage); };
+  let FMT = "tall";
+  const DEMOW = () => ({ wide: true, title: "Шлях до першого заробітку", cta: "Підпишись, щоб не пропустити", subs: true, hist: [],
+    world: { end: 3, cam: [{ t: 6.5, z: 1.25 }, { t: 8.5, z: 1 }], places: [{ x0: 0, kind: "field" }, { x0: 1.4, kind: "road" }, { x0: 2.2, kind: "city" }],
+      items: [{ k: "man", id: "Олег", hero: true, x: .4, y: .92, wear: ["cap"], label: "Олег", at: 0, moves: [{ t: .8, m: "walk_to", x: 1.6 }, { t: 6.2, m: "think" }, { t: 7.6, m: "run_to", x: 2.6 }, { t: 12, m: "cheer" }] },
+        { k: "thinkb", x: 1.6, y: .3, t: "А якщо почати?", at: 6.3, moves: [{ t: 8, m: "hide" }] }, { k: "money", x: 2.85, y: .3, at: 11.6, acc: true, moves: [{ t: 11.6, m: "pop" }, { t: 12.4, m: "bounce" }] }, { k: "count", x: 2.4, y: .2, from: 0, to: 500, t: "грн", at: 11.8 }] } });
 
   // приклад на старті — показує стиль, поки людина не записала голос
   let DEMO = 0;
   function demo(cv, style) {
     cancelAnimationFrame(DEMO); const keep = L;
+    if (FMT === "wide") { const words = "Олег іде полем і думає а якщо почати сьогодні і вже за тиждень перший заробіток".split(" ").map((w, i) => ({ w, s: .4 + i * .8, e: .4 + i * .8 + .6 }));
+      const DL = { ...DEMOW(), aud: new Float32Array(Math.round(14 * E().SR)), words, style }, x = cv.getContext("2d"), t0 = performance.now();
+      const loop = () => { if (!cv.isConnected) return; L = DL; prep(); WKEY = ""; const t = ((performance.now() - t0) / 1000) % 14; drawFrame(x, t, cv.width, cv.height); L = keep; DEMO = requestAnimationFrame(loop); }; loop(); return; }
     const words = "Більшість чекає тисячі підписників щоб почати заробляти а гроші приходять з одного вдалого відео".split(" ").map((w, i) => ({ w, s: .3 + i * .42, e: .3 + i * .42 + .38 }));
     const DL = { aud: new Float32Array(Math.round(8 * E().SR)), words, style, subs: true, title: "Чекати — дивно", cta: "Збережи, якщо впізнав себе",
       scenes: [{ a: 0, title: "Тисяча вкладок", items: [{ k: "man", x: .5, y: .92, face: "sad", moves: [{ i: 6, m: "shock" }] }, { k: "tab", x: .2, y: .25, at: 1 }, { k: "tab", x: .8, y: .22, at: 2 }, { k: "tab", x: .17, y: .55, at: 3 }, { k: "tab", x: .83, y: .52, at: 4, t: "?" }, { k: "tab", x: .5, y: .1, at: 5, t: "!" }] },
@@ -462,10 +481,12 @@ ${""}`;
   let STYLE = "neon";
   function screenStart() {
     L = null; const d = shell("Анімація лініями"), B = $(d, ".lb"), F = $(d, ".lf");
-    B.innerHTML = `<div class="stage"><div class="cvw"><canvas id="lcv" width="540" height="960"></canvas></div></div><p class="hint">Наговори думку — сцени, рухи й написи складуться самі</p>`;
+    const wide = FMT === "wide";
+    B.innerHTML = `<div class="modes3"><button type="button" data-fm="tall" aria-pressed="${!wide}">Reels 9:16</button><button type="button" data-fm="wide" aria-pressed="${wide}">YouTube 16:9</button></div><div class="stage"><div class="cvw"><canvas id="lcv" width="${wide ? 960 : 540}" height="${wide ? 540 : 960}"></canvas></div></div><p class="hint">${wide ? "Розкажи історію до 10 хв — один безперервний сюжет: герой іде крізь світ, фон пролітає позаду" : "Наговори думку — сцени, рухи й написи складуться самі"}</p>`;
     F.innerHTML = `<div class="chips">${["neon", "blueprint", "night", "marker", "chalk", "kraft"].map((k) => `<button class="chip" type="button" data-st="${k}" aria-pressed="${STYLE === k}">${THEMES[k].n}</button>`).join("")}</div>
       <button class="btn main" type="button" id="lrec">${IC.mic} Наговорити</button><label class="btn" for="lfile">Завантажити запис</label><input type="file" id="lfile" accept="audio/*,video/*" hidden>`;
-    const cv = $(B, "#lcv"); fitCanvas($(B, ".stage"), $(B, ".cvw")); demo(cv, STYLE);
+    const cv = $(B, "#lcv"); fitCanvas($(B, ".stage"), $(B, ".cvw"), 0, wide); demo(cv, STYLE);
+    B.querySelectorAll("[data-fm]").forEach((b) => b.onclick = () => { if (FMT === b.dataset.fm) return; FMT = b.dataset.fm; cancelAnimationFrame(DEMO); screenStart(); });
     F.querySelectorAll("[data-st]").forEach((b) => b.onclick = () => { STYLE = b.dataset.st; F.querySelectorAll("[data-st]").forEach((o) => o.setAttribute("aria-pressed", o === b)); demo(cv, STYLE); });
     // запис через «Озвучку»: там чистка, вирізання паразитів, правки голосом — сюди повертається готовий голос
     $(F, "#lrec").onclick = () => { cancelAnimationFrame(DEMO); UI.root.style.display = "none";
@@ -476,13 +497,17 @@ ${""}`;
   }
   async function start(buf, raw) {
     try {
-      const go = async () => { let y = await E().decode(buf); if (raw) y = await E().processTake(y); if (y.length / E().SR > 185) y = y.subarray(0, Math.round(185 * E().SR)).slice();
-        const small = await E().resample(y, E().SR, 16000), r = await SRV.stt({ audio: E().b64(E().wav(small, 16000)), mime: "audio/wav", quiet: true });
-        const dur = y.length / E().SR, words = (r.words || []).map((w) => ({ w: String(w.w), s: Math.max(0, +w.s || 0), e: Math.min(dur, Math.max((+w.s || 0) + .05, +w.e || 0)) })).filter((w) => w.w.trim());
+      const wide = FMT === "wide", MAX = wide ? 600 : 185;
+      const go = async () => { let y = await E().decode(buf); if (raw) y = await E().processTake(y); if (y.length / E().SR > MAX) { y = y.subarray(0, Math.round(MAX * E().SR)).slice(); say(`Беру перші ${MAX / 60} хв`); }
+        // довгий запис розпізнаємо шматками по 3,3 хв
+        const small = await E().resample(y, E().SR, 16000), dur = y.length / E().SR, WIN = 200 * 16000, words = [];
+        for (let o = 0; o < small.length; o += WIN) { const r = await SRV.stt({ audio: E().b64(E().wav(small.subarray(o, Math.min(small.length, o + WIN)), 16000)), mime: "audio/wav", quiet: true }), off = o / 16000;
+          (r.words || []).forEach((w) => { if (String(w.w).trim()) words.push({ w: String(w.w), s: off + Math.max(0, +w.s || 0), e: Math.min(dur, off + Math.max((+w.s || 0) + .05, +w.e || 0)) }); }); }
         if (words.length < 3) throw new Error("nowords");
-        L = { aud: y, words, style: STYLE, subs: true, scenes: [], hist: [] }; L.scenes = await aiScenes(); };
+        L = { aud: y, words, style: STYLE, subs: true, scenes: [], hist: [], wide }; prep();
+        if (wide) await aiWorld((i, n) => { try { yvBusy?.stage?.(`Малюю частину ${i + 1} з ${n}…`); } catch (e) {} }); else L.scenes = await aiScenes(); };
       await E().busyRun("montage", go);
-      prep(); track("ready", { v: `${L.scenes.length}sc/${Math.round(TOT)}s` }); screenEdit("Тапни ▶, щоб подивитись. Правки — голосом або кнопкою ✎");
+      prep(); track("ready", { v: `${L.wide ? "wide:" + L.world.items.length : L.scenes.length}sc/${Math.round(TOT)}s` }); screenEdit("Тапни ▶, щоб подивитись. Правки — голосом або кнопкою ✎");
     } catch (e) { console.error(e); say(e?.message === "nowords" ? "Не почув слів — спробуй ще раз" : e?.message === "limit" ? "Ліміт на сьогодні вичерпано" : "Не вийшло зібрати анімацію. Спробуй ще раз"); if (!L?.scenes?.length) screenStart(); }
   }
   // шторка «Стиль»: фон, лінії, заголовок, плашки, субтитри, шрифт — лінії й рухи не змінюються
@@ -509,12 +534,12 @@ ${""}`;
     const d = UI.root?.querySelector(".lb .bar") ? UI.root : shell("Анімація лініями"), B = $(d, ".lb"), F = $(d, ".lf");
     stopPlay(); POS = Math.min(POS, Math.max(0, TOT - .05)); $(d, "#lundo").hidden = !L.hist.length; B.className = "lb";
     B.innerHTML = `<div class="stage"><div class="bar">${tool("style", '<svg viewBox="0 0 24 24"><path d="M5 7h14M9 7v12M15 12h5M17.5 12v7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>', "Стиль")}${tool("scn", '<svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3.5 10h17M9 4.5v15" stroke="currentColor" stroke-width="2"/></svg>', "Сцени")}</div>
-      <div class="cvw"><canvas id="lcv" width="540" height="960"></canvas><button class="pb" type="button" id="lpb"><i>${IC.play}</i></button></div>
+      <div class="cvw"><canvas id="lcv" width="${L.wide ? 960 : 540}" height="${L.wide ? 540 : 960}"></canvas><button class="pb" type="button" id="lpb"><i>${IC.play}</i></button></div>
       <div class="bar">${tool("neu", '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>', "Нове")}</div></div>
       <div class="seek"><input type="range" id="lseek" min="0" max="1000" value="${Math.round(POS / Math.max(.1, TOT) * 1000)}"><span id="ltm">${fmt(POS)} / ${fmt(TOT)}</span></div>${msg ? `<div class="msg">${escH(msg)}</div>` : ""}`;
     F.innerHTML = `<div class="rowf"><button class="btn" type="button" id="lvoice">${IC.mic} Скажи, що змінити</button><button class="btn sq" type="button" id="lwrite" aria-label="Написати">${IC.pen}</button></div><button class="btn main" type="button" id="lsave">Зберегти відео</button>`;
     const cv = $(B, "#lcv"), pb = $(B, "#lpb"), seek = $(B, "#lseek"), tm = $(B, "#ltm"), stage = $(B, ".stage");
-    fitCanvas(stage, $(B, ".cvw"), 140);
+    fitCanvas(stage, $(B, ".cvw"), 140, !!L.wide);
     const still = () => drawFrame(cv.getContext("2d"), POS || Math.min(1.6, Math.max(0, TOT - .05)), cv.width, cv.height); still();
     const show = (t) => { POS = t; seek.value = Math.round(t / TOT * 1000); tm.textContent = `${fmt(t)} / ${fmt(TOT)}`; };
     const setPlay = (on) => { pb.innerHTML = on ? "" : `<i>${IC.play}</i>`; };
@@ -524,11 +549,15 @@ ${""}`;
     B.querySelectorAll("[data-sh]").forEach((b) => b.onclick = () => { const was = b.classList.contains("on"); B.querySelectorAll(".yvsh").forEach((x) => x._close(true)); B.querySelectorAll("[data-sh]").forEach((o) => o.classList.remove("on")); if (was) return; b.classList.add("on");
       const k = b.dataset.sh;
       if (k === "style") styleSheet(B, still, () => { $(d, "#lundo").hidden = false; });
-      if (k === "scn") { const S = E().sheet(B, "Сцени", `<div class="scn">${ST.map((q, i) => `<button type="button" data-q="${i}"><b>${fmt(q.t0)}</b>${escH(q.s.title || "Сцена " + (i + 1))}</button>`).join("")}</div><button class="btn" type="button" id="lregen" style="margin-top:10px">↻ Інші сцени для всього відео</button>`);
+      if (k === "scn" && L.world) { const S = E().sheet(B, "Частини сюжету", `<div class="scn">${L.world.segs.map((g, i) => `<button type="button" data-g="${i}"><b>${fmt(g.t0)}</b>${escH(g.ph[0]?.t.slice(0, 60) || "Частина " + (i + 1))}…</button><button type="button" data-rg="${i}" style="justify-content:center;padding:6px">↻ Інакше намалювати цю частину</button>`).join("")}</div><button class="btn" type="button" id="lregen" style="margin-top:10px">↻ Уся анімація заново</button>`);
+        S.body.querySelectorAll("[data-g]").forEach((x) => x.onclick = () => { stopPlay(); show(L.world.segs[+x.dataset.g].t0 + 1); still(); });
+        S.body.querySelectorAll("[data-rg]").forEach((x) => x.onclick = async () => { S.close(true); try { pushHist(); await E().busyRun("montage", () => regenSeg(+x.dataset.rg, "Зроби цю частину зовсім інакше, ніж була.")); track("regen_seg"); refresh("Частину перемальовано"); } catch (e) { say("Не вийшло. Спробуй ще раз"); } });
+        $(S.body, "#lregen").onclick = async () => { S.close(true); try { pushHist(); await E().busyRun("montage", () => aiWorld()); track("regen"); refresh("Нова анімація готова"); } catch (e) { say("Не вийшло. Спробуй ще раз"); } }; }
+      else if (k === "scn") { const S = E().sheet(B, "Сцени", `<div class="scn">${ST.map((q, i) => `<button type="button" data-q="${i}"><b>${fmt(q.t0)}</b>${escH(q.s.title || "Сцена " + (i + 1))}</button>`).join("")}</div><button class="btn" type="button" id="lregen" style="margin-top:10px">↻ Інші сцени для всього відео</button>`);
         S.body.querySelectorAll("[data-q]").forEach((x) => x.onclick = () => { stopPlay(); show(ST[+x.dataset.q].t0 + .9); still(); });
         $(S.body, "#lregen").onclick = async () => { S.close(true); try { pushHist(); L.scenes = await E().busyRun("montage", () => aiScenes("Зроби зовсім інші сцени, ніж були: інші предмети, рухи й жарти.")); track("regen"); refresh("Нові сцени готові"); } catch (e) { say("Не вийшло. Спробуй ще раз"); } }; }
       if (k === "neu") { const S = E().sheet(B, "Почати нову анімацію?", `<p style="margin:0 0 10px;color:#a1a1aa;font-size:13.5px">Поточна не збережеться.</p><button class="btn" type="button" id="lnew">Так, нова</button>`); $(S.body, "#lnew").onclick = () => { stopPlay(); screenStart(); }; } });
-    const cmd = async (t, voice) => { try { pushHist(); const m = await E().busyRun("montage", () => aiEdit(t)); track(voice ? "cmd_voice" : "cmd_text"); refresh(voice ? `«${t}» → ${m}` : m); } catch (e) { L.hist.pop(); say("Не вийшло застосувати правку"); } };
+    const cmd = async (t, voice) => { try { pushHist(); const m = await E().busyRun("montage", () => L.world ? editWide(t) : aiEdit(t)); track(voice ? "cmd_voice" : "cmd_text"); refresh(voice ? `«${t}» → ${m}` : m); } catch (e) { L.hist.pop(); say("Не вийшло застосувати правку"); } };
     $(F, "#lwrite").onclick = () => { B.querySelectorAll(".yvsh").forEach((x) => x._close(true)); const S = E().sheet(B, "Що змінити?", `<textarea id="lcmd" rows="3" placeholder="Напр.: у другій сцені нехай чоловічок біжить, додай гроші справа"></textarea><button class="btn main" type="button" id="lgo2" style="margin-top:8px">Застосувати</button>`);
       const ta = $(S.body, "#lcmd"); setTimeout(() => ta.focus(), 50); $(S.body, "#lgo2").onclick = () => { const v = ta.value.trim(); if (!v) return; S.close(true); cmd(v, false); }; };
     const vv = $(F, "#lvoice"), vl = vv.innerHTML;
@@ -537,7 +566,7 @@ ${""}`;
         const t = (r.words || []).map((w) => w.w).join(" "); if (!t.trim()) { say("Не почув"); return; } cmd(t, true); } catch (e) { say("Не вийшло розпізнати"); } }); };
     $(F, "#lsave").onclick = async () => { stopPlay(); const sv = $(F, "#lsave"); sv.disabled = true; sv.innerHTML = `Зберігаю… <b id="lpp">0%</b>`;
       try { const out = await exportVideo((p) => { const e = $(F, "#lpp"); if (e) e.textContent = Math.round(clamp(p) * 100) + "%"; }); track("save", { v: L.style + "|" + out.ext });
-        E().offerSave(F, [new File([out.blob], `yuvi_linii_${new Date().toISOString().slice(0, 10)}.${out.ext}`, { type: out.blob.type })], () => screenEdit(), () => track("saved")); still(); return;
+        E().offerSave(F, [new File([out.blob], `yuvi_linii${L.wide ? "_youtube" : ""}_${new Date().toISOString().slice(0, 10)}.${out.ext}`, { type: out.blob.type })], () => screenEdit(), () => track("saved")); still(); return;
       } catch (e) { console.error(e); say("Не вдалося зберегти відео"); }
       sv.disabled = false; sv.textContent = "Зберегти відео"; still(); };
   }
@@ -638,5 +667,124 @@ ${board.map((b, i) => `${i + 1}. [${T[i].s.toFixed(1)}–${T[i].e.toFixed(1)} с
     const cam = (r?.cam || []).slice(0, 16).map((c) => ({ at: toIP(cl(c.t ?? 0, 0, tot), T), x: cl(c.x ?? .5, .5, areas - .5), z: cl(c.z ?? 1, .8, 1.7) }));
     return { areas, items, cam, _v: Date.now() };
   }
+  /* ================= ГОРИЗОНТАЛЬНЕ ВІДЕО (YouTube 16:9): один світ, камера за героєм, фон на кількох глибинах ================= */
+  const PLACES = { field: "поле", forest: "ліс", city: "місто", road: "дорога", sea: "море", mountains: "гори", room: "кімната", office: "офіс", space: "космос", none: "порожній аркуш" };
+  const placeAt = (wx) => { const P = L.world?.places || []; for (let i = P.length - 1; i >= 0; i--) if (wx >= P[i].x0 - 1e-6) return P[i].kind; return P[0]?.kind || "field"; };
+  const OUT = new Set(["field", "forest", "city", "road", "sea", "mountains"]);
+  // декорації: детерміновані «слоти» вздовж світу — однакові в кожному кадрі, рухаються з різною швидкістю (паралакс)
+  function scenery(x, t, cam, W, H, k, sty, gY, z) {
+    const SW = W, vis = .62 / z, inkA = (a) => { x.globalAlpha = a; };
+    const layer = (f, sp, from, draw) => { const cx = cam.x * f, a0 = Math.floor((cx - vis - .3) / sp), a1 = Math.ceil((cx + vis + .3) / sp);
+      for (let i = a0; i <= a1; i++) { const lx = i * sp + (rnd(i, from) - .5) * sp * .5, sx = W / 2 + (lx - cx) * SW; draw(i, sx, lx / f); } };
+    x.save();
+    // небо: хмари (повільно) і зірки в космосі
+    if (placeAt(cam.x) === "space") { inkA(.6); layer(.05, .05, 31, (i, sx) => { const sy = rnd(i, 32) * gY * .9; x.fillStyle = sty.ink; x.fillRect(sx, sy, 3 * k, 3 * k); });
+      inkA(.5); layer(.1, 1.3, 33, (i, sx) => { const r = (60 + rnd(i, 34) * 80) * k, sy = (120 + rnd(i, 35) * 200) * k; strokes(x, [jit(arc(sx, sy, r, 0, 360, 30), i * 3, k), jit(arc(sx, sy, r * 1.7, 200, 340, 18).map(([a, b]) => [a, b + r * .15]), i * 5, k)], 1, sty, k, 3); }); }
+    else if (OUT.has(placeAt(cam.x))) { inkA(.42); layer(.12, .42, 11, (i, sx, wx) => { if (!OUT.has(placeAt(wx))) return; const sy = (90 + rnd(i, 12) * 170) * k, w = (110 + rnd(i, 13) * 120) * k, dx = -((t * 6 * k) % (W * 2));
+        const c = [...arc(sx + dx - w * .35, sy, w * .28, 180, 300, 8), ...arc(sx + dx, sy - w * .12, w * .34, 210, 340, 8), ...arc(sx + dx + w * .38, sy, w * .26, 240, 360, 8), [sx + dx + w * .64, sy + w * .16], [sx + dx - w * .63, sy + w * .16]]; c.push(c[0]);
+        strokes(x, [jit(c, i * 7, k)], 1, sty, k, 3.2); }); }
+    // далекий план: гори
+    inkA(.32); layer(.25, .32, 21, (i, sx, wx) => { const pl = placeAt(wx); if (!["mountains", "field", "road", "forest"].includes(pl)) return; const h = (pl === "mountains" ? 380 : 190) * k * (.6 + rnd(i, 22) * .6), w = (pl === "mountains" ? 330 : 380) * k;
+      strokes(x, [jit([[sx - w, gY - 40 * k], [sx - w * .25, gY - h * .7], [sx, gY - h], [sx + w * .3, gY - h * .6], [sx + w, gY - 40 * k]], i * 9, k)], 1, sty, k, 3.5); });
+    // середній план: дерева / будинки / стовпи / хвилі / вікна
+    inkA(.6); layer(.55, .13, 41, (i, sx, wx) => { const pl = placeAt(wx), r = rnd(i, 42);
+      if (pl === "forest" || (pl === "field" && r < .3) || (pl === "road" && r < .2)) { const h = (150 + r * 140) * k, tw = 5;
+        strokes(x, r < .5 ? [jit([[sx, gY - 40 * k], [sx, gY - 40 * k - h * .45]], i, k), jit(arc(sx, gY - 40 * k - h * .45 - h * .3, h * .3, 0, 360, 18), i + 1, k)] : [jit([[sx, gY - 40 * k], [sx, gY - 40 * k - h * .3]], i, k), jit([[sx - h * .3, gY - 40 * k - h * .3], [sx, gY - 40 * k - h * 1.05], [sx + h * .3, gY - 40 * k - h * .3], [sx - h * .3, gY - 40 * k - h * .3]], i + 1, k)], 1, sty, k, tw); }
+      else if (pl === "city" && r < .85) { const w = (90 + r * 80) * k, h = (230 + rnd(i, 43) * 330) * k, b = gY - 40 * k, L2 = [jit(rect(sx - w / 2, b - h, w, h), i, k)];
+        for (let wy = b - h + 28 * k; wy < b - 50 * k; wy += 56 * k) for (let wx2 = sx - w / 2 + 18 * k; wx2 < sx + w / 2 - 26 * k; wx2 += 36 * k) if (rnd(i * 31 + wx2, wy) < .7) L2.push(rect(wx2, wy, 16 * k, 24 * k));
+        strokes(x, L2, 1, sty, k, 3.2); }
+      else if (pl === "road" && i % 3 === 0) { strokes(x, [jit([[sx, gY - 40 * k], [sx, gY - 330 * k]], i, k), jit([[sx - 40 * k, gY - 310 * k], [sx + 40 * k, gY - 310 * k]], i + 1, k)], 1, sty, k, 3.5); }
+      else if (pl === "sea" && i % 2 === 0) { const sy = gY - (40 + r * 120) * k; strokes(x, [jit([...arc(sx - 30 * k, sy, 30 * k, 200, 340, 8), ...arc(sx + 30 * k, sy, 30 * k, 200, 340, 8)], i, k)], 1, sty, k, 3); if (r < .15) strokes(x, [jit([[sx - 90 * k, sy - 30 * k], [sx + 90 * k, sy - 30 * k], [sx + 60 * k, sy], [sx - 60 * k, sy], [sx - 90 * k, sy - 30 * k]], i + 2, k), jit([[sx, sy - 30 * k], [sx, sy - 180 * k], [sx + 70 * k, sy - 50 * k], [sx, sy - 50 * k]], i + 3, k)], 1, sty, k, 3.5); }
+      else if ((pl === "room" || pl === "office") && i % 4 === 0) { const wy = gY - 560 * k; strokes(x, r < .5 ? [jit(rect(sx - 110 * k, wy, 220 * k, 200 * k), i, k), jit([[sx, wy], [sx, wy + 200 * k]], i + 1, k), jit([[sx - 110 * k, wy + 100 * k], [sx + 110 * k, wy + 100 * k]], i + 2, k)] : pl === "office" ? [jit(rect(sx - 140 * k, gY - 360 * k, 280 * k, 320 * k), i, k), jit([[sx - 140 * k, gY - 200 * k], [sx + 140 * k, gY - 200 * k]], i + 1, k)] : [jit(rect(sx - 70 * k, wy + 40 * k, 140 * k, 100 * k), i, k)], 1, sty, k, 3.2); } });
+    // передній план: земля, трава, розмітка дороги, підлога
+    inkA(1); const pl0 = placeAt(cam.x); strokes(x, [jit([[0, gY], [W, gY]], 99, k)], 1, sty, k, 4.5);
+    inkA(.55); layer(1, .035, 51, (i, sx, wx) => { const pl = placeAt(wx), r = rnd(i, 52);
+      if (pl === "field" || pl === "forest" || pl === "mountains") { if (r < .55) strokes(x, [[[sx, gY], [sx - 8 * k, gY - (10 + r * 22) * k]], [[sx + 6 * k, gY], [sx + 12 * k, gY - (8 + r * 18) * k]]], 1, sty, k, 2.5); }
+      else if (pl === "road") { if (i % 3 === 0) strokes(x, [[[sx, gY + 45 * k], [sx + 40 * k, gY + 45 * k]]], 1, sty, k, 4); }
+      else if (pl === "city") { if (i % 6 === 0) strokes(x, [[[sx, gY + 18 * k], [sx, gY + 70 * k]]], 1, sty, k, 2.5); }
+      else if (pl === "sea") { if (r < .4) strokes(x, [arc(sx, gY + 28 * k, 16 * k, 200, 340, 6)], 1, sty, k, 2.5); }
+      else if (pl === "room" || pl === "office") { if (i % 8 === 0) strokes(x, [[[sx, gY], [sx, gY + 60 * k]]], 1, sty, k, 2); } });
+    x.restore(); void pl0;
+  }
+  function heroAt(t) { const it = WITEMS.find((o) => o.k === "man" && o.hero) || WITEMS.find((o) => o.k === "man"); if (!it || t < it.ta - .5) return null; return manAt(it, t).x; }
+  let WITEMS = [], WKEY = "";
+  function wprep() { const key = JSON.stringify(L.world.items) + (L.world._v || 0); if (key === WKEY) return; WKEY = key;
+    WITEMS = L.world.items.map((o, ii) => ({ ...o, _W: L.world.end || 1, floor: false, ta: +o.at || 0, mv: (o.moves || []).map((m) => ({ ...m, t: +m.t || 0 })).sort((a, b) => a.t - b.t), seed: ii * 7 + 1 })).sort((a, b) => (a.k === "man") - (b.k === "man")); }
+  function camWide(t) { let z = 1, cx = null; const K = (L.world.cam || []).slice().sort((a, b) => a.t - b.t);
+    for (const c of K) { if (c.t > t) break; const p = ease(clamp((t - c.t) / 1.4)); z = z + ((+c.z || 1) - z) * p; if (c.x != null) cx = cx == null ? +c.x : cx + (+c.x - cx) * p; }
+    const h = heroAt(t), end = L.world.end || 1; let x0 = h != null ? h : cx != null ? cx : .5; if (cx != null && h != null) x0 = h * .7 + cx * .3;
+    return { x: clamp(x0, .5 / z, end - .5 / z), z }; }
+  function drawWide(x, t, W, H) {
+    const sty = styOf(), k = W / 1920; BOIL = Math.floor(t * 8); NOBOIL = sty.lk.boil === false; wprep();
+    paintBg(x, W, H, k, sty);
+    const stY = 130 * k, stH = 860 * k, gY = stY + .92 * stH, cam = camWide(t);
+    x.save(); x.translate(W / 2, gY); x.scale(cam.z, cam.z); x.translate(-W / 2, -gY);
+    scenery(x, t, cam, W, H, k, sty, gY, cam.z);
+    drawItems(x, WITEMS, t, sty, k, { X0: W / 2 - cam.x * W, SW: W, stY, stH, U: 120 * k });
+    x.restore();
+    if (sty.vig) { const g = x.createRadialGradient(W / 2, H * .45, H * .2, W / 2, H * .5, W * .6); g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, "rgba(0,0,0,.55)"); x.fillStyle = g; x.fillRect(0, 0, W, H); }
+    // назва на початку (4 с), субтитри внизу, заклик у кінці
+    if (L.title && sty.lk.frame !== "hide" && t < 4.5) { x.save(); x.globalAlpha = clamp((4.5 - t) / .5); drawTitle(x, t, W, k * 1.0, sty); x.restore(); }
+    if (L.cta && t > TOT - 3.5) { x.save(); x.globalAlpha = clamp((t - (TOT - 3.5)) / .4); x.font = `800 ${Math.round(56 * k)}px "${sty.font}", system-ui, sans-serif`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillStyle = sty.ink; if (sty.glow) { x.shadowColor = sty.glow; x.shadowBlur = 16 * k; } x.fillText(L.cta, W / 2, 140 * k, W * .8); x.restore(); }
+    const sv = sty.lk.subs; if (L.subs === false || sv === "off") return; const ch = CH.find((c) => t >= c.s - .05 && t < c.until); if (!ch) return;
+    const px = Math.round((sv === "hand" ? 64 : 48) * k); x.save(); x.font = `${sv === "hand" ? 600 : 800} ${px}px "${sv === "hand" ? "Caveat" : "Manrope"}", system-ui, sans-serif`; x.textAlign = "center"; x.textBaseline = "middle";
+    const txt = ch.idx.map((i) => sv === "yellow" ? L.words[i].w.toUpperCase() : L.words[i].w).join(" "), y = 1010 * k, tw = Math.min(W * .8, x.measureText(txt).width); x.globalAlpha = clamp((t - ch.s + .05) / .15);
+    if (sv === "box") { x.fillStyle = "rgba(0,0,0,.72)"; rrp(x, (W - tw) / 2 - 24 * k, y - px * .75, tw + 48 * k, px * 1.5, 14 * k); x.fill(); x.fillStyle = "#fff"; }
+    else if (sv === "yellow") { x.lineWidth = 8 * k; x.strokeStyle = "#000"; x.lineJoin = "round"; x.strokeText(txt, W / 2, y, W * .8); x.fillStyle = "#ffd60a"; }
+    else { x.fillStyle = sty.ink; if (sty.glow) { x.shadowColor = sty.glow; x.shadowBlur = 12 * k; } else { x.lineWidth = 7 * k; x.strokeStyle = sty.bg; x.lineJoin = "round"; x.strokeText(txt, W / 2, y, W * .8); } }
+    x.fillText(txt, W / 2, y, W * .8); x.restore();
+  }
+  // сюжет частинами по ~40 с: ті самі персонажі, світ продовжується вправо, місця змінюються
+  const SEGLEN = 40;
+  function phrasesOf() { const P = []; let c = null; L.words.forEach((w) => { if (!c) c = { s: w.s, e: w.e, t: w.w }; else { c.t += " " + w.w; c.e = w.e; } if (/[.!?…]$/.test(w.w) || c.t.split(" ").length > 22) { P.push(c); c = null; } }); c && P.push(c); return P; }
+  async function aiSegment(seg, i, n, cast, extra = "") {
+    const areas = clamp(Math.round((seg.t1 - seg.t0) / 13) + 1, 1, 4), x0 = seg.x0, x1 = x0 + areas;
+    const r = await sample.json(`Ти режисер горизонтального анімаційного відео для YouTube у стилі «малюнок лініями» (як мультик маркером). Це частина ${i + 1} з ${n} одного безперервного сюжету.
+Текст озвучки цієї частини з часом (секунди):
+${seg.ph.map((p) => `[${p.s.toFixed(1)}–${p.e.toFixed(1)}] ${p.t}`).join("\n")}
+${cast.length ? `Персонажі, які вже є в історії (продовжуй їх, не створюй заново): ${cast.map((c) => `«${c.id}» (${c.desc}, зараз x=${c.x.toFixed(2)})`).join("; ")}.` : "Це початок — представ героя."}
+Світ — довга стрічка вліво-вправо; ця частина займає x від ${x0} до ${x1} (1 = ширина екрана). Камера сама їде за головним героєм, тож щоб показати нове місце — веди героя туди walk_to/run_to. Історія має йти без розривів: персонажі ходять між місцями, нові деталі з'являються саме тоді, коли про них кажуть, зайве прибирай hide.
+Місця (places) — фон, що пролітає позаду: ${Object.entries(PLACES).map(([k, v]) => `${k} (${v})`).join(", ")}; поділи [${x0}, ${x1}] на 1–3 місця під сюжет.
+Відео має бути ЗРОЗУМІЛЕ БЕЗ ЗВУКУ: дії, підписи label, репліки say і думки thinkb (1–4 слова), лічильники count (from → to, t — одиниця), стрілки arrow (r — кут), написи text, предмети, що вилітають (fly_to за межі кадру).
+Нові деталі: "man" (id — коротке ім'я; x; y 0.92; f; face; wear: hair, longhair, bun, bow, hat, cap, crown, glasses, beard, tie, cape, skirt, ears+tail — мавпа, cat — кіт; s — розмір, малюк 0.55; hero:true — головний, лише один на весь ролик), предмети ${KINDS.join(", ")} (x, y 0…1 — висота; s; r; acc; t; sub; label), "text", "say"/"thinkb" (t; x, y ≈ 0.3 над головою), "count" (from, to, t).
+Рухи man: walk_to (x), run_to (x), jump, wave, cheer, think, point, shrug, sad, sit, stand, fall, hang, dance, push, work, shock, happy_face, sad_face, hide. Предмети: pop, bounce, spin, shake, fly_to (x, y), grow, hide.
+Час — секунди з тексту вище: "at" — поява, "t" у рухах — початок руху точно на потрібних словах. Наближення камери: cam [{"t":сек,"z":1–1.6}] на важливих моментах.
+${extra}
+Відповідай тільки JSON: {"places":[{"x0":${x0},"x1":${x1},"kind":"field"}],"items":[{"k":"man","id":"Олег","hero":true,"x":${(x0 + .4).toFixed(2)},"y":0.92,"wear":["cap"],"label":"Олег","at":${seg.t0.toFixed(1)},"moves":[{"t":${(seg.t0 + 1).toFixed(1)},"m":"walk_to","x":${(x0 + 1).toFixed(2)}}]}],"moves":[{"id":"ім'я наявного персонажа","t":0,"m":"walk_to","x":0}],"cam":[{"t":0,"z":1.2}]}`, { cache: false, kb: true, max: 4000 });
+    const cl = (v, a, b) => clamp(+v || 0, a, b), T0 = seg.t0, T1 = seg.t1, WEAR = ["hair", "longhair", "bun", "bow", "hat", "cap", "crown", "glasses", "beard", "ears", "cat", "tail", "skirt", "tie", "cape"], KS = new Set(["man", "text", "say", "thinkb", "count", ...KINDS]);
+    const mv = (m) => ({ t: cl(m.t, T0, T1), m: m.m, x: m.x != null ? cl(m.x, .05, x1 + 1) : undefined, y: m.y != null ? cl(m.y, .02, .98) : undefined, seg: i });
+    const items = (r?.items || []).filter((it) => it && KS.has(it.k)).slice(0, 22).map((it) => ({ k: it.k, id: it.id ? String(it.id).slice(0, 16) : undefined, hero: !!it.hero, seg: i, x: cl(it.x ?? x0 + .5, .05, x1 + 1), y: cl(it.y == null ? (it.k === "man" ? .92 : .5) : it.y, .02, .98), s: cl(it.s || 1, .35, 2.4), r: it.r ? cl(it.r, -360, 360) : undefined, f: +it.f === -1 ? -1 : 1, acc: it.acc === true ? true : undefined,
+      t: it.t != null ? String(it.t).slice(0, 26) : undefined, sub: it.sub ? String(it.sub).slice(0, 18) : undefined, label: it.label ? String(it.label).slice(0, 18) : undefined, face: ["neutral", "happy", "sad"].includes(it.face) ? it.face : undefined,
+      wear: Array.isArray(it.wear) ? it.wear.filter((w) => WEAR.includes(w)).slice(0, 4) : undefined, from: it.from != null ? +it.from || 0 : undefined, to: it.to != null ? +it.to || 0 : undefined,
+      at: cl(it.at ?? T0, T0, T1), moves: (it.moves || []).filter((m) => m && MOVES.includes(m.m)).slice(0, 10).map(mv) }));
+    const extraMoves = (r?.moves || []).filter((m) => m && m.id && MOVES.includes(m.m)).slice(0, 20).map((m) => ({ id: String(m.id), ...mv(m) }));
+    const places = (r?.places || []).filter((p) => p && PLACES[p.kind]).slice(0, 4).map((p) => ({ x0: cl(p.x0 ?? x0, x0, x1), kind: p.kind, seg: i })).sort((a, b) => a.x0 - b.x0);
+    if (!places.length) places.push({ x0, kind: "field", seg: i });
+    const cam = (r?.cam || []).slice(0, 8).map((c) => ({ t: cl(c.t, T0, T1), z: cl(c.z || 1, .8, 1.7), seg: i }));
+    return { items, extraMoves, places, cam, end: x1 };
+  }
+  function castOf(upTo) { return (L.world?.items || []).filter((o) => o.k === "man" && o.id && !(o.moves || []).some((m) => m.m === "hide" && m.t < upTo)).map((o) => {
+    const it = { ...o, ta: o.at, mv: (o.moves || []).map((m) => ({ ...m })).sort((a, b) => a.t - b.t), _W: L.world.end }; return { id: o.id, desc: [o.label, ...(o.wear || []), o.s < .8 ? "малий" : ""].filter(Boolean).join(", "), x: manAt(it, upTo).x }; }); }
+  function mergeSeg(i, res) { const W2 = L.world;
+    W2.items = W2.items.filter((o) => o.seg !== i).map((o) => ({ ...o, moves: (o.moves || []).filter((m) => m.seg !== i) }));
+    W2.places = W2.places.filter((p) => p.seg !== i).concat(res.places).sort((a, b) => a.x0 - b.x0); W2.cam = W2.cam.filter((c) => c.seg !== i).concat(res.cam);
+    for (const m of res.extraMoves) { const o = W2.items.find((q) => q.k === "man" && q.id === m.id); if (o) o.moves.push(m); }
+    if (W2.items.some((o) => o.hero)) res.items.forEach((o) => { o.hero = false; });
+    W2.items.push(...res.items); W2.end = Math.max(W2.end || 1, res.end); W2._v = Date.now(); }
+  async function aiWorld(onStage) {
+    const P = phrasesOf(), segs = []; let cur = null;
+    for (const p of P) { if (!cur || (p.e - cur.t0 > SEGLEN && cur.ph.length)) { cur && segs.push(cur); cur = { t0: cur ? cur.t1 : 0, ph: [] }; } cur.ph.push(p); cur.t1 = p.e; }
+    cur && segs.push(cur); if (segs.length) segs[segs.length - 1].t1 = TOT;
+    const r0 = await sample.json(`Придумай для горизонтального YouTube-відео за цим текстом: title — назва 2–5 слів; cta — заклик у кінці до 6 слів. Текст: ${P.map((p) => p.t).join(" ").slice(0, 3000)}. Відповідай тільки JSON {"title":"…","cta":"…"}`, { cache: false }).catch(() => null);
+    if (r0?.title) L.title = String(r0.title).slice(0, 40); if (r0?.cta) L.cta = String(r0.cta).slice(0, 60);
+    L.world = { items: [], places: [], cam: [], end: 1, segs: [], _v: Date.now() };
+    let x0 = 0;
+    for (let i = 0; i < segs.length; i++) { onStage?.(i, segs.length); const sg = segs[i]; sg.x0 = x0; const res = await aiSegment(sg, i, segs.length, castOf(sg.t0)); mergeSeg(i, res); x0 = res.end; L.world.segs.push({ t0: sg.t0, t1: sg.t1, x0: sg.x0, ph: sg.ph }); }
+    if (!L.world.items.length) throw new Error("plan");
+  }
+  async function editWide(text) {
+    const th = Object.entries(THEMES).find(([k, v]) => new RegExp(v.n, "i").test(text)); if (th && /фон|стиль|тем/i.test(text)) { L.style = th[0]; return `Фон: ${th[1].n}`; }
+    const t = POS || 0, i = Math.max(0, L.world.segs.findIndex((g) => t >= g.t0 && t < g.t1)); await regenSeg(i, `Людина просить змінити цю частину: «${text}». Збережи все інше, зміни саме це.`); return `Змінено частину ${i + 1}`; }
+  async function regenSeg(i, extra) { const sg = L.world.segs[i]; const res = await aiSegment(sg, i, L.world.segs.length, castOf(sg.t0), extra); mergeSeg(i, res); }
   window.YVLines = { open() { screenStart(); track("open"); }, fromMarker, drawBox, boardLines, drawWorld, boardWorld, _t: { set: (l) => { L = l; prep(); }, drawFrame, prep, exportVideo, figure, POSE, SH, STYLES, tot: () => TOT, screenEdit, aiScenes, L: () => L } };
 })();
