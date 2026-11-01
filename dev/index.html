@@ -1102,7 +1102,7 @@ body{background:radial-gradient(900px 640px at 8% -12%,var(--yv-glow-1),transpar
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="YuVi DEV">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>window.YV_DEV=true;window.YV_BUILD="01.11 19:00";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
+<script>window.YV_DEV=true;window.YV_BUILD="01.11 19:07";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="server.js?v=a98bc67a"></script>
@@ -3648,7 +3648,7 @@ async function openVoicesAdmin(){
 /* «Навчання агента»: розповідаєш досвід — Claude перепитує й записує знання; підтверджене йде в генерацію */
 const KB_KIND={rule:"Правило",principle:"Принцип",element:"Прийом",example:"Приклад",note:"Нотатка",hypothesis:"Гіпотеза"};
 // папки бази знань: кожен інструмент бере лише свої
-const KBM=[["hook","Гачок","перші 3 секунди","Сценарій, хуки, анімація, плашки"],["script","Сценарій","структура, текст","Сценарій, анімація лініями, «Збери своє відео»"],["story","Сторітелінг","історія, герой, інтрига","Сценарій, анімація лініями"],["board","Розкадровка","що показати в кадрі","Рілс маркером, анімація лініями"],["edit","Монтаж","ритм, склейки, вставки","Монтаж відео, плашки"],["color","Колір","кольорокорекція","Монтаж відео"],["camera","Камера","плани, рухи, ракурси","Монтаж відео"],["sound","Звук","музика, ефекти","Монтаж відео"],["title","Назви","приклади назв","Генератор назв і прев'ю"],["thumb","Прев'ю","приклади обкладинок","Генератор назв і прев'ю"],["desc","Опис і теги","опис, хештеги","Опис і теги"],["stats","Статистика","розбір цифр","Аналіз статистики"],["niche","Ніші й ідеї","про що знімати","Ідеї для відео"],["style","Стилі-референси","розібрані відео-приклади","Анімація лініями, монтаж"],["general","Загальне","усе інше","Усі інструменти"]];
+const KBM=[["hook","Гачок","перші 3 секунди","Сценарій, хуки, анімація, плашки"],["script","Сценарій","структура, текст","Сценарій, анімація лініями, «Збери своє відео»"],["story","Сторітелінг","історія, герой, інтрига","Сценарій, анімація лініями"],["board","Розкадровка","що показати в кадрі","Рілс маркером, анімація лініями"],["edit","Монтаж","ритм, склейки, вставки","Монтаж відео, плашки"],["color","Колір","кольорокорекція","Монтаж відео"],["camera","Камера","плани, рухи, ракурси","Монтаж відео"],["sound","Звук","музика, ефекти","Монтаж відео"],["title","Назви","приклади назв","Генератор назв і прев'ю"],["thumb","Прев'ю","приклади обкладинок","Генератор назв і прев'ю"],["desc","Опис і теги","опис, хештеги","Опис і теги"],["stats","Статистика","розбір цифр","Аналіз статистики"],["niche","Ніші й ідеї","про що знімати","Ідеї для відео"],["style","Стилі-референси","розібрані відео-приклади","Анімація лініями, монтаж"],["general","Загальне","усе інше","Усі інструменти"],["gaps","Чого бракує рушію","прийоми, яких YuVi ще не вміє","Черга доробок коду (інструменти не беруть)"]];
 const KBN=Object.fromEntries(KBM.map(m=>[m[0],m[1]]));
 function kbChunks(t,size=9000){ const out=[]; let cur=""; for(const p of String(t).split(/\n{2,}|(?<=[.!?…])\s+(?=[А-ЯІЇЄҐA-Z])/)){ if((cur+p).length>size&&cur){ out.push(cur); cur=""; } if(p.length>size){ for(let i=0;i<p.length;i+=size) out.push(p.slice(i,i+size)); continue; } cur+=(cur?"\n":"")+p; } cur.trim()&&out.push(cur); return out; }
 async function kbDistill(text,src,mod,onStage){
@@ -3681,6 +3681,22 @@ async function kbTranscribe(file,onStage){
   const small=await E.resample(y,E.SR,16000), WIN=200*16000, n=Math.ceil(small.length/WIN), words=[];
   for(let o=0,i=0;o<small.length;o+=WIN,i++){ onStage?.(i,n); const r=await SRV.stt({audio:E.b64(E.wav(small.subarray(o,Math.min(small.length,o+WIN)),16000)),mime:"audio/wav",quiet:true}); (r.words||[]).forEach(w=>{ if(String(w.w).trim()) words.push(String(w.w)); }); }
   return words.join(" "); }
+// рух камери між двома маленькими кадрами: перебираємо зсуви й масштаби, шукаємо найкращий збіг
+function camMove(A,B,w,h){ const cx=w/2, cy=h/2; let base=0, best=null, bv=1e9, n=0;
+  for(let y=4;y<h-4;y+=2) for(let x=4;x<w-4;x+=2){ base+=Math.abs(A[y*w+x]-B[y*w+x]); n++; } base/=n; if(base<.008) return null;
+  for(const s of [.94,.97,1,1.03,1.06]) for(let dy=-4;dy<=4;dy++) for(let dx=-4;dx<=4;dx++){ if(s===1&&!dx&&!dy) continue; let e=0;
+    for(let y=4;y<h-4;y+=2) for(let x=4;x<w-4;x+=2){ const sx=Math.round(cx+(x-cx)/s+dx), sy=Math.round(cy+(y-cy)/s+dy); e+=Math.abs(A[sy*w+sx]-B[y*w+x]); }
+    e/=n; if(e<bv){ bv=e; best={s,dx,dy}; } }
+  if(!best||bv>base*.85) return null;
+  if(best.s>1&&Math.abs(best.dx)+Math.abs(best.dy)<3) return "zoomin"; if(best.s<1&&Math.abs(best.dx)+Math.abs(best.dy)<3) return "zoomout";
+  if(!best.dx&&!best.dy) return best.s>1?"zoomin":"zoomout";
+  // вміст зсунувся вліво (dx>0) — отже камера пішла вправо
+  return Math.abs(best.dx)>=Math.abs(best.dy)?(best.dx>0?"right":"left"):(best.dy>0?"down":"up"); }
+// що рушії YuVi вже вміють — з цим порівнюємо відео-приклади, щоб знайти, чого бракує
+const YUVI_CAN=`Анімація лініями (Reels і YouTube 16:9): лінії, що промальовуються, «живі» лінії з тремтінням, світіння; 21 шаблон фону/шрифту/плашок/субтитрів; персонажі — лінії, контур або об'ємне тіло; люди (чоловік, жінка, діти, малюк, бабуся, дідусь), тварини (собака, кіт, лис, кролик, миша, ведмідь, кінь, свиня, корова, вівця, пташка); пози: ходьба, біг, стрибок, махання, радість, думає, вказує, знизує плечима, сумує, сидить, падає, висить, танцює, штовхає, працює, шок, говорить (рот під голос), кліпання; ефекти: лінії швидкості, пил, удар при приземленні, «!», «…», піт, іскри, зірочки, хмарка з дощем; предмети — ~5300 лінійних іконок + детальні гроші, телефон, будинок, ноутбук, машина тощо; рухи предметів: поява з пружинкою, підстрибування, обертання, тремтіння, переліт, збільшення, зникнення, плавання в повітрі, пара/дим; репліки й думки в бульбашках, лічильник чисел, підписи; бліді декорації місць; камера: повільний наїзд у сцені (Reels), у YouTube — камера йде за героєм, наїзди, паралакс 3–4 шари (хмари, гори, дерева/будинки, земля); великий текст, що «вбивається» в кадр, плашки (маркер, біла, неон, стікер), субтитри з підсвіткою слова, фото-вставки карткою; заголовок у рамці, заклик у кінці; склейка сцен — швидке перетікання.
+Монтаж знятого відео: вирізання пауз і «е-е», субтитри, плашка-хук, наїзди на словах, вставки фото/відео з бібліотеки, музика й фонові звуки з бібліотеки, дошка з малюнками над людиною, нарізка довгого відео на шортси, експорт 30 кадрів/с.
+Рілс маркером: сцени на білому аркуші маркером, плашки, генеровані картинки або анімація лініями.
+Немає: 3D, розмиття руху й глибини різкості, кольорокорекції пресетами, переходів окрім склейки й перетікання, анімації окремих літер, масок, звукових ефектів по діях, синхрону з бітом музики, руху камери в монтажі окрім наїзду.`;
 // відео-приклад → що виміряно (склейки, рух, колір, звук, мова) + ключові кадри очима Claude → знання по папках і «картка стилю»
 async function kbVideoStyle(file,src,onStage){
   const url=URL.createObjectURL(file), v=document.createElement("video"); v.muted=true; v.playsInline=true; v.preload="auto"; v.src=url;
@@ -3692,13 +3708,18 @@ async function kbVideoStyle(file,src,onStage){
     const step=Math.max(.2,dur/450), F=[], px=[]; let prevH=null, prevL=null;
     for(let t=0;t<dur;t+=step){ await seek(t); x.drawImage(v,0,0,sw,sh); const d=x.getImageData(0,0,sw,sh).data, n=d.length/4, hist=new Float32Array(24), L=new Float32Array(n); let ls=0,ss=0,l2=0;
       for(let i=0,j=0;i<d.length;i+=4,j++){ const r=d[i],g=d[i+1],b=d[i+2], mx=Math.max(r,g,b), mn=Math.min(r,g,b), l=(r*.299+g*.587+b*.114)/255; L[j]=l; ls+=l; l2+=l*l; ss+=mx?(mx-mn)/mx:0; hist[Math.min(7,r>>5)]++; hist[8+Math.min(7,g>>5)]++; hist[16+Math.min(7,b>>5)]++; if(j%7===0) px.push([r,g,b]); }
-      const lm=ls/n; let hd=0, md=0; if(prevH){ for(let k=0;k<24;k++) hd+=Math.abs(hist[k]-prevH[k]); hd/=n*3*2; for(let j=0;j<n;j++) md+=Math.abs(L[j]-prevL[j]); md/=n; }
-      F.push({t,l:lm,s:ss/n,c:Math.sqrt(Math.max(0,l2/n-lm*lm)),hd,md}); prevH=hist; prevL=L; onStage?.(`Дивлюся відео: ${Math.round(t/dur*100)}%`); }
+      const lm=ls/n; let hd=0, md=0, cam=null; if(prevH){ for(let k=0;k<24;k++) hd+=Math.abs(hist[k]-prevH[k]); hd/=n*3*2; for(let j=0;j<n;j++) md+=Math.abs(L[j]-prevL[j]); md/=n; cam=camMove(prevL,L,sw,sh); }
+      F.push({t,l:lm,s:ss/n,c:Math.sqrt(Math.max(0,l2/n-lm*lm)),hd,md,cam}); prevH=hist; prevL=L; onStage?.(`Дивлюся відео: ${Math.round(t/dur*100)}%`); }
     // склейки: різкий стрибок гістограми
     const hs=F.slice(1).map(f=>f.hd), hm=hs.reduce((a,b)=>a+b,0)/Math.max(1,hs.length), hsd=Math.sqrt(hs.reduce((a,b)=>a+(b-hm)**2,0)/Math.max(1,hs.length));
     const cuts=[]; F.forEach((f,i)=>{ if(i&&f.hd>Math.max(.22,hm+2.5*hsd)&&(!cuts.length||f.t-cuts[cuts.length-1]>.35)) cuts.push(+f.t.toFixed(2)); });
     const motion=F.filter(f=>f.hd<=Math.max(.22,hm+2.5*hsd)).map(f=>f.md), mot=motion.reduce((a,b)=>a+b,0)/Math.max(1,motion.length);
     const avg=(k)=>F.reduce((a,f)=>a+f[k],0)/F.length;
+    // згладжуємо: рух рахуємо за більшістю з 3 сусідніх кроків
+    const rawC=F.map(f=>(f.cam&&!cuts.includes(+f.t.toFixed(2)))?f.cam:"static"), smC=rawC.map((c,i)=>{ const w=[rawC[i-1],c,rawC[i+1]].filter(Boolean), cnt={}; w.forEach(z=>cnt[z]=(cnt[z]||0)+1); return Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0][0]; });
+    const camSeg=[]; F.forEach((f,i)=>{ const c=smC[i], L2=camSeg[camSeg.length-1]; if(L2&&L2.k===c) L2.e=f.t; else camSeg.push({k:c,s:+(F[i-1]?.t||0).toFixed(1),e:f.t}); });
+    const camT={}; camSeg.forEach(g=>camT[g.k]=(camT[g.k]||0)+(g.e-g.s)); const CN={static:"статично",zoomin:"наїзд",zoomout:"віддалення",left:"панорама вліво",right:"панорама вправо",up:"рух угору",down:"рух униз"};
+    const camTxt=Object.entries(camT).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${CN[k]} ${Math.round(v/dur*100)}%`).join(", "), camList=camSeg.filter(g=>g.k!=="static"&&g.e-g.s>=.6).slice(0,14).map(g=>`${CN[g.k]} ${g.s}–${(+g.e).toFixed(1)} с`).join("; ");
     // палітра: k-середніх на 5 кольорів
     const P=[]; for(let k=0;k<5;k++) P.push(px[Math.floor((k+.5)/5*px.length)]||[128,128,128]); let cnt=new Array(5).fill(0);
     for(let it=0;it<8;it++){ const acc=P.map(()=>[0,0,0]); cnt=new Array(5).fill(0); for(let i=0;i<px.length;i+=3){ const p=px[i]; let bi=0,bd=1e9; P.forEach((q,k)=>{ const dd=(p[0]-q[0])**2+(p[1]-q[1])**2+(p[2]-q[2])**2; if(dd<bd){bd=dd;bi=k;} }); acc[bi][0]+=p[0]; acc[bi][1]+=p[1]; acc[bi][2]+=p[2]; cnt[bi]++; } P.forEach((q,k)=>{ if(cnt[k]) P[k]=acc[k].map(v=>v/cnt[k]); }); }
@@ -3716,10 +3737,15 @@ async function kbVideoStyle(file,src,onStage){
       const on=new Float32Array(N); for(let i=1;i<N;i++) on[i]=Math.max(0,env[i]-env[i-1]); let best=0, bl=0; for(let lag=17;lag<=50;lag++){ let a=0; for(let i=lag;i<N;i++) a+=on[i]*on[i-lag]; if(a>best){best=a;bl=lag;} }
       const db=(v)=>Math.round(20*Math.log10(Math.max(1e-5,v))), mean=env.reduce((a,b)=>a+b,0)/Math.max(1,N), silent=env.filter(v=>v<mean*.15).length/Math.max(1,N);
       const om=on.reduce((a,b)=>a+b,0)/Math.max(1,N), acc=[]; for(let i=2;i<N-2;i++) if(on[i]>om*6&&on[i]>=on[i-1]&&on[i]>=on[i+1]&&(!acc.length||i/50-acc[acc.length-1]>.4)) acc.push(+(i/50).toFixed(1));
-      snd={bpm:bl?Math.round(60*50/bl):0,loud:db(mean),silent:Math.round(silent*100),accents:acc.slice(0,24)};
+      // характер звуку: частка басів (<200 Гц) і «яскравості» (>4 кГц), щільність ударів, різкі звуки (удар/вжух/клік)
+      const aL=1-Math.exp(-2*Math.PI*200/E.SR), aH=1-Math.exp(-2*Math.PI*4000/E.SR); let lp=0, lp4=0, eL=0, eH=0, eA=0; const hiE=new Float32Array(N), loE=new Float32Array(N);
+      for(let i=0;i<N;i++){ let hl=0, hh=0; for(let j=i*hop,e=j+hop;j<e;j++){ const v=y[j]; lp+=aL*(v-lp); lp4+=aH*(v-lp4); const h=v-lp4; hl+=lp*lp; hh+=h*h; eA+=v*v; } loE[i]=hl; hiE[i]=hh; eL+=hl; eH+=hh; }
+      const sfx=acc.slice(0,40).map(t=>{ const i=Math.round(t*50), lo=loE[i]+loE[i+1]||0, hi=hiE[i]+hiE[i+1]||0, tt=lo+hi||1; return {t, k:hi/tt>.35?"високий (вжух/клік)":lo/tt>.6?"низький (удар/бас)":"середній"}; });
+      const onCut=cuts.length?Math.round(cuts.filter(c=>acc.some(a=>Math.abs(a-c)<.18)).length/cuts.length*100):0;
+      snd={bpm:bl?Math.round(60*50/bl):0,loud:db(mean),silent:Math.round(silent*100),accents:acc.slice(0,24),bass:Math.round(eL/(eA||1)*100),hiq:Math.round(eH/(eA||1)*100),dens:+(acc.length/(N/50)).toFixed(1),sfx,onCut};
       onStage?.("Розпізнаю мову…"); const small=await E.resample(y,E.SR,16000); for(let o=0;o<small.length;o+=200*16000){ const r=await SRV.stt({audio:E.b64(E.wav(small.subarray(o,Math.min(small.length,o+200*16000)),16000)),mime:"audio/wav",quiet:true}); (r.words||[]).forEach(w=>{ if(String(w.w).trim()) words.push({w:String(w.w),s:o/16000+(+w.s||0)}); }); }
     }catch(e){ console.warn("kb sound",e); }
-    const M={dur:+dur.toFixed(1),size:`${VW}×${VH}`,cuts:cuts.length,shot:+(dur/(cuts.length+1)).toFixed(1),per10:+(cuts.length/dur*10).toFixed(1),motion:+(mot*100).toFixed(1),bright:Math.round(avg("l")*100),sat:Math.round(avg("s")*100),contrast:Math.round(avg("c")*100),pal,...snd,wps:words.length?+(words.length/dur).toFixed(1):0,hook:words.filter(w=>w.s<3.2).map(w=>w.w).join(" ")};
+    const M={cam:camTxt,camList,dur:+dur.toFixed(1),size:`${VW}×${VH}`,cuts:cuts.length,shot:+(dur/(cuts.length+1)).toFixed(1),per10:+(cuts.length/dur*10).toFixed(1),motion:+(mot*100).toFixed(1),bright:Math.round(avg("l")*100),sat:Math.round(avg("s")*100),contrast:Math.round(avg("c")*100),pal,...snd,wps:words.length?+(words.length/dur).toFixed(1):0,hook:words.filter(w=>w.s<3.2).map(w=>w.w).join(" ")};
     // кадри очима Claude — по 3
     const desc=[]; for(let i=0;i<shots.length;i+=3){ onStage?.(`Розглядаю кадри ${i+1}–${Math.min(shots.length,i+3)} з ${shots.length}…`); const g=shots.slice(i,i+3);
       try{ const r=await SRV.aiVision(`Це кадри з відео-прикладу на секундах ${g.map(s=>s.t).join(", ")} (по порядку). Для кожного опиши як режисер-аніматор: стиль (лінії/2D/3D/фото/скрін, плоско чи з глибиною), композиція й шари (передній/середній/задній план), персонажі й предмети, типографіка (шрифт, розмір, колір, де стоїть, чи схоже на анімацію тексту), графічні елементи (плашки, стрілки, лічильники), світло, колір, фокус і розмиття, що змінилося відносно попереднього кадру. Відповідай тільки JSON {"frames":[{"t":0,"d":"до 350 знаків"}]}`,g.map(s=>({data:s.data,mime:"image/jpeg"})),{quiet:true});
@@ -3727,15 +3753,22 @@ async function kbVideoStyle(file,src,onStage){
     onStage?.("Складаю картку стилю…");
     const T=words.map(w=>w.w).join(" ").slice(0,2500);
     const r=await sample.json(`Ти режисер монтажу й моушн-дизайну. Розбери відео-приклад${src?` («${src}»)`:""}, щоб студія YuVi навчилася відтворювати його стиль (не копіювати зміст).
-Виміряно програмою: тривалість ${M.dur} с, ${M.size}; склейок ${M.cuts} (≈${M.shot} с на план, ${M.per10} на 10 с), рух у кадрі ${M.motion} (0 — статично, 5+ — дуже динамічно); яскравість ${M.bright}%, насиченість ${M.sat}%, контраст ${M.contrast}%; палітра: ${M.pal.map(p=>`${p.hex} ${p.p}%`).join(", ")}${M.bpm?`; звук: темп ≈ ${M.bpm} BPM, гучність ${M.loud} dBFS, тиші ${M.silent}%, сильні акценти на ${(M.accents||[]).join(", ")} с`:"; звук не вдалося розібрати"}; мова: ${M.wps} слів/с${M.hook?`, перші 3 с: «${M.hook}»`:""}.
+Виміряно програмою: тривалість ${M.dur} с, ${M.size}; склейок ${M.cuts} (≈${M.shot} с на план, ${M.per10} на 10 с), рух у кадрі ${M.motion} (0 — статично, 5+ — дуже динамічно); яскравість ${M.bright}%, насиченість ${M.sat}%, контраст ${M.contrast}%; палітра: ${M.pal.map(p=>`${p.hex} ${p.p}%`).join(", ")}${M.bpm?`; звук: темп ≈ ${M.bpm} BPM, гучність ${M.loud} dBFS, тиші ${M.silent}%, баси ${M.bass}%, «яскравість» ${M.hiq}%, ${M.dens} різких звуків на секунду; різкі звуки: ${(M.sfx||[]).slice(0,16).map(z=>`${z.t} с ${z.k}`).join("; ")}; ${M.onCut}% склейок збігаються з різким звуком`:"; звук не вдалося розібрати"}; мова: ${M.wps} слів/с${M.hook?`, перші 3 с: «${M.hook}»`:""}.
+Рух камери (виміряно): ${M.cam||"—"}${M.camList?`; відрізки: ${M.camList}`:""}.
 Склейки на секундах: ${cuts.slice(0,40).join(", ")||"немає"}.
 Ключові кадри:
 ${desc.join("\n")||"(не вдалося описати)"}
 ${T?`Текст (розпізнано): ${T}`:""}
 Склади знання для бази YuVi: що саме робить цей стиль і як його відтворити. Папки: hook (перші 3 с), script/story (структура), board (механіка: як з'являються й рухаються елементи, персонажі, типографіка), edit (темп, склейки, переходи, вставки), camera (рухи, плани, глибина), color (палітра з hex, контраст, світло), sound (музика: темп/енергія, звуки й де вони, синхрон з діями). Кожне — конкретно, з числами з вимірів. how — як відтворити в YuVi: у «Анімації лініями» (шаблон, персонаж, плашки, рух камери) або в «Монтажі» (темп, наїзди, вставки, музика, звуки). Не вигадуй того, чого не видно й не виміряно.
 Окремо одне знання kind "example" у папці style: title — «Стиль: коротка назва», body — повний рецепт стилю до 1200 знаків (вигляд, ритм, рух, текст, колір, звук).
-До 14 знань. Відповідай тільки JSON {"items":[{"module":"edit","kind":"rule","title":"…","body":"…","why":"…","how":"…"}]}`,{cache:false,max:3500,quiet:true});
-    const items=(r?.items||[]).filter(i=>i?.title).map(i=>({module:KBN[i.module]?i.module:"style",kind:KB_KIND[i.kind]?i.kind:"note",title:String(i.title).slice(0,200),body:String(i.body||"").slice(0,1500),why:String(i.why||"").slice(0,400),how:String(i.how||"").slice(0,600),src:src||file.name}));
+До 14 знань.
+Ось що YuVi ВЖЕ вміє:
+${YUVI_CAN}
+gaps — прийоми з цього відео, яких YuVi ще НЕ вміє (порівняй з переліком вище), до 8: title — назва прийому; what — як він виглядає і працює, конкретно (рух, тривалість, звук), щоб програміст міг відтворити; where — на яких секундах видно; tool — lines | montage | marker | new; value — 1–5, наскільки сильно покращить відео. Не пиши те, що вже є в переліку.
+Відповідай тільки JSON {"items":[{"module":"edit","kind":"rule","title":"…","body":"…","why":"…","how":"…"}],"gaps":[{"title":"…","what":"…","where":"…","tool":"lines","value":4}]}`,{cache:false,max:3500,quiet:true});
+    const items=(r?.items||[]).filter(i=>i?.title&&i.module!=="gaps").map(i=>({module:KBN[i.module]?i.module:"style",kind:KB_KIND[i.kind]?i.kind:"note",title:String(i.title).slice(0,200),body:String(i.body||"").slice(0,1500),why:String(i.why||"").slice(0,400),how:String(i.how||"").slice(0,600),src:src||file.name}));
+    const TL={lines:"Анімація лініями",montage:"Монтаж",marker:"Рілс маркером",new:"Новий інструмент"};
+    (r?.gaps||[]).filter(g=>g?.title).slice(0,8).forEach(g=>items.push({module:"gaps",kind:"note",title:String(g.title).slice(0,200),body:String(g.what||"").slice(0,1200),why:`Цінність ${Math.max(1,Math.min(5,+g.value||3))}/5 · ${TL[g.tool]||TL.new}`,how:g.where?`Видно на: ${String(g.where).slice(0,200)}`:"",niche:String(Math.max(1,Math.min(5,+g.value||3))),src:src||file.name}));
     return {items,M};
   } finally { URL.revokeObjectURL(url); v.removeAttribute("src"); }
 }
@@ -3744,7 +3777,7 @@ async function openKB(O={}){
   const box=BS.querySelector("#kbb"); let L=[], folder="";
   const modSel=(cur,attr)=>`<select class="cpd" ${attr}>${KBM.map(m=>`<option value="${m[0]}"${m[0]===cur?" selected":""}>${m[1]}</option>`).join("")}</select>`;
   const itemHTML=(i)=>`<div class="kbi ${i.status}" data-kbi="${i.id}"><small>${KBN[i.module||"general"]||"Загальне"} · ${KB_KIND[i.kind]||i.kind}${i.niche?` · ${esc(i.niche)}`:""}${i.status==="pending"?" · чекає підтвердження":""}</small><b>${esc(i.title)}</b>${i.body?`<p>${esc(i.body)}</p>`:""}${i.why?`<p><i>Чому:</i> ${esc(i.why)}</p>`:""}${i.how?`<p><i>Як:</i> ${esc(i.how)}</p>`:""}${i.src?`<p class="note" style="margin:2px 0 0">Джерело: ${esc(i.src)}</p>`:""}
-    <div class="kbact">${i.status!=="confirmed"?`<button class="chip ink" type="button" data-kbok="${i.id}">✓ Так, правильно</button>`:""}<button class="chip" type="button" data-kbed="${i.id}">✎ Виправити</button><button class="chip" type="button" data-kbno="${i.id}">✕ Ні</button></div></div>`;
+    <div class="kbact">${i.status!=="confirmed"?`<button class="chip ink" type="button" data-kbok="${i.id}">✓ Так, правильно</button>`:""}<button class="chip" type="button" data-kbed="${i.id}">✎ Виправити</button><button class="chip" type="button" data-kbno="${i.id}">${i.module==="gaps"?"✓ Зроблено":"✕ Ні"}</button></div></div>`;
   const wireItems=(root,list,refresh)=>{
     root.querySelectorAll("[data-kbok]").forEach(b=>b.onclick=async()=>{ try{ await SRV.kbSet(b.dataset.kbok,{status:"confirmed"}); const it=list.find(x=>x.id===b.dataset.kbok); if(it) it.status="confirmed"; const e=root.querySelector(`[data-kbi="${b.dataset.kbok}"]`); e.className="kbi confirmed"; b.remove(); }catch(x){ toast("Не вдалося"); } });
     root.querySelectorAll("[data-kbno]").forEach(b=>b.onclick=async()=>{ try{ await SRV.kbSet(b.dataset.kbno,{status:"rejected"}); const k=list.findIndex(x=>x.id===b.dataset.kbno); if(k>=0) list.splice(k,1); root.querySelector(`[data-kbi="${b.dataset.kbno}"]`)?.remove(); refresh&&refresh(); }catch(x){ toast("Не вдалося"); } });
@@ -3772,11 +3805,15 @@ async function openKB(O={}){
       catch(x){ c.querySelector(".wait")?.remove(); c.insertAdjacentHTML("beforeend",`<div class="kbm assistant"><p>${x.message==="no_key"?"Потрібен ключ Claude на сервері.":"Не вдалося відповісти. Спробуй ще раз."}</p></div>`); ta.value=t; }
       b.disabled=false; c.scrollTop=c.scrollHeight; }; };
   const base=async()=>{ box.innerHTML=`<p class="status">Завантажую…</p>`; try{ L=await SRV.kbList(); }catch(x){ box.innerHTML=`<p class="status err">Не вдалося.</p>`; return; }
-    const draw=()=>{ const cnt=(m)=>L.filter(i=>(i.module||"general")===m), cur=folder?cnt(folder):L, pend=cur.filter(i=>i.status==="pending"), conf=cur.filter(i=>i.status==="confirmed"), info=KBM.find(m=>m[0]===folder);
+    const draw=()=>{ const cnt=(m)=>L.filter(i=>(i.module||"general")===m), cur=folder?cnt(folder).sort((a,b)=>folder==="gaps"?(+b.niche||0)-(+a.niche||0):0):L, pend=cur.filter(i=>i.status==="pending"), conf=cur.filter(i=>i.status==="confirmed"), info=KBM.find(m=>m[0]===folder);
       box.innerHTML=`<div class="chips" style="justify-content:flex-start;margin:4px 0 10px"><button class="chip${folder?"":" ink"}" type="button" data-kbf="">Усі · ${L.length}</button>${KBM.map(m=>{ const c=cnt(m[0]), p=c.filter(i=>i.status==="pending").length; return `<button class="chip${folder===m[0]?" ink":""}" type="button" data-kbf="${m[0]}">${m[1]} · ${c.length}${p?` <b style="color:#ff9f0a">+${p}</b>`:""}</button>`; }).join("")}</div>
-        <p class="hint" style="display:block">${info?`<b>${info[1]}</b> — ${info[2]}. Використовує: ${info[3]}.`:"Підтверджені знання інструменти беруть, коли пишуть сценарії, сцени, монтаж і назви — кожен лише свої папки. Непідтверджені чекають на тебе."}</p>
+        ${folder==="gaps"&&cur.length?`<button class="big" type="button" id="kbgap" style="margin:0 0 10px">📋 Скопіювати завдання для Claude (${cur.length})</button>`:""}
+        <p class="hint" style="display:block">${folder==="gaps"?"Прийоми з відео-прикладів, яких рушій ще не вміє. Скопіюй завдання й надішли Claude в чат — він допише їх у код. Після цього тисни «✓ Зроблено».":info?`<b>${info[1]}</b> — ${info[2]}. Використовує: ${info[3]}.`:"Підтверджені знання інструменти беруть, коли пишуть сценарії, сцени, монтаж і назви — кожен лише свої папки. Непідтверджені чекають на тебе."}</p>
         ${pend.length?`<h4>Чекають підтвердження (${pend.length}) <button class="chip ink" type="button" id="kball" style="margin-left:6px">✓ Підтвердити всі</button></h4>${pend.map(itemHTML).join("")}`:""}<h4>Підтверджено (${conf.length})</h4>${conf.map(itemHTML).join("")||`<p class="note">Поки порожньо — додай у «+ Додати» або розкажи в «Розмові».</p>`}`;
       box.querySelectorAll("[data-kbf]").forEach(b=>b.onclick=()=>{ folder=b.dataset.kbf; draw(); });
+      box.querySelector("#kbgap")?.addEventListener("click",async()=>{ const G={}; cur.forEach(i=>{ const k=String(i.title).toLowerCase().trim(); (G[k]=G[k]||{i,n:0,src:new Set()}).n++; if(i.src) G[k].src.add(i.src); });
+        const txt="Доробки для рушія YuVi — прийоми з відео-прикладів, яких ще немає. Допиши їх у код:\n\n"+Object.values(G).sort((a,b)=>(+b.i.niche||0)-(+a.i.niche||0)||b.n-a.n).map((g,k)=>`${k+1}. ${g.i.title} [${g.i.why||""}${g.n>1?` · бачили в ${g.n} відео`:""}]\n   Як виглядає: ${g.i.body||"—"}\n   ${g.i.how||""}${g.src.size?` · Джерело: ${[...g.src].join(", ")}`:""}`).join("\n\n");
+        try{ await navigator.clipboard.writeText(txt); toast("Скопійовано — встав у чат з Claude"); }catch(x){ toast("Не вдалося скопіювати"); } });
       box.querySelector("#kball")?.addEventListener("click",async e=>{ e.currentTarget.disabled=true; for(const i of pend){ try{ await SRV.kbSet(i.id,{status:"confirmed"}); i.status="confirmed"; }catch(x){} } draw(); });
       wireItems(box,L,draw); };
     draw(); };
@@ -3796,7 +3833,7 @@ async function openKB(O={}){
     box.querySelectorAll("[data-kbm]").forEach(b=>b.onclick=()=>{ mod=b.dataset.kbm; box.querySelectorAll("[data-kbm]").forEach(x=>x.classList.toggle("ink",x===b)); });
     const review=()=>{ if(!found.length){ res.innerHTML=`<p class="note">Нічого корисного не знайшлося.</p>`; return; }
       const by={}; found.forEach((it,i)=>{ (by[it.module]=by[it.module]||[]).push([it,i]); });
-      const mh=meas.map(({name,M})=>`<div class="kbi" style="gap:6px"><small>Виміряно · ${esc(name)}</small><b style="font-size:14px">${M.dur} с · ${M.cuts} склейок (≈${M.shot} с на план) · рух ${M.motion}${M.bpm?` · ≈${M.bpm} BPM`:""}${M.wps?` · мова ${M.wps} сл/с`:""}</b><div style="display:flex;gap:4px">${M.pal.map(p=>`<i title="${p.hex} ${p.p}%" style="flex:${Math.max(4,p.p)};height:18px;border-radius:5px;background:${p.hex}"></i>`).join("")}</div><small>Яскравість ${M.bright}% · насиченість ${M.sat}% · контраст ${M.contrast}%</small></div>`).join("");
+      const mh=meas.map(({name,M})=>`<div class="kbi" style="gap:6px"><small>Виміряно · ${esc(name)}</small><b style="font-size:14px">${M.dur} с · ${M.cuts} склейок (≈${M.shot} с на план) · рух ${M.motion}${M.bpm?` · ≈${M.bpm} BPM`:""}${M.wps?` · мова ${M.wps} сл/с`:""}</b><div style="display:flex;gap:4px">${M.pal.map(p=>`<i title="${p.hex} ${p.p}%" style="flex:${Math.max(4,p.p)};height:18px;border-radius:5px;background:${p.hex}"></i>`).join("")}</div><small>Яскравість ${M.bright}% · насиченість ${M.sat}% · контраст ${M.contrast}%</small>${M.cam?`<small>Камера: ${esc(M.cam)}</small>`:""}${M.bpm?`<small>Звук: баси ${M.bass}% · яскравість ${M.hiq}% · ${M.dens} різких звуків/с · ${M.onCut}% склейок на звук</small>`:""}</div>`).join("");
       res.innerHTML=mh+`<h4>Знайдено ${found.length} — перевір</h4>${Object.entries(by).map(([m,arr])=>`<p class="note" style="margin:10px 0 4px"><b>${KBN[m]}</b> · ${arr.length}</p>${arr.map(([it,i])=>`<div class="kbi pending" style="display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:start"><input type="checkbox" data-kok="${i}" checked style="margin-top:4px;width:20px;height:20px"><div><small>${KB_KIND[it.kind]}</small><b>${esc(it.title)}</b>${it.body?`<p>${esc(it.body)}</p>`:""}${it.why?`<p><i>Чому:</i> ${esc(it.why)}</p>`:""}${modSel(it.module,`data-kmv="${i}"`)}</div></div>`).join("")}`).join("")}
         <div class="row" style="gap:8px;margin-top:10px"><button class="big" type="button" id="kbsave" style="margin:0;flex:1">Зберегти вибране</button><button class="chip" type="button" id="kbsavep">На перевірку</button></div>`;
       res.querySelectorAll("[data-kmv]").forEach(s=>s.onchange=()=>{ found[+s.dataset.kmv].module=s.value; });
