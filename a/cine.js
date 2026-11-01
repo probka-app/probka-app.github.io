@@ -247,6 +247,21 @@
       [[120, 1150, 160], [380, 1080, 120], [930, 1130, 190]].forEach(([X, Y, r]) => { x.fillStyle = "#5b4a40"; x.fillRect(X - 12, Y - r * .4, 24, r * 1.4); x.fillStyle = shade("#6f9460", T.amb); x.beginPath(); x.arc(X, Y - r * .8, r, 0, 7); x.fill(); x.beginPath(); x.arc(X - r * .6, Y - r * .4, r * .7, 0, 7); x.fill(); });
       x.fillStyle = shade("#8bab67", T.amb); x.fillRect(0, FLOOR, W, H - FLOOR); x.fillStyle = "#8a6650"; rr(x, 560, 1360, 360, 30, 8); x.fill(); x.fillRect(580, 1390, 18, 110); x.fillRect(880, 1390, 18, 110); rr(x, 560, 1280, 360, 26, 8); x.fill(); } },
     stage: { n: "Сцена", light: [540, 0], dark: 1, draw(x, tm, s) { x.fillStyle = "#1c1a24"; x.fillRect(0, 0, W, H); x.fillStyle = "#6e2f3a"; for (let i = 0; i < 6; i++) { x.beginPath(); x.ellipse(i < 3 ? 60 + i * 50 : W - 60 - (i - 3) * 50, 700, 60, 900, 0, 0, 7); x.fill(); } x.fillStyle = "#3a3340"; x.fillRect(0, FLOOR, W, H - FLOOR); } },
+    blog: { n: "Студія блогера", light: [700, 300], draw(x, tm, s) { wall(x, "#6f6a86", tm); x.fillStyle = "#5c5873"; for (let i = 0; i < 6; i++) x.fillRect(80 + i * 160, 260, 120, 260);
+      x.save(); x.shadowColor = "#ff5fa2"; x.shadowBlur = 30; x.strokeStyle = "#ff8cc0"; x.lineWidth = 10; x.lineCap = "round"; x.beginPath(); x.moveTo(160, 640); x.quadraticCurveTo(230, 560, 300, 640); x.quadraticCurveTo(370, 720, 440, 640); x.stroke(); x.restore();
+      x.fillStyle = "#4b4760"; x.fillRect(560, 700, 420, 18); [0, 1, 2, 3, 4].forEach((i) => { x.fillStyle = ["#d8c25c", "#79a7a6", "#cf8b6d", "#8b79bb", "#e7e3d9"][i]; x.fillRect(580 + i * 70, 600 + (i % 2) * 20, 50, 100 - (i % 2) * 20); });
+      x.strokeStyle = "#2b2932"; x.lineWidth = 8; x.beginPath(); x.moveTo(880, 1500); x.lineTo(930, 1000); x.lineTo(980, 1500); x.moveTo(930, 1000); x.lineTo(930, 1500); x.stroke(); x.save(); x.shadowColor = "#fff6dc"; x.shadowBlur = 40; x.strokeStyle = "#fff6dc"; x.lineWidth = 22; x.beginPath(); x.arc(930, 900, 95, 0, 7); x.stroke(); x.restore();
+      x.strokeStyle = "#2b2932"; x.lineWidth = 7; x.beginPath(); x.moveTo(120, 1500); x.lineTo(170, 1120); x.lineTo(220, 1500); x.stroke(); x.fillStyle = "#26252c"; rr(x, 110, 1050, 130, 80, 12); x.fill(); x.fillStyle = "#3a3944"; x.beginPath(); x.arc(175, 1090, 26, 0, 7); x.fill(); x.fillStyle = "#ff453a"; x.beginPath(); x.arc(225, 1065, 8, 0, 7); x.fill();
+      floor(x, "#4f4a5c", tm); } },
+    kitchen: { n: "Кухня", light: [300, 300], draw(x, tm, s) { wall(x, "#a3a08f", tm); win(x, 110, 330, 360, 420, tm, s, "trees"); x.fillStyle = "#d8d3c6"; for (let i = 0; i < 4; i++) rr(x, 560 + (i % 2) * 230, 300 + Math.floor(i / 2) * 230, 210, 210, 10), x.fill();
+      x.fillStyle = "#6f8f86"; x.fillRect(0, 1130, W, 370); x.fillStyle = "#e6e0d4"; x.fillRect(0, 1100, W, 40); x.fillStyle = "#58756d"; for (let i = 0; i < 5; i++) x.fillRect(30 + i * 210, 1180, 190, 300); x.fillStyle = "#c9c4b8"; for (let i = 0; i < 5; i++) x.fillRect(110 + i * 210, 1300, 40, 10);
+      x.save(); x.translate(820, 1040); PROPS.cup(x, .55, {}, 0); x.restore(); x.fillStyle = "#b8574d"; rr(x, 300, 1020, 140, 80, 12); x.fill(); floor(x, "#8a7a68", tm, false); } },
+    gym: { n: "Спортзал", light: [540, 250], draw(x, tm, s) { wall(x, "#6c7280", tm); x.fillStyle = "#e3c44a"; x.fillRect(0, 760, W, 26); x.fillStyle = "#55596a"; x.fillRect(0, 300, W, 120);
+      for (let i = 0; i < 6; i++) { x.fillStyle = "rgba(255,255,255,.15)"; x.fillRect(60 + i * 170, 320, 120, 80); }
+      x.fillStyle = "#2b2932"; x.fillRect(120, 1230, 420, 16); [[120, 70], [540, 70]].forEach(([X]) => { x.fillRect(X - 30, 1170, 26, 130); x.fillRect(X + 4, 1150, 26, 170); }); x.fillStyle = "#3a3944"; rr(x, 640, 1300, 360, 40, 10); x.fill(); x.fillRect(660, 1340, 20, 160); x.fillRect(960, 1340, 20, 160);
+      floor(x, "#4a4d58", tm, false); x.fillStyle = "rgba(0,0,0,.18)"; for (let i = 0; i < 8; i++) x.fillRect(i * 140, FLOOR, 4, H - FLOOR); } },
+    shop: { n: "Магазин", light: [540, 260], draw(x, tm, s) { wall(x, "#b9aea0", tm); for (let r = 0; r < 4; r++) { x.fillStyle = "#8a6650"; x.fillRect(60, 330 + r * 200, 960, 18); for (let i = 0; i < 12; i++) { x.fillStyle = ["#c65a50", "#e3c44a", "#79a7a6", "#8b79bb", "#8bab67", "#e19349"][(i + r * 3) % 6]; rr(x, 80 + i * 78, 250 + r * 200 - rnd(i, r) * 30, 56, 80 + rnd(i, r) * 30, 6); x.fill(); } }
+      x.fillStyle = "#6b4e3e"; x.fillRect(560, 1180, 520, 320); x.fillStyle = "#8a6650"; x.fillRect(540, 1150, 560, 40); x.fillStyle = "#26252c"; rr(x, 820, 1060, 160, 100, 10); x.fill(); x.fillStyle = "#7fe0b0"; x.fillRect(840, 1080, 120, 50); floor(x, "#d4cbbd", tm, false); } },
     void: { n: "Порожній фон", light: null, draw(x, tm, s) { const T = TIME[tm] || TIME.day, g = x.createRadialGradient(W / 2, H * .45, 100, W / 2, H * .45, H * .8); g.addColorStop(0, shade("#a99fb2", T.amb + .1)); g.addColorStop(1, shade("#5d566a", T.amb)); x.fillStyle = g; x.fillRect(0, 0, W, H); x.fillStyle = "rgba(0,0,0,.12)"; x.fillRect(0, FLOOR, W, H - FLOOR); } },
   };
   const BGC = new Map();
@@ -312,12 +327,23 @@
         x.fillStyle = p.hl ? (cap.c || "#dbe86b") : "#ffffff"; x.fillText(p.w, 0, 0); x.restore(); X += (p.wd + sp) * scale; }); });
     x.restore();
   }
-  function subs(x, t, L) {
+  const SUBST = { classic: "Класичні", box: "Плашка", pop: "Караоке", one: "По слову", minimal: "Мінімал", yellow: "Жовті" };
+  const SUBS0 = { k: "classic", size: 1, y: 1370 };
+  function subs(x, t, L) { const S = { ...SUBS0, ...(L.subS || {}) }, k = SUBST[S.k] ? S.k : "classic";
     const ws = L.words; let i = ws.findIndex((w) => w.e > t - .05); if (i < 0) return; if (ws[i].s > t + .05 && (i === 0 || t - ws[i - 1].e > .5)) return;
-    const g0 = Math.floor(i / 4) * 4, grp = ws.slice(g0, g0 + 4); if (!grp.length) return;
-    x.save(); const size = 54; x.font = `800 ${size}px "${FONT}", system-ui, sans-serif`; const sp = 14, tw = grp.reduce((a, w) => a + x.measureText(w.w).width + sp, -sp); const sc = Math.min(1, (SAFEW - 40) / tw), Y = 1370;
+    const N = k === "one" ? 1 : k === "box" ? 3 : 4, g0 = Math.floor(i / N) * N, grp = ws.slice(g0, g0 + N); if (!grp.length) return;
+    const size = (k === "one" ? 92 : k === "minimal" ? 46 : 54) * clamp(+S.size || 1, .6, 1.8), Y = clamp(+S.y || 1370, 300, 1800);
+    x.save(); x.font = `${k === "minimal" ? 700 : 800} ${size}px "${FONT}", system-ui, sans-serif`; const sp = size * .26, tw = grp.reduce((a, w) => a + x.measureText(w.w).width + sp, -sp), sc = Math.min(1, (SAFEW - 40) / tw);
     x.translate(SCX, Y); x.scale(sc, sc); x.translate(-SCX, -Y); let X = SCX - tw / 2; x.textAlign = "left"; x.textBaseline = "middle"; x.lineJoin = "round";
-    grp.forEach((w, k) => { const on = g0 + k === i && t >= w.s - .05; x.strokeStyle = "rgba(15,14,22,.9)"; x.lineWidth = 12; x.strokeText(w.w, X, Y); x.fillStyle = on ? "#dbe86b" : "#fff"; x.fillText(w.w, X, Y); X += x.measureText(w.w).width + sp; }); x.restore(); }
+    if (k === "box") { const pad = size * .35; x.fillStyle = "rgba(12,11,20,.78)"; rr(x, X - pad, Y - size * .78, tw + pad * 2, size * 1.56, size * .35); x.fill(); }
+    grp.forEach((w, n) => { const on = g0 + n === i && t >= w.s - .05, ww = x.measureText(w.w).width;
+      if (k === "one") { const p = clamp((t - w.s) / .12), s2 = 1 + (1 - eout(p)) * .3; x.save(); x.translate(X + ww / 2, Y); x.scale(s2, s2); x.strokeStyle = "rgba(15,14,22,.92)"; x.lineWidth = size * .2; x.textAlign = "center"; x.strokeText(w.w.toUpperCase(), 0, 0); x.fillStyle = "#fff"; x.fillText(w.w.toUpperCase(), 0, 0); x.restore(); }
+      else if (k === "box") { if (on) { x.fillStyle = "#dbe86b"; rr(x, X - size * .14, Y - size * .62, ww + size * .28, size * 1.24, size * .22); x.fill(); } x.fillStyle = on ? "#14121c" : "#fff"; x.fillText(w.w, X, Y); }
+      else if (k === "pop") { const s2 = on ? 1.16 : 1; x.save(); x.translate(X + ww / 2, Y); x.scale(s2, s2); x.strokeStyle = "rgba(15,14,22,.9)"; x.lineWidth = size * .22; x.textAlign = "center"; x.strokeText(w.w, 0, 0); x.fillStyle = on ? "#7fe0b0" : t > w.e ? "#fff" : "rgba(255,255,255,.72)"; x.fillText(w.w, 0, 0); x.restore(); }
+      else if (k === "minimal") { x.shadowColor = "rgba(0,0,0,.7)"; x.shadowBlur = 12; x.fillStyle = on ? "#fff" : "rgba(255,255,255,.75)"; x.fillText(w.w, X, Y); x.shadowBlur = 0; }
+      else if (k === "yellow") { x.strokeStyle = "rgba(15,14,22,.9)"; x.lineWidth = size * .22; x.strokeText(w.w, X, Y); x.fillStyle = on ? "#fff" : "#ffd60a"; x.fillText(w.w, X, Y); }
+      else { x.strokeStyle = "rgba(15,14,22,.9)"; x.lineWidth = size * .22; x.strokeText(w.w, X, Y); x.fillStyle = on ? "#dbe86b" : "#fff"; x.fillText(w.w, X, Y); }
+      X += ww + sp; }); x.restore(); }
 
   /* ---------- кадр ---------- */
   let GRAIN = null;
@@ -477,7 +503,7 @@ hit — номери 1–2 найважливіших слів сцени (ле�
   const numbered = (L) => L.words.map((w, i) => `${i}:${w.w}`).join(" ");
   function normPlan(r, L) { const n = L.words.length, okI = (v) => Number.isInteger(v) && v >= 0 && v < n ? v : null, num = (v, a, b, d) => { v = +v; return isFinite(v) ? clamp(v, a, b) : d; }, str = (v, m) => typeof v === "string" ? v.slice(0, m) : "";
     const sc = (Array.isArray(r?.scenes) ? r.scenes : []).filter((s) => s && okI(s.a) != null).sort((a, b) => a.a - b.a).filter((s, i, A) => !i || s.a > A[i - 1].a).slice(0, 60).map((s) => ({
-      a: s.a, place: PLACES[s.place] ? s.place : "room", time: TIME[s.time] ? s.time : "day", shot: SHOT[s.shot] ? s.shot : "wide", cam: ["push", "pull", "pan_l", "pan_r", "still", "shake"].includes(s.cam) ? s.cam : "push", tr: ["cut", "whip", "fade"].includes(s.tr) ? s.tr : "cut",
+      a: s.a, place: PLACES[s.place] && (!L.places?.length || L.places.includes(s.place) || s.place === "space") ? s.place : (L.places?.length ? L.places[s.a % L.places.length] : "room"), time: TIME[s.time] ? s.time : "day", shot: SHOT[s.shot] ? s.shot : "wide", cam: ["push", "pull", "pan_l", "pan_r", "still", "shake"].includes(s.cam) ? s.cam : "push", tr: ["cut", "whip", "fade"].includes(s.tr) ? s.tr : "cut",
       cast: (Array.isArray(s.cast) ? s.cast : []).slice(0, 3).filter((c) => c && WHO[c.who]).map((c) => ({ who: c.who, x: num(c.x, .08, .92, .5), to: c.to != null ? num(c.to, .08, .92, null) : undefined, pose: POSE[c.pose] ? c.pose : "stand", face: FACE.includes(c.face) ? c.face : "calm", look: c.look === "l" || c.look === "r" ? c.look : undefined, acc: ACC.includes(c.acc) ? c.acc : undefined, col: HOOD[c.col] ? c.col : undefined })),
       props: (Array.isArray(s.props) ? s.props : []).slice(0, 2).filter((p) => p && (PROPS[p.k] || p.q || p.k === "icon")).map((p) => ({ k: PROPS[p.k] ? p.k : "icon", q: str(p.q, 30) || undefined, t: str(String(p.t ?? ""), 16) || undefined, t2: str(p.t2, 16) || undefined, hold: p.hold ? 1 : undefined, x: num(p.x, .12, .76, .7), y: num(p.y, .15, .7, .4), i: okI(p.i), v: p.v != null ? num(p.v, -1, 1, 1) : undefined })),
       hud: s.hud && s.hud.k && s.hud.k !== "none" ? { k: ["panel", "chart", "bars", "counter", "brain", "check", "compare", "rings", "network"].includes(s.hud.k) ? s.hud.k : "panel", t: str(s.hud.t, 30), v: s.hud.v, items: Array.isArray(s.hud.items) ? s.hud.items.slice(0, 5).map((q) => str(String(q), 34)) : undefined, i: okI(s.hud.i), y: num(s.hud.y, .2, .6, .33) * H } : null,
@@ -497,7 +523,7 @@ hit — номери 1–2 найважливіших слів сцени (ле�
     const ask = `Ти режисер вертикальних анімаційних Reels. Людина говорить за кадром. ${a0 > 0 ? `Це продовження ролика (слова ${a0}–${a1 - 1}); попередня сцена: ${prev || "—"}.` : `Це ${a1 < L.words.length ? "початок" : "весь"} ролик${a1 < L.words.length ? "у" : ""}.`} Дослівні слова з номерами:
 ${words}
 ${extra}
-${RULES}
+${L.places?.length ? `Локації: використовуй ТІЛЬКИ ці — ${L.places.join(", ")} (і space для абстрактних пояснень).\n` : ""}${RULES}
 ${SPEC}
 ${a0 === 0 ? `Визнач mood музики: ${Object.entries(MOODS).map(([k, v]) => `${k} (${v.n})`).join(", ")}.\n` : ""}Розбий ці слова на сцени по черзі (перша сцена — зі слова ${a0}; a — номер слова початку; нова сцена ≈ кожні 4–9 слів). Пиши JSON компактно, без зайвих полів (порожні props/hud/cap/hit не пиши).
 Відповідай тільки JSON: ${PLAN_JSON}`;
@@ -513,7 +539,7 @@ ${a0 === 0 ? `Визнач mood музики: ${Object.entries(MOODS).map(([k, v
       if (ok.length) { if (ok[0].a !== a0) ok[0].a = a0; scenes.push(...ok); } else scenes.push(...autoPlan(L, a0, a1)); });
     L.scenes = normPlan({ scenes }, L); if (mood) L.mood = mood; L._auto = fails === parts.length; return L; }
   // автоплан без AI: сцени кожні ~6 слів, різні локації й плани, написи на ключових місцях
-  function autoPlan(L, a0, a1) { const P = ["space", "room", "office", "street", "class", "cafe", "road", "park", "night", "lab"], SH = ["wide", "medium", "close", "wide", "face", "medium"], PO = ["talk", "think", "point", "shrug", "cheer", "walk", "phone", "sad"], FA = ["calm", "worried", "smirk", "shock", "happy", "sad"], out = [];
+  function autoPlan(L, a0, a1) { const P = L.places?.length ? [...L.places, "space"] : ["space", "room", "office", "street", "blog", "cafe", "road", "park", "night", "lab"], SH = ["wide", "medium", "close", "wide", "face", "medium"], PO = ["talk", "think", "point", "shrug", "cheer", "walk", "phone", "sad"], FA = ["calm", "worried", "smirk", "shock", "happy", "sad"], out = [];
     for (let a = a0, i = Math.floor(a0 / 6); a < a1; a += 6, i++) { const sp = P[i % P.length] === "space", s = { a, place: P[i % P.length], time: ["day", "sunset", "night"][i % 3], shot: SH[i % SH.length], cam: i % 3 === 2 ? "pull" : "push", tr: i ? (i % 2 ? "whip" : "cut") : "cut",
       cast: [{ who: "hero", x: .5, pose: PO[i % PO.length], face: FA[i % FA.length], to: PO[i % PO.length] === "walk" ? .7 : undefined }] };
       if (sp) s.hud = { k: ["brain", "chart", "rings", "counter"][i % 4], i: a, v: 1 };
@@ -611,7 +637,7 @@ ${SPEC}
 #yvcn .cpanel{position:absolute;left:0;right:0;bottom:0;max-height:78%;z-index:5;background:#151518;border-top:1px solid rgba(255,255,255,.14);border-radius:20px 20px 0 0;display:flex;flex-direction:column;box-shadow:0 -10px 40px rgba(0,0,0,.5);padding-bottom:env(safe-area-inset-bottom)}
 #yvcn .cph{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 4px}#yvcn .cph b{font-size:16px}#yvcn .cpb{overflow-y:auto;padding:4px 14px 18px;-webkit-overflow-scrolling:touch}
 #yvcn .cpb .sec{margin-top:12px}#yvcn .cpb .chips .chip{padding:6px 10px;font-size:12.5px}`;
-  const OPT = { col: "yellow", acc: "none", voice: "ai", subs: true, music: true, mood: "auto", sec: 45 };
+  const OPT = { col: "yellow", acc: "none", voice: "ai", subs: true, music: true, mood: "auto", sec: 45, places: [], subS: { k: "classic", size: 1, y: 1370 } };
   try { Object.assign(OPT, JSON.parse(localStorage.getItem("yvCineOpt") || "{}")); } catch (e) {}
   const saveOpt = () => { try { localStorage.setItem("yvCineOpt", JSON.stringify(OPT)); } catch (e) {} };
   const DRAFT = { topic: "", text: "", vid: "" }; try { Object.assign(DRAFT, JSON.parse(sessionStorage.getItem("yvCine") || "{}")); } catch (e) {}
@@ -635,7 +661,9 @@ ${SPEC}
       <div class="sec"><h4>Тривалість</h4><div class="chips">${[20, 30, 45, 60, 90].map((s) => `<button class="chip" type="button" data-sec="${s}" aria-pressed="${OPT.sec === s}">${s} с</button>`).join("")}</div></div>
       <div class="sec"><h4>Голос</h4><div class="vopt">${VOICES.map(([k, n, s]) => `<button type="button" data-v="${k}" aria-pressed="${OPT.voice === k}"><b>${n}</b><span>${s}</span></button>`).join("")}</div></div>
       <div class="sec"><h4>Музика</h4><div id="csmus"></div></div>
-      <div class="sec"><div class="tg"><div><b>Субтитри</b><span>Слова внизу, поточне — жовтим</span></div><button class="sw" type="button" id="csubs" role="switch" aria-checked="${OPT.subs}"></button></div></div></div>`;
+      <div class="sec"><h4>Локації</h4><p class="cnt" style="margin:-4px 0 8px">Вибери, де житиме історія, або залиш «AI вибере». Можна кілька.</p><div class="chips" id="cplc"><button class="chip" type="button" data-pl="" aria-pressed="${!OPT.places?.length}">AI вибере</button>${Object.entries(PLACES).filter(([k]) => k !== "void").map(([k, v]) => `<button class="chip" type="button" data-pl="${k}" aria-pressed="${(OPT.places || []).includes(k)}">${v.n}</button>`).join("")}</div></div>
+      <div class="sec"><div class="tg"><div><b>Субтитри</b><span>Розмір і висоту можна змінити в редакторі</span></div><button class="sw" type="button" id="csubs" role="switch" aria-checked="${OPT.subs}"></button></div>
+        <div class="chips" style="margin-top:8px">${Object.entries(SUBST).map(([k, n]) => `<button class="chip" type="button" data-ss="${k}" aria-pressed="${(OPT.subS?.k || "classic") === k}">${n}</button>`).join("")}</div></div></div>`;
     F.innerHTML = `<button class="btn main" type="button" id="cnext">Далі</button>`;
     const cv = $(B, "#cdemo"); loadFont().then(() => demo(cv)); loadIcons();
     const pick = (sel, key, cb) => B.querySelectorAll(sel).forEach((b) => b.onclick = () => { B.querySelectorAll(sel).forEach((o) => o.setAttribute("aria-pressed", o === b)); cb(b.dataset[key]); saveOpt(); });
@@ -643,6 +671,9 @@ ${SPEC}
     musicList($(B, "#csmus"), OPT.music ? OPT.mood : "off", (v) => { OPT.music = v !== "off"; if (v !== "off") OPT.mood = v; saveOpt(); });
     if (!OPT.music || OPT.mood !== "auto") { const fx = $(B, "#csmus"); if (!fx.querySelector('[data-mk="auto"]')) { fx.querySelector(".vopt")?.insertAdjacentHTML("afterbegin", `<button type="button" data-mk="auto" aria-pressed="false"><b>AI вибере</b><span>Під настрій тексту</span></button>`); const ab = fx.querySelector('[data-mk="auto"]'); ab.onclick = () => { fx.querySelectorAll("[data-mk]").forEach((o) => o.setAttribute("aria-pressed", o === ab)); OPT.music = true; OPT.mood = "auto"; saveOpt(); }; } }
     $(B, "#csubs").onclick = (e) => { OPT.subs = !OPT.subs; e.currentTarget.setAttribute("aria-checked", OPT.subs); saveOpt(); };
+    pick("[data-ss]", "ss", (v) => { OPT.subS = { ...SUBS0, ...(OPT.subS || {}), k: v }; });
+    B.querySelectorAll("[data-pl]").forEach((b) => b.onclick = () => { const k = b.dataset.pl; let L2 = (OPT.places || []).filter((q) => PLACES[q]); if (!k) L2 = []; else L2 = L2.includes(k) ? L2.filter((q) => q !== k) : [...L2, k]; OPT.places = L2; saveOpt();
+      B.querySelectorAll("[data-pl]").forEach((o) => o.setAttribute("aria-pressed", o.dataset.pl ? L2.includes(o.dataset.pl) : !L2.length)); });
     $(F, "#cnext").onclick = () => { cancelAnimationFrame(DEMO); stopPrev(); screenContent(); }; track("open"); }
   const VPA = { a: null };
   async function voicePick(box) { let V = [], cl = null, err = "";
@@ -687,14 +718,17 @@ ${SPEC}
         else { stage(src.tts ? "Озвучую текст…" : "Готую запис…"); y = src.tts ? await ttsAudio(src.tts.text, src.tts.voice) : await E().decode(src.buf); if (y.length / E().SR > MAX) { y = y.subarray(0, Math.round(MAX * E().SR)).slice(); say("Для Reels — до 1,5 хв. Беру початок"); } }
         if (!words) { stage("Розпізнаю слова…"); words = await sttWords(y); }
         if (words.length < 3) throw new Error("nowords");
-        L = { voice: y, words, dur: Math.max(y.length / E().SR, words[words.length - 1].e + 1.2), silent: !!src.silent, subs: OPT.subs, music: OPT.music, mood: OPT.mood === "auto" ? "curious" : OPT.mood, hero: { col: OPT.col, acc: OPT.acc }, hist: [], src };
+        L = { voice: y, words, dur: Math.max(y.length / E().SR, words[words.length - 1].e + 1.2), silent: !!src.silent, subs: OPT.subs, subS: { ...SUBS0, ...(OPT.subS || {}) }, places: (OPT.places || []).filter((k) => PLACES[k]), regen: 0, music: OPT.music, mood: OPT.mood === "auto" ? "curious" : OPT.mood, hero: { col: OPT.col, acc: OPT.acc }, hist: [], src };
         stage("Режисую сцени…"); await aiPlan(L); if (OPT.mood !== "auto" && OPT.music) L.mood = OPT.mood; timeline(L);
         stage("Пишу музику й звуки…"); L.aud = await soundtrack(L); });
       track("ready", { v: `${L.scenes.length}sc/${Math.round(L.dur)}s/${L.mood}${L._auto ? "/auto" : ""}` }); screenEdit(L._auto ? `AI-режисер не відповів (${L._planErr || "помилка"}) — сцени розставлено автоматично. Можна натиснути «Інший варіант»` : "Тапни ▶, щоб подивитись. Правки — кнопкою ✎");
     } catch (e) { console.error(e); const m = e?.message || e?.code || String(e); track("fail", { v: `${STAGE}|${String(m).slice(0, 40)}` });
       const msg = TTS_ERR[m] || (m === "nowords" ? "Не почув слів — спробуй ще раз" : m === "limit" ? "Ліміт на сьогодні вичерпано" : m === "login" ? "Увійди в акаунт" : `Не вийшло зібрати анімацію (етап: ${STAGE}; ${String(m).slice(0, 60)}). Спробуй ще раз або скинь цей текст Claude`);
       say(msg); L = null; screenContent(msg); } }
-  async function remix(fn, label) { stopPlay(); try { await E().busyRun("montage", async () => { const keep = JSON.stringify({ scenes: L.scenes, mood: L.mood, music: L.music }); L.hist.push(keep); if (L.hist.length > 15) L.hist.shift(); const r = await fn(); timeline(L); L.aud = await soundtrack(L); L._say = r; }); screenEdit(L._say || label); } catch (e) { console.error(e); say(e?.message === "limit" ? "Ліміт на сьогодні вичерпано" : "Не вийшло. Спробуй ще раз"); } }
+  const REGEN_MAX = 5, isOwner = () => { try { return typeof uiOwner === "function" && !!uiOwner(); } catch (e) { return false; } };
+  const regenLeft = () => isOwner() ? Infinity : REGEN_MAX - (L.regen || 0);
+  function regenOk() { if (regenLeft() > 0) return true; say(`Ліміт AI-перегенерацій для цього відео — ${REGEN_MAX}. Ручні правки сцен (локація, поза, напис…) — без ліміту`); return false; }
+  async function remix(fn, label, ai) { if (ai && !regenOk()) return; stopPlay(); try { await E().busyRun("montage", async () => { const keep = JSON.stringify({ scenes: L.scenes, mood: L.mood, music: L.music }); L.hist.push(keep); if (L.hist.length > 15) L.hist.shift(); const r = await fn(); if (ai) L.regen = (L.regen || 0) + 1; timeline(L); L.aud = await soundtrack(L); L._say = r; }); screenEdit(L._say || label); } catch (e) { console.error(e); say(e?.message === "limit" ? "Ліміт на сьогодні вичерпано" : "Не вийшло. Спробуй ще раз"); } }
   /* ---------- імітація інтерфейсу соцмереж (лише в перегляді, у збережене відео не йде) ---------- */
   const OVL = { none: "Без інтерфейсу", ig: "Instagram", tt: "TikTok", yt: "Shorts" };
   let OV = "ig"; try { OV = localStorage.getItem("yvCineOvl") || "ig"; } catch (e) {}
@@ -775,7 +809,7 @@ ${SPEC}
     P.querySelector("#csccap").onchange = (e) => { pushH(); const t = e.target.value.trim(); sc.cap = t ? { ...(sc.cap || {}), t: t.slice(0, 60), i: sc.cap?.i ?? sc.a } : null; apply(); };
     P.querySelector("#cschud").onchange = (e) => { if (!sc.hud) return; pushH(); const t = e.target.value.trim(); if (sc.hud.k === "counter") sc.hud.v = t; else sc.hud.t = t.slice(0, 30); apply(); };
     P.querySelector("[data-sp]").onclick = async () => { await freshAudio(); refresh(i, true); };
-    const ai = async (wish) => { stopPlay(); pushH(); try { await E().busyRun("montage", async () => { try { yvBusy?.stage?.("Режисую сцену…"); } catch (e) {} await aiScene(L, i, wish); timeline(L); L.aud = await soundtrack(L); AUD_DIRTY = false; }); refresh(i); sceneSheet(i, refresh); } catch (e) { console.error(e); L.hist.pop(); say(e?.message === "limit" ? "Ліміт на сьогодні вичерпано" : "Не вийшло змінити сцену. Спробуй ще раз"); } };
+    const ai = async (wish) => { if (!regenOk()) return; stopPlay(); pushH(); try { await E().busyRun("montage", async () => { try { yvBusy?.stage?.("Режисую сцену…"); } catch (e) {} await aiScene(L, i, wish); L.regen = (L.regen || 0) + 1; timeline(L); L.aud = await soundtrack(L); AUD_DIRTY = false; }); refresh(i); sceneSheet(i, refresh); } catch (e) { console.error(e); L.hist.pop(); say(e?.message === "limit" ? "Ліміт на сьогодні вичерпано" : "Не вийшло змінити сцену. Спробуй ще раз"); } };
     P.querySelector("#cscgo").onclick = () => { const t = P.querySelector("#cscask").value.trim(); if (!t) return P.querySelector("#cscask").focus(); ai(t); };
     P.querySelector("#cscre").onclick = () => ai(""); }
   const pushH = () => { L.hist.push(JSON.stringify({ scenes: L.scenes, mood: L.mood, music: L.music })); if (L.hist.length > 25) L.hist.shift(); };
@@ -785,6 +819,7 @@ ${SPEC}
       <div class="seek"><input type="range" id="cseek" min="0" max="${L.dur.toFixed(2)}" step="0.01" value="0"><span id="ctime">0:00 / ${fmt(L.dur)}</span><button class="chip" type="button" id="covl" title="Як виглядатиме в соцмережі">📱 ${OVL[OV]}</button></div>
       <div class="scs" id="cscs">${L.scenes.map((sc, i) => `<button type="button" data-si="${i}"><canvas width="72" height="128"></canvas><span>${i + 1} · ${fmt(sc.t0)}</span></button>`).join("")}</div>`;
     F.innerHTML = `<div class="ask"><input class="tx" id="cask" placeholder="Правка всього відео. Напр.: більше нічних сцен"><button class="btn sq" type="button" id="caskgo" aria-label="Змінити">✎</button></div>
+      <p class="cnt" style="margin:-2px 2px 0;text-align:center">AI-перегенерації: ${isOwner() ? "без ліміту (власник)" : `${Math.max(0, regenLeft())} з ${REGEN_MAX}`} · ручні правки сцен — без ліміту</p>
       <div class="tools"><button type="button" id="cre"><i>↻</i>Інший варіант</button><button type="button" id="cmus"><i>♫</i>${escH(L.music === false ? "Без музики" : MOODS[L.mood]?.n || "Музика")}</button><button type="button" id="csub"><i>Aa</i>Субтитри ${L.subs ? "вкл" : "викл"}</button><button type="button" id="cundo" ${L.hist.length ? "" : "disabled"}><i>↶</i>Назад</button></div>
       <div class="row"><button class="btn main" type="button" id="csave">Зберегти відео</button><button class="btn sq" type="button" id="cback" aria-label="До тексту">‹</button></div>`;
     const cv = $(B, "#ccv"), cw = $(B, ".cvw"), stg = $(B, ".stage"), sk = $(B, "#cseek"), tl = $(B, "#ctime"), pb = $(B, "#cpb"), strip = $(B, "#cscs");
@@ -801,12 +836,24 @@ ${SPEC}
     $(B, "#covl").onclick = (e) => { const ks = Object.keys(OVL); OV = ks[(ks.indexOf(OV) + 1) % ks.length]; try { localStorage.setItem("yvCineOvl", OV); } catch (x) {} e.currentTarget.textContent = "📱 " + OVL[OV]; if (!PL) show(+sk.value); };
     const refresh = (i, playIt) => { thumbs(i); const sc = L.scenes[i]; sk.value = sc.t0 + .05; if (playIt) play(sc.t0, sc.t1); else { stopPlay(); show(Math.min(sc.t1 - .05, sc.t0 + .9)); } $(F, "#cundo").disabled = !L.hist.length; };
     strip.querySelectorAll("[data-si]").forEach((b) => b.onclick = () => { const i = +b.dataset.si; refresh(i); sceneSheet(i, refresh); });
-    const ask = $(F, "#cask"); $(F, "#caskgo").onclick = () => { const t = ask.value.trim(); if (!t) { ask.focus(); return; } remix(() => aiEdit(L, t)); track("edit"); }; ask.onkeydown = (e) => { if (e.key === "Enter") $(F, "#caskgo").click(); };
-    $(F, "#cre").onclick = () => remix(async () => { await aiPlan(L, "Зроби ІНШИЙ варіант режисури: інші локації, плани й HUD, ніж зазвичай."); return "Новий варіант"; });
+    const ask = $(F, "#cask"); $(F, "#caskgo").onclick = () => { const t = ask.value.trim(); if (!t) { ask.focus(); return; } remix(() => aiEdit(L, t), "", true); track("edit"); }; ask.onkeydown = (e) => { if (e.key === "Enter") $(F, "#caskgo").click(); };
+    $(F, "#cre").onclick = () => remix(async () => { await aiPlan(L, "Зроби ІНШИЙ варіант режисури: інші локації, плани й HUD, ніж зазвичай."); return "Новий варіант"; }, "", true);
     $(F, "#cmus").onclick = () => { stopPlay(); const P = panel("Музика", `<p class="cnt" style="margin:0 0 8px">Натисни ▶, щоб послухати, і вибери рядок.</p><div id="cml"></div>`);
       P.querySelector("[data-pclose]").onclick = () => { stopPrev(); P.remove(); };
       musicList(P.querySelector("#cml"), L.music === false ? "off" : L.mood, (k) => { stopPrev(); P.remove(); if (k === "off") L.music = false; else { L.music = true; L.mood = k; } remix(async () => `Музика: ${L.music === false ? "вимкнено" : MOODS[L.mood].n}`); }); };
-    $(F, "#csub").onclick = () => { L.subs = !L.subs; screenEdit(L.subs ? "Субтитри увімкнено" : "Субтитри вимкнено"); };
+    $(F, "#csub").onclick = () => { stopPlay(); const S = L.subS = { ...SUBS0, ...(L.subS || {}) };
+      const P = panel("Субтитри", `<div class="tg"><div><b>Показувати</b></div><button class="sw" type="button" id="cps" role="switch" aria-checked="${!!L.subs}"></button></div>
+        <div class="sec"><h4>Стиль</h4><div class="chips">${Object.entries(SUBST).map(([k, n]) => `<button class="chip" type="button" data-ps="${k}" aria-pressed="${S.k === k}">${n}</button>`).join("")}</div></div>
+        <div class="sec"><h4>Розмір <span id="cpsz">${Math.round(S.size * 100)}%</span></h4><input type="range" id="cpsize" min="0.6" max="1.8" step="0.05" value="${S.size}" style="width:100%;accent-color:#f5f5f7"></div>
+        <div class="sec"><h4>Висота: <span id="cpyv"></span></h4><input type="range" id="cpy" min="300" max="1800" step="10" value="${S.y}" style="width:100%;accent-color:#f5f5f7;direction:rtl"><p class="cnt" style="margin:4px 0 0">Ліворуч — нижче, праворуч — вище. Жовта рамка (кнопка 📱) показує безпечну зону.</p></div>`);
+      const tAt = () => { const t = +sk.value; const w = L.words.find((q) => q.s >= t) || L.words[0]; return Math.max(t, w.s + .02); };
+      const yv = () => { P.querySelector("#cpyv").textContent = S.y > 1460 ? "низько — може закрити підпис соцмережі" : S.y < 450 ? "дуже високо" : S.y < 750 ? "вгорі" : S.y < 1100 ? "по центру" : "внизу (безпечно)"; }; yv();
+      const live = () => { if (!L.subs) { L.subs = true; P.querySelector("#cps").setAttribute("aria-checked", true); } show(tAt()); try { localStorage.setItem("yvCineOpt", JSON.stringify({ ...OPT, subS: { ...S } })); OPT.subS = { ...S }; } catch (e) {} };
+      P.querySelector("#cps").onclick = (e) => { L.subs = !L.subs; e.currentTarget.setAttribute("aria-checked", L.subs); show(tAt()); };
+      P.querySelectorAll("[data-ps]").forEach((b) => b.onclick = () => { S.k = b.dataset.ps; P.querySelectorAll("[data-ps]").forEach((o) => o.setAttribute("aria-pressed", o === b)); live(); });
+      P.querySelector("#cpsize").oninput = (e) => { S.size = +e.target.value; P.querySelector("#cpsz").textContent = Math.round(S.size * 100) + "%"; live(); };
+      P.querySelector("#cpy").oninput = (e) => { S.y = +e.target.value; yv(); live(); };
+      P.querySelector("[data-pclose]").onclick = () => { P.remove(); $(F, "#csub").innerHTML = `<i>Aa</i>Субтитри ${L.subs ? "вкл" : "викл"}`; }; };
     $(F, "#cundo").onclick = async () => { const h = L.hist.pop(); if (!h) return; const o = JSON.parse(h); L.scenes = o.scenes; L.mood = o.mood; if (o.music !== undefined) L.music = o.music; await remix(async () => "Скасовано"); L.hist.pop(); };
     $(F, "#cback").onclick = () => { stopPlay(); screenContent(); };
     $(F, "#csave").onclick = async (e) => { const b = e.currentTarget, lbl = b.textContent; b.disabled = true; stopPlay(); await freshAudio();
