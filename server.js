@@ -261,6 +261,7 @@
   SRV.kvSet = async (k, v) => rpc("owner_kv_set", { p_key: k, p_value: v });
   SRV.setPrices = async (o) => rpc("owner_set_prices", { p_studio: o.studio ?? null, p_studio_early: o.early ?? null, p_pack_voice: o.voice ?? null, p_pack_img: o.img ?? null });
   SRV.kbList = async () => (await rpc("kb_list")) || [];
+  SRV.unitCosts = async (days) => rpc("owner_unit_costs", { p_days: days || 30 });
   SRV.myStudio = async () => { try { return SRV.session ? ((await rpc("my_studio")) || []) : []; } catch (e) { return []; } };
   SRV.studioList = async () => (await rpc("studio_list")) || [];
   SRV.studioGrant = async (email, tools) => rpc("studio_grant", { p_email: email, p_tools: tools });
