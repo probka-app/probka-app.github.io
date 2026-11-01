@@ -254,6 +254,9 @@
     if (error) throw new Error(/exceed|too large|413|size/i.test(error.message || "") ? "too_big" : "upload_failed");
     return path;
   };
+  // рекламна вставка (лише власник пише; читання — публічне)
+  SRV.promoPut = async (name, blob, cache) => { const { error } = await sb.storage.from("promo").upload(name, blob, { upsert: true, cacheControl: String(cache || 31536000), contentType: blob.type || "application/octet-stream" }); if (error) throw new Error(error.message || "upload_failed"); return true; };
+  SRV.promoDel = async (names) => { try { await sb.storage.from("promo").remove(names); } catch (e) {} };
   SRV.job = async (kind, input) => { try { return await rpc("job_create", { p_kind: kind, p_input: input }); } catch (x) { throw new Error(x.message); } };
   SRV.jobGet = async (id) => rpc("job_get", { p_id: id });
   SRV.montageLeft = async () => { try { return await rpc("montage_left"); } catch (e) { return null; } };
