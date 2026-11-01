@@ -266,6 +266,8 @@
   SRV.studioList = async () => (await rpc("studio_list")) || [];
   SRV.studioGrant = async (email, tools) => rpc("studio_grant", { p_email: email, p_tools: tools });
   SRV.studioRevoke = async (id) => rpc("studio_revoke", { p_user: id });
+  SRV.cineLeft = async () => rpc("cine_left");
+  SRV.cineTake = async (key) => rpc("cine_take", { p_key: key });
   SRV.kbAdd = async (items, status) => rpc("kb_add", { p_items: items, p_status: status || "pending" });
   SRV.kbFmt = async (id, fmt) => rpc("kb_fmt", { p_id: id, p_fmt: fmt });
   SRV.kbMove = async (id, module) => rpc("kb_move", { p_id: id, p_module: module });

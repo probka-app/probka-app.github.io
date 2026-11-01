@@ -718,7 +718,7 @@ ${SPEC}
         else { stage(src.tts ? "Озвучую текст…" : "Готую запис…"); y = src.tts ? await ttsAudio(src.tts.text, src.tts.voice) : await E().decode(src.buf); if (y.length / E().SR > MAX) { y = y.subarray(0, Math.round(MAX * E().SR)).slice(); say("Для Reels — до 1,5 хв. Беру початок"); } }
         if (!words) { stage("Розпізнаю слова…"); words = await sttWords(y); }
         if (words.length < 3) throw new Error("nowords");
-        L = { voice: y, words, dur: Math.max(y.length / E().SR, words[words.length - 1].e + 1.2), silent: !!src.silent, subs: OPT.subs, subS: { ...SUBS0, ...(OPT.subS || {}) }, places: (OPT.places || []).filter((k) => PLACES[k]), regen: 0, music: OPT.music, mood: OPT.mood === "auto" ? "curious" : OPT.mood, hero: { col: OPT.col, acc: OPT.acc }, hist: [], src };
+        L = { voice: y, words, dur: Math.max(y.length / E().SR, words[words.length - 1].e + 1.2), silent: !!src.silent, subs: OPT.subs, key: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), subS: { ...SUBS0, ...(OPT.subS || {}) }, places: (OPT.places || []).filter((k) => PLACES[k]), regen: 0, music: OPT.music, mood: OPT.mood === "auto" ? "curious" : OPT.mood, hero: { col: OPT.col, acc: OPT.acc }, hist: [], src };
         stage("Режисую сцени…"); await aiPlan(L); if (OPT.mood !== "auto" && OPT.music) L.mood = OPT.mood; timeline(L);
         stage("Пишу музику й звуки…"); L.aud = await soundtrack(L); });
       track("ready", { v: `${L.scenes.length}sc/${Math.round(L.dur)}s/${L.mood}${L._auto ? "/auto" : ""}` }); screenEdit(L._auto ? `AI-режисер не відповів (${L._planErr || "помилка"}) — сцени розставлено автоматично. Можна натиснути «Інший варіант»` : "Тапни ▶, щоб подивитись. Правки — кнопкою ✎");
@@ -814,6 +814,28 @@ ${SPEC}
     P.querySelector("#cscre").onclick = () => ai(""); }
   const pushH = () => { L.hist.push(JSON.stringify({ scenes: L.scenes, mood: L.mood, music: L.music })); if (L.hist.length > 25) L.hist.shift(); };
 
+  /* ---------- плани збережень: 10 / 20 / 50 відео на 30 днів + докупівля ---------- */
+  const PLANS = [["cine_10", "10 відео", "на 30 днів"], ["cine_20", "20 відео", "на 30 днів · вигідніше"], ["cine_50", "50 відео", "на 30 днів · найвигідніше"]], PACKS = [["cine_pack5", "+5 відео"], ["cine_pack10", "+10 відео"]];
+  const grn = (k) => `${Math.round(k / 100)} грн`;
+  function payFor(product, price, title, note, done) { const root = UI.root; if (typeof SRV?.pay !== "function") return say("Оплата недоступна");
+    root.style.display = "none"; SRV.pay(() => { root.style.display = ""; done?.(); }, { product, price: price / 100, title, note, once: true });
+    const open = () => { const ov = document.getElementById("ov"); return ov && !ov.hidden; };
+    const iv = setInterval(() => { if (root.style.display !== "none") return clearInterval(iv); if (!open()) setTimeout(() => { if (!open() && root.style.display === "none") { root.style.display = ""; clearInterval(iv); } }, 700); }, 1000); }
+  async function buyPanel(retry) { let info = null; try { info = await SRV.cineLeft(); } catch (e) {}
+    const pr = info?.prices || { cine_10: 39900, cine_20: 69900, cine_50: 129000, cine_pack5: 19900, cine_pack10: 34900 }, hasPlan = (info?.plan_left || 0) > 0 || !!info?.plan_until;
+    const per = (k, n) => `${Math.round(pr[k] / 100 / n)} грн за відео`;
+    const P = panel("Збереження відео", `<p class="cnt" style="margin:0 0 10px;color:#e4e4e7">${hasPlan ? `Ліміт плану вичерпано. Докупи збереження — або візьми більший план.` : `Пробне збереження використано. Обери план — рахуються лише збереження готових відео, чернетки й правки безкоштовні.`}</p>
+      <div class="vopt">${PLANS.map(([k, n, d], i) => `<button type="button" data-buy="${k}"><b>${n} — ${grn(pr[k])}</b><span>${d} · ${per(k, [10, 20, 50][i])}</span></button>`).join("")}</div>
+      ${hasPlan ? `<div class="sec"><h4>Докупити понад ліміт</h4><div class="vopt">${PACKS.map(([k, n], i) => `<button type="button" data-buy="${k}"><b>${n} — ${grn(pr[k])}</b><span>${per(k, [5, 10][i])} · діють, поки є план</span></button>`).join("")}</div></div>` : ""}
+      <p class="cnt" style="margin-top:10px">30 днів від оплати, без автосписань. Повторне збереження того самого відео — безкоштовно.</p>`);
+    P.querySelector("[data-pclose]").onclick = () => P.remove();
+    P.querySelectorAll("[data-buy]").forEach((b) => b.onclick = () => { const k = b.dataset.buy, isPlan = k.startsWith("cine_") && !k.includes("pack"), nm = (PLANS.find((q) => q[0] === k) || PACKS.find((q) => q[0] === k))[1];
+      track("buy_open", { v: k }); payFor(k, pr[k], `Кіно-анімація: ${nm}`, isPlan ? "Збереження готових відео на 30 днів від оплати. Без автосписань." : "Докупівля понад ліміт плану.", () => { P.remove(); say("Оплачено ✓ Зберігаю відео"); retry?.(); }); }); }
+  // перевірка ліміту перед збереженням: true — можна зберігати
+  async function canSave() { if (isOwner()) return true; if (!window.SRV?.session) { try { SRV.login("Щоб зберегти відео, увійди або зареєструйся."); } catch (e) {} return false; }
+    try { const r = await SRV.cineTake(L.key); if (r?.ok) { if (r.source === "trial") say("Це твоє пробне збереження"); return true; } return "buy"; }
+    catch (e) { if (/cine_take|does not exist|function/.test(e?.message || "")) { console.warn("cine_take not deployed", e); return true; } say("Не вдалося перевірити ліміт. Спробуй ще раз"); return false; } }
+
   function screenEdit(msg) { stopPlay(); stopPrev(); const d = shell(), B = $(d, ".cb"), F = $(d, ".cf");
     B.innerHTML = `${msg ? `<div class="msg">${escH(msg)}</div>` : ""}<div class="stage"><div class="cvw"><canvas width="540" height="960" id="ccv"></canvas><button class="pb" type="button" id="cpb" aria-label="Відтворити"><i>▶</i></button></div></div>
       <div class="seek"><input type="range" id="cseek" min="0" max="${L.dur.toFixed(2)}" step="0.01" value="0"><span id="ctime">0:00 / ${fmt(L.dur)}</span><button class="chip" type="button" id="covl" title="Як виглядатиме в соцмережі">📱 ${OVL[OV]}</button></div>
@@ -856,7 +878,8 @@ ${SPEC}
       P.querySelector("[data-pclose]").onclick = () => { P.remove(); $(F, "#csub").innerHTML = `<i>Aa</i>Субтитри ${L.subs ? "вкл" : "викл"}`; }; };
     $(F, "#cundo").onclick = async () => { const h = L.hist.pop(); if (!h) return; const o = JSON.parse(h); L.scenes = o.scenes; L.mood = o.mood; if (o.music !== undefined) L.music = o.music; await remix(async () => "Скасовано"); L.hist.pop(); };
     $(F, "#cback").onclick = () => { stopPlay(); screenContent(); };
-    $(F, "#csave").onclick = async (e) => { const b = e.currentTarget, lbl = b.textContent; b.disabled = true; stopPlay(); await freshAudio();
+    $(F, "#csave").onclick = async (e) => { const b = e.currentTarget, lbl = b.textContent; b.disabled = true; stopPlay();
+      const ok = await canSave(); if (ok !== true) { b.disabled = false; if (ok === "buy") buyPanel(() => $(F, "#csave")?.click()); return; } await freshAudio();
       try { const r = await exportVideo((p) => b.textContent = `Зберігаю… ${Math.round(p * 100)}%`); const name = `yuvi-kino-${Date.now()}.${r.ext}`, f = new File([r.blob], name, { type: r.blob.type });
         if (navigator.canShare?.({ files: [f] })) { try { await navigator.share({ files: [f] }); } catch (x) {} } else { const a = document.createElement("a"); a.href = URL.createObjectURL(r.blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 6e4); }
         track("export", { v: `${Math.round(L.dur)}s` }); } catch (x) { console.error(x); say(x?.message === "noenc" ? "Цей браузер не вміє зберігати відео — спробуй Chrome або Safari 17+" : "Не вдалося зберегти"); }
