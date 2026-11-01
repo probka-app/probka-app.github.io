@@ -898,7 +898,7 @@ ${SPEC}
   const saveDraft = () => { try { sessionStorage.setItem("yvCine", JSON.stringify(DRAFT)); } catch (e) {} };
   const UI = { root: null }; let DEMO = 0;
   function shell() { if (!document.getElementById("yvcncss")) { const st = document.createElement("style"); st.id = "yvcncss"; st.textContent = CSS; document.head.appendChild(st); }
-    UI.root?.remove(); const d = document.createElement("div"); d.id = "yvcn"; d.innerHTML = `<div class="ch"><b>Кіно-анімація<span class="tag">ТЕСТ</span></b><button class="cx" type="button" id="cclose" aria-label="Закрити">×</button></div><div class="cb"></div><div class="cf"></div>`;
+    UI.root?.remove(); const d = document.createElement("div"); d.id = "yvcn"; d.innerHTML = `<div class="ch"><b>Анімаційні відео${isOwner() ? `<span class="tag">ТЕСТ</span>` : ""}</b><button class="cx" type="button" id="cclose" aria-label="Закрити">×</button></div><div class="cb"></div><div class="cf"></div>`;
     document.body.appendChild(d); UI.root = d; $(d, "#cclose").onclick = close; return d; }
   function close() { stopPlay(); cancelAnimationFrame(DEMO); UI.root?.remove(); UI.root = null; }
   const DEMOPLAN = () => ({ dur: 9, mood: "curious", subs: false, silent: true, hero: { col: OPT.col, acc: OPT.acc }, words: Array.from({ length: 30 }, (_, i) => ({ w: "", s: .3 + i * .3, e: .55 + i * .3 })), scenes: [
