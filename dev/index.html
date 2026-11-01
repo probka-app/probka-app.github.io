@@ -1118,7 +1118,7 @@ body.pub .fmts{margin-top:14px}body.pub .fmt .fs,body.pub .fmt .fopen,body.pub .
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="YuVi DEV">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>window.YV_DEV=true;window.YV_BUILD="02.11 00:39";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
+<script>window.YV_DEV=true;window.YV_BUILD="02.11 00:43";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="server.js?v=10428086"></script>
@@ -4780,19 +4780,28 @@ function uiSnd(k){ if(!sndOn()) return; try{ ac(); const t=AC.currentTime+.01;
 
 /* ===== Фонова музика сайту: тиха, спокійна, своя (синтезується в браузері). Плавно стихає, коли грає відео/аудіо або йде запис, і плавно повертається ===== */
 (function(){
-  const VOL=.07, LSK="yvMusic"; let MC=null, G=null, src=null, active=0, started=false, wantOn=true;
+  const VOL=.05, LSK="yvMusic"; let MC=null, G=null, src=null, active=0, started=false, wantOn=true;
   const on=()=>sndOn()&&LS.get(LSK)!==false;
-  function render(){ const SR=44100, LEN=32, oc=new OfflineAudioContext(2,SR*LEN,SR), N=m=>440*Math.pow(2,(m-69)/12);
-    const bus=oc.createGain(); bus.gain.value=1; const lp=oc.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=1500; bus.connect(lp);
-    const ir=oc.createBuffer(2,SR*3,SR); for(let c=0;c<2;c++){ const d=ir.getChannelData(c); for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,2.6); }
-    const cv=oc.createConvolver(); cv.buffer=ir; const wet=oc.createGain(); wet.gain.value=.55; lp.connect(oc.destination); lp.connect(cv); cv.connect(wet); wet.connect(oc.destination);
-    const CH=[[50,57,62,64,66],[47,54,59,62,66],[43,50,55,59,61],[45,52,57,59,64]], bar=8;
-    const pad=(m,t,dur,v,pan)=>{ [t,t-LEN].forEach(st=>{ if(st+dur<0) return; [-5,5].forEach(dt=>{ const o=oc.createOscillator(), g=oc.createGain(), pn=oc.createStereoPanner(); o.type=dt<0?"triangle":"sine"; o.frequency.value=N(m); o.detune.value=dt;
-      g.gain.setValueAtTime(0,Math.max(0,st)); g.gain.linearRampToValueAtTime(v,Math.max(0,st)+dur*.4); g.gain.linearRampToValueAtTime(0,st+dur); pn.pan.value=pan; o.connect(g).connect(pn).connect(bus); o.start(Math.max(0,st)); o.stop(st+dur+.1); }); }); };
-    const bellN=(m,t,v)=>{ const o=oc.createOscillator(), o2=oc.createOscillator(), g=oc.createGain(), pn=oc.createStereoPanner(); o.frequency.value=N(m); o2.frequency.value=N(m)*2.005; const g2=oc.createGain(); g2.gain.value=.25; o2.connect(g2).connect(g);
-      g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+3.2); pn.pan.value=(Math.random()-.5)*.8; o.connect(g).connect(pn).connect(bus); o.start(t); o2.start(t); o.stop(t+3.3); o2.stop(t+3.3); };
-    CH.forEach((ch,i)=>{ const t=i*bar; pad(ch[0]-12,t,bar*1.35,.05,0); ch.slice(1).forEach((m,k)=>pad(m,t,bar*1.35,.022,(k-1.5)*.35));
-      const pent=[ch[1]+12,ch[2]+12,ch[3]+12,ch[4]+12,ch[2]+24]; for(let k=0;k<3;k++){ const tt=t+1+k*2.3+Math.random()*.8; if(tt<LEN-3.3) bellN(pent[Math.floor(Math.random()*pent.length)],tt,.03+Math.random()*.02); } });
+  // «магічна» петля: мрійливі лідійські акорди, мерехтливі пади, музична скринька, іскорки вгорі й довгий простір
+  function render(){ const SR=44100, LEN=40, oc=new OfflineAudioContext(2,SR*LEN,SR), N=m=>440*Math.pow(2,(m-69)/12), R=(()=>{ let z=7; return ()=>(z=(z*16807)%2147483647)/2147483647; })();
+    const bus=oc.createGain(); const lp=oc.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=2400; lp.Q.value=.3; bus.connect(lp);
+    const ir=oc.createBuffer(2,SR*5,SR); for(let c=0;c<2;c++){ const d=ir.getChannelData(c); for(let i=0;i<d.length;i++) d[i]=(R()*2-1)*Math.pow(1-i/d.length,3.2); }
+    const cv=oc.createConvolver(); cv.buffer=ir; const wet=oc.createGain(); wet.gain.value=.75; const dry=oc.createGain(); dry.gain.value=.55; lp.connect(dry).connect(oc.destination); lp.connect(cv); cv.connect(wet); wet.connect(oc.destination);
+    // окрема шина для дзвіночків — з ехом зліва-справа
+    const bb=oc.createGain(); bb.connect(bus); const dl=oc.createDelay(1), fb=oc.createGain(), dg=oc.createGain(), dp=oc.createStereoPanner(); dl.delayTime.value=.42; fb.gain.value=.38; dg.gain.value=.45; dp.pan.value=.6; bb.connect(dl); dl.connect(fb).connect(dl); dl.connect(dg).connect(dp).connect(bus);
+    const CH=[[50,57,64,66,73],[47,54,62,64,69],[43,50,57,61,66],[45,52,59,61,64]], bar=10;
+    const pad=(m,t,dur,v,pan,shim)=>{ [t,t-LEN].forEach(st=>{ if(st+dur<0) return; const s0=Math.max(0,st); [-6,0,6].forEach(dt=>{ const o=oc.createOscillator(), g=oc.createGain(), pn=oc.createStereoPanner(); o.type=dt?"sine":"triangle"; o.frequency.value=N(m); o.detune.value=dt;
+      const vib=oc.createOscillator(), vg=oc.createGain(); vib.frequency.value=.18+R()*.2; vg.gain.value=4; vib.connect(vg).connect(o.detune);
+      g.gain.setValueAtTime(0,s0); g.gain.linearRampToValueAtTime(v*(dt?1:.7),s0+dur*.45); g.gain.linearRampToValueAtTime(0,st+dur); pn.pan.value=pan+dt*.04; o.connect(g).connect(pn).connect(bus); o.start(s0); vib.start(s0); o.stop(st+dur+.1); vib.stop(st+dur+.1); });
+      if(shim){ const o=oc.createOscillator(), g=oc.createGain(), tr=oc.createOscillator(), tg=oc.createGain(); o.type="sine"; o.frequency.value=N(m+24); tr.frequency.value=5.5; tg.gain.value=v*.25; tr.connect(tg).connect(g.gain); g.gain.setValueAtTime(0,s0); g.gain.linearRampToValueAtTime(v*.25,s0+dur*.5); g.gain.linearRampToValueAtTime(0,st+dur); o.connect(g).connect(bus); o.start(s0); tr.start(s0); o.stop(st+dur+.1); tr.stop(st+dur+.1); } }); };
+    const box=(m,t,v,pan)=>{ [t,t-LEN].forEach(st=>{ if(st<0||st>LEN) return; const o=oc.createOscillator(), o2=oc.createOscillator(), o3=oc.createOscillator(), g=oc.createGain(), g2=oc.createGain(), g3=oc.createGain(), pn=oc.createStereoPanner();
+      o.frequency.value=N(m); o2.frequency.value=N(m)*3.01; o3.frequency.value=N(m)*5.98; g2.gain.value=.18; g3.gain.value=.06; o2.connect(g2).connect(g); o3.connect(g3).connect(g);
+      g.gain.setValueAtTime(0,st); g.gain.linearRampToValueAtTime(v,st+.006); g.gain.exponentialRampToValueAtTime(.0001,st+2.6); pn.pan.value=pan; o.connect(g).connect(pn).connect(bb); [o,o2,o3].forEach(q=>{ q.start(st); q.stop(st+2.7); }); }); };
+    CH.forEach((ch,i)=>{ const t=i*bar; pad(ch[0]-12,t,bar*1.4,.036,0,false); ch.slice(1).forEach((m,k)=>pad(m,t,bar*1.4,.014,(k-1.5)*.4,k===2));
+      // музична скринька: спокійне арпеджіо з легкою «живою» неточністю
+      const ar=[ch[1]+12,ch[2]+12,ch[3]+12,ch[4]+12,ch[3]+12,ch[2]+12]; for(let k=0;k<6;k++) box(ar[k],t+1.2+k*1.3+R()*.12,.016+R()*.008,(k%2?.35:-.35));
+      // іскорки — швидкий злет угору, ледь чутно
+      const sp=t+bar*.72+R()*.8; [0,1,2,3,4,5].forEach(k=>box(ch[(k%4)+1]+36,sp+k*.055,.0045,(k/5-.5)*1.2)); });
     return oc.startRendering(); }
   async function start(){ if(started||!on()) return; started=true;
     try{ MC=new (window.AudioContext||window.webkitAudioContext)(); MC.__music=1; G=MC.createGain(); G.gain.value=0; G.connect(MC.destination); const buf=await render(); const b=MC.createBuffer(2,buf.length,MC.sampleRate===buf.sampleRate?buf.sampleRate:buf.sampleRate);
