@@ -1102,7 +1102,7 @@ body{background:radial-gradient(900px 640px at 8% -12%,var(--yv-glow-1),transpar
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="YuVi">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>window.YV_DEV=false;window.YV_BUILD="01.11 20:59";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
+<script>window.YV_DEV=false;window.YV_BUILD="01.11 21:29";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="server.js?v=2fcf07c8"></script>
@@ -3842,9 +3842,12 @@ async function openKB(O={}){
         <div class="row" style="gap:8px;margin-top:10px"><button class="big" type="button" id="kbsave" style="margin:0;flex:1">Зберегти вибране</button><button class="chip" type="button" id="kbsavep">На перевірку</button></div>`;
       res.querySelectorAll("[data-kmv]").forEach(s=>s.onchange=()=>{ found[+s.dataset.kmv].module=s.value; });
       res.querySelectorAll("[data-kfv]").forEach(s=>s.onchange=()=>{ found[+s.dataset.kfv].fmt=s.value; });
-      const save=async(status)=>{ const pick=found.filter((_,i)=>res.querySelector(`[data-kok="${i}"]`)?.checked); if(!pick.length) return toast("Нічого не вибрано");
-        try{ for(let i=0;i<pick.length;i+=150) await SRV.kbAdd(pick.slice(i,i+150),status); toast(`Збережено ${pick.length}`); found=[]; files=[]; imgs=[]; box.querySelector("#kbtx").value=""; showFiles(); res.innerHTML=""; st.textContent="";
-          setTab("base"); }catch(x){ toast(/function|does not exist|kb_add/.test(x.message||"")?"Спершу запусти в Supabase крок «База знань папками»":"Не вдалося зберегти"); } };
+      let saving=false;
+      const save=async(status)=>{ if(saving) return; const pick=found.filter((_,i)=>res.querySelector(`[data-kok="${i}"]`)?.checked); if(!pick.length) return toast("Нічого не вибрано");
+        const sb=res.querySelector("#kbsave"), sp=res.querySelector("#kbsavep"), lb=sb.textContent; saving=true; sb.disabled=sp.disabled=true; sb.textContent="Зберігаю…";
+        const done=()=>{ saving=false; if(sb.isConnected){ sb.disabled=sp.disabled=false; sb.textContent=lb; } };
+        try{ for(let i=0;i<pick.length;i+=150){ sb.textContent=`Зберігаю… ${Math.min(pick.length,i+150)} з ${pick.length}`; await Promise.race([SRV.kbAdd(pick.slice(i,i+150),status),new Promise((_,no)=>setTimeout(()=>no(new Error("timeout")),30000))]); } done(); toast(`Збережено ${pick.length}`); found=[]; files=[]; imgs=[]; box.querySelector("#kbtx").value=""; showFiles(); res.innerHTML=""; st.textContent="";
+          setTab("base"); }catch(x){ done(); console.warn("kb save",x); toast(/function|does not exist|kb_add/.test(x.message||"")?"Спершу запусти в Supabase крок «База знань папками»":x.message==="timeout"?"Сервер довго не відповідає. Перевір вкладку «Папки» — можливо, вже збереглось":/forbidden/.test(x.message||"")?"Зберігати знання може лише власник — увійди в свій акаунт":"Не вдалося зберегти: "+String(x.message||"").slice(0,80)); } };
       res.querySelector("#kbsave").onclick=()=>save("confirmed"); res.querySelector("#kbsavep").onclick=()=>save("pending"); };
     box.querySelector("#kbgo").onclick=async e=>{ const b=e.currentTarget, src=box.querySelector("#kbsrc").value.trim(); let text=box.querySelector("#kbtx").value.trim();
       if(!text&&!files.length&&!imgs.length&&!vids.length) return toast("Встав текст або додай файл"); b.disabled=true; found=[]; meas=[]; res.innerHTML="";
