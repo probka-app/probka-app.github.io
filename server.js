@@ -267,7 +267,10 @@
   SRV.studioGrant = async (email, tools) => rpc("studio_grant", { p_email: email, p_tools: tools });
   SRV.studioRevoke = async (id) => rpc("studio_revoke", { p_user: id });
   SRV.cineLeft = async () => rpc("cine_left");
-  SRV.cineTake = async (key) => rpc("cine_take", { p_key: key });
+  SRV.cineTake = async (key, secs) => rpc("cine_take", { p_key: key, p_secs: Math.max(1, Math.ceil(+secs || 1)) });
+  SRV.features = async () => rpc("my_features");
+  SRV.soundUse = async (secs) => rpc("sound_use", { p_secs: Math.max(1, Math.ceil(+secs || 1)) });
+  SRV.setFixed = async (uah) => rpc("owner_set_fixed", { p_uah: +uah || 0 });
   SRV.kbAdd = async (items, status) => rpc("kb_add", { p_items: items, p_status: status || "pending" });
   SRV.kbFmt = async (id, fmt) => rpc("kb_fmt", { p_id: id, p_fmt: fmt });
   SRV.kbMove = async (id, module) => rpc("kb_move", { p_id: id, p_module: module });

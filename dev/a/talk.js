@@ -564,11 +564,16 @@ ${SHEET_CSS.replace(/^\./gm, "#yvtalk .")}
 
   let ONDONE = null;
   async function done() {
-    stop(); const FINAL = await fxOut(); const text = TOK.filter((t) => !t.cut).map((t) => SRC[t.src].words[t.i].w).join(" ").replace(/\s+([,.!?…:;])/g, "$1");
+    stop(); const FINAL = await fxOut();
+    if (window.yvSoundUse && !(await window.yvSoundUse(FINAL.length / SR))) { say("Хвилини «Студійного звуку» закінчились"); window.yvFeatureSheet?.("sound", null, "#yvtalk"); return; }
+    const text = TOK.filter((t) => !t.cut).map((t) => SRC[t.src].words[t.i].w).join(" ").replace(/\s+([,.!?…:;])/g, "$1");
     const sentences = text.replace(/([.!?…])\s+/g, "$1\n").split("\n").map((l) => l.charAt(0).toUpperCase() + l.slice(1)).join("\n");
     track("done", { v: FX.k }); const cb = ONDONE; close(); cb?.({ text: sentences, wav: wav(FINAL), seconds: FINAL.length / SR });
   }
 
-  window.YVTalk = { open(opts = {}) { ONDONE = opts.onDone || null; TARGET = opts.target ?? TARGET; screenRecord(); track("open"); },
+  window.YVTalk = { async open(opts = {}) { const go = () => { ONDONE = opts.onDone || null; TARGET = opts.target ?? TARGET; screenRecord(); track("open"); };
+      // «Студійний звук» — окремий продукт або доповнення до плану
+      if (window.yvFeatOk && !(await window.yvFeatOk("sound").catch(() => true))) { track("paywall"); window.yvFeatureSheet?.("sound", go); opts.onCancel?.(); return; }
+      go(); },
     _t: { sheet, offerSave, getMic, SHEET_CSS, IC, SR, decode, resample, wav, b64, snap, envelope, record, busyRun, FILLERS, norm, bandProfile, applyFxTo: async (x, fx) => { const keep = FX; FX = fx; try { return await applyFx(x); } finally { FX = keep; } }, FXP, getFx: () => FX, denoise, levelPhrases, voiceChain, master, processTake, render: () => render(), set: (s, t) => { SRC = s; TOK = t; }, out: () => OUT, map: () => MAP, aiClean, aiEdit, voiceEdit: (b) => voiceEdit(b), tok: () => TOK, screenEdit: (m) => screenEdit(m), setOrig: (o) => ORIG = o } };
 })();

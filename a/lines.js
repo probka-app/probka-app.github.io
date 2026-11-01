@@ -672,7 +672,7 @@ ${want.ins ? `ins — ${nI} вставок-ФОТО до наочних слів
     for (const sn of String(text).match(/[^.!?…]+[.!?…]*\s*/g) || [text]) { if ((cur + sn).length > 2400 && cur) { parts.push(cur); cur = ""; } cur += sn; } cur.trim() && parts.push(cur);
     const out = []; for (let i = 0; i < parts.length; i++) { onStage?.(i, parts.length); const r = await SRV.tts({ text: parts[i].trim(), voice, quiet: true }); out.push(await E().decode(b64Buf(r.audio))); }
     const gap = Math.round(.3 * E().SR), y = new Float32Array(out.reduce((a, p) => a + p.length, 0) + gap * Math.max(0, out.length - 1)); let o = 0; out.forEach((p) => { y.set(p, o); o += p.length + gap; }); return y; }
-  const TTS_ERR = { no_quota: "Хвилини AI-озвучки закінчились", no_key: "AI-озвучка тимчасово недоступна", no_clone: "Спершу створи свій голос", bad_voice: "Цей голос недоступний — вибери інший", busy: "Сервіс озвучки перевантажений, спробуй за хвилину", empty_text: "Немає тексту для озвучки" };
+  const TTS_ERR = { free_limit: "Безкоштовна озвучка готовими голосами на сьогодні закінчилась (30 хв на добу)", no_clone_quota: "Озвучка твоїм голосом — окрема функція. Підключи її", no_quota: "Хвилини AI-озвучки закінчились", no_key: "AI-озвучка тимчасово недоступна", no_clone: "Спершу створи свій голос", bad_voice: "Цей голос недоступний — вибери інший", busy: "Сервіс озвучки перевантажений, спробуй за хвилину", empty_text: "Немає тексту для озвучки" };
 
   /* ---------- програвач ---------- */
   let PL = null;
@@ -933,7 +933,7 @@ ${""}`;
         if (OPT.ins && L.ins?.length) { stage("Підбираю фото…"); await loadIns(); } });
       prep(); track("ready", { v: `${OPT.voice}|${L.wide ? "wide:" + L.world.items.length : L.scenes.length}sc/${Math.round(TOT)}s` });
       screenEdit(LIBE || "Тапни ▶, щоб подивитись. Правки — голосом або кнопкою ✎");
-    } catch (e) { console.error(e); const m = e?.message; say(TTS_ERR[m] || (m === "nowords" ? "Не почув слів — спробуй ще раз" : m === "limit" ? "Ліміт на сьогодні вичерпано" : m === "login" ? "Увійди в акаунт" : "Не вийшло зібрати анімацію. Спробуй ще раз")); L = null; screenContent(); }
+    } catch (e) { console.error(e); const m = e?.message; if (m === "no_clone_quota") setTimeout(() => window.yvFeatureSheet?.("clone"), 300); say(TTS_ERR[m] || (m === "nowords" ? "Не почув слів — спробуй ще раз" : m === "limit" ? "Ліміт на сьогодні вичерпано" : m === "login" ? "Увійди в акаунт" : "Не вийшло зібрати анімацію. Спробуй ще раз")); L = null; screenContent(); }
   }
   // шторка «Стиль»: фон, лінії, заголовок, плашки, субтитри, шрифт — лінії й рухи не змінюються
   function styleSheet(B, still, dirty) {

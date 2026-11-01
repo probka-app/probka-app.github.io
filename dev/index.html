@@ -1103,10 +1103,10 @@ body{background:radial-gradient(900px 640px at 8% -12%,var(--yv-glow-1),transpar
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="YuVi DEV">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>window.YV_DEV=true;window.YV_BUILD="01.11 22:18";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
+<script>window.YV_DEV=true;window.YV_BUILD="01.11 22:41";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="server.js?v=0e196457"></script>
+<script src="server.js?v=4ebb5c7b"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.min.js"></script>
 <script>
@@ -1875,7 +1875,7 @@ function stAssemble(el){ const ER=document.getElementById("reader")||el;
       pickSheet({title:titles[id],items,cur:S.mon[id],play:k=>{ const f=k==="auto"?["Поява плашки",0]:sfxParse(k); if(f) playSfx(f[0],f[1]); return null; },onPick:k=>{ S.mon[id]=k; setPv(id,soundName(k)); persist(); refresh(); }}); } }));
   Object.values(FONTS).forEach(f=>fontReady(f));
   group("tlpos",v=>S.tlPos=v); group("tlpct",v=>S.tlPct=v==="1"); group("subpos",v=>S.mon.subs=v); group("subsize",v=>S.mon.subSize=v); group("music",v=>S.mon.music=v);
-  ER.querySelectorAll("[data-mon]").forEach(b=>b.addEventListener("click",async()=>{ const k=b.dataset.mon; S.mon[k]=!S.mon[k]; b.setAttribute("aria-pressed",S.mon[k]);
+  ER.querySelectorAll("[data-mon]").forEach(b=>b.addEventListener("click",async()=>{ const k=b.dataset.mon; if(k==="enhance"&&!S.mon.enhance&&!(await window.yvFeatOk("sound"))){ window.yvFeatureSheet("sound",()=>b.click()); return; } S.mon[k]=!S.mon[k]; b.setAttribute("aria-pressed",S.mon[k]);
     if((k==="cutPauses"||k==="fitVoice")&&VOICE_RAW){ stopPlay(); ER.querySelector("#vfit").textContent="Обробляю голос…"; await new Promise(r=>setTimeout(r,30)); processVoice(); distribute(VOICE.duration); rows(); show(0); ER.querySelector("#vfit").textContent=voiceInfoText(); vi.textContent=`${VOICE_NAME} · ${VOICE.duration.toFixed(1)} с`; }
     persist(); refresh(); }));
   ER.querySelectorAll("[data-grid]").forEach(b=>b.addEventListener("click",()=>{ const on=b.dataset.grid!=="0"; if(ST.bg==="grid"){ ST.bg="white"; } ST.grid=on; ST.gridWave=b.dataset.grid==="2"; persistStyle(); ER.querySelectorAll("[data-grid]").forEach(o=>o.setAttribute("aria-pressed",o===b)); ER.querySelectorAll('[data-sk="bg"]').forEach(o=>o.setAttribute("aria-pressed",o.dataset.sv===ST.bg)); show(pos); }));
@@ -2559,7 +2559,8 @@ const LDOCS={
   <h4>3. Ціна і оплата</h4><ol>
   <li>Тарифи: «Безкоштовно» — 0 грн; «Базовий» — 399 грн за 30 днів доступу; «Студія» — ціна, зазначена на сайті на момент оплати (для перших 100 користувачів діє ціна раннього доступу, яка зберігається, поки Користувач продовжує тариф без перерви). Склад тарифів і ліміти AI-генерацій (картинки, хвилини озвучки) зазначені на сайті в розділі «Тарифи і ліміти». Виконавець не є платником ПДВ.</li>
   <li>Пакети (додаткові хвилини AI-озвучки, AI-картинки тощо) — разова оплата за ціною, зазначеною на сайті. Пакет не має строку дії і не продовжується автоматично.</li>
-  <li>«Кіно-анімація» — плани на збереження готових відео на 30 днів: 10 відео — 399 грн, 20 відео — 699 грн, 50 відео — 1290 грн; докупівля понад ліміт за наявності активного плану: +5 відео — 199 грн, +10 відео — 349 грн (діє, поки діє план, і ще 30 днів). Рахується лише збереження готового відео; повторне збереження того самого відео не списується. Кожному зареєстрованому Користувачу надається одне пробне збереження. Ціни на момент оплати — зазначені на сайті.</li>
+  <li>«Кіно-анімація» — плани на 30 днів у секундах готового відео: «Старт» — 900 с — 399 грн, «Про» — 1 800 с — 699 грн, «Макс» — 4 500 с — 1 290 грн; докупівля понад ліміт за наявності активного плану: +450 с — 199 грн, +900 с — 349 грн (діє, поки діє план, і ще 30 днів). Секунди списуються лише при збереженні готового відео — на його тривалість (округлено вгору до секунди); повторне збереження того самого відео, чернетки, перегляди й правки (зокрема до 5 AI-покращень на одне відео) не списуються. Кожному зареєстрованому Користувачу надається 60 пробних секунд. Озвучка готовими голосами студії (до 30 хв на добу) і власним записом — без додаткової оплати.</li>
+  <li>«Озвучка голосом людини» (AI-копія власного голосу Користувача) — окремо 299 грн за 30 днів (15 хв озвучки) або доповненням до активного тарифу чи плану 199 грн за 30 днів (25 хв). «Студійний звук» (нарізка пауз і слів-паразитів, монтаж, покращення звучання, тембр) — окремо 399 грн за 30 днів або доповненням 249 грн за 30 днів (60 хв обробки). Доповнення доступні лише за наявності активного тарифу чи плану і працюють тільки в Інструментах. Невикористані хвилини не переносяться.</li>
   <li>Оплата — банківською карткою, Apple Pay, Google Pay через платіжний сервіс банку. Дані картки Виконавець не отримує і не зберігає.</li>
   <li>Доступ діє 30 календарних днів з моменту оплати. <b>Автоматичних списань немає</b>: щоб продовжити, Користувач сам оплачує наступні 30 днів, які додаються до поточного строку.</li>
   <li>Доступ надається онлайн автоматично одразу після успішної оплати. Після оплати Користувач отримує електронний чек.</li>
@@ -2589,11 +2590,11 @@ const LDOCS={
   <li>Партнер — зареєстрований користувач віком від 18 років. Винагорода нараховується з моменту реєстрації; щоб вивести її, Партнер вказує реквізити для виплат і приймає ці Правила. Участь безкоштовна; купувати підписку для участі не потрібно.</li>
   <li>Партнер рекомендує Інструменти за своїм персональним посиланням. Користувач, який зареєструвався за цим посиланням, закріплюється за Партнером (далі — Приведений клієнт).</li>
   <li>Винагорода нараховується <b>лише з фактично отриманих оплат</b> Приведених клієнтів за доступ до Інструментів. За реєстрацію, перехід за посиланням чи залучення нових партнерів винагорода не нараховується.</li>
-  <li>Винагорода нараховується з оплат <b>тарифів</b> (підписок на Інструменти), <b>планів</b> (зокрема планів збережень «Кіно-анімації») і <b>пакетів</b> (докупівля понад ліміт: хвилини озвучки, картинки, збереження відео тощо).</li>
+  <li>Винагорода нараховується з оплат <b>тарифів</b> (підписок на Інструменти), <b>планів</b> («Кіно-анімація»), <b>окремих продуктів</b> («Озвучка голосом людини», «Студійний звук»), <b>доповнень</b> і <b>пакетів</b> (докупівля понад ліміт).</li>
   <li>Програма однорівнева: Партнер не отримує винагороди за клієнтів, приведених його Приведеними клієнтами.</li>
   <li>Виконавець не гарантує і не обіцяє жодного доходу.</li></ol>
   <h4>2. Розмір винагороди</h4><ol>
-  <li>50% — від суми першої оплати Приведеного клієнта (будь-якого тарифу чи плану; сума округлюється до 1 грн у бік Партнера). Наприклад: тариф 399 грн → 200 грн, план 699 грн → 350 грн, план 1290 грн → 645 грн. Виняток: якщо першою оплатою є тариф «Студія» за ціною раннього доступу — фіксовано 200 грн.</li>
+  <li>50% — від суми першої оплати Приведеного клієнта (будь-якого тарифу чи плану; сума округлюється до 1 грн у бік Партнера). Наприклад: тариф 399 грн → 200 грн, план 699 грн → 350 грн, план 1290 грн → 645 грн. Наприклад, окремий продукт за 299 грн → 150 грн. Виняток: якщо першою оплатою є тариф «Студія» за ціною раннього доступу — фіксовано 200 грн.</li>
   <li>25% — з кожної наступної оплати Приведеного клієнта (сума округлюється до 10 грн у бік Партнера), без обмеження строку, поки діють ці Правила.</li>
   <li>Для вже Приведених клієнтів ставка винагороди не знижується.</li>
   <li>Якщо оплату повернуто або скасовано банком, винагорода за неї скасовується.</li>
@@ -3504,11 +3505,30 @@ let VOICES=null, VPA=null;
 const VP=(()=>{ let o={}; try{ o=JSON.parse(localStorage.getItem("yvVoicePick"))||{}; }catch(e){} return Object.assign({id:"",tone:"neutral"},o); })();
 const vpSave=()=>{ try{ localStorage.setItem("yvVoicePick",JSON.stringify(VP)); }catch(e){} };
 const TONES={calm:"Спокійно",neutral:"Звичайно",energetic:"Енергійно"};
-const TTS_ERR={no_quota:"Хвилини AI-озвучки закінчились.",no_key:"AI-озвучка тимчасово недоступна. Поки можна записати свій голос.",no_clone:"Спершу створи свій голос.",bad_voice:"Цей голос більше недоступний — вибери інший.",busy:"Сервіс озвучки зараз перевантажений. Спробуй за хвилину.",tts_failed:"Не вдалося озвучити. Спробуй ще раз.",empty_text:"Немає тексту для озвучки.",login:""};
+const TTS_ERR={no_quota:"Хвилини AI-озвучки закінчились.",free_limit:"Безкоштовна озвучка готовими голосами на сьогодні закінчилась (30 хв на добу). Завтра знову — або запиши свій голос.",no_clone_quota:"Озвучка твоїм голосом — окрема функція. Підключи її, щоб продовжити.",no_key:"AI-озвучка тимчасово недоступна. Поки можна записати свій голос.",no_clone:"Спершу створи свій голос.",bad_voice:"Цей голос більше недоступний — вибери інший.",busy:"Сервіс озвучки зараз перевантажений. Спробуй за хвилину.",tts_failed:"Не вдалося озвучити. Спробуй ще раз.",empty_text:"Немає тексту для озвучки.",login:""};
 function b64Buf(b64){ const bin=atob(b64), u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); return u.buffer; }
 function blobB64(blob){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(",")[1]||""); r.onerror=rej; r.readAsDataURL(blob); }); }
 function vpStop(){ try{ VPA?.pause(); }catch(e){} VPA=null; }
 const VPS={};
+/* ===== Окремі продукти й доповнення: «Озвучка голосом людини» (clone) і «Студійний звук» (sound) ===== */
+const FEAT={ clone:{n:"Озвучка голосом людини",d:"AI озвучує текст твоїм власним голосом (потрібен зразок твого голосу).",solo:"voice_solo",addon:"voice_addon"},
+             sound:{n:"Студійний звук",d:"Нарізка пауз і слів-паразитів, монтаж, покращення до студійного звучання, тембр і звучання голосу.",solo:"sound_solo",addon:"sound_addon"} };
+let FEATC=null, FEATT=0;
+async function featInfo(force){ if(!window.SRV?.session) return null; if(!force&&FEATC&&Date.now()-FEATT<30000) return FEATC; try{ FEATC=await SRV.features(); FEATT=Date.now(); }catch(e){ FEATC=null; } return FEATC; }
+window.yvFeatOk=async(f)=>{ try{ if(uiOwner()) return true; }catch(e){} const i=await featInfo(); if(!i) return !window.SRV?.features; /* сервер ще без міграції — не блокуємо */ return !!i.owner||(i[f]?.left||0)>0; };
+window.yvSoundUse=async(secs)=>{ try{ if(uiOwner()) return true; }catch(e){} if(!window.SRV?.soundUse) return true; try{ const r=await SRV.soundUse(secs); FEATT=0; return !!r?.ok; }catch(e){ return /sound_use|does not exist|function/.test(e?.message||""); } };
+window.yvFeatureSheet=async(f,onDone,hideEl)=>{ const F=FEAT[f]; if(!F) return; if(window.SRV&&!SRV.session){ SRV.login(`Щоб підключити «${F.n}», увійди або зареєструйся.`); return; }
+  const i=await featInfo(true), P=i?.prices||{voice_solo:29900,voice_addon:19900,sound_solo:39900,sound_addon:24900,voice_solo_sec:900,voice_addon_sec:1500,sound_solo_sec:3600,sound_addon_sec:3600}, main=!!i?.main;
+  const mins=k=>Math.round((P[k+"_sec"]||0)/60);
+  // повноекранні інструменти ховаємо (visibility), щоб вікно оплати було зверху; після закриття — повертаємо
+  const HS=["#yvln","#yvcn","#yvtalk","#yvved"].map(q=>document.querySelector(q)).concat(hideEl&&typeof hideEl!=="string"?[hideEl]:[]).filter(Boolean);
+  HS.forEach(h=>h.style.visibility="hidden"); const restore=()=>HS.forEach(h=>h.style.visibility="");
+  openSheet(`<div class="pshead"><h3>${F.n}</h3></div><p class="hint" style="display:block">${F.d}</p>
+    <div class="vpl">${main?`<div class="vpi on" data-fbuy="${F.addon}" role="button" tabindex="0"><b>Доповнення до твого плану — ${Math.round(P[F.addon]/100)} грн / 30 днів</b><span>${mins(F.addon)} хв на місяць · працює в усіх наших інструментах</span></div>`:""}
+      <div class="vpi${main?"":" on"}" data-fbuy="${F.solo}" role="button" tabindex="0"><b>Окремо — ${Math.round(P[F.solo]/100)} грн / 30 днів</b><span>${mins(F.solo)} хв на місяць${main?"":" · з будь-яким планом дешевше: доповнення за "+Math.round(P[F.addon]/100)+" грн"}</span></div></div>
+    <p class="tnote">30 днів від оплати, без автосписань. Готові голоси студії й свій записаний голос — безкоштовно.</p>`,"plat");
+  BS.querySelectorAll("[data-fbuy]").forEach(b=>b.onclick=()=>{ const k=b.dataset.fbuy, addon=k===F.addon; SRV.pay(()=>{ FEATT=0; restore(); onDone&&onDone(); },{product:k,price:P[k]/100,title:`${F.n}${addon?" — доповнення":""}`,note:`${mins(k)} хв на 30 днів. Без автосписань.`,once:true}); });
+  if(HS.length){ const iv=setInterval(()=>{ if(OV.hidden){ clearInterval(iv); setTimeout(()=>{ if(OV.hidden) restore(); },500); } },800); } };
 async function voicePicker(box,{getText,onAudio}){
   if(!box) return;
   if(!window.SRV){ box.innerHTML=`<p class="note">AI-озвучка працює на сайті studio.yuvi.life.</p>`; return; }
@@ -3525,7 +3545,7 @@ async function voicePicker(box,{getText,onAudio}){
       ${cl?.has?"":`<div class="vpi add" data-vclone role="button" tabindex="0"><b>+ Мій голос</b><span>Запиши 1 хвилину — і AI озвучуватиме твоїм голосом</span></div>`}</div>
       <div class="chips" style="margin-top:10px">${Object.entries(TONES).map(([k,n])=>`<button class="chip" type="button" data-vt="${k}" aria-pressed="${VP.tone===k}">${n}</button>`).join("")}</div>
       <button class="big" type="button" id="vpgo">Озвучити текст</button><p class="status" id="vpst"></p>
-      <p class="tnote">${left==null?"":`Залишилось ${fmtMin(left)} AI-озвучки · `}<button class="lnk inl" type="button" data-plans>Тарифи і пакети</button>${cl?.has?` · <button class="lnk inl" type="button" data-vclone>Мій голос: перезаписати</button>`:""}</p>`;
+      <p class="tnote">${"Готові голоси — безкоштовно · "}<button class="lnk inl" type="button" data-plans>Тарифи і пакети</button>${cl?.has?` · <button class="lnk inl" type="button" data-vclone>Мій голос: перезаписати</button>`:""}</p>`;
     box.querySelectorAll("[data-vp]").forEach(e=>e.onclick=ev=>{ if(ev.target.closest("[data-vpp]")) return; try{ uiSnd("tap"); }catch(x){} VP.id=e.dataset.vp; vpSave(); box.querySelectorAll("[data-vp]").forEach(o=>o.classList.toggle("on",o===e)); });
     box.querySelectorAll("[data-vpp]").forEach(b=>b.onclick=async()=>{ let u=b.dataset.vpp;
       if(!u){ const id=b.dataset.vpid; u=VPS[id]; if(!u){ if(b.dataset.busy) return; b.dataset.busy=1; b.textContent="…";   // прикладу немає — генеруємо коротку фразу і запам'ятовуємо
@@ -3535,15 +3555,16 @@ async function voicePicker(box,{getText,onAudio}){
     box.querySelectorAll("[data-vclone]").forEach(b=>b.onclick=()=>openClone(async()=>{ cl=await SRV.myClone(); VP.id="clone"; vpSave(); draw(); }));
     box.querySelectorAll("[data-plans]").forEach(b=>b.onclick=()=>openPlans());
     box.querySelector("#vpgo").onclick=async e=>{ const b=e.currentTarget, st=box.querySelector("#vpst"), text=(getText()||"").trim(); vpStop();
+      if(VP.id==="clone"&&!(await window.yvFeatOk("clone"))){ st.className="status err"; st.textContent=TTS_ERR.no_clone_quota; window.yvFeatureSheet("clone",()=>draw()); return; }
       if(text.length<2){ st.className="status err"; st.textContent=TTS_ERR.empty_text; return; }
       const v=all().find(x=>x.id===VP.id); if(!v){ st.className="status err"; st.textContent="Вибери голос."; return; }
       b.disabled=true; b.textContent="Озвучую…"; st.className="status"; st.textContent=`Приблизно ${Math.max(3,Math.round(text.length/40))} с…`;
       try{ const r=await SRV.tts({text,voice:v.id==="clone"?{kind:"clone"}:{kind:"preset",id:v.id},tone:VP.tone});
-        if(Q&&r.left!=null){ Q.voice={trial:0,month:0,pack:r.left,month_total:0}; }
+        FEATT=0;
         await onAudio(b64Buf(r.audio),`AI: ${v.name}`,r.mime,r.alignment);
         st.textContent=r.fallback?"Готово. Основний голос зараз недоступний — озвучено запасним голосом.":"Готово ✓ Не подобається — зміни голос чи тон і натисни ще раз.";
-        const tn=box.querySelector(".tnote"); if(tn&&r.left!=null) tn.firstChild.textContent=`Залишилось ${fmtMin(r.left)} AI-озвучки · `;
-      }catch(x){ const m=TTS_ERR[x.message]??TTS_ERR.tts_failed; st.className=m?"status err":"status"; st.innerHTML=esc(m)+(x.message==="no_quota"?` <button class="lnk inl" type="button" data-plans2>Докупити хвилини</button>`:""); st.querySelector("[data-plans2]")?.addEventListener("click",()=>openPlans()); }
+        const tn=box.querySelector(".tnote"); if(tn&&r.left!=null) tn.firstChild.textContent=r.clone?`Твій голос: залишилось ${fmtMin(r.left)} · `:`Готові голоси — безкоштовно (сьогодні ще ${fmtMin(r.left)}) · `;
+      }catch(x){ const m=TTS_ERR[x.message]??TTS_ERR.tts_failed; st.className=m?"status err":"status"; st.innerHTML=esc(m)+(x.message==="no_quota"?` <button class="lnk inl" type="button" data-plans2>Докупити хвилини</button>`:x.message==="no_clone_quota"?` <button class="lnk inl" type="button" data-feat2>Підключити</button>`:""); st.querySelector("[data-feat2]")?.addEventListener("click",()=>window.yvFeatureSheet("clone",()=>draw())); st.querySelector("[data-plans2]")?.addEventListener("click",()=>openPlans()); }
       b.disabled=false; b.textContent="Озвучити ще раз"; };
   };
   draw(); }
@@ -3603,11 +3624,13 @@ async function openServices(){
     <p class="tnote">Суми — оцінка за ціною одиниці (налаштування cost_* у Supabase) і курсом з запасом. Точні рахунки — у кабінетах Google, ElevenLabs, Anthropic, Cloudflare.</p>
     <details class="hktip"><summary>Щоб сервіси не зупинялись</summary><ol><li><b>Google</b>: картка + бюджетні сповіщення ($20/$50/$100) + запасна картка.</li><li><b>ElevenLabs</b>: увімкнути доплату понад тариф.</li><li><b>Anthropic (Claude)</b>: у Console — місячний ліміт витрат і сповіщення; автопоповнення лише разом із лімітом.</li></ol></details>`;
   // собівартість на одну людину: витрати сервісів ÷ люди, і хто скільки «з'їв» проти того, скільки заплатив
-  const uc=box.querySelector("#ucost"); let U=null; try{ U=await SRV.unitCosts(30); }catch(x){ uc.innerHTML=`<p class="note">Собівартість на людину з'явиться після кроку «Собівартість» у Supabase.</p>`; return; }
+  const uc=box.querySelector("#ucost"); let U=null; setTimeout(()=>wireFix(),0); const wireFix=()=>{ const i=uc.querySelector("#ufixv"); if(!i||!U) return setTimeout(wireFix,300); const calc=()=>{ const per=(+U.rev_per_paying||0)*(1-.073-.25)-(+U.per_paying||0), fx=+i.value||0; uc.querySelector("#ufixp").textContent=U.paying?`${Math.round(per)} грн`:"—"; uc.querySelector("#ufixb").textContent=per>0?`${Math.ceil(fx/per)} плат. · зараз ${U.paying}`:"—"; }; calc(); i.oninput=calc; i.onchange=async()=>{ try{ await SRV.setFixed(+i.value||0); toast("Збережено"); }catch(e){ toast("Спершу крок «Секунди й доповнення» в Supabase"); } }; }; try{ U=await SRV.unitCosts(30); }catch(x){ uc.innerHTML=`<p class="note">Собівартість на людину з'явиться після кроку «Собівартість» у Supabase.</p>`; return; }
   const g=(v)=>(+v||0).toLocaleString("uk-UA",{maximumFractionDigits:2}), marg=U.rev_per_paying?Math.round((1-U.per_paying/U.rev_per_paying)*100):null;
   uc.innerHTML=`<h4 style="margin:16px 0 6px">Собівартість на людину · 30 днів</h4>
     <div class="svct"><div><small>Користувались</small><b>${U.active}</b></div><div><small>На одного</small><b>${g(U.per_active)} грн</b></div><div><small>Платили</small><b>${U.paying}</b></div></div>
     <div class="svct"><div><small>Витрати на платного</small><b>${g(U.per_paying)} грн</b></div><div><small>Дохід з платного</small><b>${g(U.rev_per_paying)} грн</b></div><div><small>Лишається</small><b>${marg==null?"—":marg+"%"}</b></div></div>
+    <div class="svct" id="ufix"><div><small>Постійні витрати / міс</small><b><input type="number" min="0" step="50" id="ufixv" value="${+U.fixed_uah||0}" style="width:90px;background:none;border:0;border-bottom:1px solid currentColor;color:inherit;font:inherit;text-align:center"> грн</b></div><div><small>Прибуток з платного</small><b id="ufixp"></b></div><div><small>Беззбитковість</small><b id="ufixb"></b></div></div>
+    <p class="tnote" style="margin-top:2px">Постійні витрати: тариф ElevenLabs, домен, Supabase (коли буде платний) — усе, що платиш щомісяця незалежно від клієнтів. Прибуток з платного = дохід − витрати на нього − податки й банк (7,3%) − партнер (≈25%).</p>
     <p class="tnote" style="margin-top:4px">Ціни одиниць: виклик AI ≈ ${g(U.unit.ai_call)} грн · хвилина озвучки ≈ ${g(U.unit.voice_min)} грн · картинка ≈ ${g(U.unit.img)} грн. «Лишається» — до партнерки й податків.</p>
     ${U.users.length?`<table class="svctab"><tr><th>Людина</th><th>AI</th><th>Озвучка</th><th>≈ витрати</th><th>Заплатив</th></tr>${U.users.map(u=>`<tr${u.paid>0&&u.est>u.paid*.5?' style="color:#ff9f0a"':u.paid==0&&u.est>30?' style="color:#ff453a"':""}><td>${esc(String(u.email||"—").replace(/@.*/,"@…"))}</td><td>${u.ai}</td><td>${u.voice_min} хв</td><td>${g(u.est)} грн</td><td>${g(u.paid)} грн</td></tr>`).join("")}</table>
     <p class="tnote">Помаранчевим — витрати понад половину оплати; червоним — безкоштовний користувач, що витратив понад 30 грн. Розпізнавання мови й перевірки картинок рахуються лише в загальній сумі.</p>`:`<p class="note">Ще ніхто не користувався за ці 30 днів.</p>`}`; }
