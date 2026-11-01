@@ -85,7 +85,7 @@
   const SRV = { me: null, session: null };
   window.SRV = SRV;
 
-  async function rpc(name, args) { const { data, error } = await sb.rpc(name, args); if (error) throw new Error(error.message); return data; }
+  async function rpc(name, args) { const { data, error } = await Promise.race([sb.rpc(name, args), new Promise((_, no) => setTimeout(() => no(new Error("timeout")), 25000))]); if (error) throw new Error(error.message); return data; }
   async function call(fn, body) {
     const t = SRV.session?.access_token;
     const r = await fetch(`${FN}/${fn}`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}`, apikey: CFG.key }, body: JSON.stringify(body || {}) });
@@ -232,7 +232,16 @@
   // --- тарифи, ліміти, пакети ---
   SRV.quota = async () => { try { return SRV.session ? await rpc("quota_info") : null; } catch (e) { return null; } };
   // --- озвучка ---
-  SRV.voices = async () => { try { const { data } = await sb.rpc("voices_list"); return data || []; } catch (e) { return []; } };
+  // голоси: публічний список — напряму через REST (не залежить від оновлення сесії, яке на iPhone інколи «зависає»), з тайм-аутом і кешем
+  let VCACHE = null; try { VCACHE = JSON.parse(sessionStorage.getItem("yvVoices") || "null"); } catch (e) {}
+  const withTimeout = (p, ms) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error("timeout")), ms))]);
+  SRV.voices = async () => {
+    const save = (v) => { if (Array.isArray(v) && v.length) { VCACHE = v; try { sessionStorage.setItem("yvVoices", JSON.stringify(v)); } catch (e) {} } return v; };
+    try { const r = await withTimeout(fetch(`${CFG.url}/rest/v1/rpc/voices_list`, { method: "POST", headers: { apikey: CFG.key, Authorization: `Bearer ${CFG.key}`, "Content-Type": "application/json" }, body: "{}" }), 8000);
+      if (r.ok) { const v = await r.json(); if (Array.isArray(v) && v.length) return save(v); } } catch (e) {}
+    try { const { data } = await withTimeout(sb.rpc("voices_list"), 6000); if (Array.isArray(data) && data.length) return save(data); } catch (e) {}
+    return VCACHE || [];
+  };
   SRV.tts = async (o) => {
     if (!SRV.session) { loginSheet("Щоб озвучувати, увійди або зареєструйся."); throw new Error("login"); }
     return busy("voice", () => call("tts", o), o?.quiet);
