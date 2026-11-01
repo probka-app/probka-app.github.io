@@ -1103,7 +1103,7 @@ body{background:radial-gradient(900px 640px at 8% -12%,var(--yv-glow-1),transpar
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="YuVi DEV">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>window.YV_DEV=true;window.YV_BUILD="01.11 19:59";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
+<script>window.YV_DEV=true;window.YV_BUILD="01.11 20:59";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="server.js?v=2fcf07c8"></script>
@@ -3868,7 +3868,9 @@ if(!OWN.did) OWN.did=Math.random().toString(36).slice(2,10);
 OWN.opts=Object.assign({subs:"bold",hook:true,zoom:true,music:"calm",bar:true,sfx:true,plaques:true},OWN.opts||{});
 const ownSave=()=>{ try{ localStorage.setItem("ownDraft",JSON.stringify(OWN)); }catch(e){} };
 const OWNM={clips:{},voice:null,plan:null,restored:false,ups:{}};
-const ownSrv=()=>!!(window.SRV&&SRV.session&&SRV.upload);
+// сервер обробки відео (Railway) вимкнено: усе робиться в браузері — дешевше й без чужого сервера з ключами
+const OWN_SERVER=false;
+const ownSrv=()=>!!(OWN_SERVER&&window.SRV&&SRV.session&&SRV.upload);
 const extOf=f=>((f.name||"").match(/\.([a-z0-9]{2,5})$/i)?.[1]||(f.type.split("/")[1]||"bin").split(";")[0]).toLowerCase();
 /* завантаження файлу сцени на сервер у фоні */
 function ownUpload(i){ const c=OWNM.clips[i], sc=OWN.scenes[i]; if(!c||!sc||!ownSrv()) return null;
@@ -4050,15 +4052,15 @@ function ownTellWire(btn,st,onText){ if(!btn) return; let rec=null, t0=0, tm=0;
     rec=new MediaRecorder(stream,mime?{mimeType:mime}:{}); const ch=[]; rec.ondataavailable=e=>e.data.size&&ch.push(e.data);
     rec.onstop=async()=>{ stream.getTracks().forEach(t=>t.stop()); clearInterval(tm); btn.classList.remove("rec"); btn.textContent="🎙 Розкажи голосом"; const blob=new Blob(ch,{type:rec.mimeType||mime||"audio/webm"}); rec=null;
       if((Date.now()-t0)<2500){ st.textContent="Закоротко — розкажи хоча б кілька речень."; return; }
-      st.className="status"; st.textContent="Завантажую запис…";
-      try{ const ext=/mp4/.test(blob.type)?"m4a":"webm"; const path=await SRV.upload(`rec/${Date.now()}.${ext}`,blob);
-        const id=await SRV.job("transcribe",{path,clone:choice==="clone"}); st.textContent="Розпізнаю мову…";
-        const j=await ownPoll(id,j=>{ if(j.status==="queued"&&j.ahead) st.textContent=`У черзі, перед тобою ${j.ahead}…`; else if(j.stage) st.textContent=j.stage; });
-        if(j.status!=="done"){ st.className="status err"; st.textContent="Не вдалося розпізнати. Спробуй ще раз або напиши текстом."; return; }
-        const o=j.output||{}; if(o.text) onText(o.text); st.textContent=o.text?"Готово ✓ Текст додано.":"Не вдалося розібрати слова — спробуй ще раз.";
-        if(o.clone?.ok){ toast(o.clone.weak?"✓ Твій голос створено. Щоб звучав точніше — дочитай ще 30 с у кроці «Озвучка».":"✓ Твій голос готовий — його можна вибрати в кроці «Озвучка»"); }
-        else if(o.clone&&!o.clone.ok&&choice==="clone"){ toast(o.clone.error==="too_short"?"Для твого голосу мало мови — розкажи довше наступного разу.":o.clone.error==="slots_full"?"Твій голос створимо трохи пізніше — зараз немає вільних місць.":"Твій голос не вдалося створити. Можна записати в кроці «Озвучка»."); }
-      }catch(x){ st.className="status err"; st.textContent=x.message==="too_big"?"Запис завеликий.":x.message==="too_many_jobs"?"Забагато завдань одночасно — зачекай хвилину.":x.message==="consent_required"?"Потрібна згода на створення голосу.":"Не вдалося. Спробуй ще раз."; } };
+      st.className="status"; st.textContent="Розпізнаю мову…";
+      try{ if(!window.YVTalk) await loadJS("a/talk.js"); const E=YVTalk._t;
+        const raw=await E.decode(await blob.arrayBuffer()), small=await E.resample(raw,E.SR,16000), words=[];
+        for(let o=0;o<small.length;o+=200*16000){ const r=await SRV.stt({audio:E.b64(E.wav(small.subarray(o,Math.min(small.length,o+200*16000)),16000)),mime:"audio/wav",quiet:true}); (r.words||[]).forEach(w=>{ if(String(w.w).trim()) words.push(String(w.w)); }); }
+        const text=words.join(" ").trim(); if(text) onText(text); st.textContent=text?"Готово ✓ Текст додано.":"Не вдалося розібрати слова — спробуй ще раз.";
+        if(choice==="clone"){ if(raw.length/E.SR<20) toast("Для твого голосу мало мови — розкажи довше наступного разу або запиши голос у кроці «Озвучка».");
+          else { st.textContent=(text?"Текст додано ✓ ":"")+"Створюю твій голос…"; try{ await SRV.clone({audio:await blobB64(blob),mime:blob.type||"audio/webm",consent:true}); toast("✓ Твій голос готовий — його можна вибрати в кроці «Озвучка»"); }
+            catch(x){ toast(x.message==="slots_full"?"Твій голос створимо трохи пізніше — зараз немає вільних місць.":"Твій голос не вдалося створити. Можна записати в кроці «Озвучка»."); } st.textContent=text?"Готово ✓ Текст додано.":st.textContent; } }
+      }catch(x){ st.className="status err"; st.textContent=x.message==="login"?"Увійди в акаунт, щоб розповісти голосом.":x.message==="limit"?"Ліміт на сьогодні вичерпано.":"Не вдалося розпізнати. Спробуй ще раз або напиши текстом."; } };
     rec.start(); t0=Date.now(); btn.classList.add("rec"); st.className="status"; st.textContent="Говори як звичайно — про що хочеш відео. Натисни ще раз, щоб зупинити.";
     const tick=()=>{ const s=Math.floor((Date.now()-t0)/1000); btn.textContent=`■ Зупинити · ${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`; }; tick(); tm=setInterval(tick,500); }; }
 
@@ -4228,6 +4230,7 @@ async function ownStep5Srv(el){ const R=OWN.result, L=await SRV.montageLeft();
     const j=await ownPoll(OWN.job,j=>{ bar.style.width=Math.max(3,j.progress||3)+"%"; st.textContent=j.status==="queued"?(j.ahead?`У черзі, перед тобою ${j.ahead}…`:"Починаю…"):(j.stage||"Монтую…"); });
     OWN.job=null; if(j.status==="done"){ OWN.result=j.output; ownSave(); await ownStep5Srv(el); try{ document.getElementById("ownw").scrollTop=0; }catch(e){} } else { ownSave(); st.className="status err"; st.textContent="Не вдалося змонтувати. Спробуй ще раз."; box.querySelector("#owsgo").disabled=false; } } }
 function ownStep5(el,local){
+  if(!OWN_SERVER&&OWN.job){ OWN.job=null; ownSave(); }
   if(ownSrv()&&!local) return ownStep5Srv(el);
   if(!OWNM.plan) buildOwnPlan(); const P=OWNM.plan;
   const opt=(k,v,label)=>`<button class="chip" type="button" data-oo="${k}" data-ov="${v}" aria-pressed="${String(OWN.opts[k])===String(v)}">${label}</button>`;
