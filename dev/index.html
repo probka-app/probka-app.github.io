@@ -1068,7 +1068,7 @@ body{background:radial-gradient(900px 640px at 8% -12%,var(--yv-glow-1),transpar
 <div class="ow" id="ownw" hidden><div class="owbar"><button class="owback" id="owback" type="button">← Інструменти</button><span class="owbrand">Своє відео</span><span class="owbadge">beta</span></div><div class="owbody" id="owbody"></div></div>
 <div class="fworld" id="fworld" hidden>
   <div class="rhead"><button class="back" id="fback" type="button">← Інструменти</button><span class="t">Рілс маркером</span><button class="balpill" type="button" data-wallet aria-label="Баланс"><span data-bal>0 грн</span></button></div>
-  <div class="fwbody"><div class="fhow"><div class="fhh">Як заробити з цим відео</div><ol class="steps"><li><b>Зроби відео</b> — натисни «Створити нове відео» нижче.</li><li><b>Увімкни рекламу в кінцівці.</b> На першому кроці в «Кінцівка» обери «Посилання в шапці» або «Напиши «Конструктор»».</li><li><b>Додай своє посилання</b> в шапку профілю — або надсилай його тим, хто напише в коментарях.</li><li><b>Опублікуй</b> в Instagram, TikTok чи YouTube Shorts.</li></ol><div class="fhpay"><span><b>200 грн</b> + <b>25%</b> з кожної<br>його наступної оплати</span><button type="button" class="fhlink" data-earn>Моє посилання</button></div><button type="button" class="fhalt" data-earn>Можна й без відео: порадь другу чи зніми своє →</button></div><div class="fsub fws" data-sub="marker" hidden></div><button class="newvid" type="button" id="newvid">+ Створити нове відео</button><h3 class="fwh">Мої відео</h3><div class="plist" id="plist"></div></div>
+  <div class="fwbody"><div class="fhow"><div class="fhh">Як заробити з цим відео</div><ol class="steps"><li><b>Зроби відео</b> — натисни «Створити нове відео» нижче.</li><li><b>Увімкни рекламу в кінцівці.</b> На першому кроці в «Кінцівка» обери «Посилання в шапці» або «Напиши «Конструктор»».</li><li><b>Додай своє посилання</b> в шапку профілю — або надсилай його тим, хто напише в коментарях.</li><li><b>Опублікуй</b> в Instagram, TikTok чи YouTube Shorts.</li></ol><div class="fhpay"><span><b>50%</b> з першої оплати + <b>25%</b><br>з кожної наступної</span><button type="button" class="fhlink" data-earn>Моє посилання</button></div><button type="button" class="fhalt" data-earn>Можна й без відео: порадь другу чи зніми своє →</button></div><div class="fsub fws" data-sub="marker" hidden></div><button class="newvid" type="button" id="newvid">+ Створити нове відео</button><h3 class="fwh">Мої відео</h3><div class="plist" id="plist"></div></div>
 </div>
 <div class="drwov" id="drwov" hidden><aside class="drw" id="drw" role="dialog" aria-modal="true" aria-label="Меню"></aside></div>
 <div class="lib" id="lib" hidden>
@@ -1103,7 +1103,7 @@ body{background:radial-gradient(900px 640px at 8% -12%,var(--yv-glow-1),transpar
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="YuVi DEV">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>window.YV_DEV=true;window.YV_BUILD="01.11 22:15";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
+<script>window.YV_DEV=true;window.YV_BUILD="01.11 22:18";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="server.js?v=0e196457"></script>
@@ -2153,7 +2153,7 @@ function stNiche(el){
   <label class="l" for="s-int">Чим ти цікавишся або в чому розбираєшся?</label><textarea id="s-int" rows="2" placeholder="Наприклад: риболовля, ремонт авто, кулінарія, саморозвиток">${esc(S.interests)}</textarea>
   <div class="row"><button class="chip" id="s-gen" type="button">${S.topics.length?"Інші теми":"Підібрати теми"}</button></div><div class="status" id="s-st"></div><div class="opts" id="s-opts"></div></details>
   <label class="l" for="s-dur">Тривалість</label><select id="s-dur">${[15,30,45,60,90].map(d=>`<option value="${d}" ${+S.dur===d?"selected":""}>${d} секунд · ~${wordsFor(d)} слів</option>`).join("")}</select>
-  <div class="l" style="font-family:var(--display);font-size:18px;margin:18px 0 6px;display:flex;flex-wrap:wrap;align-items:center;gap:8px">Кінцівка <span style="font-family:var(--body);font-size:13px;background:var(--green);color:var(--green-ink);border-radius:12px;padding:5px 12px;line-height:1.35">Якщо за вашим посиланням хтось оплатить підписку,<br><b style="font-weight:500">ви заробите 200 грн</b></span></div><div class="opts" id="s-ad">${Object.entries(ADS).map(([k,v])=>`<label class="opt"><input type="radio" name="ad" value="${k}" ${(S.ad||"bio")===k?"checked":""}><span><span class="tx">${v.n}</span>${v.line?`<span style="display:block;color:var(--ink-2);font-size:15px;margin-top:4px">«${v.line}»</span>`:""}</span></label>`).join("")}</div>`;
+  <div class="l" style="font-family:var(--display);font-size:18px;margin:18px 0 6px;display:flex;flex-wrap:wrap;align-items:center;gap:8px">Кінцівка <span style="font-family:var(--body);font-size:13px;background:var(--green);color:var(--green-ink);border-radius:12px;padding:5px 12px;line-height:1.35">Якщо за вашим посиланням хтось оплатить підписку,<br><b style="font-weight:500">ви отримаєте 50% з першої оплати</b></span></div><div class="opts" id="s-ad">${Object.entries(ADS).map(([k,v])=>`<label class="opt"><input type="radio" name="ad" value="${k}" ${(S.ad||"bio")===k?"checked":""}><span><span class="tx">${v.n}</span>${v.line?`<span style="display:block;color:var(--ink-2);font-size:15px;margin-top:4px">«${v.line}»</span>`:""}</span></label>`).join("")}</div>`;
   el.querySelectorAll("input[name=ad]").forEach(r=>r.addEventListener("change",()=>{ S.ad=r.value; if(S.scenes.length) markAd(); persist(); playSfx("Поява плашки",1); }));
   const opts=el.querySelector("#s-opts"), st=el.querySelector("#s-st"), ta=el.querySelector("#s-topic"), it=el.querySelector("#s-int");
   const draw=()=>{ opts.innerHTML=S.topics.map((t,i)=>`<label class="opt"><input type="radio" name="topic" value="${i}" ${t.topic===S.topic?"checked":""}><span><span class="ty">${esc(t.type)}</span><span class="tx">${esc(t.topic)}</span></span></label>`).join(""); opts.querySelectorAll("input").forEach(r=>r.addEventListener("change",()=>{ S.topic=S.topics[+r.value].topic; ta.value=S.topic; grow(ta); persist(); playSfx("Поява плашки",1); })); };
@@ -2461,7 +2461,7 @@ function wire(){
 }
 
 /* ---------- platform: wallet, unlocks, timer ---------- */
-const PRICE=399, EXTRA=200, MIN_OUT=500, REF_FIRST=200, REF_SHARE=.25;
+const PRICE=399, EXTRA=200, MIN_OUT=500, REF_FIRST=200, REF_SHARE=.25, FIRST_TXT="50%"; /* REF_FIRST — 50% з першої оплати за підпискою 399 грн (приклад) */
 const SHARE_TXT="25%", SHARE_KOP=p=>Math.ceil(p*REF_SHARE/10-1e-9)*10; /* 25%, округлено вгору до 10 грн на користь партнера — як на сервері */
 const WKEY=window.YV_DEMO?"rilsWalletDemo":"rilsWallet", WST=()=>window.YV_DEMO?sessionStorage:localStorage;
 const WL=(()=>{ let o={}; try{ o=JSON.parse(WST().getItem(WKEY))||{}; }catch(e){} return Object.assign({balance:0,pending:0,total:0,req:null,history:[],unlocked:{},saved:0},o); })();
@@ -2474,7 +2474,7 @@ const money=v=>(Math.round(v*100)/100).toLocaleString("uk-UA",{minimumFractionDi
 function peopleWord(n){ const a=n%10, b=n%100; return a===1&&b!==11?"людина":a>=2&&a<=4&&(b<12||b>14)?"людини":"людей"; }
 function usersWord(n){ const a=n%10, b=n%100; return a===1&&b!==11?"новий користувач":a>=2&&a<=4&&(b<12||b>14)?"нові користувачі":"нових користувачів"; }
 /* живий баланс: пасивний дохід «перетікає» рівномірно протягом місяця */
-/* живий баланс: 200 грн за першу оплату видно одразу (вивести — через 14 днів), пасивний дохід «перетікає» щосекунди */
+/* живий баланс: 50% з першої оплати видно одразу (вивести — через 14 днів), пасивний дохід «перетікає» щосекунди */
 const CR={ queue:[], anim:null, keys:new Set() };
 const easeOut=p=>1-Math.pow(1-p,3);
 function hiddenKop(now){ let h=CR.queue.reduce((a,c)=>a+c.amount_kop,0); if(CR.anim) h+=CR.anim.amount_kop*(1-easeOut(Math.min(1,(now-CR.anim.t0)/750))); return h; }
@@ -2540,7 +2540,7 @@ const OV=document.getElementById("ov"), BS=document.getElementById("bs");
 
 /* ===== Юридичні документи: оферта, правила партнерської програми, політика конфіденційності =====
    Дані ФОП заповнюються в LEGAL.data; поки поле порожнє — у тексті видно жовту позначку «буде заповнено». */
-const LEGAL={ ver:"2026-10-29",
+const LEGAL={ ver:"2026-11-01",
   data:{ pib:"Юськова Ірина Сергіївна", rnokpp:"3937204723", addr:"35068, Рівненська обл., Рівненський р-н, с. Збуж, вул. Лугова, 17", iban:"UA553220010000026008380100508", email:"yuvi.studio.help@gmail.com", phone:"", regDate:"26.10.2026" } };
 const LF=(k,label)=>LEGAL.data[k]?esc(LEGAL.data[k]):`<mark class="lgph">[${label} — буде заповнено]</mark>`;
 const LFOP=()=>`ФОП ${LF("pib","ПІБ")}, РНОКПП ${LF("rnokpp","РНОКПП")}`;
@@ -2559,6 +2559,7 @@ const LDOCS={
   <h4>3. Ціна і оплата</h4><ol>
   <li>Тарифи: «Безкоштовно» — 0 грн; «Базовий» — 399 грн за 30 днів доступу; «Студія» — ціна, зазначена на сайті на момент оплати (для перших 100 користувачів діє ціна раннього доступу, яка зберігається, поки Користувач продовжує тариф без перерви). Склад тарифів і ліміти AI-генерацій (картинки, хвилини озвучки) зазначені на сайті в розділі «Тарифи і ліміти». Виконавець не є платником ПДВ.</li>
   <li>Пакети (додаткові хвилини AI-озвучки, AI-картинки тощо) — разова оплата за ціною, зазначеною на сайті. Пакет не має строку дії і не продовжується автоматично.</li>
+  <li>«Кіно-анімація» — плани на збереження готових відео на 30 днів: 10 відео — 399 грн, 20 відео — 699 грн, 50 відео — 1290 грн; докупівля понад ліміт за наявності активного плану: +5 відео — 199 грн, +10 відео — 349 грн (діє, поки діє план, і ще 30 днів). Рахується лише збереження готового відео; повторне збереження того самого відео не списується. Кожному зареєстрованому Користувачу надається одне пробне збереження. Ціни на момент оплати — зазначені на сайті.</li>
   <li>Оплата — банківською карткою, Apple Pay, Google Pay через платіжний сервіс банку. Дані картки Виконавець не отримує і не зберігає.</li>
   <li>Доступ діє 30 календарних днів з моменту оплати. <b>Автоматичних списань немає</b>: щоб продовжити, Користувач сам оплачує наступні 30 днів, які додаються до поточного строку.</li>
   <li>Доступ надається онлайн автоматично одразу після успішної оплати. Після оплати Користувач отримує електронний чек.</li>
@@ -2588,11 +2589,11 @@ const LDOCS={
   <li>Партнер — зареєстрований користувач віком від 18 років. Винагорода нараховується з моменту реєстрації; щоб вивести її, Партнер вказує реквізити для виплат і приймає ці Правила. Участь безкоштовна; купувати підписку для участі не потрібно.</li>
   <li>Партнер рекомендує Інструменти за своїм персональним посиланням. Користувач, який зареєструвався за цим посиланням, закріплюється за Партнером (далі — Приведений клієнт).</li>
   <li>Винагорода нараховується <b>лише з фактично отриманих оплат</b> Приведених клієнтів за доступ до Інструментів. За реєстрацію, перехід за посиланням чи залучення нових партнерів винагорода не нараховується.</li>
-  <li>Винагорода нараховується лише з оплат <b>тарифів</b> (підписок на Інструменти). З оплат <b>пакетів</b> (додаткові хвилини озвучки, картинки тощо) винагорода не нараховується.</li>
+  <li>Винагорода нараховується з оплат <b>тарифів</b> (підписок на Інструменти), <b>планів</b> (зокрема планів збережень «Кіно-анімації») і <b>пакетів</b> (докупівля понад ліміт: хвилини озвучки, картинки, збереження відео тощо).</li>
   <li>Програма однорівнева: Партнер не отримує винагороди за клієнтів, приведених його Приведеними клієнтами.</li>
   <li>Виконавець не гарантує і не обіцяє жодного доходу.</li></ol>
   <h4>2. Розмір винагороди</h4><ol>
-  <li>200 грн — за першу оплату Приведеного клієнта.</li>
+  <li>50% — від суми першої оплати Приведеного клієнта (будь-якого тарифу чи плану; сума округлюється до 1 грн у бік Партнера). Наприклад: тариф 399 грн → 200 грн, план 699 грн → 350 грн, план 1290 грн → 645 грн. Виняток: якщо першою оплатою є тариф «Студія» за ціною раннього доступу — фіксовано 200 грн.</li>
   <li>25% — з кожної наступної оплати Приведеного клієнта (сума округлюється до 10 грн у бік Партнера), без обмеження строку, поки діють ці Правила.</li>
   <li>Для вже Приведених клієнтів ставка винагороди не знижується.</li>
   <li>Якщо оплату повернуто або скасовано банком, винагорода за неї скасовується.</li>
@@ -2713,7 +2714,7 @@ const PAYINFO=`<div class="whyb"><b>Як здійснюються виплати
     <span class="ufw">Якщо протягом 3 років гроші не виведено — реквізити так і не вказано або після заморожування не змінено, — вони зараховуються на рахунок компанії, а акаунт деактивується. Відновити його можна, увійшовши з тими самими даними, але вже без цих коштів: усі збережені дані анулюються, і акаунт починається з чистого аркуша.</span></div>`;
 function holdSheet(){ uiSnd("tap");
   openSheet(`<div class="pshead"><h3>Чому гроші не одразу</h3></div>
-    <div class="htl"><div class="htd on"><i></i><b>День оплати</b><span>Людина за твоїм посиланням оплатила. Нарахування (${money(REF_FIRST)} або ${SHARE_TXT}) одразу видно в «Очікує зарахування».</span></div>
+    <div class="htl"><div class="htd on"><i></i><b>День оплати</b><span>Людина за твоїм посиланням оплатила. Нарахування (${FIRST_TXT} першої оплати або ${SHARE_TXT} наступних) одразу видно в «Очікує зарахування».</span></div>
       <div class="htd"><i></i><b>14 днів захисту</b><span>За законом про захист прав споживачів покупець онлайн може протягом 14 днів відмовитися від покупки і повернути гроші через банк.</span></div>
       <div class="htd ok"><i></i><b>Доступно до виводу</b><span>Строк минув — гроші переходять у твій баланс, їх можна вивести.</span></div></div>
     <div class="whyb"><b>Навіщо це</b><span>Якщо покупець поверне оплату через банк, нарахування за неї просто зникне з «Очікує зарахування».</span></div>
@@ -2723,7 +2724,7 @@ function holdSheet(){ uiSnd("tap");
 document.querySelector("[data-why]")?.addEventListener("click",holdSheet);
 function whySheet(back){
   openSheet(`<div class="pshead"><h3>Чому не все одразу</h3></div>
-    <div class="whyb"><b>${money(REF_FIRST)} — через 14 днів</b><span>Це захист від шахрайства. Хтось може оплатити підписку чужою карткою, а справжній власник картки потім повертає гроші через банк. За 14 днів такі оплати відсіюються, і ніхто не виводить «повітря». Для чесних людей це майже непомітно: гроші просто приходять у найближчий четвер після цих 14 днів.</span></div>
+    <div class="whyb"><b>${FIRST_TXT} з першої оплати — через 14 днів</b><span>Це захист від шахрайства. Хтось може оплатити підписку чужою карткою, а справжній власник картки потім повертає гроші через банк. За 14 днів такі оплати відсіюються, і ніхто не виводить «повітря». Для чесних людей це майже непомітно: гроші просто приходять у найближчий четвер після цих 14 днів.</span></div>
     <div class="whyb"><b>${SHARE_TXT} з наступних оплат — поступово протягом місяця</b><span>Людина оплатила місяць користування, і твоя частка нараховується разом з тим, як цей місяць іде, — щодня потроху. Тому баланс росте навіть тоді, коли ти нічого не робиш.</span></div>
     ${PAYINFO}
     <button class="big" type="button" id="whyok">Зрозуміло</button>`,"plat");
@@ -2914,14 +2915,14 @@ function schemeHTML(){ let first=0, month=0;
     return `<div class="schp"><div class="schw"><span class="scha" style="background:${p.c}">${p.n[0]}</span><b>${p.n}</b></div>
       <div class="schs"><div class="schc"><small>Перша оплата</small><span>${money(PRICE)}</span><i>→ тобі <b>${money(REF_FIRST)}</b></i></div>
       <div class="schc"><small>Далі щомісяця</small><span>${p.items.map(x=>money(x[1])).join(" + ")}</span><i>→ тобі <b>${money(sh)}</b></i></div></div></div>`; }).join("");
-  return `<div class="sch"><div class="schh">Як це виглядає</div><p class="schd">Перша оплата завжди ${money(PRICE)} — з неї тобі ${money(REF_FIRST)}. Далі ${SHARE_TXT} з усього, що людина купує: що більше купує, то більше отримуєш.</p>${rows}
+  return `<div class="sch"><div class="schh">Як це виглядає</div><p class="schd">З першої оплати тобі ${FIRST_TXT}: з підписки ${money(PRICE)} — це ${money(REF_FIRST)}, з плану на 1290 грн — 645 грн. Далі ${SHARE_TXT} з усього, що людина купує: що більше купує, то більше отримуєш.</p>${rows}
     <div class="schtot"><div><small>Одразу</small><b>${money(first)}</b></div><div><small>Щомісяця пасивно</small><b>+${money(month)}</b></div></div></div>`; }
 /* заробіток нараховується всім з реєстрації; реквізити й згода з правилами — при першому виводі */
 function earnOn(){ if(!window.SRV||!SRV.session||!SRV.me) return true; return SRV.me.earn_on!==false; }
 async function earnCtx(){ return window.SRV?await SRV.walletCtx():localWalletCtx(); }
 function enableEarn(after){ if(window.SRV&&!SRV.session) return SRV.login("Щоб увімкнути заробіток, увійди або зареєструйся.","earn");
   openSheet(`<div class="pshead"><h3>Увімкнути заробіток</h3></div>
-    <p class="hint" style="display:block">Вкажи, куди приходитимуть гроші за кожного, кого ти приведеш: ${money(REF_FIRST)} за першу оплату і ${SHARE_TXT} з кожної наступної. Виплати автоматичні — нічого не треба натискати. Після цього з'явиться твоє посилання.</p>
+    <p class="hint" style="display:block">Вкажи, куди приходитимуть гроші за кожного, кого ти приведеш: ${FIRST_TXT} з першої оплати і ${SHARE_TXT} з кожної наступної. Виплати автоматичні — нічого не треба натискати. Після цього з'явиться твоє посилання.</p>
     <div class="wdopts"><button class="wdo" type="button" data-en="card"><span class="wdr"><span class="wdt">На картку</span></span><span class="wdd">Для старту. Нічого оформлювати не треба, податки 23% сплачуємо за тебе.</span></button>
     <button class="wdo" type="button" data-en="fop"><span class="wdr"><span class="wdt">На рахунок ФОП</span></span><span class="wdd">Гроші приходять повністю, податки ФОП сплачуєш сам.</span></button></div>
     ${window.YV_DEMO?`<button class="big demobtn" type="button" id="endemo">Тестовий режим: продовжити без реквізитів</button>`:""}
@@ -2944,7 +2945,7 @@ function openEarn(){ const guest=!!(window.SRV&&!SRV.session), partner=!window.S
    <p class="hint" style="display:block;margin-top:8px">Неважливо, як людина дізналась про YuVi Studio. Якщо вона перейшла за твоїм посиланням і оплатила — винагорода твоя.</p>
    <h4>Скільки ти отримуєш</h4>
    <div class="rules">
-     <div class="rl"><b>${money(REF_FIRST)}</b><span>за <b>першу оплату</b> людини, яка прийшла за твоїм посиланням. Будь-яка покупка: підписка, формат чи функція.</span></div>
+     <div class="rl"><b>${FIRST_TXT}</b><span>з <b>першої оплати</b> людини, яка прийшла за твоїм посиланням. Будь-яка покупка: підписка чи план (з 399 грн — 200 грн, з 1290 грн — 645 грн).</span></div>
      <div class="rl"><b>${SHARE_TXT}</b><span>від <b>кожної наступної оплати</b> цієї людини: продовження підписки, новий формат чи функція. Поки людина користується YuVi Studio — ти отримуєш свою частку. Сума округлюється вгору до 10 грн — на твою користь. Нараховується поступово протягом місяця.</span></div>
      <div class="rl"><b>Перерви</b><span>Людина не платила пару місяців — за ці місяці нічого. Повернулась і оплатила — знову ${SHARE_TXT} від її оплати.</span></div>
    </div>
@@ -2961,7 +2962,7 @@ function openEarn(){ const guest=!!(window.SRV&&!SRV.session), partner=!window.S
    <button class="lnk" type="button" id="earnhow" style="margin:0 0 12px">Звідки гроші і чому вони завжди є →</button>
 
    <h4>Коли можна вивести</h4>
-   <div class="wdlater einfo"><div><span>${money(REF_FIRST)} за першу оплату<small>рахуємо від дня оплати</small></span><b>через 14 днів</b></div><div><span>Автоматична виплата всього доступного<small>без заявок і мінімальної суми — на твою картку чи рахунок ФОП. Якщо банк перевіряє рахунок або стався збій у банку — до 14 днів, ми повідомимо</small></span><b>щочетверга</b></div></div>
+   <div class="wdlater einfo"><div><span>${FIRST_TXT} з першої оплати<small>рахуємо від дня оплати</small></span><b>через 14 днів</b></div><div><span>Автоматична виплата всього доступного<small>без заявок і мінімальної суми — на твою картку чи рахунок ФОП. Якщо банк перевіряє рахунок або стався збій у банку — до 14 днів, ми повідомимо</small></span><b>щочетверга</b></div></div>
    <button class="big" type="button" id="earnok">Зрозуміло</button>${window.SRV?"":`<p class="tnote">Тестовий режим: повне посилання з'явиться, коли в сайту буде своя адреса.</p>`}${testToolsHTML()}`,"plat"); wireTestTools(BS);
   BS.querySelector("#earnok").onclick=closeSheet;
   BS.querySelector("#earnfop").onclick=()=>{ uiSnd("tap"); diaSheet(openEarn); };
@@ -3213,7 +3214,7 @@ async function renderAna(){ ana.querySelectorAll("[data-at]").forEach(b=>b.setAt
     body.innerHTML=`<div class="kpis"><div class="kpi"><small>Заробіток за місяць</small><b>${money(tNew+tPas)}</b></div><div class="kpi"><small>Оплатили вперше</small><b>${tPpl}</b><i>${usersWord(tPpl)}</i></div><div class="kpi"><small>Пасивний дохід</small><b>${money(tPas)}</b><i>від людей з минулих місяців</i></div></div>
       <div class="chart" id="ch1"></div><div class="chart" id="ch2"></div>`;
     const gfmt=(v,ax)=>ax?(v>=1000?nf.format(v):Math.round(v)+""):money(v);
-    lineChart(body.querySelector("#ch1"),{title:"Заробіток по днях",sub:"Нові оплати — 200 грн за людину. Пасивний — щомісячні продовження тих, кого привів раніше.",days,series:[{name:"Нові оплати",color:c1,values:newV},{name:"Пасивний дохід",color:c2,values:pasV}],fmt:gfmt});
+    lineChart(body.querySelector("#ch1"),{title:"Заробіток по днях",sub:"Нові оплати — 50% з першої оплати людини. Пасивний — щомісячні продовження тих, кого привів раніше.",days,series:[{name:"Нові оплати",color:c1,values:newV},{name:"Пасивний дохід",color:c2,values:pasV}],fmt:gfmt});
     lineChart(body.querySelector("#ch2"),{title:"Скільки людей оплатило",days,series:[{name:"Оплатили вперше",color:c1,values:ppl}],fmt:(v,ax)=>ax?Math.round(v)+"":`${v} ${usersWord(v).split(" ").pop()}`});
     return; }
   // соцмережі
@@ -3307,7 +3308,7 @@ async function openHow(back){
     <h4 class="howh">1. Звідки беруться гроші</h4>
     <p class="howp">Люди купують підписку на інструменти для створення контенту — ${money(PRICE)} на місяць. Це справжній продукт: ним роблять ролики. Частину кожної такої оплати ми віддаємо тому, хто привів людину.</p>
     <h4 class="howh">2. Як ділиться кожна оплата</h4>
-    <div class="howbar"><div class="hbl"><span>Перша оплата людини</span><b>${money(PRICE)}</b></div><div class="hbt"><i class="you" style="width:${pct(REF_FIRST)}%"><span>${money(REF_FIRST)} тобі</span></i><i class="pl" style="width:${100-pct(REF_FIRST)}%"><span>платформі</span></i></div></div>
+    <div class="howbar"><div class="hbl"><span>Перша оплата людини</span><b>${money(PRICE)}</b></div><div class="hbt"><i class="you" style="width:${pct(REF_FIRST)}%"><span>${FIRST_TXT} тобі (${money(REF_FIRST)})</span></i><i class="pl" style="width:${100-pct(REF_FIRST)}%"><span>платформі</span></i></div></div>
     <div class="howbar"><div class="hbl"><span>Кожна наступна оплата</span><b>${money(PRICE)}</b></div><div class="hbt"><i class="you" style="width:${REF_SHARE*100}%"><span>${SHARE_TXT} тобі</span></i><i class="pl" style="width:${100-REF_SHARE*100}%"><span>платформі</span></i></div></div>
     <p class="howp">Частина платформи йде на банк, податки, сервери й розвиток. Твоя частина відкладається одразу, як тільки оплата пройшла.</p>
     <h4 class="howh">3. Гроші партнерів лежать окремо</h4>
@@ -3315,7 +3316,7 @@ async function openHow(back){
     <h4 class="howh">4. Немає оплати — немає нарахування</h4>
     <p class="howp">Ми не платимо за реєстрації чи «приведи друга». Гроші з'являються тільки тоді, коли людина за твоїм посиланням справді щось купила. Тому це не піраміда: заробіток — це частка від реальної покупки реального продукту, а не гроші новачків. І лише один рівень: ти отримуєш тільки з оплат людей, яких привів сам.</p>
     <h4 class="howh">5. Коли можна вивести</h4>
-    <p class="howp">${money(REF_FIRST)} стають доступними через 14 днів після оплати, а ${SHARE_TXT} з наступних оплат «капають» на баланс поступово протягом місяця. Щочетверга все доступне виплачуємо автоматично — без заявок, тож гроші не залежуються на балансі.</p>
+    <p class="howp">${FIRST_TXT} з першої оплати стають доступними через 14 днів після оплати, а ${SHARE_TXT} з наступних оплат «капають» на баланс поступово протягом місяця. Щочетверга все доступне виплачуємо автоматично — без заявок, тож гроші не залежуються на балансі.</p>
     ${back?`<button class="big" type="button" id="howback">Зрозуміло</button>`:`<button class="big" type="button" id="howok">Зрозуміло</button>`}`,"plat");
   BS.querySelector("#howback")?.addEventListener("click",()=>{ uiSnd("tap"); back(); });
   BS.querySelector("#howok")?.addEventListener("click",()=>{ uiSnd("tap"); closeSheet(); });
@@ -4492,7 +4493,7 @@ async function renderAdmin(){ const body=document.getElementById("admbody");
       <div class="otl"><button type="button" data-ot="kb">🧠 Навчання агента</button><button type="button" data-ot="voices">🎙 Голоси для озвучки</button><button type="button" data-ot="svc">💸 Витрати й сервіси<i id="otalert" hidden></i></button><button type="button" data-ot="calc">🧮 Калькулятор цін</button><button type="button" data-ot="uif">👁 Що бачать люди</button><button type="button" data-ot="ideas">💡 Ідеї людей</button></div></div>`:""}
     <div class="admres"><small>На рахунку для виплат має бути</small><b>${k(R.total_kop)}</b>
       <div class="admrr"><span>Можуть вивести зараз</span><i>${k(R.available_kop)}</i></div>
-      <div class="admrr"><span>200 грн, що чекають 14 днів</span><i>${k(R.pending_kop)}</i></div>
+      <div class="admrr"><span>Перші оплати (50%), що чекають 14 днів</span><i>${k(R.pending_kop)}</i></div>
       <div class="admrr"><span>Пасивні нарахування, що ще «капають»</span><i>${k(R.vesting_kop)}</i></div>
       <div class="admrr"><span>Заявки на вивід (${R.requested_count})</span><i>${k(R.requested_kop)}</i></div>
       <p>Щочетверга: доповни окремий рахунок до цієї суми, скачай CSV і проведи виплати. Найближчий четвер — ${payDayTxt()}.</p>
