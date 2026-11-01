@@ -1102,7 +1102,7 @@ body{background:radial-gradient(900px 640px at 8% -12%,var(--yv-glow-1),transpar
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="YuVi">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>window.YV_DEV=false;window.YV_BUILD="01.11 22:13";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
+<script>window.YV_DEV=false;window.YV_BUILD="01.11 22:15";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="server.js?v=0e196457"></script>
@@ -1346,15 +1346,20 @@ const ADS={
  none:{n:"Питання до глядачів"}
 };
 const VTYPES={
- edu:{n:"Навчальне",flow:"проблема → типова помилка → як правильно → результат",hooks:"«помилка», «обман», «цифра», «питання», «обіцянка результату»"},
- info:{n:"Пізнавальне",flow:"цікавий факт → пояснення → чому так → висновок",hooks:"«несподіваний факт», «питання», «цифра», «міф», «а ти знав»"},
- fun:{n:"Розважальне",flow:"ситуація → наростання → несподіваний поворот",hooks:"«абсурдна ситуація», «впізнавана ситуація», «інтрига», «провокація», «гра слів»"},
- story:{n:"Історія",flow:"як було → що сталося → що зрозумів → урок",hooks:"«початок історії з напругою», «фінал наперед», «зізнання», «питання», «момент зламу»"},
- opinion:{n:"Думка",flow:"різка теза → аргументи → «але…» → висновок",hooks:"«провокація», «непопулярна думка», «обман», «виклик», «питання»"},
- motiv:{n:"Мотиваційне",flow:"біль → зміна погляду → заклик діяти",hooks:"«біль», «виклик», «питання», «обіцянка», «правда, яку не кажуть»"}
+ edu:{n:"Навчальне",flow:"гачок-обіцянка (що глядач отримає) → контекст одним реченням → 2–3 кроки: друга за силою порада першою, найсильніша — другою; кожен крок: що → як → навіщо → фінал, що повертає до гачка",hooks:"«обіцянка результату», «помилка», «цифра», «питання», «міф»",rules:"Кожен пункт — неочевидний, не загальновідомий. Прості слова, складність по наростаючій, без води."},
+ info:{n:"Пізнавальне",flow:"несподіваний факт → велике питання «чому?» → пояснення через «але/тому» → поворот, який ламає прогноз → висновок, що змінює погляд",hooks:"«несподіваний факт», «питання», «цифра», «міф», «а ти знав»",rules:"Дай рівно стільки деталей, щоб глядач почав вгадувати, і переверши очікування."},
+ fun:{n:"Розважальне",flow:"впізнавана ситуація → наростання через «але/тому» → несподіваний поворот → панчлайн",hooks:"«абсурдна ситуація», «впізнавана ситуація», «інтрига», «провокація», «гра слів»",rules:"Конкретні деталі й живі репліки; поворот неочікуваний, але логічний."},
+ story:{n:"Історія",flow:"місце й момент → ставки (що на кону і чому терміново) → «але/тому» → найнижча точка → що зрозумів → урок, що замикає петлю з першим реченням",hooks:"«початок з напругою», «фінал наперед», «зізнання», «питання», «момент зламу»",rules:"Зум у момент, а не переказ; емоції через тіло; точні слова в діалогах; сирі думки."},
+ opinion:{n:"Думка",flow:"різка теза проти звичної думки → чому всі так вважають → 2 аргументи з прикладом → чесне «але…» → висновок",hooks:"«провокація», «непопулярна думка», «обман», «виклик», «питання»",rules:"Теза конкретна, а не загальна. Говори з одним другом, без пафосу."},
+ motiv:{n:"Мотиваційне",flow:"біль глядача → момент зламу → новий погляд → один конкретний крок, який можна зробити сьогодні",hooks:"«біль», «виклик», «питання», «обіцянка», «правда, яку не кажуть»",rules:"Гід, а не гуру: «я сам через це пройшов». Без кліше й порожніх закликів."},
+ list:{n:"Поради списком",flow:"обіцянка N порад → друга за силою → найсильніша → решта коротко → бонус-порада наприкінці",hooks:"«цифра», «обіцянка», «помилка», «секрет», «питання»",rules:"Кожна порада — дія, яку можна зробити, з прикладом. Порядок: сильна → найсильніша → решта."},
+ case:{n:"Кейс / розбір",flow:"результат наперед (цифра) → як було на старті → 2–3 дії, що спрацювали → що дало найбільше → що повторити глядачу",hooks:"«результат-цифра», «до/після», «питання», «фінал наперед», «помилка»",rules:"Конкретні цифри й терміни; чесно про те, що не спрацювало."},
+ myth:{n:"Міф і правда",flow:"поширений міф → чому всі в нього вірять → правда з доказом → що робити замість",hooks:"«міф», «обман», «а ти знав», «провокація», «питання»",rules:"Не висміюй глядача — показуй, чому міф логічний на перший погляд."},
+ compare:{n:"До / після",flow:"як було (біль, конкретика) → одна зміна → як стало (цифри, відчуття) → як повторити",hooks:"«контраст», «результат-цифра», «зізнання», «питання», «обіцянка»",rules:"Контраст має бути видимий: конкретні деталі «до» і «після»."},
+ sell:{n:"М'який продаж",flow:"біль глядача → чому звичні рішення не працюють → твій підхід як рішення (не реклама) → доказ → спокійний заклик",hooks:"«біль», «помилка», «питання», «обіцянка», «результат-цифра»",rules:"Спершу цінність, потім пропозиція; ресурс — як природне рішення болю, а не вставка."}
 };
 const vtype=()=>VTYPES[S.vtype]||VTYPES.edu;
-function endingRule(){ const a=ADS[S.ad||"bio"], t=vtype(); const base=`Тип відео: ${t.n}. Структура: хук → ${t.flow}.`; return a&&a.line?`${base} Без питання до глядачів. Останнім реченням допиши дослівно: «${a.line}»`:`${base} В кінці коротке питання до глядача.`; }
+function endingRule(){ const a=ADS[S.ad||"bio"], t=vtype(); const base=`Тип відео: ${t.n}. Структура: хук → ${t.flow}. ${t.rules||""} Застосуй правила з бази знань студії для цього типу: гачок у першому реченні, «але/тому» між подіями замість «і потім», ритм — речення різної довжини, фінал замикає петлю з початком.`; return a&&a.line?`${base} Без питання до глядачів. Останнім реченням допиши дослівно: «${a.line}»`:`${base} В кінці коротке питання до глядача.`; }
 function markAd(){ S.scenes.forEach(s=>delete s.ad); const a=ADS[S.ad||"bio"]; if(!a||!a.line||!S.scenes.length) return;
   let i=-1; for(let k=S.scenes.length-1;k>=Math.max(0,S.scenes.length-3);k--){ if(a.key.test(S.scenes[k].phrase)){ i=k; break; } }
   if(i<0){ S.scenes.push({phrase:a.line,color:"green"}); i=S.scenes.length-1; }
@@ -2180,7 +2185,7 @@ function stHooks(el){
   own.addEventListener("input",()=>{ grow(own); S.hook=own.value; opts.querySelectorAll("input").forEach(r=>r.checked=(S.hooks[+r.value]?.text===S.hook)); persist(); });
   const run=async()=>{ if(!needSample(el)) return; if(!S.topic.trim()){ st.textContent="Спершу опиши задум на першому кроці."; st.className="status err"; return; }
     gen.disabled=true; re.disabled=true; const old=gen.textContent; gen.textContent="Думаю…"; st.className="status"; st.textContent="Пишу хуки. Це займає до хвилини.";
-    try{ const r=await sample.json(`${FORMAT}\nЗадум відео: ${S.topic}\nТривалість: ${S.dur} секунд.\n${S.hooks.length?`Ці хуки вже були, придумай зовсім інші: ${S.hooks.map(h=>h.text).join(" | ")}\n`:""}Напиши 5 хуків — першу фразу, яка звучить на першому кадрі й зупиняє скрол. Кожен до 12 слів, різкий і конкретний. Тип відео: ${vtype().n}. Типи хуків по одному: ${vtype().hooks}.\nВідповідай тільки JSON-масивом об'єктів {"type": "тип", "text": "хук"}.`,{cache:false,kbFmt:"tall",kb:["hook","general"]});
+    try{ const r=await sample.json(`${FORMAT}\nЗадум відео: ${S.topic}\nТривалість: ${S.dur} секунд.\n${S.hooks.length?`Ці хуки вже були, придумай зовсім інші: ${S.hooks.map(h=>h.text).join(" | ")}\n`:""}Напиши 5 хуків — першу фразу, яка звучить на першому кадрі й зупиняє скрол. Кожен до 12 слів, різкий і конкретний. Тип відео: ${vtype().n} (структура: ${vtype().flow}). Типи хуків по одному: ${vtype().hooks}. Бери прийоми хуків з бази знань студії: одразу про суть, конкретика, велике питання без порожньої інтриги.\nВідповідай тільки JSON-масивом об'єктів {"type": "тип", "text": "хук"}.`,{cache:false,kbFmt:"tall",kb:["hook","script","story","general"]});
       if(Array.isArray(r)){ S.hooks=r.filter(h=>h&&h.text).slice(0,6).map(h=>({type:String(h.type||""),text:String(h.text)})); persist(); draw(); st.textContent="Обери один, і він з'явиться в полі вище."; }
     }catch(err){ st.textContent=errText(err); st.className="status err"; }
     gen.disabled=false; re.disabled=false; gen.textContent=old; };
@@ -2257,7 +2262,7 @@ function stBoard(el){
   draw();
   el.querySelector("#s-gen").addEventListener("click",async e=>{ const b=e.currentTarget; if(!needSample(el)) return; if(!S.script.trim()){ st.textContent="Спершу потрібен текст сценарію."; st.className="status err"; return; }
     busy(b,true,"Думаю…"); st.className="status"; st.textContent="Розбиваю сценарій. Це займає до хвилини.";
-    try{ const r=await sample.json(`${FORMAT}\nТип відео: ${vtype().n}.\nЗадум автора (враховуй його побажання щодо картинок): ${S.topic||"—"}\nОсь сценарій:\n${S.script}\n\n${BOARD_ASK[S.format]||BOARD_ASK.marker}`,{cache:false,kbFmt:"tall",kb:["board","general"]});
+    try{ const r=await sample.json(`${FORMAT}\nТип відео: ${vtype().n} (структура: ${vtype().flow}).\nЗадум автора (враховуй його побажання щодо картинок): ${S.topic||"—"}\nОсь сценарій:\n${S.script}\n\n${BOARD_ASK[S.format]||BOARD_ASK.marker}`,{cache:false,kbFmt:"tall",kb:["board","general"]});
       if(Array.isArray(r)){ const keys=["phrase","sec",...(FIELDS[S.format]||FIELDS.marker).map(f=>f[0])];
         S.scenes=r.filter(x=>x&&x.phrase).map(x=>{ const o={color:x.color==="green"?"green":"red"}; keys.forEach(k=>o[k]=x[k]==null?"":String(x[k])); return o; });
         markAd(); persist(); draw(); const tp=el.querySelector("#s-tip"); if(tp) tp.hidden=!S.scenes.length; st.textContent=`${S.scenes.length} ${film?"кадрів":"сцен"}. Правиш що хочеш, далі — ${film?"як знімати":"картинки"}.`; }
@@ -3506,11 +3511,14 @@ async function voicePicker(box,{getText,onAudio}){
   if(!box) return;
   if(!window.SRV){ box.innerHTML=`<p class="note">AI-озвучка працює на сайті studio.yuvi.life.</p>`; return; }
   box.innerHTML=`<p class="status">Завантажую голоси…</p>`;
-  if(!VOICES) VOICES=await SRV.voices();
-  let cl=await SRV.myClone(), Q=await SRV.quota();
+  if(!SRV.session){ box.innerHTML=`<p class="status">Увійди в акаунт, щоб озвучити текст AI-голосом.</p><button class="chip" type="button" id="vplog">Увійти</button>`; box.querySelector("#vplog").onclick=()=>SRV.login("Щоб озвучити текст AI-голосом, увійди або зареєструйся."); return; }
+  // кожен запит окремо: якщо щось одне недоступне — голоси все одно показуємо
+  let verr=""; if(!VOICES||!VOICES.length){ try{ VOICES=(await SRV.voices())||[]; }catch(e){ VOICES=null; verr=e?.message||"err"; } }
+  let cl=null, Q=null; try{ cl=await SRV.myClone(); }catch(e){} try{ Q=await SRV.quota(); }catch(e){}
+  if(!VOICES||!VOICES.length){ box.innerHTML=`<p class="status">Голоси не завантажились${verr?` (${esc(verr)})`:""}.</p><button class="chip" type="button" id="vpre">Ще раз</button>`; box.querySelector("#vpre").onclick=()=>voicePicker(box,{getText,onAudio}); return; }
   const all=()=>(cl?.has?[{id:"clone",name:"Мій голос",descr:"Озвучка твоїм голосом"}]:[]).concat(VOICES);
   if(!VP.id||!all().some(v=>v.id===VP.id)){ VP.id=all()[0]?.id||""; vpSave(); }
-  const draw=()=>{ const left=Q?Q.voice.trial+Q.voice.month+Q.voice.pack:null;
+  const draw=()=>{ const left=Q?.voice?(Q.voice.trial||0)+(Q.voice.month||0)+(Q.voice.pack||0):null;
     box.innerHTML=`<div class="vpl">${all().map(v=>`<div class="vpi${VP.id===v.id?" on":""}" data-vp="${esc(v.id)}" role="button" tabindex="0"><b>${esc(v.name)}</b><span>${esc(v.descr||"")}</span><button type="button" class="vpp" data-vpp="${esc(v.preview||"")}" data-vpid="${esc(v.id)}" aria-label="Прослухати ${esc(v.name)}">▶</button></div>`).join("")}
       ${cl?.has?"":`<div class="vpi add" data-vclone role="button" tabindex="0"><b>+ Мій голос</b><span>Запиши 1 хвилину — і AI озвучуватиме твоїм голосом</span></div>`}</div>
       <div class="chips" style="margin-top:10px">${Object.entries(TONES).map(([k,n])=>`<button class="chip" type="button" data-vt="${k}" aria-pressed="${VP.tone===k}">${n}</button>`).join("")}</div>
