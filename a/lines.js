@@ -1244,6 +1244,36 @@ ${extra}
     const th = Object.entries(THEMES).find(([k, v]) => new RegExp(v.n, "i").test(text)); if (th && /фон|стиль|тем/i.test(text)) { L.style = th[0]; return `Фон: ${th[1].n}`; }
     const t = POS || 0, i = Math.max(0, L.world.segs.findIndex((g) => t >= g.t0 && t < g.t1)); await regenSeg(i, `Людина просить змінити цю частину: «${text}». Збережи все інше, зміни саме це.`); return `Змінено частину ${i + 1}`; }
   async function regenSeg(i, extra) { const sg = L.world.segs[i]; const res = await aiSegment(sg, i, L.world.segs.length, castOf(sg.t0), extra); mergeSeg(i, res); }
+  // прев'ю для YouTube / Reels: фон шаблону, персонаж з емоцією, предмет і великий текст
+  function thumb(cv, c) {
+    const x = cv.getContext("2d"), W = cv.width, H = cv.height, wide = W > H, k = wide ? H / 1080 : W / 1080;
+    const p = presetOf(c.style), th = THEMES[p.th] || THEMES.neon, pal = p.pal || ["#ffd60a"];
+    const sty = { ...th, font: p.font, paper: th.bg, lk: { ...LOOK0, lw: 1.3, body: "volume", font: p.font, pal, plaque: "punch", boil: false } };
+    const kb = BOIL, kn = NOBOIL, ke = ENV; BOIL = 0; NOBOIL = true; ENV = null;
+    try {
+      paintBg(x, W, H, k, sty);
+      if (sty.vig) { const g = x.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .2, W / 2, H / 2, Math.max(W, H) * .75); g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, "rgba(0,0,0,.5)"); x.fillStyle = g; x.fillRect(0, 0, W, H); }
+      const MV = { shock: "shock", cheer: "cheer", think: "think", sad: "sad", point: "point", happy: "wave" }[c.emo] || "shock";
+      const G = wide ? { X0: 0, SW: W, stY: H * .1, stH: H * .86, U: H * .15 } : { X0: 0, SW: W, stY: H * .44, stH: H * .5, U: H * .085 };
+      const items = [];
+      if (c.prop) items.push({ k: "icon", q: c.prop, x: wide ? .44 : .74, y: wide ? .3 : .42, s: wide ? 1.7 : 1.5, acc: true, ta: -2, mv: [], seed: 9 });
+      items.push({ k: "man", who: CAST[c.who] ? c.who : "man", x: wide ? .21 : .36, y: .98, s: (CAST[c.who]?.s || 1) < .8 ? 1.3 : 1, face: c.emo === "sad" ? "sad" : c.emo === "happy" ? "happy" : undefined, f: 1, floor: false, ta: -2, mv: [{ m: MV, t: -1 }], seed: 5 });
+      drawItems(x, items, .5, { ...sty }, k, G);
+      // великий текст: підбираємо розмір, щоб влізло
+      const txt = String(c.text || "").toUpperCase().trim(), col = colOf(c.color || "yellow", sty.lk);
+      const bx = wide ? W * .55 : W * .06, bw = wide ? W * .42 : W * .88, by = wide ? H * .1 : H * .06, bh = wide ? H * .8 : H * .34;
+      const wrap = (t, mw) => { const ws = t.split(/\s+/), L = [""]; ws.forEach((w) => { const tr = L[L.length - 1] ? L[L.length - 1] + " " + w : w; if (x.measureText(tr).width > mw && L[L.length - 1]) L.push(w); else L[L.length - 1] = tr; }); return L; };
+      let px = wide ? H * .2 : W * .17, lines = [txt];
+      for (; px > 18; px *= .93) { x.font = `900 ${Math.round(px)}px "Unbounded", "Manrope", sans-serif`; lines = wrap(txt, bw); if (lines.length * px * 1.1 <= bh && lines.every((l) => x.measureText(l).width <= bw)) break; }
+      const lh = px * 1.1, y0 = by + (bh - lines.length * lh) / 2 + lh / 2, cx = bx + bw / 2;
+      x.save(); x.textAlign = "center"; x.textBaseline = "middle"; x.lineJoin = "round";
+      lines.forEach((l, i) => { const y = y0 + i * lh, last = i === lines.length - 1 && lines.length > 1, tw = x.measureText(l).width;
+        if (last && lumOf(col) <= .45) { x.save(); x.translate(cx, y); x.rotate(-.03); x.fillStyle = col; x.fillRect(-tw / 2 - px * .2, -lh * .5, tw + px * .4, lh * .98); x.restore(); }
+        x.save(); x.translate(cx, y); x.rotate(-.03); x.shadowColor = "rgba(0,0,0,.45)"; x.shadowOffsetY = px * .07; x.lineWidth = px * .17; x.strokeStyle = "#0b0b0d"; x.strokeText(l, 0, 0); x.shadowColor = "transparent";
+        x.fillStyle = last && lumOf(col) > .45 ? col : "#ffffff"; x.fillText(l, 0, 0); x.restore(); });
+      x.restore();
+    } finally { BOIL = kb; NOBOIL = kn; ENV = ke; }
+  }
   loadIcons();
-  window.YVLines = { open(o = {}) { FMT = o.wide ? "wide" : "tall"; screenSetup(); track(o.wide ? "open_yt" : "open"); }, fromMarker, drawBox, boardLines, drawWorld, boardWorld, _t: { set: (l) => { L = l; prep(); }, drawFrame, prep, exportVideo, figure, POSE, SH, STYLES, tot: () => TOT, screenEdit, aiScenes, L: () => L } };
+  window.YVLines = { thumb, presets: () => PRESETS.map((p) => p.id), open(o = {}) { FMT = o.wide ? "wide" : "tall"; if (o.text) { DRAFT.text = String(o.text); DRAFT.topic = String(o.topic || ""); if (o.wide) DRAFT.len = Math.min(10, Math.max(1, Math.round(String(o.text).split(/\s+/).length / 140))); } screenSetup(); track(o.wide ? "open_yt" : "open"); }, fromMarker, drawBox, boardLines, drawWorld, boardWorld, _t: { set: (l) => { L = l; prep(); }, drawFrame, prep, exportVideo, figure, POSE, SH, STYLES, tot: () => TOT, screenEdit, aiScenes, L: () => L } };
 })();

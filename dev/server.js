@@ -261,6 +261,10 @@
   SRV.kvSet = async (k, v) => rpc("owner_kv_set", { p_key: k, p_value: v });
   SRV.setPrices = async (o) => rpc("owner_set_prices", { p_studio: o.studio ?? null, p_studio_early: o.early ?? null, p_pack_voice: o.voice ?? null, p_pack_img: o.img ?? null });
   SRV.kbList = async () => (await rpc("kb_list")) || [];
+  SRV.myStudio = async () => { try { return SRV.session ? ((await rpc("my_studio")) || []) : []; } catch (e) { return []; } };
+  SRV.studioList = async () => (await rpc("studio_list")) || [];
+  SRV.studioGrant = async (email, tools) => rpc("studio_grant", { p_email: email, p_tools: tools });
+  SRV.studioRevoke = async (id) => rpc("studio_revoke", { p_user: id });
   SRV.kbAdd = async (items, status) => rpc("kb_add", { p_items: items, p_status: status || "pending" });
   SRV.kbMove = async (id, module) => rpc("kb_move", { p_id: id, p_module: module });
   SRV.kbSet = async (id, o) => rpc("kb_set", { p_id: id, p_status: o.status ?? null, p_title: o.title ?? null, p_body: o.body ?? null, p_why: o.why ?? null, p_how: o.how ?? null, p_kind: o.kind ?? null, p_niche: o.niche ?? null });
