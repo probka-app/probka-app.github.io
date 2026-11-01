@@ -1662,7 +1662,7 @@ ${SPEC}
     $(B, "#csave").onclick = async (e) => { const b = e.currentTarget, lbl = b.textContent; b.disabled = true; stopPlay();
       const ok = await canSave(); if (ok !== true) { b.disabled = false; if (ok === "buy") buyPanel(() => $(B, "#csave")?.click(), L._need); return; } await freshAudio();
       try { const t0 = performance.now(); const r = await E().busyRun("save", () => exportVideo((p) => { const el = (performance.now() - t0) / 1000, left = p > .04 ? el * (1 - p) / p : null;
-          window.yvBusy?.progress?.(p, left == null ? "Рахую, скільки чекати…" : left < 5 ? "Майже готово…" : `Залишилось ≈ ${left < 60 ? Math.max(5, Math.ceil(left / 5) * 5) + " с" : Math.ceil(left / 60) + " хв"}`); }));
+          window.yvBusy?.progress?.(p, p < .97 ? "Збираю кадри й звук" : "Майже готово…"); void el; void left; }));
         const name = `yuvi-kino-${Date.now()}.${r.ext}`, f = new File([r.blob], name, { type: r.blob.type });
         track("export", { v: `${Math.round(L.dur)}s` }); setTimeout(() => donePanel(f), 500); } catch (q) { console.error(q); say(q?.message === "noenc" ? "Цей браузер не вміє зберігати відео — спробуй Chrome або Safari 17+" : "Не вдалося зберегти"); }
       b.disabled = false; b.textContent = lbl; }; }

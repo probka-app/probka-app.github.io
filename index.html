@@ -560,7 +560,8 @@ body{background:var(--p-bg)}
 #yvbusy b{display:block;font-size:18px;letter-spacing:-.01em}
 #yvbusy .st{display:block;margin-top:4px;min-height:20px;font-size:14px;color:#a1a1aa;transition:opacity .2s}
 #yvbusy .bg{display:none;margin-top:14px;background:none;border:0;color:#a1a1aa;font:inherit;font-size:13px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;visibility:hidden}
-#yvbusy .bg.v{display:inline-block;visibility:visible}
+#yvbusy .bg.v{display:none}
+#yvbusy .eta{display:block;margin-top:10px;font-size:15px;font-weight:700;color:#e4e4e7;font-variant-numeric:tabular-nums;min-height:20px}
 @media (prefers-reduced-motion:reduce){#yvbusy .sp{animation:none}#yvbusy .ar{transition:none}}
 .fmts>.fmt{padding:10px 12px;gap:12px;border-radius:20px}.fmts>.fmt .fprev{width:42px;height:54px;border-radius:10px}.fmts>.fmt canvas.fprev{width:42px;height:74px}
 .fmts>.fmt .fn{font-size:16px}.fmts>.fmt .fs{font-size:12.5px;margin-top:1px}.fmts>.fmt .fwip,.fmts>.fmt .fdev,.fmts>.fmt .ffree{margin-top:4px;padding:2px 8px;font-size:10.5px}.fmts>.fmt .chev{width:34px;height:34px}
@@ -1117,7 +1118,7 @@ body.pub .fmts{margin-top:14px}body.pub .fmt .fs,body.pub .fmt .fopen,body.pub .
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="YuVi">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>window.YV_DEV=false;window.YV_BUILD="02.11 01:33";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
+<script>window.YV_DEV=false;window.YV_BUILD="02.11 01:38";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="server.js?v=10428086"></script>
@@ -4692,10 +4693,17 @@ async function loadUIF(){ if(!window.SRV?.uiFlags) { applyUIF(); return; } const
                montage:{t:"Монтую відео…",m:["Збираю кадри","Накладаю голос","Додаю звуки й рух","Майже готово"]},
                save:{t:"Зберігаю відео…",m:["Рахую, скільки чекати…"]} };
   let el, n=0, p=0, timer=null, endT=null, msgT=null, bgT=null, kind="text", hidden=false, last={t:"",at:0}, real=false;
+  // скільки зазвичай триває кожен вид роботи (вчиться на ділі) — для зворотного відліку
+  const EST0={text:14,image:18,voice:12,listen:10,montage:35,save:40}; let EST={...EST0}; try{ Object.assign(EST,JSON.parse(localStorage.getItem("yvBusyEst")||"{}")); }catch(e){}
+  let t0=0, endAt=0, cdT=null, lastSec=-1;
+  function tickSnd(sec){ if(!sndOn()||hidden) return; try{ ac(); const t=AC.currentTime+.005, o=AC.createOscillator(), g=AC.createGain(), lp=AC.createBiquadFilter(); o.type="sine"; o.frequency.setValueAtTime(sec%2?720:640,t); o.frequency.exponentialRampToValueAtTime(sec%2?560:500,t+.07);
+    lp.type="lowpass"; lp.frequency.value=1400; g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(.022,t+.006); g.gain.exponentialRampToValueAtTime(.0001,t+.11); o.connect(lp).connect(g).connect(AC.destination); o.start(t); o.stop(t+.13); }catch(e){} }
+  function cd(){ if(!el) return; const left=Math.max(0,(endAt-Date.now())/1000), s2=Math.ceil(left), e=el.querySelector(".eta");
+    e.textContent=s2>0?`Залишилось ≈ ${Math.floor(s2/60)}:${String(s2%60).padStart(2,"0")}`:"Ще кілька секунд…"; if(s2!==lastSec){ if(s2>0&&lastSec!==-1) tickSnd(s2); lastSec=s2; } }
   document.addEventListener("click",e=>{ const b=e.target.closest?.("button"); if(b) last={t:(b.textContent||"").replace(/\s+/g," ").trim().slice(0,60),at:Date.now()}; },true);
   const C=2*Math.PI*54;
   function mount(){ if(el) return; el=document.createElement("div"); el.id="yvbusy"; el.setAttribute("role","status"); el.setAttribute("aria-live","polite");
-    el.innerHTML=`<div class="bx"><div class="rg"><span class="sp" aria-hidden="true"></span><svg viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="yvbg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0a84ff"/><stop offset="1" stop-color="#bf5af2"/></linearGradient></defs><circle class="tr" cx="60" cy="60" r="54"/><circle class="ar" cx="60" cy="60" r="54" stroke-dasharray="${C}" stroke-dashoffset="${C}"/></svg><span class="pc"><span class="v">0</span><small>%</small></span></div><b class="ti"></b><span class="st"></span><button type="button" class="bg">Продовжити у фоні</button></div>`;
+    el.innerHTML=`<div class="bx"><div class="rg"><span class="sp" aria-hidden="true"></span><svg viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="yvbg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0a84ff"/><stop offset="1" stop-color="#bf5af2"/></linearGradient></defs><circle class="tr" cx="60" cy="60" r="54"/><circle class="ar" cx="60" cy="60" r="54" stroke-dasharray="${C}" stroke-dashoffset="${C}"/></svg><span class="pc"><span class="v">0</span><small>%</small></span></div><b class="ti"></b><span class="st"></span><span class="eta" aria-live="off"></span><button type="button" class="bg">Продовжити у фоні</button></div>`;
     document.body.appendChild(el); el.querySelector(".bg").onclick=()=>{ hidden=true; el.classList.remove("on"); }; }
   let shown=0;
   function draw(bump){ const v=Math.round(p); if(el.classList.contains("on")&&!hidden&&v!==shown) busySnd(v-shown,v); shown=v; el.querySelector(".v").textContent=v; el.querySelector(".ar").style.strokeDashoffset=C*(1-p/100); if(bump){ const c=el.querySelector(".pc"); c.classList.remove("bump"); void c.offsetWidth; c.classList.add("bump"); } }
@@ -4715,16 +4723,16 @@ async function loadUIF(){ if(!window.SRV?.uiFlags) { applyUIF(); return; } const
     p=Math.min(96,p+j); draw(j>4); timer=setTimeout(tick,250+Math.random()*650); }
   function msgs(){ const L=KIND[kind].m; let i=0; const s=el.querySelector(".st"); const sub=Date.now()-last.at<2500&&last.t?last.t:"";
     s.textContent=sub||L[0]; msgT=setInterval(()=>{ i=Math.min(i+1,L.length-1); s.style.opacity=0; setTimeout(()=>{ s.textContent=L[i]; s.style.opacity=1; },200); },2600); }
-  function begin(k){ mount(); kind=KIND[k]?k:"text"; p=0; hidden=false; real=false; el.querySelector(".ti").textContent=KIND[kind].t; draw(); el.classList.add("on"); el.querySelector(".bg").classList.remove("v");
+  function begin(k){ mount(); kind=KIND[k]?k:"text"; p=0; hidden=false; real=false; t0=Date.now(); endAt=t0+(EST[kind]||15)*1000; lastSec=-1; clearInterval(cdT); cd(); cdT=setInterval(cd,250); el.querySelector(".ti").textContent=KIND[kind].t; draw(); el.classList.add("on"); el.querySelector(".bg").classList.remove("v");
     clearTimeout(timer); clearInterval(msgT); clearTimeout(bgT); msgs(); if(kind!=="save"){ timer=setTimeout(tick,180); bgT=setTimeout(()=>el.querySelector(".bg").classList.add("v"),9000); } }
-  function finish(){ clearTimeout(timer); clearInterval(msgT); clearTimeout(bgT); p=100; draw(true); try{ if(sndOn()&&!hidden){ ac(); const t=AC.currentTime+.02; bell(784,t,.045,1.2); bell(1174.7,t+.08,.035,1.4); } }catch(e){} setTimeout(()=>{ el.classList.remove("on"); },420); }
+  function finish(){ clearTimeout(timer); clearInterval(msgT); clearTimeout(bgT); clearInterval(cdT); if(t0){ const took=(Date.now()-t0)/1000; if(took>1.5&&took<600){ EST[kind]=Math.round(((EST[kind]||took)*.6+took*.4)*10)/10; try{ localStorage.setItem("yvBusyEst",JSON.stringify(EST)); }catch(e){} } t0=0; } if(el) el.querySelector(".eta").textContent=""; p=100; draw(true); try{ if(sndOn()&&!hidden){ ac(); const t=AC.currentTime+.02; bell(784,t,.045,1.2); bell(1174.7,t+.08,.035,1.4); } }catch(e){} setTimeout(()=>{ el.classList.remove("on"); },420); }
   window.yvBusy={
     start(k){ if(endT){ clearTimeout(endT); endT=null; n++; return; } if(n++===0) begin(k); },
     end(){ n=Math.max(0,n-1); if(n) return; endT=setTimeout(()=>{ endT=null; if(!n) finish(); },450); },   // коротка пауза — щоб серія картинок ішла одним завантаженням
     // справжній етап роботи (замість загальних фраз): «Озвучую…», «Розпізнаю слова…»
     // справжній прогрес (0…1) і підпис, напр. «Залишилось ≈ 40 с» — без «продовжити у фоні»
     progress(v,note){ if(!el||!el.classList.contains("on")) return; real=true; clearTimeout(timer); timer=null; clearTimeout(bgT); clearInterval(msgT); el.querySelector(".bg").classList.remove("v");
-      const nv=Math.max(p,Math.min(99,(+v||0)*100)), dv=nv-p; p=nv; draw(dv>4); if(note!=null) el.querySelector(".st").textContent=String(note); },
+      const nv=Math.max(p,Math.min(99,(+v||0)*100)), dv=nv-p; p=nv; draw(dv>4); if(v>.04){ const el2=(Date.now()-t0)/1000, left=el2*(1-v)/v, want=Date.now()+left*1000; endAt=endAt?endAt*.7+want*.3:want; } if(note!=null) el.querySelector(".st").textContent=String(note); },
     stage(t){ if(!el||!el.classList.contains("on")) return; clearInterval(msgT); const s=el.querySelector(".st"); s.style.opacity=0; setTimeout(()=>{ s.textContent=String(t||""); s.style.opacity=1; },150); }
   };
 })();
