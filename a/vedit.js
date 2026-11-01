@@ -353,7 +353,7 @@ ${RULES}
 - music: ${P.opt.music ? "ОБОВ'ЯЗКОВО" : "не потрібна — поверни \"\". Формат:"} 2–4 англійські слова — настрій фонової музики під зміст і темп (напр. "calm lofi", "upbeat energetic", "inspiring piano", "funny quirky", "cinematic tension", "corporate motivational").
 - amb: ${P.opt.amb ? "ОБОВ'ЯЗКОВО" : "не потрібен — поверни \"\". Формат:"} 2–3 англійські слова — фоновий звук атмосфери під зміст (напр. "forest birds", "city street", "cafe ambience", "rain", "office ambience").
 ${P.opt.board ? `- board: над людиною маркерна дошка; для кожної думки — своя сторінка (одна на 4–8 секунд, по черзі на весь ролик, починаючи з першої фрази): [{"a":слово початку думки,"draw":"англійською 6–14 слів: простий наочний малюнок цієї думки — предмети, людина-паличка, стрілки, схема; без тексту","words":[{"i":номер слова,"t":"1–2 ключові слова з цієї думки, як їх написати маркером"}]}] — words: 1–2 на сторінку, на тих словах, коли їх кажуть.
-` : ""}Відповідай тільки JSON: {"keep":[[a,b],...],"hook":"...","zoom":[...],"emph":[...],"broll":[...],"stock":[...],"music":"...","amb":"..."${P.opt.board ? ',"board":[...]' : ""}}`, { cache: false, kb: ["edit", "sound", "color", "camera", "general"], max: 4000 });
+` : ""}Відповідай тільки JSON: {"keep":[[a,b],...],"hook":"...","zoom":[...],"emph":[...],"broll":[...],"stock":[...],"music":"...","amb":"..."${P.opt.board ? ',"board":[...]' : ""}}`, { cache: false, kb: ["edit", "sound", "color", "camera", "style", "general"], max: 4000 });
     } catch (e) { r = null; }
     const n = P.words.length, keep = new Set();
     if (Array.isArray(r?.keep)) for (const [a, b] of r.keep) for (let i = Math.max(0, a | 0); i <= Math.min(n - 1, b | 0); i++) keep.add(i);
