@@ -146,7 +146,8 @@
   function limb(x, pts, w, col) { x.strokeStyle = col; x.lineWidth = w; x.lineCap = "round"; x.lineJoin = "round"; x.beginPath(); x.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) x.lineTo(pts[i][0], pts[i][1]); x.stroke(); }
 
   // c: {who, col, acc, face, look, f(+1/-1), h(px), rim}
-  function figure(x, X, Y, P, c, t) {
+  function figure(x, X, Y, P, c, t) { if (FMT !== "kino") return figureC(x, X, Y, P, c, t);
+    const lk0 = c.who === "hero" ? looks(c) : null, headC = lk0 && lk0.skin !== "ink" ? SKIN[lk0.skin] : INK; if (headC !== INK) c = { ...c, light: 1 };
     const sp = WHO[c.who] || WHO.man, h = (c.h || 560) * sp.s, f = c.f || 1, hs = sp.hs || 1;
     const col = c.who === "doctor" ? "#eceff2" : c.who === "boss" ? "#3d4256" : sp.grey ? "#a7a2a0" : (HOOD[c.col] || c.col || HOOD.yellow);
     const dk = shade(col, -.22), uL = .25 * h, lL = .23 * h, uA = .17 * h, fA = .16 * h, lw = .062 * h, aw = .058 * h;
@@ -166,7 +167,7 @@
     const sh = [0, -.78 * h + breath], bw = .19 * h;
     const arms = P.a.map((a) => { const e = seg(sh[0], sh[1] + .03 * h, a[0], uA, f), w = seg(e[0], e[1], a[0] + a[1], fA, f); return [[sh[0], sh[1] + .03 * h], e, w]; });
     // задня рука
-    limb(x, arms[0], aw, dk); x.fillStyle = INK; x.beginPath(); x.arc(arms[0][2][0], arms[0][2][1], .036 * h, 0, 7); x.fill();
+    limb(x, arms[0], aw, dk); x.fillStyle = headC; x.beginPath(); x.arc(arms[0][2][0], arms[0][2][1], .036 * h, 0, 7); x.fill();
     limb(x, legs[1], lw, LEG); shoe(legs[1]);
     // худі
     x.fillStyle = col; x.beginPath();
@@ -183,16 +184,17 @@
     // голова
     const r = .118 * h * hs, ht = (P.ht || 0) + Math.sin(t * 1.3 + (c.seed || 0)) * 1.5, hc = [.012 * h * f, sh[1] - .045 * h - r];
     x.save(); x.translate(hc[0], hc[1] + r * .9); x.rotate(ht * D * f); x.translate(-hc[0], -hc[1] - r * .9);
-    x.fillStyle = INK; x.fillRect(-.016 * h, sh[1] - .06 * h, .032 * h, .07 * h);
-    x.fillStyle = INK; x.beginPath(); x.arc(hc[0], hc[1], r, 0, 7); x.fill();
+    x.fillStyle = headC; x.fillRect(-.016 * h, sh[1] - .06 * h, .032 * h, .07 * h);
+    if (lk0) hairBack(x, hc, r, f, lk0);
+    x.fillStyle = headC; x.beginPath(); x.arc(hc[0], hc[1], r, 0, 7); x.fill(); if (c.light) { x.strokeStyle = INK; x.lineWidth = r * .06; x.stroke(); if (lk0.beard) { x.save(); x.beginPath(); x.arc(hc[0], hc[1], r, 0, 7); x.clip(); x.fillStyle = lk0.hairC; x.beginPath(); x.ellipse(hc[0], hc[1] + r * 1.0, r * 1.1, r * .62, 0, 0, 7); x.fill(); x.restore(); } }
     if (c.rim) { x.save(); x.beginPath(); x.arc(hc[0], hc[1], r, 0, 7); x.clip(); x.strokeStyle = c.rim; x.globalAlpha = .55; x.lineWidth = r * .14; x.beginPath(); x.arc(hc[0] - r * .1 * f, hc[1] + r * .06, r * 1.02, -Math.PI * .95, -Math.PI * .35); x.stroke(); x.restore(); }
     if (sp.hair) { x.fillStyle = "#3a2c2a"; x.beginPath(); x.ellipse(hc[0] - r * .85 * f, hc[1] + r * .05, r * .32, r * .55, -.3 * f, 0, 7); x.fill(); x.beginPath(); x.arc(hc[0] - r * .15 * f, hc[1] - r * .55, r * .62, Math.PI * 1.05, Math.PI * 1.95); x.fill(); }
     if (sp.grey) { x.fillStyle = "#d8d6d2"; x.beginPath(); x.arc(hc[0] - r * .2 * f, hc[1] - r * .62, r * .5, Math.PI, 0); x.fill(); }
-    face(x, hc, r, f, c, t);
+    face(x, hc, r, f, c, t); if (lk0) hairFront(x, hc, r, f, lk0);
     acc(x, hc, r, f, sp.glasses ? "glasses" : c.acc, c.accC);
     x.restore();
     // передня рука
-    limb(x, arms[1], aw, col); x.fillStyle = INK; x.beginPath(); x.arc(arms[1][2][0], arms[1][2][1], .037 * h, 0, 7); x.fill();
+    limb(x, arms[1], aw, col); x.fillStyle = headC; x.beginPath(); x.arc(arms[1][2][0], arms[1][2][1], .037 * h, 0, 7); x.fill();
     x.restore(); x.restore();
     // кисть передньої руки у світових координатах — щоб тримати предмет
     const wr = arms[1][2]; let hx = wr[0], hy = wr[1];
@@ -202,20 +204,20 @@
   function face(x, hc, r, f, c, t) {
     const em = c.face || "calm", look = c.look ?? 0, bl = (t + (c.seed || 0) * 1.7) % 3.6 < .12 || em === "sleep";
     const ex = hc[0] + r * .22 * f, ey = hc[1] - r * .02, sep = r * .34, ew = r * .15, eh = r * (em === "shock" ? .3 : .25);
-    x.fillStyle = "#f4f1ea";
-    [-1, 1].forEach((s) => { const cx = ex + s * sep / 2; x.beginPath(); if (bl) { x.ellipse(cx, ey + eh * .3, ew, r * .03, 0, 0, 7); } else x.ellipse(cx, ey, ew, eh, 0, 0, 7); x.fill(); });
+    x.fillStyle = "#f4f1ea"; const LC = c.light ? INK : "#f4f1ea";
+    [-1, 1].forEach((s) => { const cx = ex + s * sep / 2; x.beginPath(); if (c.light && !bl) { x.save(); x.strokeStyle = INK; x.lineWidth = r * .04; x.ellipse(cx, ey, ew, eh, 0, 0, 7); x.stroke(); x.restore(); x.beginPath(); } if (bl) { x.ellipse(cx, ey + eh * .3, ew, r * .03, 0, 0, 7); } else x.ellipse(cx, ey, ew, eh, 0, 0, 7); x.fill(); });
     if (!bl) { x.fillStyle = INK; [-1, 1].forEach((s) => { const cx = ex + s * sep / 2 + (look * .5 + .35 * f) * ew * .6; x.beginPath(); x.ellipse(cx, ey + eh * .12, ew * .45, eh * .42, 0, 0, 7); x.fill(); }); }
-    x.strokeStyle = "#f4f1ea"; x.lineWidth = r * .07; x.lineCap = "round";
+    x.strokeStyle = LC; x.lineWidth = r * .07; x.lineCap = "round";
     const brow = { angry: [.35, -.35], worried: [-.3, .3], sad: [-.28, .28], shock: [0, 0], smirk: [.1, -.25] }[em];
     if (brow) [-1, 1].forEach((s, i) => { const cx = ex + s * sep / 2, by = ey - eh - r * (em === "shock" ? .22 : .12); x.beginPath(); x.moveTo(cx - ew * 1.1, by + brow[i] * r * .25 * (s < 0 ? 1 : -1) * -1); x.lineTo(cx + ew * 1.1, by - brow[i] * r * .25 * (s < 0 ? 1 : -1) * -1); x.stroke(); });
     const my = hc[1] + r * .45, mx = ex;
     x.beginPath();
     if (em === "happy") x.arc(mx, my - r * .12, r * .2, .2 * Math.PI, .8 * Math.PI);
     else if (em === "sad" || em === "worried") x.arc(mx, my + r * .12, r * .15, 1.2 * Math.PI, 1.8 * Math.PI);
-    else if (em === "shock") { x.fillStyle = "#f4f1ea"; x.ellipse(mx, my, r * .08, r * .11, 0, 0, 7); x.fill(); x.beginPath(); }
+    else if (em === "shock") { x.fillStyle = c.light ? "#8a2c24" : "#f4f1ea"; x.ellipse(mx, my, r * .08, r * .11, 0, 0, 7); x.fill(); x.beginPath(); }
     else if (em === "smirk") { x.moveTo(mx - r * .12, my); x.quadraticCurveTo(mx + r * .05, my + r * .04, mx + r * .16, my - r * .08); }
     else if (em === "angry") { x.moveTo(mx - r * .12, my + r * .02); x.lineTo(mx + r * .12, my - r * .02); }
-    else if (c.talk) { const o = Math.abs(Math.sin(t * 13)) * r * .1; x.fillStyle = "#f4f1ea"; x.ellipse(mx, my, r * .1, o + r * .02, 0, 0, 7); x.fill(); x.beginPath(); }
+    else if (c.talk) { const o = Math.abs(Math.sin(t * 13)) * r * .1; x.fillStyle = c.light ? "#8a2c24" : "#f4f1ea"; x.ellipse(mx, my, r * .1, o + r * .02, 0, 0, 7); x.fill(); x.beginPath(); }
     else { x.moveTo(mx - r * .08, my); x.lineTo(mx + r * .08, my); }
     x.stroke();
   }
@@ -239,6 +241,7 @@
   function txt(x, s, X, Y, size, col, w = 800, al = "center") { x.font = `${w} ${Math.round(size)}px "${FONT}", system-ui, sans-serif`; x.fillStyle = col; x.textAlign = al; x.textBaseline = "middle"; x.fillText(String(s), X, Y); }
   function fitTxt(x, s, maxW, size, w = 800) { x.font = `${w} ${Math.round(size)}px "${FONT}", system-ui, sans-serif`; const m = x.measureText(String(s)).width; return m > maxW ? size * maxW / m : size; }
   const PROPS = {
+    qmark(x, s, p, t) { x.save(); x.scale(s, s); x.rotate(Math.sin(t * 3) * .08); x.font = `900 150px "${FONT}", system-ui, sans-serif`; x.textAlign = "center"; x.textBaseline = "middle"; x.lineJoin = "round"; x.strokeStyle = "#141414"; x.lineWidth = 16; const q = String(p.t || "??").slice(0, 3); x.strokeText(q, 0, 0); x.fillStyle = "#e0443a"; x.fillText(q, 0, 0); x.restore(); },
     card(x, s, p, t) { const w = 230 * s, h = 290 * s; x.save(); x.rotate(-.06); x.fillStyle = "rgba(0,0,0,.18)"; rr(x, -w / 2 + 8, -h / 2 + 10, w, h, 10 * s); x.fill(); x.fillStyle = "#f3f1ec"; rr(x, -w / 2, -h / 2, w, h, 10 * s); x.fill(); x.fillStyle = "#5c5a86"; rr(x, -w / 2, -h / 2, w, 48 * s, [10 * s, 10 * s, 0, 0]); x.fill();
       const tt = String(p.t2 || "РЕЗУЛЬТАТ").toUpperCase(); txt(x, tt, 0, -h / 2 + 24 * s, fitTxt(x, tt, w * .86, 22 * s, 700), "#eef", 700); const n = String(p.t ?? "").slice(0, 8); txt(x, n, 0, 6 * s, fitTxt(x, n, w * .86, 110 * s, 800), p.c || "#d0673d"); x.fillStyle = "#c9c6bf"; [70, 95].forEach((o) => x.fillRect(-w * .36, o * s, w * .72, 6 * s)); x.restore(); },
     phone(x, s, p, t) { const w = 150 * s, h = 290 * s; x.fillStyle = "#26252c"; rr(x, -w / 2, -h / 2, w, h, 24 * s); x.fill(); const g = x.createLinearGradient(0, -h / 2, 0, h / 2); g.addColorStop(0, p.c || "#7b8fe0"); g.addColorStop(1, shade(p.c || "#7b8fe0", -.35)); x.fillStyle = g; rr(x, -w / 2 + 9 * s, -h / 2 + 12 * s, w - 18 * s, h - 24 * s, 16 * s); x.fill();
@@ -288,6 +291,162 @@
   function floor(x, c, tm, wood = true) { const T = TIME[tm] || TIME.day; x.fillStyle = shade(c, T.amb); x.fillRect(0, FLOOR, W, H - FLOOR); if (wood) { x.strokeStyle = "rgba(0,0,0,.08)"; x.lineWidth = 3; for (let i = -6; i <= 6; i++) { x.beginPath(); x.moveTo(W / 2 + i * 60, FLOOR); x.lineTo(W / 2 + i * 260, H); x.stroke(); } for (let k = 1; k < 5; k++) { const y = FLOOR + (H - FLOOR) * Math.pow(k / 5, 1.6); x.beginPath(); x.moveTo(0, y); x.lineTo(W, y); x.stroke(); } }
     x.fillStyle = "rgba(0,0,0,.14)"; x.fillRect(0, FLOOR - 26, W, 26); }
   function wall(x, c, tm) { const T = TIME[tm] || TIME.day, g = x.createLinearGradient(0, 0, 0, FLOOR); g.addColorStop(0, shade(c, T.amb - .06)); g.addColorStop(1, shade(c, T.amb + .04)); x.fillStyle = g; x.fillRect(0, 0, W, FLOOR); }
+  /* ---------- формати «Комікс» і «Паперовий скетч»: персонажі з кольором шкіри й контуром, пласкі фони, рукописні написи ---------- */
+  let FMT = "kino";
+  const HANDF = "YVHand";
+  let HANDP = null; const loadHand = () => HANDP ||= (async () => { try { if (!window.FontFace) return; const f = new FontFace(HANDF, "url(a/Caveat.woff)", { weight: "400 700" }); await f.load(); document.fonts.add(f); } catch (e) { console.warn("hand font", e); } })();
+  const FMTS = { kino: { n: "Кіно-чоловічок", d: "Плаский герой у намальованих локаціях, наїзди камери, великі написи, вікна-підказки, музика й звуки." },
+    comic: { n: "Комікс", d: "Персонажі з товстим контуром і кольором шкіри, пласкі кімнати, рукописні написи й підписи зі стрілкою — як у біографіях на YouTube." },
+    paper: { n: "Паперовий скетч", d: "Олівцевий малюнок на старому папері з рамкою: штриховка, м'які кольори, рукописні субтитри." } };
+  const SKIN = { ink: "#232129", white: "#f7f6f2", porcelain: "#f7ddca", light: "#eccdb2", medium: "#d7ae8c", tan: "#b98a66", brown: "#8a5b3e", dark: "#5e3c2b" };
+  const SKIN_N = { auto: "Під формат", ink: "Чорний", white: "Білий", porcelain: "Світла", light: "Тепла", medium: "Смаглява", tan: "Засмагла", brown: "Темна", dark: "Дуже темна" };
+  const HAIR_N = { none: "Без волосся", short: "Коротке", messy: "Скуйовджене", long: "Довге", bob: "Каре", curly: "Кучері", bun: "Пучок" };
+  const HAIRC = { black: "#2b2a30", dbrown: "#4b3a32", brown: "#7a5a45", blond: "#d6b86c", red: "#a5512f", grey: "#b8b5ae" };
+  const hsh = (s) => { let h = 2166136261; for (const ch of String(s)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; };
+  const OLC = () => FMT === "paper" ? "#3a3027" : "#141414";
+  const pf = (c) => FMT === "paper" ? mix(c, "#f0e3c8", .5) : c;
+  // зовнішність: герой — з налаштувань; інші — стабільно від ролі й позиції в кадрі
+  function looks(c) { const who = c.who || "man", key = who + ":" + (c.key ?? ""), k = hsh(key), k2 = hsh("b" + key);
+    if (who === "hero") { const sk = c.skin && c.skin !== "auto" ? c.skin : FMT === "kino" ? "ink" : "light"; return { skin: sk, hair: c.hair || (FMT === "kino" ? "none" : "messy"), hairC: HAIRC[c.hairC] || HAIRC.dbrown, beard: !!c.beard }; }
+    if (FMT === "kino") return { skin: "ink", hair: "none", hairC: HAIRC.dbrown, beard: false };
+    const fem = who === "woman" || who === "girl", skins = ["porcelain", "light", "light", "medium", "tan", "brown", "dark", "white"];
+    return { skin: skins[Math.floor(k2 * skins.length)], hair: who === "old" ? "short" : fem ? ["long", "bob", "bun", "curly"][Math.floor(k * 4)] : ["short", "messy", "curly", "short", "none"][Math.floor(k * 5)],
+      hairC: who === "old" ? HAIRC.grey : [HAIRC.black, HAIRC.dbrown, HAIRC.brown, HAIRC.blond, HAIRC.red][Math.floor(k2 * 5)], beard: !fem && who !== "kid" && k > .72 }; }
+  function hairBack(x, hc, r, f, lk) { const [cx, cy] = hc, h = lk.hair; if (!h || h === "none") return; x.save(); x.fillStyle = pf(lk.hairC); x.strokeStyle = OLC(); x.lineWidth = r * .07; x.lineJoin = "round";
+    if (h === "long") { x.beginPath(); x.moveTo(cx - r * 1.02, cy - r * .2); x.quadraticCurveTo(cx - r * 1.3, cy + r * 1.2, cx - r * .75, cy + r * 1.5); x.lineTo(cx + r * .75, cy + r * 1.5); x.quadraticCurveTo(cx + r * 1.3, cy + r * 1.2, cx + r * 1.02, cy - r * .2); x.closePath(); x.fill(); x.stroke(); }
+    if (h === "bob") { x.beginPath(); x.moveTo(cx - r * 1.06, cy - r * .1); x.lineTo(cx - r * 1.1, cy + r * .8); x.quadraticCurveTo(cx, cy + r * .98, cx + r * 1.1, cy + r * .8); x.lineTo(cx + r * 1.06, cy - r * .1); x.closePath(); x.fill(); x.stroke(); }
+    if (h === "bun") { x.beginPath(); x.arc(cx - r * .12 * f, cy - r * 1.08, r * .34, 0, 7); x.fill(); x.stroke(); }
+    x.restore(); }
+  function hairFront(x, hc, r, f, lk) { const [cx, cy] = hc, h = lk.hair; if (!h || h === "none") return; x.save(); x.fillStyle = pf(lk.hairC); x.strokeStyle = OLC(); x.lineWidth = r * .07; x.lineJoin = "round"; x.lineCap = "round";
+    if (h === "curly") { x.beginPath(); for (let i = 0; i < 9; i++) { const a = Math.PI * (1.02 + i * .12), px = cx + Math.cos(a) * r * .95, py = cy + Math.sin(a) * r * .95; x.moveTo(px + r * .27, py); x.arc(px, py, r * .27, 0, 7); } x.fill(); x.stroke(); x.restore(); return; }
+    const fr = h === "messy" ? 6 : h === "short" ? 4 : 5, low = h === "bob" || h === "long" ? -.3 : h === "messy" ? -.36 : -.46, y0 = cy + r * low;
+    x.beginPath(); x.arc(cx, cy, r * 1.04, Math.PI * 1.0, Math.PI * 2.0); x.lineTo(cx + r * 1.03, y0);
+    for (let i = fr; i >= 0; i--) { const px = cx - r * 1.03 + 2.06 * r * i / fr, py = y0 + (i % 2 ? r * .2 : -r * .02) - (h === "messy" ? Math.abs(i - fr / 2) * r * .02 : 0); x.lineTo(px, py); }
+    x.closePath(); x.fill(); x.stroke();
+    if (h === "messy") { x.beginPath(); x.moveTo(cx - r * .15, cy - r * 1.02); x.quadraticCurveTo(cx - r * .05, cy - r * 1.32, cx + r * .14, cy - r * 1.18); x.moveTo(cx + r * .1, cy - r * 1.02); x.quadraticCurveTo(cx + r * .25, cy - r * 1.3, cx + r * .4, cy - r * 1.12); x.stroke(); }
+    x.restore(); }
+  function hatch(x, X0, Y0, w, h, gap = 12) { x.save(); x.strokeStyle = "rgba(58,48,39,.35)"; x.lineWidth = 2.2; x.beginPath(); for (let i = -h; i < w; i += gap) { x.moveTo(X0 + i, Y0 + h); x.lineTo(X0 + i + h, Y0); } x.stroke(); x.restore(); }
+  function faceC(x, hc, r, f, c, t, lk) { const em = c.face || "calm", ol = OLC(), bl = (t + (c.seed || 0) * 1.7) % 3.6 < .12 || em === "sleep";
+    const ink = lk.skin === "ink", big = FMT === "paper" || ink || lk.skin === "white", ex = hc[0] + r * .18 * f, ey = hc[1] - r * .02, sep = r * (big ? .56 : .5), lc = ink ? "#f4f1ea" : ol;
+    [-1, 1].forEach((s) => { const cx = ex + s * sep / 2; x.beginPath();
+      if (bl) { x.strokeStyle = lc; x.lineWidth = r * .06; x.lineCap = "round"; x.moveTo(cx - r * .1, ey + r * .03); x.lineTo(cx + r * .1, ey + r * .03); x.stroke(); return; }
+      if (big) { x.fillStyle = "#fbfaf6"; x.ellipse(cx, ey, r * .17, r * (em === "shock" ? .24 : .2), 0, 0, 7); x.fill(); if (!ink) { x.strokeStyle = ol; x.lineWidth = r * .045; x.stroke(); } x.fillStyle = ink ? "#232129" : ol; x.beginPath(); x.arc(cx + f * r * .05 + (c.look || 0) * r * .04, ey + r * .03, r * (em === "shock" ? .06 : .08), 0, 7); x.fill(); }
+      else { x.fillStyle = ol; x.ellipse(cx + f * r * .02, ey, r * .055, r * (em === "shock" ? .11 : .085), 0, 0, 7); x.fill(); } });
+    x.strokeStyle = lc; x.lineWidth = r * .055; x.lineCap = "round";
+    const brow = { angry: .4, worried: -.35, sad: -.3, smirk: .18, shock: -.12, calm: 0 }[em];
+    if (brow != null && (em !== "calm" || big)) [-1, 1].forEach((s) => { const cx = ex + s * sep / 2, by = ey - r * (big ? .32 : .22), d = brow * r * .13 * s; x.beginPath(); x.moveTo(cx - r * .12, by - d); x.lineTo(cx + r * .12, by + d); x.stroke(); });
+    const mx = ex - f * r * .02, my = hc[1] + r * .44; x.lineWidth = r * .05; x.beginPath();
+    const open = em === "shock" || (c.talk && Math.sin(t * 13) > -.3);
+    if (open) { const o = em === "shock" ? r * .13 : Math.abs(Math.sin(t * 13)) * r * .08 + r * .035; x.fillStyle = "#8a2c24"; x.ellipse(mx, my, r * .1, o, 0, 0, 7); x.fill(); x.strokeStyle = lc; x.stroke(); }
+    else if (em === "happy") { x.arc(mx, my - r * .12, r * .18, .15 * Math.PI, .85 * Math.PI); x.stroke(); }
+    else if (em === "angry") { x.fillStyle = "#fbfaf6"; rr(x, mx - r * .19, my - r * .07, r * .38, r * .15, r * .06); x.fill(); x.strokeStyle = lc; x.lineWidth = r * .04; x.stroke(); x.beginPath(); x.moveTo(mx - r * .19, my); x.lineTo(mx + r * .19, my); x.stroke(); }
+    else if (em === "sad" || em === "worried") { x.arc(mx, my + r * .1, r * .14, 1.2 * Math.PI, 1.8 * Math.PI); x.stroke(); }
+    else if (em === "smirk") { x.moveTo(mx - r * .12, my); x.quadraticCurveTo(mx + r * .04, my + r * .05, mx + r * .17, my - r * .08); x.stroke(); }
+    else { x.moveTo(mx - r * .08, my); x.lineTo(mx + r * .08, my); x.stroke(); } }
+  function figureC(x, X, Y, P, c, t) {
+    const sp = WHO[c.who] || WHO.man, h = (c.h || 560) * sp.s, f = c.f || 1, hs = sp.hs || 1, lk = looks(c), sk = pf(SKIN[lk.skin] || SKIN.light), ol = OLC(), lw = Math.max(3, .012 * h), sw = Math.max(3, .014 * h);
+    const col = pf(c.who === "doctor" ? "#eef0f2" : c.who === "boss" ? "#2f3546" : (HOOD[c.col] || c.col || HOOD.yellow));
+    const sit = P.sit || 0, lie = P.lie || 0, lean = (P.lean || 0) + (sp.lean || 0), br = Math.sin(t * 2.1 + (c.seed || 0)) * .005 * h;
+    x.save(); x.translate(X, Y); if (lie) { x.rotate(-90 * D * f); x.translate(0, .36 * h); }
+    if (!lie) { x.save(); x.globalAlpha = FMT === "paper" ? .14 : .2; x.fillStyle = "#000"; x.beginPath(); x.ellipse(0, 0, .2 * h, .03 * h, 0, 0, 7); x.fill(); x.restore(); }
+    const hipY = -(sit ? .2 : .3) * h, uL = .16 * h, lL = .15 * h, uA = .13 * h, fA = .12 * h;
+    const legs = P.l.map((l) => { const k = seg(0, hipY, l[0], uL, f), a = seg(k[0], k[1], l[0] + l[1], lL, f); return [[0, hipY], k, a]; });
+    const stick = (pts) => { x.strokeStyle = ol; x.lineWidth = sw; x.lineCap = "round"; x.lineJoin = "round"; x.beginPath(); x.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) x.lineTo(pts[i][0], pts[i][1]); x.stroke(); };
+    legs.forEach(stick);
+    x.save(); x.translate(0, hipY); x.rotate(lean * D * f); x.translate(0, -hipY);
+    const bt = -.64 * h + br, bb = hipY + .03 * h, bw = .27 * h, so = [0, bt + .09 * h];
+    const arms = P.a.map((a) => { const e = seg(so[0], so[1], a[0], uA, f), w = seg(e[0], e[1], a[0] + a[1], fA, f); return [so, e, w]; });
+    const hand = (p) => { x.fillStyle = FMT === "paper" ? sk : ol; x.strokeStyle = ol; x.lineWidth = lw * .7; x.beginPath(); x.arc(p[0], p[1], .022 * h, 0, 7); x.fill(); if (FMT === "paper") x.stroke(); };
+    stick(arms[0]); hand(arms[0][2]);
+    // тулуб — округла «квасолина» в кольорі одягу
+    const body = () => { x.beginPath(); x.moveTo(0, bt); x.bezierCurveTo(bw * .56, bt, bw * .6, bb - .03 * h, bw * .44, bb); x.quadraticCurveTo(0, bb + .045 * h, -bw * .44, bb); x.bezierCurveTo(-bw * .6, bb - .03 * h, -bw * .56, bt, 0, bt); x.closePath(); };
+    body(); x.fillStyle = col; x.fill(); x.save(); body(); x.clip(); if (FMT === "paper") hatch(x, bw * .05, bt, bw * .6, bb - bt + .05 * h); else { x.fillStyle = "rgba(0,0,0,.13)"; x.fillRect(bw * .08, bt - 10, bw, bb - bt + .08 * h); }
+    if (sp.suit) { x.fillStyle = "#f3f1ec"; x.beginPath(); x.moveTo(-.05 * h, bt); x.lineTo(.05 * h, bt); x.lineTo(0, bt + .14 * h); x.fill(); x.fillStyle = "#b5473f"; x.beginPath(); x.moveTo(-.012 * h, bt + .03 * h); x.lineTo(.012 * h, bt + .03 * h); x.lineTo(.018 * h, bt + .16 * h); x.lineTo(0, bt + .18 * h); x.lineTo(-.018 * h, bt + .16 * h); x.fill(); }
+    else if (sp.coat) { x.strokeStyle = "#c9ced6"; x.lineWidth = lw * .8; x.beginPath(); x.moveTo(.02 * h * f, bt + .04 * h); x.lineTo(.03 * h * f, bb); x.stroke(); }
+    else if (c.who !== "hero") { x.strokeStyle = ol; x.lineWidth = lw * .7; x.beginPath(); x.moveTo(-.045 * h, bt + .01 * h); x.lineTo(0, bt + .05 * h); x.lineTo(.045 * h, bt + .01 * h); x.stroke(); }
+    x.restore(); body(); x.strokeStyle = ol; x.lineWidth = lw; x.stroke();
+    // голова
+    const r = .17 * h * hs, ht = (P.ht || 0) + Math.sin(t * 1.3 + (c.seed || 0)) * 1.5, hc = [.012 * h * f, bt - r * .78];
+    x.save(); x.translate(hc[0], hc[1] + r); x.rotate(ht * D * f); x.translate(-hc[0], -hc[1] - r);
+    hairBack(x, hc, r, f, lk);
+    x.beginPath(); x.arc(hc[0], hc[1], r, 0, 7); x.fillStyle = sk; x.fill();
+    x.save(); x.beginPath(); x.arc(hc[0], hc[1], r, 0, 7); x.clip();
+    if (FMT === "paper") hatch(x, hc[0] + r * .2, hc[1] - r, r * .9, r * 2, 11); else { x.fillStyle = "rgba(90,50,30,.13)"; x.beginPath(); x.rect(hc[0] - r * 2, hc[1] - r * 2, r * 4, r * 4); x.arc(hc[0] - r * .28 * f, hc[1] - r * .12, r * 1.02, 0, 7, true); x.fill("evenodd"); }
+    if (lk.beard) { x.fillStyle = pf(lk.hairC); x.beginPath(); x.ellipse(hc[0], hc[1] + r * 1.0, r * 1.1, r * .62, 0, 0, 7); x.fill(); }
+    x.restore();
+    x.beginPath(); x.arc(hc[0], hc[1], r, 0, 7); x.strokeStyle = ol; x.lineWidth = lw; x.stroke();
+    faceC(x, hc, r, f, c, t, lk);
+    hairFront(x, hc, r, f, lk);
+    if (sp.glasses || c.acc === "glasses") { x.strokeStyle = ol; x.lineWidth = r * .05; const ex = hc[0] + r * .18 * f, sep = r * .5; [-1, 1].forEach((s) => { x.beginPath(); x.arc(ex + s * sep / 2, hc[1] - r * .02, r * .2, 0, 7); x.stroke(); }); x.beginPath(); x.moveTo(ex - sep / 2 + r * .2, hc[1] - r * .04); x.lineTo(ex + sep / 2 - r * .2, hc[1] - r * .04); x.stroke(); }
+    else if (c.acc && c.acc !== "none") acc(x, hc, r, f, c.acc, c.accC);
+    x.restore();
+    stick(arms[1]); hand(arms[1][2]);
+    x.restore(); x.restore();
+    const wr = arms[1][2]; let hx = wr[0], hy = wr[1];
+    if (lean) { const a = lean * D * f, dx = hx, dy = hy - hipY; hx = dx * Math.cos(a) - dy * Math.sin(a); hy = dx * Math.sin(a) + dy * Math.cos(a) + hipY; }
+    return { hand: [X + hx, Y + hy], head: [X + hc[0], Y + hc[1]], r, h }; }
+  /* ----- пласкі фони з контуром ----- */
+  const HZ = 1230;
+  function bgC(x, place, tm, seed) { const ol = OLC(), paper = FMT === "paper", LW = paper ? 5 : 6;
+    const S = (fill, path) => { if (fill) { x.fillStyle = pf(fill); x.fill(path); } x.strokeStyle = ol; x.lineWidth = LW; x.lineJoin = "round"; x.lineCap = "round"; x.stroke(path); };
+    const R = (X, Y, w, h, fill, r = 8) => { const p = new Path2D(); p.roundRect ? p.roundRect(X, Y, w, h, r) : p.rect(X, Y, w, h); S(fill, p); return p; };
+    const C = (X, Y, rad, fill) => { const p = new Path2D(); p.arc(X, Y, rad, 0, 7); S(fill, p); };
+    const L2 = (pts, w = LW) => { x.strokeStyle = ol; x.lineWidth = w; x.lineCap = "round"; x.beginPath(); pts.forEach(([a, b], i) => i ? x.lineTo(a, b) : x.moveTo(a, b)); x.stroke(); };
+    const blob = (X, Y, rad, fill, n = 7, k = .28) => { const p = new Path2D(); for (let i = 0; i <= n; i++) { const a = i / n * Math.PI * 2, rr2 = rad * (1 + k * Math.sin(i * 2.3 + seed)), px = X + Math.cos(a) * rr2, py = Y + Math.sin(a) * rr2 * .85; if (!i) p.moveTo(px, py); else { const a0 = (i - .5) / n * Math.PI * 2; p.quadraticCurveTo(X + Math.cos(a0) * rad * 1.35, Y + Math.sin(a0) * rad * 1.15, px, py); } } p.closePath(); S(fill, p); };
+    const wall = (c) => { x.fillStyle = pf(c); x.fillRect(0, 0, W, H); };
+    const floorC = (c, y = HZ) => { x.fillStyle = pf(c); x.fillRect(0, y, W, H - y); L2([[0, y], [W, y]]); };
+    const winB = (X, Y, w, h, out = "#bcd3e0") => { R(X, Y, w, h, "#f3f1ec", 4); R(X + 14, Y + 14, w - 28, h - 28, out, 2); blob(X + w * .55, Y + h * .62, w * .2, "#a7c4a4", 6, .2); x.strokeStyle = pf("#8a7a6a"); x.lineWidth = 7; x.beginPath(); x.moveTo(X + w * .55, Y + h - 14); x.lineTo(X + w * .55, Y + h * .7); x.stroke();
+      for (let i = 0; i < 4; i++) R(X + 14, Y + 14 + i * h * .085, w - 28, h * .085, "#d9dde1", 0); L2([[X + w / 2, Y + 14], [X + w / 2, Y + h - 14]]); };
+    const clock = (X, Y, rad) => { C(X, Y, rad, "#8d939b"); C(X, Y, rad * .8, "#eef1f3"); for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; L2([[X + Math.cos(a) * rad * .66, Y + Math.sin(a) * rad * .66], [X + Math.cos(a) * rad * .74, Y + Math.sin(a) * rad * .74]], 3); } L2([[X, Y], [X + rad * .4, Y - rad * .45]]); L2([[X, Y], [X - rad * .05, Y - rad * .6]], 4); };
+    const door = (X, Y, w, h, c = "#9a7b5e") => { R(X - 14, Y - 14, w + 28, h + 14, "#c8bcae", 6); R(X, Y, w, h, c, 4); C(X + w * .82, Y + h * .52, 16, "#d9d2c4"); };
+    const desk = (X, Y, w, c = "#8d8a86") => { R(X, Y, w, 30, c, 4); L2([[X + 30, Y + 30], [X + 30, HZ + 60]]); L2([[X + w - 30, Y + 30], [X + w - 30, HZ + 60]]); };
+    const monitor = (X, Y, w) => { R(X, Y, w, w * .62, "#6f7378", 8); R(X + 16, Y + 16, w - 32, w * .62 - 32, "#3f4347", 4); R(X + w / 2 - 12, Y + w * .62, 24, 40, "#6f7378", 2); R(X + w / 2 - 60, Y + w * .62 + 40, 120, 14, "#6f7378", 4); };
+    const dresser = (X, Y, w, h, c = "#626b74") => { R(X, Y, w, h, c, 6); for (let i = 0; i < 3; i++) { L2([[X, Y + h * (i + 1) / 3.2], [X + w, Y + h * (i + 1) / 3.2]]); L2([[X + w / 2 - 20, Y + h * (i + .5) / 3.2], [X + w / 2 + 20, Y + h * (i + .5) / 3.2]], 4); } L2([[X + 16, Y + h], [X + 16, Y + h + 22]]); L2([[X + w - 16, Y + h], [X + w - 16, Y + h + 22]]); };
+    const bed = (X, Y, w, c = "#d3d8dc") => { R(X + w * .18, Y - 230, w * .64, 260, c, 60); const p = new Path2D(); p.moveTo(X + w * .14, Y); p.lineTo(X + w * .86, Y); p.lineTo(X + w * 1.02, Y + 420); p.lineTo(X - w * .02, Y + 420); p.closePath(); S(c, p); L2([[X + w * .22, Y + 30], [X + w * .78, Y + 30]], 4); };
+    const iv = (X, Y) => { L2([[X, Y], [X, HZ + 70]], 9); L2([[X - 60, Y], [X + 60, Y]], 9); R(X + 10, Y + 30, 70, 140, "#aab7c2", 16); L2([[X + 45, Y + 170], [X + 45, Y + 230], [X + 60, HZ - 80]], 3); };
+    const shelf = (X, Y, w, n = 3) => { for (let i = 0; i < n; i++) { const yy = Y + i * 150; R(X, yy, w, 18, "#9b8570", 3); let bx = X + 14; for (let k = 0; k < 6; k++) { const bw2 = 26 + hsh(seed + ":" + i + k) * 26, bh = 70 + hsh(k + ":" + seed + i) * 50; R(bx, yy - bh, bw2, bh, ["#c96a5b", "#6d8fb3", "#d6b56a", "#7aa37d", "#8b6fa8"][(k + i) % 5], 3); bx += bw2 + 6; if (bx > X + w - 40) break; } } };
+    const plant = (X, Y) => { blob(X, Y - 120, 70, "#7da674", 6, .3); blob(X + 40, Y - 170, 55, "#8fb886", 6, .3); R(X - 50, Y - 70, 100, 90, "#b9785a", 10); };
+    const tree = (X, Y, s = 1, c = "#7fa877") => { R(X - 16 * s, Y - 190 * s, 32 * s, 200 * s, "#8a6a52", 6); blob(X, Y - 280 * s, 130 * s, c, 8, .22); };
+    const bldg = (X, Y, w, h, c) => { R(X, Y - h, w, h, c, 4); for (let i = 0; i < Math.floor(h / 90); i++) for (let k = 0; k < Math.floor(w / 70); k++) R(X + 22 + k * 70, Y - h + 26 + i * 90, 34, 46, tm === "night" ? (hsh(i + ":" + k + seed) > .5 ? "#f2d27a" : "#3d4560") : "#dfe7ee", 3); };
+    const sky = (top, bot) => { const g = x.createLinearGradient(0, 0, 0, HZ); g.addColorStop(0, pf(top)); g.addColorStop(1, pf(bot)); x.fillStyle = g; x.fillRect(0, 0, W, HZ); };
+    const SKY = tm === "night" ? ["#1f2747", "#3a4470"] : tm === "sunset" ? ["#f0b27a", "#f6dcb0"] : ["#8ec3ea", "#cfe6f5"];
+    switch (place) {
+      case "bedroom": wall("#cfd5de"); winB(560, 360, 380, 520); floorC("#8f939c"); dresser(70, 930, 300, 300); bed(300, 1110, 520); break;
+      case "class": wall("#d9c7ae"); clock(230, 380, 95); winB(500, 320, 500, 620); R(70, 560, 360, 300, "#4f6b5a", 6); for (let i = 0; i < 4; i++) L2([[110, 620 + i * 55], [110 + 160 + hsh(i + "c") * 110, 620 + i * 55]], 4); floorC("#a08a70"); desk(-40, 1360, 300, "#9a7b5e"); desk(820, 1360, 300, "#9a7b5e"); break;
+      case "office": wall("#d5dae1"); winB(120, 330, 380, 560); shelf(620, 520, 380); floorC("#8b939d"); plant(560, HZ); desk(640, 1050, 400); monitor(740, 830, 220); break;
+      case "hospital": wall("#cdd4da"); floorC("#8d969e"); dresser(50, 880, 320, 340); bed(300, 1100, 520); iv(920, 640); break;
+      case "lab": wall("#d6e0e3"); shelf(80, 560, 420); winB(600, 340, 380, 480); floorC("#8e9ba1"); desk(80, 1040, 920, "#aeb8bd"); [0, 1, 2].forEach((i) => { R(200 + i * 230, 920, 60, 120, ["#9fd3c7", "#f2c46d", "#c99ad6"][i], 18); }); break;
+      case "cafe": wall("#d9c4ab"); R(120, 330, 840, 320, "#3d3a36", 8); for (let i = 0; i < 4; i++) L2([[180, 410 + i * 60], [180 + 200 + hsh(i + "m") * 300, 410 + i * 60]], 4); [260, 540, 820].forEach((X) => { L2([[X, 0], [X, 180]], 4); const p = new Path2D(); p.moveTo(X - 60, 250); p.lineTo(X + 60, 250); p.lineTo(X + 30, 180); p.lineTo(X - 30, 180); p.closePath(); S("#e0b25c", p); });
+        floorC("#8f6f58"); R(40, 960, 1000, 270, "#9a7b5e", 6); [180, 380, 760].forEach((X) => R(X, 900, 70, 60, "#eeeae2", 10)); break;
+      case "kitchen": wall("#dfe3d6"); R(60, 380, 420, 260, "#c9b79c", 6); L2([[270, 380], [270, 640]]); R(760, 520, 260, 720, "#e7ebee", 14); L2([[760, 800], [1020, 800]]); floorC("#a39886"); R(60, 980, 640, 250, "#c9b79c", 6); R(60, 960, 640, 30, "#eeeae2", 4); break;
+      case "gym": wall("#d0d4d9"); R(80, 320, 920, 560, "#e9eef2", 6); floorC("#7e858c"); for (let i = 0; i < 4; i++) { R(140 + i * 220, 1080, 140, 40, "#55595e", 18); } L2([[100, 1120], [980, 1120]], 8); break;
+      case "shop": wall("#e0d8c8"); shelf(60, 520, 440, 4); shelf(580, 520, 440, 4); floorC("#9e9284"); break;
+      case "blog": wall("#d3cfe0"); C(780, 700, 170, "#f7f4ec"); C(780, 700, 120, "#d3cfe0"); L2([[780, 870], [780, HZ + 40]], 8); floorC("#8e8aa0"); desk(60, 1060, 520); monitor(150, 840, 240); break;
+      case "stage": wall("#3b3550"); [0, 1].forEach((s) => { const p = new Path2D(), X = s ? W : 0, k = s ? -1 : 1; p.moveTo(X, 0); p.lineTo(X + k * 260, 0); p.quadraticCurveTo(X + k * 160, 700, X + k * 230, HZ); p.lineTo(X, HZ); p.closePath(); S("#a3433d", p); });
+        x.fillStyle = "rgba(255,240,200,.18)"; x.beginPath(); x.moveTo(470, 0); x.lineTo(610, 0); x.lineTo(900, HZ + 260); x.lineTo(180, HZ + 260); x.closePath(); x.fill(); floorC("#6b5b4b"); break;
+      case "street": case "night": sky(...(place === "night" ? ["#1f2747", "#3a4470"] : SKY)); bldg(-20, HZ, 300, 620, "#a9b4c0"); bldg(300, HZ, 260, 820, "#c4b5a3"); bldg(580, HZ, 280, 560, "#9fa9b5"); bldg(870, HZ, 260, 760, "#b8a998"); floorC("#9aa0a6"); x.fillStyle = pf("#5b6168"); x.fillRect(0, HZ + 260, W, H); L2([[0, HZ + 260], [W, HZ + 260]]); break;
+      case "road": sky(...SKY); { const p = new Path2D(); p.moveTo(0, HZ - 80); p.quadraticCurveTo(300, HZ - 260, 620, HZ - 120); p.quadraticCurveTo(860, HZ - 260, W, HZ - 140); p.lineTo(W, HZ); p.lineTo(0, HZ); p.closePath(); S("#8e9cc0", p); }
+        floorC("#c9b58e"); { const p = new Path2D(); p.moveTo(500, HZ); p.lineTo(580, HZ); p.lineTo(900, H); p.lineTo(180, H); p.closePath(); S("#6b6f74", p); } for (let i = 0; i < 5; i++) { const y = HZ + 40 + i * 140; x.fillStyle = pf("#efe9dc"); x.fillRect(536 - i * 6, y, 8 + i * 4, 60 + i * 10); } break;
+      case "park": sky(...SKY); tree(140, HZ, 1.1); tree(900, HZ, 1.2, "#8bb27f"); blob(520, HZ - 60, 110, "#94b98a", 7, .2); floorC("#9cc08a"); { const p = new Path2D(); p.moveTo(470, HZ); p.lineTo(610, HZ); p.quadraticCurveTo(700, 1600, 880, H); p.lineTo(260, H); p.quadraticCurveTo(420, 1600, 470, HZ); p.closePath(); S("#d8c49c", p); } break;
+      case "space": x.fillStyle = pf("#1b1f3a"); x.fillRect(0, 0, W, H); for (let i = 0; i < 70; i++) { x.fillStyle = "rgba(255,255,255,.8)"; x.beginPath(); x.arc(hsh(i + "x" + seed) * W, hsh(i + "y" + seed) * H, 2 + hsh(i + "s") * 3, 0, 7); x.fill(); } C(820, 420, 150, "#d98b6a"); L2([[640, 470], [1010, 360]], 7); break;
+      case "void": { const g = x.createRadialGradient(W / 2, H * .45, 100, W / 2, H * .5, H * .7); g.addColorStop(0, pf("#e3e7ec")); g.addColorStop(1, pf("#c3c9d2")); x.fillStyle = g; x.fillRect(0, 0, W, H); } break;
+      default: wall("#d8cfc2"); clock(170, 360, 80); winB(330, 330, 440, 540); door(60, 760, 220, HZ - 760); floorC("#9a8068"); desk(640, 1050, 440); monitor(760, 830, 220); }
+    if (tm === "night" && place !== "space" && place !== "night") { x.save(); x.globalCompositeOperation = "multiply"; x.fillStyle = "rgba(70,80,140,.55)"; x.fillRect(0, 0, W, H); x.restore(); }
+    if (tm === "sunset" && place !== "space") { x.save(); x.globalCompositeOperation = "multiply"; x.fillStyle = "rgba(255,200,150,.35)"; x.fillRect(0, 0, W, H); x.restore(); }
+    if (paper) { x.save(); x.globalCompositeOperation = "multiply"; for (let i = 0; i < 26; i++) { const X = hsh(i + "px" + seed) * W, Y = hsh(i + "py" + seed) * H, R2 = 140 + hsh(i + "pr") * 260, g = x.createRadialGradient(X, Y, 0, X, Y, R2); g.addColorStop(0, "rgba(200,170,120,.1)"); g.addColorStop(1, "rgba(200,170,120,0)"); x.fillStyle = g; x.fillRect(X - R2, Y - R2, R2 * 2, R2 * 2); } x.restore();
+      for (let i = 0; i < 9; i++) { const X = 40 + hsh(i + "g" + seed) * (W - 80); L2([[X, FLOOR + 30], [X - 8, FLOOR + 8]], 3); L2([[X + 6, FLOOR + 30], [X + 6, FLOOR + 4]], 3); L2([[X + 12, FLOOR + 30], [X + 20, FLOOR + 10]], 3); } }
+  }
+  // рамка старого паперу (поверх кадру, не рухається з камерою)
+  function paperFrame(x) { x.save(); x.strokeStyle = "#5b4c3c"; x.lineWidth = 5; x.strokeRect(46, 46, W - 92, H - 92); x.setLineDash([16, 12]); x.lineWidth = 3; x.strokeRect(68, 68, W - 136, H - 136); x.setLineDash([]);
+    x.globalCompositeOperation = "multiply"; const g = x.createRadialGradient(W / 2, H / 2, H * .3, W / 2, H / 2, H * .75); g.addColorStop(0, "rgba(255,255,255,0)"); g.addColorStop(1, "rgba(170,135,90,.22)"); x.fillStyle = g; x.fillRect(0, 0, W, H); x.restore(); }
+  // підпис зі стрілкою до героя («Олег, 2015»)
+  function noteText(x, t, hd, lt, out) { const a = clamp(lt / .3) * (out ? clamp((out - lt) / .25) : 1); if (a <= 0 || !hd) return; const side = hd[0] > W / 2 ? -1 : 1, tx = clamp(hd[0] + side * -1 * 0 + (side > 0 ? 250 : -250), 220, W - 220), ty = Math.max(300, hd[1] - 220);
+    x.save(); x.globalAlpha = a; x.font = `700 70px "${HANDF}", "${FONT}", cursive`; x.textAlign = "center"; x.textBaseline = "middle"; const tw = Math.min(x.measureText(t).width, W - 120);
+    const dark = FMT !== "kino"; x.lineJoin = "round"; if (!dark) { x.strokeStyle = "rgba(15,14,22,.9)"; x.lineWidth = 12; x.strokeText(t, tx, ty, W - 120); } x.fillStyle = dark ? OLC() : "#fff"; x.fillText(t, tx, ty, W - 120);
+    const sx = tx - side * tw * .35, sy = ty + 46, ex = hd[0] + side * 70, ey = hd[1] - 30, p = eout(clamp((lt - .15) / .4));
+    x.strokeStyle = dark ? OLC() : "#fff"; x.lineWidth = 6; x.lineCap = "round"; x.beginPath(); x.moveTo(sx, sy); const mx = lerp(sx, ex, .2), my = lerp(sy, ey, .9); const qx = lerp(sx, mx, p), qy = lerp(sy, my, p); x.quadraticCurveTo(qx, qy, lerp(sx, ex, p), lerp(sy, ey, p)); x.stroke();
+    if (p > .95) { const ang = Math.atan2(ey - my, ex - mx); x.beginPath(); x.moveTo(ex, ey); x.lineTo(ex - Math.cos(ang - .5) * 26, ey - Math.sin(ang - .5) * 26); x.moveTo(ex, ey); x.lineTo(ex - Math.cos(ang + .5) * 26, ey - Math.sin(ang + .5) * 26); x.stroke(); }
+    x.restore(); }
   const PLACES = {
     room: { n: "Кімната", light: [140, 360], draw(x, tm, s) { wall(x, "#8f8296", tm); win(x, 110, 330, 380, 560, tm, s, "city"); plant(x, 420, 1010, .9); frame(x, 640, 420, 190, 140, "#d9b48a"); frame(x, 870, 470, 110, 150, "#8fa7c9");
       x.fillStyle = "#6f6474"; rr(x, 560, 1180, 470, 200, 26); x.fill(); x.fillStyle = "#7d7183"; rr(x, 540, 1260, 510, 170, 24); x.fill(); x.fillStyle = "#e3d4b8"; rr(x, 610, 1210, 120, 70, 18); x.fill(); floor(x, "#6d5a4e", tm); } },
@@ -342,10 +501,10 @@
     void: { n: "Порожній фон", light: null, draw(x, tm, s) { const T = TIME[tm] || TIME.day, g = x.createRadialGradient(W / 2, H * .45, 100, W / 2, H * .45, H * .8); g.addColorStop(0, shade("#a99fb2", T.amb + .1)); g.addColorStop(1, shade("#5d566a", T.amb)); x.fillStyle = g; x.fillRect(0, 0, W, H); x.fillStyle = "rgba(0,0,0,.12)"; x.fillRect(0, FLOOR, W, H - FLOOR); } },
   };
   const BGC = new Map();
-  function bgOf(place, tm, seed, blur) { const key = place + tm + seed + (blur ? "b" : ""); if (BGC.has(key)) return BGC.get(key);
+  function bgOf(place, tm, seed, blur) { const key = FMT + place + tm + seed + (blur ? "b" : ""); if (BGC.has(key)) return BGC.get(key);
     const c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d");
     if (blur) { x.filter = "blur(10px)"; x.drawImage(bgOf(place, tm, seed, false), -20, -20, W + 40, H + 40); x.filter = "none"; }
-    else (PLACES[place] || PLACES.room).draw(x, tm, seed);
+    else if (FMT !== "kino") bgC(x, PLACES[place] ? place : "room", tm, seed); else (PLACES[place] || PLACES.room).draw(x, tm, seed);
     if (BGC.size > 40) BGC.delete(BGC.keys().next().value); BGC.set(key, c); return c; }
 
   /* ---------- HUD, «великі написи», субтитри ---------- */
@@ -391,32 +550,33 @@
   }
   // «ЯКЩО ТВІЙ *IQ* …» — виділене слово в зірочках
   function capText(x, cap, lt, cy, style) {
-    const parts = String(cap.t || "").toUpperCase().split(/(\*[^*]+\*)/).filter(Boolean).flatMap((s) => { const hl = s.startsWith("*"); return s.replace(/\*/g, "").trim().split(/\s+/).filter(Boolean).map((w) => ({ w, hl })); });
-    if (!parts.length) return; const big = style === "title", size0 = big ? 118 : 96;
-    x.save(); x.font = `900 ${size0}px "${FONT}", system-ui, sans-serif`; const sp = size0 * .28, maxW = SAFEW - 40, lines = [[]]; let lw = 0;
+    const hand = FMT !== "kino", parts = String(cap.t || "")[hand ? "toString" : "toUpperCase"]().split(/(\*[^*]+\*)/).filter(Boolean).flatMap((s) => { const hl = s.startsWith("*"); return s.replace(/\*/g, "").trim().split(/\s+/).filter(Boolean).map((w) => ({ w, hl })); });
+    if (!parts.length) return; const big = style === "title", size0 = (big ? 118 : 96) * (hand ? 1.25 : 1), FF = (z) => hand ? `700 ${z}px "${HANDF}", cursive` : `900 ${z}px "${FONT}", system-ui, sans-serif`;
+    x.save(); x.font = FF(size0); const sp = size0 * .28, maxW = SAFEW - 40, lines = [[]]; let lw = 0;
     parts.forEach((p) => { const w = x.measureText(p.w).width; if (lw + w > maxW && lines[lines.length - 1].length) { lines.push([]); lw = 0; } lines[lines.length - 1].push({ ...p, wd: w }); lw += w + sp; });
     const scale = Math.min(1, ...lines.map((l) => maxW / (l.reduce((a, p) => a + p.wd + sp, -sp))));
     const size = size0 * scale, lh = size * 1.08, outA = cap.out ? clamp((cap.out - lt) / .25) : 1; let idx = 0;
     lines.forEach((l, li) => { const tw = l.reduce((a, p) => a + p.wd * scale + sp * scale, -sp * scale); let X = SCX - tw / 2; const Y = cy + (li - (lines.length - 1) / 2) * lh;
       l.forEach((p) => { const a = clamp((lt - idx * .07) / .16) * outA, s = 1 + (1 - eout((lt - idx * .07) / .22)) * .35; idx++; if (a <= 0) { X += (p.wd + sp) * scale; return; }
-        x.save(); x.globalAlpha = a; x.translate(X + p.wd * scale / 2, Y); x.scale(s, s); x.font = `900 ${size}px "${FONT}", system-ui, sans-serif`; x.textAlign = "center"; x.textBaseline = "middle"; x.lineJoin = "round";
-        x.shadowColor = "rgba(0,0,0,.45)"; x.shadowBlur = 18; x.shadowOffsetY = 6; x.strokeStyle = "rgba(20,18,30,.85)"; x.lineWidth = size * .14; x.strokeText(p.w, 0, 0); x.shadowBlur = 0; x.shadowOffsetY = 0;
+        x.save(); x.globalAlpha = a; x.translate(X + p.wd * scale / 2, Y); x.scale(s, s); x.font = FF(size); x.textAlign = "center"; x.textBaseline = "middle"; x.lineJoin = "round";
+        x.shadowColor = hand ? "transparent" : "rgba(0,0,0,.45)"; x.shadowBlur = 18; x.shadowOffsetY = 6; x.strokeStyle = hand ? "#141414" : "rgba(20,18,30,.85)"; x.lineWidth = size * (hand ? .16 : .14); x.strokeText(p.w, 0, 0); x.shadowBlur = 0; x.shadowOffsetY = 0;
         x.fillStyle = p.hl ? (cap.c || "#dbe86b") : "#ffffff"; x.fillText(p.w, 0, 0); x.restore(); X += (p.wd + sp) * scale; }); });
     x.restore();
   }
-  const SUBST = { classic: "Класичні", box: "Плашка", pop: "Караоке", one: "По слову", minimal: "Мінімал", yellow: "Жовті" };
+  const SUBST = { hand: "Рукописні", classic: "Класичні", box: "Плашка", pop: "Караоке", one: "По слову", minimal: "Мінімал", yellow: "Жовті" };
   const SUBS0 = { k: "classic", size: 1, y: 1370 };
-  function subs(x, t, L) { const S = { ...SUBS0, ...(L.subS || {}) }, k = SUBST[S.k] ? S.k : "classic";
+  function subs(x, t, L) { const S = { ...SUBS0, ...(L.subS || {}) }, k0 = SUBST[S.k] ? S.k : "classic", k = k0 === "classic" && FMT !== "kino" ? "hand" : k0;
     const ws = L.words; let i = ws.findIndex((w) => w.e > t - .05); if (i < 0) return; if (ws[i].s > t + .05 && (i === 0 || t - ws[i - 1].e > .5)) return;
     const N = k === "one" ? 1 : k === "box" ? 3 : 4, g0 = Math.floor(i / N) * N, grp = ws.slice(g0, g0 + N); if (!grp.length) return;
     const size = (k === "one" ? 92 : k === "minimal" ? 46 : 54) * clamp(+S.size || 1, .6, 1.8), Y = clamp(+S.y || 1370, 300, 1800);
-    x.save(); x.font = `${k === "minimal" ? 700 : 800} ${size}px "${FONT}", system-ui, sans-serif`; const sp = size * .26, tw = grp.reduce((a, w) => a + x.measureText(w.w).width + sp, -sp), sc = Math.min(1, (SAFEW - 40) / tw);
+    x.save(); x.font = k === "hand" ? `700 ${size * 1.3}px "${HANDF}", cursive` : `${k === "minimal" ? 700 : 800} ${size}px "${FONT}", system-ui, sans-serif`; const sp = size * .26, tw = grp.reduce((a, w) => a + x.measureText(w.w).width + sp, -sp), sc = Math.min(1, (SAFEW - 40) / tw);
     x.translate(SCX, Y); x.scale(sc, sc); x.translate(-SCX, -Y); let X = SCX - tw / 2; x.textAlign = "left"; x.textBaseline = "middle"; x.lineJoin = "round";
     if (k === "box") { const pad = size * .35; x.fillStyle = "rgba(12,11,20,.78)"; rr(x, X - pad, Y - size * .78, tw + pad * 2, size * 1.56, size * .35); x.fill(); }
     grp.forEach((w, n) => { const on = g0 + n === i && t >= w.s - .05, ww = x.measureText(w.w).width;
       if (k === "one") { const p = clamp((t - w.s) / .12), s2 = 1 + (1 - eout(p)) * .3; x.save(); x.translate(X + ww / 2, Y); x.scale(s2, s2); x.strokeStyle = "rgba(15,14,22,.92)"; x.lineWidth = size * .2; x.textAlign = "center"; x.strokeText(w.w.toUpperCase(), 0, 0); x.fillStyle = "#fff"; x.fillText(w.w.toUpperCase(), 0, 0); x.restore(); }
       else if (k === "box") { if (on) { x.fillStyle = "#dbe86b"; rr(x, X - size * .14, Y - size * .62, ww + size * .28, size * 1.24, size * .22); x.fill(); } x.fillStyle = on ? "#14121c" : "#fff"; x.fillText(w.w, X, Y); }
       else if (k === "pop") { const s2 = on ? 1.16 : 1; x.save(); x.translate(X + ww / 2, Y); x.scale(s2, s2); x.strokeStyle = "rgba(15,14,22,.9)"; x.lineWidth = size * .22; x.textAlign = "center"; x.strokeText(w.w, 0, 0); x.fillStyle = on ? "#7fe0b0" : t > w.e ? "#fff" : "rgba(255,255,255,.72)"; x.fillText(w.w, 0, 0); x.restore(); }
+      else if (k === "hand") { x.strokeStyle = "#141414"; x.lineWidth = size * .24; x.strokeText(w.w, X, Y); x.fillStyle = on ? "#ffe27a" : "#fff"; x.fillText(w.w, X, Y); }
       else if (k === "minimal") { x.shadowColor = "rgba(0,0,0,.7)"; x.shadowBlur = 12; x.fillStyle = on ? "#fff" : "rgba(255,255,255,.75)"; x.fillText(w.w, X, Y); x.shadowBlur = 0; }
       else if (k === "yellow") { x.strokeStyle = "rgba(15,14,22,.9)"; x.lineWidth = size * .22; x.strokeText(w.w, X, Y); x.fillStyle = on ? "#fff" : "#ffd60a"; x.fillText(w.w, X, Y); }
       else { x.strokeStyle = "rgba(15,14,22,.9)"; x.lineWidth = size * .22; x.strokeText(w.w, X, Y); x.fillStyle = on ? "#dbe86b" : "#fff"; x.fillText(w.w, X, Y); }
@@ -449,7 +609,7 @@
     const Y = c.y != null ? c.y * H : WHO[c.who]?.pet ? FLOOR + 30 : (POSE[c.pose]?.lie ? 1215 : POSE[c.pose]?.sit ? FLOOR - 20 : FLOOR + 40);
     return { X, Y, P, f, moving };
   }
-  function drawScene(x, L, si, t) {
+  function drawScene(x, L, si, t) { FMT = FMTS[L.fmt] ? L.fmt : "kino";
     const sc = L.scenes[si], lt = t - sc.t0, d = sc.t1 - sc.t0, tm = sc.time || "day", place = PLACES[sc.place] ? sc.place : "room";
     const hero = sc.cast?.find((c) => c.who === "hero") || sc.cast?.[0];
     // перший прохід — знайти голову героя для камери
@@ -459,25 +619,26 @@
     x.drawImage(bgOf(place, tm, sc.seed || 1, cam.z > 1.6), 0, 0);
     const T = TIME[tm] || TIME.day, Lp = PLACES[place].light;
     // промені світла
-    if (Lp && tm !== "night") { x.save(); x.globalCompositeOperation = "screen"; for (let i = 0; i < 4; i++) { const a = .1 + .05 * Math.sin(t * .7 + i * 2), X0 = Lp[0] - 160 + i * 120, g = x.createLinearGradient(X0, Lp[1], X0 + 700, Lp[1] + 1300); g.addColorStop(0, T.ray + a + ")"); g.addColorStop(1, T.ray + "0)"); x.fillStyle = g; x.beginPath(); x.moveTo(X0, Lp[1]); x.lineTo(X0 + 90, Lp[1]); x.lineTo(X0 + 760, Lp[1] + 1400); x.lineTo(X0 + 540, Lp[1] + 1400); x.fill(); } x.restore(); }
+    if (FMT === "kino" && Lp && tm !== "night") { x.save(); x.globalCompositeOperation = "screen"; for (let i = 0; i < 4; i++) { const a = .1 + .05 * Math.sin(t * .7 + i * 2), X0 = Lp[0] - 160 + i * 120, g = x.createLinearGradient(X0, Lp[1], X0 + 700, Lp[1] + 1300); g.addColorStop(0, T.ray + a + ")"); g.addColorStop(1, T.ray + "0)"); x.fillStyle = g; x.beginPath(); x.moveTo(X0, Lp[1]); x.lineTo(X0 + 90, Lp[1]); x.lineTo(X0 + 760, Lp[1] + 1400); x.lineTo(X0 + 540, Lp[1] + 1400); x.fill(); } x.restore(); }
     // люди
     const heads = {}; (sc.cast || []).forEach((c, i) => { const s = castState(sc, c, lt, d, i); const h = 720 * (c.scale || 1); const talk = c.who === "hero" && !L.silent && (L.words.some((w) => w.s <= t && w.e >= t));
       if (WHO[c.who]?.pet) { heads[i] = animal(x, s.X, s.Y, { breed: c.breed || (c.who === "cat" ? "ginger" : "labrador"), pose: s.moving ? (c.pose === "run" ? "run" : "walk") : c.pose, face: c.face, f: s.f, seed: i * 5 + si, rim: tm === "night" ? "#8fa0ff" : T.tint }, lt); return; }
-      heads[i] = figure(x, s.X, s.Y, s.P, { who: c.who || "man", col: c.who === "hero" ? L.hero.col : c.col || ["teal", "coral", "purple", "blue", "green"][i % 5], acc: c.who === "hero" ? L.hero.acc : c.acc, face: c.face || "calm", f: s.f, h, rim: tm === "night" ? "#8fa0ff" : T.tint, seed: i * 3 + si, talk: talk && c.face !== "shock" }, lt); });
+      heads[i] = figure(x, s.X, s.Y, s.P, { who: c.who || "man", key: i, skin: c.who === "hero" ? L.hero.skin : c.skin, hair: c.who === "hero" ? L.hero.hair : undefined, hairC: c.who === "hero" ? L.hero.hairC : undefined, beard: c.who === "hero" ? L.hero.beard : undefined, col: c.who === "hero" ? L.hero.col : c.col || ["teal", "coral", "purple", "blue", "green"][i % 5], acc: c.who === "hero" ? L.hero.acc : c.acc, face: c.face || "calm", f: s.f, h, rim: tm === "night" ? "#8fa0ff" : T.tint, seed: i * 3 + si, talk: talk && c.face !== "shock" }, lt); });
     // предмети в руці — у світі; решта — поверх кадру, щоб не губились на крупних планах
     const hi = (sc.cast || []).findIndex((c) => c.who === "hero"), drawProp = (p, i, X, Y, k) => { const pl = lt - (p.at ?? 0); if (pl < 0) return; const s = (p.s || 1) * back(pl / .4);
       x.save(); x.translate(X, Y + (k ? 0 : Math.sin(t * 1.6 + i) * 8)); x.scale(k || 1, k || 1); if (PROPS[p.k]) PROPS[p.k](x, s, { ...p, lt: pl }, t); else drawIcon(x, p.q || p.k, s, p.c); x.restore(); };
     (sc.props || []).forEach((p, i) => { if (!p.hold) return; const hand = heads[hi >= 0 ? hi : 0]?.hand; if (hand) drawProp(p, i, hand[0], hand[1] - 26, .62); });
     // пил у світлі
-    x.save(); for (let i = 0; i < 46; i++) { const X = (rnd(i, 31) * W + t * (8 + rnd(i, 32) * 14)) % W, Y = (rnd(i, 33) * H * .8 + Math.sin(t * .5 + i) * 40 + t * 6) % (H * .85); x.fillStyle = `rgba(255,250,235,${(.15 + rnd(i, 34) * .35) * (place === "space" ? .5 : 1)})`; x.beginPath(); x.arc(X, Y, 1.6 + rnd(i, 35) * 2.8, 0, 7); x.fill(); } x.restore();
+    x.save(); for (let i = 0; i < (FMT === "kino" ? 46 : 0); i++) { const X = (rnd(i, 31) * W + t * (8 + rnd(i, 32) * 14)) % W, Y = (rnd(i, 33) * H * .8 + Math.sin(t * .5 + i) * 40 + t * 6) % (H * .85); x.fillStyle = `rgba(255,250,235,${(.15 + rnd(i, 34) * .35) * (place === "space" ? .5 : 1)})`; x.beginPath(); x.arc(X, Y, 1.6 + rnd(i, 35) * 2.8, 0, 7); x.fill(); } x.restore();
     x.restore();
     const hh = heads[hi >= 0 ? hi : 0], tight = cam.z > 1.5 && hh, hsx = hh ? (hh.head[0] - cam.fx) * cam.z + W / 2 : W / 2;
     (sc.props || []).forEach((p, i) => { if (p.hold && hh) return; if (tight) drawProp(p, i, hsx > W / 2 ? W * .24 : W * .76, H * .64, .8); else drawProp(p, i, (p.x ?? .72) * W, (p.y ?? .4) * H, 0); });
     // HUD поверх (без зуму камери, з легким паралаксом)
     if (sc.hud && sc.hud.k && sc.hud.k !== "none") { const hl = lt - (sc.hud.at ?? 0); if (hl >= 0) { x.save(); x.translate((cam.fx - W / 2) * -.05, 0); hud(x, { ...sc.hud, out: d - (sc.hud.at ?? 0) }, hl, t); x.restore(); } }
     // кольорокорекція, віньєтка
-    x.save(); x.globalCompositeOperation = "soft-light"; x.globalAlpha = .28; x.fillStyle = T.grade; x.fillRect(0, 0, W, H); x.restore();
-    if (sc.cap?.t) { const cl = lt - (sc.cap.at ?? 0); if (cl >= 0) capText(x, { ...sc.cap, out: d - (sc.cap.at ?? 0) - .05 }, cl, sc.cap.y || (sc.cap.k === "title" ? H * .42 : 470), sc.cap.k); }
+    x.save(); x.globalCompositeOperation = "soft-light"; x.globalAlpha = FMT === "kino" ? .28 : 0; x.fillStyle = T.grade; x.fillRect(0, 0, W, H); x.restore();
+    if (sc.cap?.t && sc.cap.k === "note") { const cl = lt - (sc.cap.at ?? 0); if (cl >= 0 && hh) noteText(x, sc.cap.t, [(hh.head[0] - cam.fx) * cam.z + W / 2, (hh.head[1] - cam.fy) * cam.z + H / 2], cl, d - (sc.cap.at ?? 0)); }
+    else if (sc.cap?.t) { const cl = lt - (sc.cap.at ?? 0); if (cl >= 0) capText(x, { ...sc.cap, out: d - (sc.cap.at ?? 0) - .05 }, cl, sc.cap.y || (sc.cap.k === "title" ? H * .42 : 470), sc.cap.k); }
   }
   function post(x, t) { const g = x.createRadialGradient(W / 2, H * .48, H * .28, W / 2, H * .5, H * .78); g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, "rgba(8,6,20,.55)"); x.fillStyle = g; x.fillRect(0, 0, W, H);
     const gr = grain(), ox = Math.floor(rnd(Math.floor(t * 24), 4) * 256), oy = Math.floor(rnd(Math.floor(t * 24), 5) * 256); x.save(); x.globalCompositeOperation = "overlay"; x.fillStyle = x.createPattern(gr, "repeat"); x.translate(-ox, -oy); x.fillRect(ox, oy, W, H); x.restore(); }
@@ -658,7 +819,7 @@ out — повернення в історію після вставки, до 7
     if (!L.scenes.some((s) => s.a === L.adK)) { const prev = [...L.scenes].reverse().find((s) => s.a < L.adK); if (prev) L.scenes.push({ ...JSON.parse(JSON.stringify(prev)), a: L.adK, tr: "cut", cap: null, hud: null }); }
     L.scenes.forEach((s) => { if (s.a === L.adK) s.tr = "cut"; }); L.scenes.push({ ad: true, a: L.adK, kind: L.ad, place: "room", cast: [], props: [] }); }
   function drawFrame(x, L, t, OWd = W, OHd = H) {
-    x.save(); if (OWd !== W) x.scale(OWd / W, OHd / H);
+    x.save(); if (OWd !== W) x.scale(OWd / W, OHd / H); FMT = FMTS[L?.fmt] ? L.fmt : "kino";
     if (!L?.scenes?.length) { x.fillStyle = "#1a1830"; x.fillRect(0, 0, W, H); x.restore(); return; }
     const si = sceneAt(L, t), sc = L.scenes[si], lt = t - sc.t0, TR = sc.ad ? 0 : sc.tr === "whip" ? .32 : sc.tr === "fade" ? .45 : 0;
     if (si > 0 && TR && lt < TR) { const p = lt / TR;
@@ -666,9 +827,10 @@ out — повернення в історію після вставки, до 7
       else { const a = off("a"), b = off("b"), ax = a.getContext("2d"), bx = b.getContext("2d"); drawScene(ax, L, si - 1, t); drawScene(bx, L, si, t); const e = ease(p), dir = sc.dir || 1;
         x.fillStyle = "#000"; x.fillRect(0, 0, W, H); x.filter = `blur(${Math.round(Math.sin(p * Math.PI) * 26)}px)`; x.drawImage(a, -e * W * dir, 0); x.drawImage(b, (1 - e) * W * dir, 0); x.filter = "none"; } }
     else if (sc.ad) drawAd(x, L, si, lt, t); else drawScene(x, L, si, t);
+    FMT = FMTS[L.fmt] ? L.fmt : "kino"; if (FMT === "paper" && !sc.ad) paperFrame(x);
     if (L.subs && !sc.ad) subs(x, t, L);
     else if (L.subs && sc.ad && L.adWords && L.adTm) { const lt = t - sc.t0, S = L.adTm.seg, inE = Math.max(.9, S.in[1]), up = lt >= inE && lt < S.out[0]; if (lt < inE - .32 || lt >= inE) subs(x, t, { ...L, subS: up ? { ...SUBS0, ...(L.subS || {}), y: 330 } : L.subS, words: L.adWords.map((w) => ({ w: w.w, s: w.s + sc.t0, e: w.e + sc.t0 })) }); }
-    post(x, t);
+    if (FMT === "kino") post(x, t);
     const fo = Math.min(clamp(t / .35), clamp((L.dur - t) / .5)); if (fo < 1) { x.fillStyle = `rgba(6,5,14,${1 - fo})`; x.fillRect(0, 0, W, H); }
     x.restore();
   }
@@ -749,7 +911,7 @@ out — повернення в історію після вставки, до 7
 Персонажі (cast, до 3): who — hero (головний герой, завжди той самий) | man | woman | kid | girl | doctor | boss | old | dog | cat; для dog/cat — breed: ${Object.entries(BREED).map(([k, v]) => `${k} (${v.n})`).join(", ")} і pose тільки ${PETPOSE.join(" | ")} (talk — гавкає/нявкає); x — 0…1 по ширині; to — куди йде (0…1, тоді він іде/біжить); pose — ${Object.keys(POSE).join(" | ")}; face — ${FACE.join(" | ")}; look — l | r; acc (для не-героя) — ${ACC.join(" | ")}.
 Предмети (props, до 2): k — ${Object.keys(PROPS).join(" | ")} | або будь-яка іконка англійською в полі q (k:"icon", q:"rocket"); t — короткий текст/число на предметі; t2 — підпис (для card/calendar); hold:1 — герой тримає в руці (pose hold або phone); x,y — 0…1 (якщо не в руці); i — номер слова, коли з'являється.
 HUD (hud) — пояснення поверх кадру: k — none | panel (вікно-«оновлення» з % і двома кнопками items) | chart (графік: v 1 росте, -1 падає) | bars | counter (велике число v, підпис t) | brain (світний мозок-мережа) | check (чекліст items) | compare (до/після, items:[2]) | rings | network; t — заголовок; i — номер слова; y — висота центру 0…1 (не накривай голову героя: герой стоїть унизу, HUD став у верхню половину y 0.25–0.4).
-Напис (cap): t — ДО 5 слів ВЕЛИКИМИ, ключове слово в *зірочках* (воно жовте), i — номер слова; k:"title" — титр часу/місця на весь кадр («*3 ДНІ* ТОМУ»).
+Напис (cap): t — ДО 5 слів ВЕЛИКИМИ, ключове слово в *зірочках* (воно жовте), i — номер слова; k:"title" — титр часу/місця на весь кадр («*3 ДНІ* ТОМУ»); k:"note" — рукописний підпис зі стрілкою до героя (ім'я/вік/рік: «Олег, 2015», «я в 17»), звичайним регістром, до 4 слів.
 hit — номери 1–2 найважливіших слів сцени (легкий удар камери).`;
   const RULES = `Стиль — кінематографічний мультик із пласким героєм-чоловічком (темна кругла голова, світлі очі, худі), як популярні YouTube-канали «що, якби…», але ВЕРТИКАЛЬНО 9:16 для Reels:
 — сцена = одна думка, 1,5–4 с; часті зміни плану (wide → medium → close/face) тримають увагу; перші 2 секунди — найсильніший кадр + cap з гачком;
@@ -767,7 +929,7 @@ hit — номери 1–2 найважливіших слів сцени (ле�
       cast: (Array.isArray(s.cast) ? s.cast : []).slice(0, 3).filter((c) => c && WHO[c.who]).map((c) => ({ who: c.who, breed: WHO[c.who].pet ? (BREED[c.breed] && !!BREED[c.breed].cat === (c.who === "cat") ? c.breed : (c.who === "cat" ? "ginger" : "labrador")) : undefined, x: num(c.x, .08, .92, .5), to: c.to != null ? num(c.to, .08, .92, null) : undefined, pose: WHO[c.who].pet ? (PETPOSE.includes(c.pose) ? c.pose : "stand") : POSE[c.pose] ? c.pose : "stand", face: FACE.includes(c.face) ? c.face : "calm", look: c.look === "l" || c.look === "r" ? c.look : undefined, acc: ACC.includes(c.acc) ? c.acc : undefined, col: HOOD[c.col] ? c.col : undefined })),
       props: (Array.isArray(s.props) ? s.props : []).slice(0, 2).filter((p) => p && (PROPS[p.k] || p.q || p.k === "icon")).map((p) => ({ k: PROPS[p.k] ? p.k : "icon", q: str(p.q, 30) || undefined, t: str(String(p.t ?? ""), 16) || undefined, t2: str(p.t2, 16) || undefined, hold: p.hold ? 1 : undefined, x: num(p.x, .12, .76, .7), y: num(p.y, .15, .7, .4), i: okI(p.i), v: p.v != null ? num(p.v, -1, 1, 1) : undefined })),
       hud: s.hud && s.hud.k && s.hud.k !== "none" ? { k: ["panel", "chart", "bars", "counter", "brain", "check", "compare", "rings", "network"].includes(s.hud.k) ? s.hud.k : "panel", t: str(s.hud.t, 30), v: s.hud.v, items: Array.isArray(s.hud.items) ? s.hud.items.slice(0, 5).map((q) => str(String(q), 34)) : undefined, i: okI(s.hud.i), y: num(s.hud.y, .2, .6, .33) * H } : null,
-      cap: s.cap && s.cap.t ? { t: str(s.cap.t, 60), i: okI(s.cap.i), k: s.cap.k === "title" ? "title" : undefined } : null,
+      cap: s.cap && s.cap.t ? { t: str(s.cap.t, 60), i: okI(s.cap.i), k: s.cap.k === "title" || s.cap.k === "note" ? s.cap.k : undefined } : null,
       hit: (Array.isArray(s.hit) ? s.hit : []).map(okI).filter((v) => v != null).slice(0, 3),
     }));
     sc.forEach((s) => { if (!s.cast.some((c) => c.who === "hero") && !s.cast.some((c) => WHO[c.who]?.pet) && s.place !== "space" && s.cast.length < 3 && !s.hud) s.cast.unshift({ who: "hero", x: .5, pose: "talk", face: "calm" });
@@ -882,6 +1044,10 @@ ${SPEC}
 #yvcn .chips{display:flex;flex-wrap:wrap;gap:6px}#yvcn .chip{padding:7px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:#e4e4e7;font-weight:600;font-size:13px;font-family:inherit;cursor:pointer}#yvcn .chip[aria-pressed=true]{background:#f5f5f7;color:#0b0b0d}
 #yvcn .dot{width:34px;height:34px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}#yvcn .dot[aria-pressed=true]{border-color:#fff;box-shadow:0 0 0 2px #0b0b0d inset}
 #yvcn .styl{display:flex;gap:10px;align-items:center;padding:8px;border-radius:16px;border:1.5px solid #f5f5f7;background:rgba(255,255,255,.06)}#yvcn .styl canvas{width:96px;height:171px;border-radius:12px;flex:none;background:#222}#yvcn .styl b{display:block;font-size:15px}
+#yvcn .fmtv{display:flex;gap:10px;align-items:flex-start}#yvcn .fmtv canvas{width:110px;height:196px;border-radius:12px;flex:none;background:#222}#yvcn .fmtl{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0}
+#yvcn .fmtc{text-align:left;padding:9px 11px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:#f5f5f7;font-family:inherit;cursor:pointer}#yvcn .fmtc b{display:block;font-size:14px}#yvcn .fmtc span{display:block;font-size:11.5px;color:#a1a1aa;line-height:1.3;margin-top:2px}
+#yvcn .fmtc[aria-pressed="true"]{border-color:#dbe86b;background:rgba(219,232,107,.1)}#yvcn .fmtc.soonf{opacity:.55;border-style:dashed;cursor:default}
+#yvcn .chip .skd{display:inline-block!important;position:static!important;width:12px!important;height:12px!important;border-radius:50%;margin:0 6px 0 0;vertical-align:-1px;border:1px solid rgba(255,255,255,.4)}
 #yvcn .styl.soonf{margin-top:8px;border:1px dashed rgba(255,255,255,.2);background:transparent;opacity:.7;padding:12px}
 #yvcn .steps{display:flex;gap:6px;margin:0 0 12px;font-size:12px;font-weight:700}
 #yvcn .steps>*{flex:1;text-align:center;padding:6px 4px;border-radius:999px;background:rgba(255,255,255,.05);color:#71717a}
@@ -921,7 +1087,7 @@ ${SPEC}
     UI.root?.remove(); const d = document.createElement("div"); d.id = "yvcn"; d.innerHTML = `<div class="ch"><b>Анімаційні відео${isOwner() ? `<span class="tag">ТЕСТ</span>` : ""}</b><button class="cx" type="button" id="cclose" aria-label="Закрити">×</button></div><div class="cb"></div><div class="cf"></div>`;
     document.body.appendChild(d); UI.root = d; $(d, "#cclose").onclick = close; return d; }
   function close() { stopPlay(); cancelAnimationFrame(DEMO); UI.root?.remove(); UI.root = null; }
-  const DEMOPLAN = () => ({ dur: 9, mood: "curious", subs: false, silent: true, hero: { col: OPT.col, acc: OPT.acc }, words: Array.from({ length: 30 }, (_, i) => ({ w: "", s: .3 + i * .3, e: .55 + i * .3 })), scenes: [
+  const DEMOPLAN = () => ({ dur: 9, mood: "curious", subs: false, silent: true, fmt: OPT.fmt, hero: { col: OPT.col, acc: OPT.acc, skin: OPT.skin, hair: OPT.hair, hairC: OPT.hairC, beard: OPT.beard }, words: Array.from({ length: 30 }, (_, i) => ({ w: "", s: .3 + i * .3, e: .55 + i * .3 })), scenes: [
     { a: 0, place: "space", time: "night", shot: "wide", cam: "push", cast: [{ who: "hero", x: .5, pose: "shock", face: "shock" }], hud: { k: "brain", i: 1, y: 620 }, cap: { t: "ЩО ЯКБИ *ТИ*…", i: 0 } },
     { a: 10, place: "class", time: "sunset", shot: "medium", cam: "push", tr: "whip", cast: [{ who: "hero", x: .42, pose: "hold", face: "worried" }], props: [{ k: "card", t: "80", t2: "тест", hold: 1, i: 11 }] },
     { a: 20, place: "road", time: "sunset", shot: "wide", cam: "pan_r", tr: "whip", cast: [{ who: "hero", x: .3, to: .62, pose: "walk", face: "happy" }], cap: { t: "*3 ДНІ* ПОТОМУ", k: "title", i: 21 } }] });
@@ -980,27 +1146,33 @@ ${SPEC}
   function screenSetup(msg) { stopPlay(); const d = shell(), B = $(d, ".cb"), F = $(d, ".cf");
     B.innerHTML = `${msg ? `<div class="msg">${escH(msg)}</div>` : ""}<div class="scr">
       <div class="steps"><span>1 Тема</span><span>2 Текст і голос</span><b>3 Формат</b></div>
-      <div class="sec"><h4>Формат відео</h4><div class="styl on"><canvas width="270" height="480" id="cdemo"></canvas><div><b>Кіно-чоловічок ✓</b><span>Плаский герой у намальованих локаціях, наїзди камери, великі написи з виділеним словом, вікна-підказки, музика й звуки на діях.</span></div></div>
-        <div class="styl soonf"><div><b>Нові формати</b><span>Скоро — додаються з прикладів вірусних відео.</span></div></div></div>
+      <div class="sec"><h4>Формат відео</h4><div class="fmtv"><canvas width="270" height="480" id="cdemo"></canvas><div class="fmtl">${Object.entries(FMTS).map(([k, v]) => `<button type="button" class="fmtc" data-fmt="${k}" aria-pressed="${(OPT.fmt || "kino") === k}"><b>${v.n}</b><span>${v.d}</span></button>`).join("")}<div class="fmtc soonf"><b>Ілюстрована пригода</b><span>Детальні намальовані світи — скоро</span></div></div></div></div>
+
       <div class="sec"><h4>Реклама у відео</h4><p class="cnt" style="margin:-4px 0 8px">На цікавому місці історії персонаж дістає телефон — і тим самим голосом видно, як за кілька хвилин робиться таке відео, а за кожного, хто прийде за твоїм посиланням, ти отримуєш половину його першої оплати. Секунди вставки не списуються.</p><div class="chips">${Object.entries(AD_KINDS).map(([k, n]) => `<button class="chip" type="button" data-adk="${k}" aria-pressed="${(OPT.ad || "none") === k}">${n}</button>`).join("")}</div>
         <input class="tx" id="cadw" style="margin-top:8px${OPT.ad === "comment" || ((OPT.ad || "none") === "none" && OPT.capK === "comment") ? "" : ";display:none"}" maxlength="14" placeholder="Слово для коментарів" value="${escH(OPT.adWord || "АНІМАЦІЯ")}"><div id="cadhint">${OPT.ad === "comment" ? DM_HINT : ""}</div>
         <div id="ccapbox" style="margin-top:10px${(OPT.ad || "none") === "none" ? "" : ";display:none"}"><p class="cnt" style="margin:0 0 6px">Без вставки у відео — але можна привести людей підписом під відео. Ось текст, скопіюй його:</p><div class="chips" style="margin-bottom:8px">${["bio", "comment"].map((q) => `<button class="chip" type="button" data-ck="${q}" aria-pressed="${(OPT.capK || "bio") === q}">${AD_KINDS[q]}</button>`).join("")}</div><textarea class="tx" id="ccap0" rows="3" style="width:100%;resize:vertical" readonly></textarea><div class="row" style="margin-top:6px"><button class="btn" type="button" id="ccpy0">Скопіювати</button></div><p class="cnt" style="margin:6px 0 0">Після збереження відео дам підпис ще й з першим рядком про тему.</p></div>${isOwner() ? `<button class="btn" type="button" id="cadst" style="margin-top:10px">🎬 Студія вставки: текст і запис екрана · ТЕСТ</button>` : ""}</div>
       <details class="sec more"><summary>Герой, тварина, музика, локації, субтитри</summary>
-      <div class="sec"><h4>Герой: колір худі</h4><div class="chips" id="ccol">${Object.entries(HOOD).filter(([k]) => k !== "grey").map(([k, v]) => `<button class="dot" type="button" data-col="${k}" style="background:${v}" aria-pressed="${OPT.col === k}" aria-label="${k}"></button>`).join("")}</div>
+      <div class="sec"><h4>Герой: колір одягу</h4><div class="chips" id="ccol">${Object.entries(HOOD).filter(([k]) => k !== "grey").map(([k, v]) => `<button class="dot" type="button" data-col="${k}" style="background:${v}" aria-pressed="${OPT.col === k}" aria-label="${k}"></button>`).join("")}</div>
         <div class="chips" style="margin-top:8px">${[["none", "Без нічого"], ["beanie", "Шапка"], ["cap", "Кепка"], ["glasses", "Окуляри"], ["headphones", "Навушники"]].map(([k, n]) => `<button class="chip" type="button" data-acc="${k}" aria-pressed="${OPT.acc === k}">${n}</button>`).join("")}</div></div>
+      <div class="sec"><h4>Шкіра героя</h4><div class="chips">${Object.entries(SKIN_N).map(([k, n]) => `<button class="chip" type="button" data-skin="${k}" aria-pressed="${(OPT.skin || "auto") === k}">${k === "auto" ? "" : `<span class="skd" style="background:${SKIN[k]}"></span>`}${n}</button>`).join("")}</div></div>
+      <div class="sec"><h4>Зачіска</h4><div class="chips">${Object.entries(HAIR_N).map(([k, n]) => `<button class="chip" type="button" data-hair="${k}" aria-pressed="${(OPT.hair || "") === k}">${n}</button>`).join("")}</div>
+        <div class="chips" style="margin-top:8px">${Object.entries(HAIRC).map(([k, v]) => `<button class="dot" type="button" data-hc="${k}" style="background:${v}" aria-pressed="${(OPT.hairC || "dbrown") === k}" aria-label="${k}"></button>`).join("")}</div>
+        <div class="chips" style="margin-top:8px"><button class="chip" type="button" data-beard="0" aria-pressed="${!OPT.beard}">Без бороди</button><button class="chip" type="button" data-beard="1" aria-pressed="${!!OPT.beard}">З бородою</button></div></div>
       <div class="sec"><h4>Тварина в історії</h4><div class="chips"><button class="chip" type="button" data-pet="" aria-pressed="${!OPT.pet}">Без тварини</button>${Object.entries(BREED).map(([k, v]) => `<button class="chip" type="button" data-pet="${k}" aria-pressed="${OPT.pet === k}">${v.dog ? "🐕" : "🐈"} ${v.n}</button>`).join("")}</div></div>
       <div class="sec"><h4>Музика</h4><div id="csmus"></div></div>
       <div class="sec"><h4>Локації</h4><p class="cnt" style="margin:-4px 0 8px">Вибери, де житиме історія, або залиш «AI вибере». Можна кілька.</p><div class="chips" id="cplc"><button class="chip" type="button" data-pl="" aria-pressed="${!OPT.places?.length}">AI вибере</button>${Object.entries(PLACES).filter(([k]) => k !== "void").map(([k, v]) => `<button class="chip" type="button" data-pl="${k}" aria-pressed="${(OPT.places || []).includes(k)}">${v.n}</button>`).join("")}</div></div>
       <div class="sec"><div class="tg"><div><b>Субтитри</b><span>Розмір і висоту можна змінити в редакторі</span></div><button class="sw" type="button" id="csubs" role="switch" aria-checked="${OPT.subs}"></button></div>
         <div class="chips" style="margin-top:8px">${Object.entries(SUBST).map(([k, n]) => `<button class="chip" type="button" data-ss="${k}" aria-pressed="${(OPT.subS?.k || "classic") === k}">${n}</button>`).join("")}</div></div></details></div>`;
     F.innerHTML = `<div class="row"><button class="btn main" type="button" id="cnext">Створити відео</button><button class="btn sq" type="button" id="cprev" aria-label="Назад">‹</button></div>`;
-    const cv = $(B, "#cdemo"); loadFont().then(() => demo(cv)); loadIcons();
+    const cv = $(B, "#cdemo"); Promise.all([loadFont(), loadHand()]).then(() => demo(cv)); loadIcons();
+    B.querySelectorAll("[data-fmt]").forEach((b) => b.onclick = () => { OPT.fmt = b.dataset.fmt; saveOpt(); B.querySelectorAll("[data-fmt]").forEach((o) => o.setAttribute("aria-pressed", o === b)); demo(cv); track("fmt", { v: OPT.fmt }); });
     const pick = (sel, key, cb) => B.querySelectorAll(sel).forEach((b) => b.onclick = () => { B.querySelectorAll(sel).forEach((o) => o.setAttribute("aria-pressed", o === b)); cb(b.dataset[key]); saveOpt(); });
     pick("[data-col]", "col", (v) => { OPT.col = v; demo(cv); }); pick("[data-acc]", "acc", (v) => { OPT.acc = v; demo(cv); }); pick("[data-sec]", "sec", (v) => OPT.sec = +v); pick("[data-v]", "v", (v) => OPT.voice = v);
     musicList($(B, "#csmus"), OPT.music ? OPT.mood : "off", (v) => { OPT.music = v !== "off"; if (v !== "off") OPT.mood = v; saveOpt(); });
     if (!OPT.music || OPT.mood !== "auto") { const fx = $(B, "#csmus"); if (!fx.querySelector('[data-mk="auto"]')) { fx.querySelector(".vopt")?.insertAdjacentHTML("afterbegin", `<button type="button" data-mk="auto" aria-pressed="false"><b>AI вибере</b><span>Під настрій тексту</span></button>`); const ab = fx.querySelector('[data-mk="auto"]'); ab.onclick = () => { fx.querySelectorAll("[data-mk]").forEach((o) => o.setAttribute("aria-pressed", o === ab)); OPT.music = true; OPT.mood = "auto"; saveOpt(); }; } }
     $(B, "#csubs").onclick = (e) => { OPT.subs = !OPT.subs; e.currentTarget.setAttribute("aria-checked", OPT.subs); saveOpt(); };
     pick("[data-pet]", "pet", (v) => { OPT.pet = v; });
+    pick("[data-skin]", "skin", (v) => { OPT.skin = v; demo(cv); }); pick("[data-hair]", "hair", (v) => { OPT.hair = v; demo(cv); }); pick("[data-hc]", "hc", (v) => { OPT.hairC = v; demo(cv); }); pick("[data-beard]", "beard", (v) => { OPT.beard = v === "1"; demo(cv); });
     const capFill = () => { $(B, "#ccap0").value = capPromo(OPT.capK || "bio", OPT.adWord); };
     pick("[data-adk]", "adk", (v) => { OPT.ad = v; $(B, "#cadw").style.display = v === "comment" || (v === "none" && OPT.capK === "comment") ? "" : "none"; $(B, "#cadhint").innerHTML = v === "comment" ? DM_HINT : ""; $(B, "#ccapbox").style.display = v === "none" ? "" : "none"; });
     pick("[data-ck]", "ck", (v) => { OPT.capK = v; if (OPT.ad === "none") $(B, "#cadw").style.display = v === "comment" ? "" : "none"; capFill(); });
@@ -1060,12 +1232,12 @@ ${SPEC}
   let STAGE = "";
   async function build(src) { const MAX = 95;
     STAGE = "старт"; try { await E().busyRun("montage", async () => { const stage = (t) => { STAGE = t.replace(/…$/, "").toLowerCase(); try { yvBusy?.stage?.(t); } catch (e) {} };
-        await Promise.all([loadFont(), loadIcons()]); let y, words = null;
+        await Promise.all([loadFont(), loadIcons(), loadHand()]); let y, words = null;
         if (src.silent) { const r = wordsFromText(src.text); words = r.ws.filter((w) => w.e < MAX - 1); y = new Float32Array(Math.round(Math.min(MAX, r.dur) * E().SR)); }
         else { stage(src.tts ? "Озвучую текст…" : "Готую запис…"); y = src.tts ? await ttsAudio(src.tts.text, src.tts.voice) : await E().decode(src.buf); if (y.length / E().SR > MAX) { y = y.subarray(0, Math.round(MAX * E().SR)).slice(); say("Для Reels — до 1,5 хв. Беру початок"); } }
         if (!words) { stage("Розпізнаю слова…"); words = await sttWords(y); }
         if (words.length < 3) throw new Error("nowords");
-        L = { voice: y, words, dur: Math.max(y.length / E().SR, words[words.length - 1].e + 1.2), silent: !!src.silent, subs: OPT.subs, key: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), subS: { ...SUBS0, ...(OPT.subS || {}) }, places: (OPT.places || []).filter((k) => PLACES[k]), pet: BREED[OPT.pet] ? OPT.pet : "", regen: 0, music: OPT.music, mood: OPT.mood === "auto" ? "curious" : OPT.mood, hero: { col: OPT.col, acc: OPT.acc }, hist: [], src };
+        L = { voice: y, words, dur: Math.max(y.length / E().SR, words[words.length - 1].e + 1.2), silent: !!src.silent, subs: OPT.subs, key: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), subS: { ...SUBS0, ...(OPT.subS || {}) }, places: (OPT.places || []).filter((k) => PLACES[k]), pet: BREED[OPT.pet] ? OPT.pet : "", regen: 0, music: OPT.music, mood: OPT.mood === "auto" ? "curious" : OPT.mood, fmt: FMTS[OPT.fmt] ? OPT.fmt : "kino", hero: { col: OPT.col, acc: OPT.acc, skin: OPT.skin, hair: OPT.hair, hairC: OPT.hairC, beard: OPT.beard }, hist: [], src };
         L.ad = AD_KINDS[OPT.ad] ? OPT.ad : "none"; L.adWord = (OPT.adWord || "АНІМАЦІЯ").trim().slice(0, 14); L.topic = DRAFT.topic; if (L.ad !== "none") { stage("Додаю рекламну вставку…"); await placeAd(L); }
         stage("Режисую сцени…"); await aiPlan(L); ensureAd(L); if (OPT.mood !== "auto" && OPT.music) L.mood = OPT.mood; timeline(L);
         stage("Пишу музику й звуки…"); L.aud = await soundtrack(L); });
@@ -1326,5 +1498,5 @@ ${SPEC}
         if (navigator.canShare?.({ files: [f] })) { try { await navigator.share({ files: [f] }); } catch (x) {} } else { const a = document.createElement("a"); a.href = URL.createObjectURL(r.blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 6e4); }
         track("export", { v: `${Math.round(L.dur)}s` }); setTimeout(capPanel, 300); } catch (x) { console.error(x); say(x?.message === "noenc" ? "Цей браузер не вміє зберігати відео — спробуй Chrome або Safari 17+" : "Не вдалося зберегти"); }
       b.disabled = false; b.textContent = lbl; }; }
-  window.YVCine = { adStudio: () => adStudio(), open(o = {}) { if (o.text) { DRAFT.text = String(o.text); DRAFT.topic = String(o.topic || ""); saveDraft(); return screenContent(); } screenTopic(); }, close, _t: { DEMOPLAN, placeAd, removeAd, ensureAd, adPoint, loadAd, soundtrack, normPlan, aiPlan, set: (l) => { L = l; }, L: () => L, screenEdit, exportVideo, loadFont, drawFrame, timeline, PLACES, POSE, HOOD, figure, loadIcons, sceneAt } };
+  window.YVCine = { adStudio: () => adStudio(), open(o = {}) { if (o.text) { DRAFT.text = String(o.text); DRAFT.topic = String(o.topic || ""); saveDraft(); return screenContent(); } screenTopic(); }, close, _t: { loadHand, DEMOPLAN, placeAd, removeAd, ensureAd, adPoint, loadAd, soundtrack, normPlan, aiPlan, set: (l) => { L = l; }, L: () => L, screenEdit, exportVideo, loadFont, drawFrame, timeline, PLACES, POSE, HOOD, figure, loadIcons, sceneAt } };
 })();
