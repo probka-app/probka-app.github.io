@@ -59,11 +59,88 @@
   };
   const FACE = ["calm", "happy", "sad", "angry", "shock", "smirk", "worried", "sleep"];
   const WHO = {
+    dog: { s: 1, pet: 1 }, cat: { s: 1, pet: 1 },
     hero: { s: 1 }, man: { s: 1 }, woman: { s: .96, hair: 1 }, kid: { s: .66, hs: 1.18 }, doctor: { s: 1, coat: 1, glasses: 1 },
     boss: { s: 1.03, suit: 1 }, old: { s: .95, grey: 1, lean: 6 }, girl: { s: .7, hs: 1.16, hair: 1 },
   };
   const ACC = ["none", "beanie", "glasses", "cap", "headphones"];
 
+  /* ---------- тварини: собаки (мальтипу, вівчарка, лабрадор, хаскі) і коти — пласкі, у стилі героя ---------- */
+  const BREED = {
+    maltipoo: { n: "Мальтипу", dog: 1, S: 150, c: "#ead2ad", d: "#d4b48a", fluffy: 1, ear: "fluff", tail: "pom" },
+    shepherd: { n: "Вівчарка", dog: 1, S: 285, c: "#c88d4f", d: "#2a2520", saddle: 1, mask: "#2f2924", ear: "up", tail: "bush" },
+    labrador: { n: "Лабрадор", dog: 1, S: 265, c: "#e3b96b", d: "#c99a4e", ear: "flop", tail: "otter" },
+    husky: { n: "Хаскі", dog: 1, S: 265, c: "#8a909b", d: "#5f6570", white: 1, ear: "up", tail: "curl", eye: "#7fc4f0" },
+    ginger: { n: "Руда кішка", cat: 1, S: 170, c: "#e0904a", d: "#b86a2c", stripes: 1, eye: "#9cc35a" },
+    black: { n: "Чорна кішка", cat: 1, S: 170, c: "#2e2b33", d: "#1d1b22", eye: "#e8c84a" },
+    grey: { n: "Сіра кішка", cat: 1, S: 170, c: "#9a97a0", d: "#6f6c76", stripes: 1, eye: "#9cc35a" },
+    white: { n: "Біла кішка", cat: 1, S: 170, c: "#eeeae2", d: "#cfcac0", eye: "#7fc4f0" },
+    siamese: { n: "Сіамська кішка", cat: 1, S: 170, c: "#efe3cc", d: "#5a4234", points: 1, eye: "#7fc4f0" },
+  };
+  const PETPOSE = ["stand", "walk", "run", "sit", "lie", "talk"];
+  function animal(x, X, Y, c, t) {
+    const B = BREED[c.breed] || BREED.labrador, S = B.S * (c.scale || 1), f = c.f || 1, pose = PETPOSE.includes(c.pose) ? c.pose : "stand", sd = (c.seed || 0);
+    const walk = pose === "walk" || pose === "run" ? Math.sin(t * (pose === "run" ? 16 : 9) + sd) : 0, sit = pose === "sit", lie = pose === "lie";
+    const fill = (col, f2) => { x.fillStyle = col; x.beginPath(); f2(); x.fill(); };
+    const blob = (cx, cy, rx, ry, col, rot = 0) => fill(col, () => x.ellipse(cx, cy, rx, ry, rot, 0, 7));
+    x.save(); x.translate(X, Y); x.scale(f, 1);
+    x.save(); x.globalAlpha = .22; blob(0, 0, S * .85, S * .07, "#000"); x.restore();
+    const bodyY = lie ? -S * .3 : -S * .72 + Math.abs(walk) * S * .03, bodyTilt = sit ? -.55 : 0, rx = B.cat ? S * .62 : S * .7, ry = B.cat ? S * .25 : S * .3;
+    const legW = B.cat ? S * .1 : S * .14, legC = B.points ? B.d : B.c, legD = shade(legC, -.18);
+    // хвіст
+    const wag = Math.sin(t * (B.dog ? 9 : 2.2) + sd) * (B.dog ? .35 : .25);
+    x.save(); x.translate(-rx * .9, bodyY - ry * .3 + (sit ? S * .25 : 0)); x.rotate(wag);
+    x.strokeStyle = B.points ? B.d : B.tail === "bush" ? shade(B.c, -.1) : B.c; x.lineCap = "round";
+    if (B.cat) { x.lineWidth = S * .09; x.beginPath(); x.moveTo(0, 0); x.bezierCurveTo(-S * .35, -S * .05, -S * .45, -S * .45, -S * .25, -S * .6); x.stroke(); if (B.stripes) { x.strokeStyle = B.d; x.lineWidth = S * .1; [.3, .55, .8].forEach((p) => { x.beginPath(); x.moveTo(-S * .45 * p, -S * .55 * p * p); x.lineTo(-S * .45 * p - S * .02, -S * .55 * p * p - S * .05); x.stroke(); }); } }
+    else if (B.tail === "curl") { x.lineWidth = S * .13; x.beginPath(); x.moveTo(0, 0); x.bezierCurveTo(-S * .2, -S * .35, S * .15, -S * .5, S * .2, -S * .2); x.stroke(); x.strokeStyle = "#f1efea"; x.lineWidth = S * .06; x.beginPath(); x.moveTo(-S * .05, -S * .25); x.bezierCurveTo(0, -S * .4, S * .15, -S * .42, S * .18, -S * .25); x.stroke(); }
+    else if (B.tail === "pom") { blob(-S * .1, -S * .12, S * .17, S * .15, B.c); blob(-S * .2, -S * .05, S * .12, S * .1, B.d); }
+    else if (B.tail === "bush") { x.lineWidth = S * .16; x.strokeStyle = shade(B.c, -.12); x.beginPath(); x.moveTo(0, 0); x.quadraticCurveTo(-S * .28, S * .12, -S * .3, S * .45); x.stroke(); x.lineWidth = S * .1; x.strokeStyle = B.d; x.beginPath(); x.moveTo(-S * .29, S * .3); x.lineTo(-S * .3, S * .47); x.stroke(); }
+    else { x.lineWidth = S * .14; x.beginPath(); x.moveTo(0, 0); x.quadraticCurveTo(-S * .35, S * .05, -S * .48, S * .3); x.stroke(); }
+    x.restore();
+    // дальні лапи
+    const leg = (lx, ph, col, back) => { const sw = walk * (ph ? 1 : -1) * .35, top = bodyY + ry * .3, len = -top;
+      if (lie) { blob(lx + S * .25, -S * .07, S * .22, S * .07, col); return; }
+      if (sit && back) { blob(lx + S * .1, -S * .2, S * .26, S * .2, col); blob(lx + S * .28, -S * .05, S * .14, S * .06, col); return; }
+      x.save(); x.translate(lx, top); x.rotate(sw); x.fillStyle = col; x.beginPath(); x.moveTo(-legW * .62, 0); x.lineTo(legW * .62, 0); x.lineTo(legW * .42, len - S * .04); x.lineTo(-legW * .42, len - S * .04); x.closePath(); x.fill(); blob(legW * .2, len - S * .035, legW * .62, legW * .36, col); x.restore(); };
+    const fx = sit ? rx * .35 : rx * .62, bx = sit ? -rx * .45 : -rx * .62;
+    leg(bx + S * .08, 0, legD, 1); leg(fx + S * .08, 1, legD, 0);
+    // тіло
+    x.save(); x.translate(0, bodyY + (sit ? -S * .05 : 0)); x.rotate(bodyTilt);
+    if (B.fluffy) { for (let i = 0; i < 9; i++) blob(-rx * .7 + i * rx * .18, (i % 2 ? -ry * .2 : ry * .1) + Math.sin(i * 2.1) * ry * .15, ry * .62, ry * .62, i % 3 ? B.c : B.d); }
+    else blob(0, 0, rx, ry, B.c);
+    if (B.saddle) blob(-rx * .15, -ry * .45, rx * .62, ry * .55, B.d, -.05);
+    if (B.white) blob(rx * .1, ry * .45, rx * .7, ry * .45, "#f1efea");
+    if (B.stripes) { x.strokeStyle = B.d; x.lineWidth = S * .05; x.lineCap = "round"; for (let i = 0; i < 4; i++) { x.beginPath(); x.moveTo(-rx * .5 + i * rx * .3, -ry * .95); x.lineTo(-rx * .45 + i * rx * .3, -ry * .35); x.stroke(); } }
+    x.restore();
+    // ближні лапи
+    leg(bx - S * .05, 1, legC, 1); leg(fx - S * .05, 0, legC, 0);
+    // голова
+    const bob = Math.sin(t * 2 + sd) * S * .015 + (pose === "talk" ? Math.sin(t * 14) * S * .02 : 0);
+    const hx = sit ? rx * .55 : rx * .95, hy = (sit ? bodyY - S * .55 : lie ? bodyY - S * .22 : bodyY - S * .38) + bob, hr = B.cat ? S * .27 : S * (B.fluffy ? .3 : .26);
+    if (!lie && !sit) blob(hx - S * .15, hy + S * .2, S * .16, S * .22, B.white ? "#f1efea" : B.c, -.6);
+    const earC = B.points ? B.d : B.ear === "up" ? (B.mask || B.c) : B.d;
+    const tri = (ex, ey, w, h, col, rot) => { x.save(); x.translate(ex, ey); x.rotate(rot); fill(col, () => { x.moveTo(-w / 2, 0); x.lineTo(0, -h); x.lineTo(w / 2, 0); }); x.restore(); };
+    if (B.cat) { tri(hx - hr * .55, hy - hr * .6, hr * .7, hr * .75, earC, -.25); tri(hx + hr * .25, hy - hr * .7, hr * .7, hr * .8, earC, .2); tri(hx + hr * .25, hy - hr * .78, hr * .35, hr * .45, "#e9a3a3", .2); }
+    else if (B.ear === "up") { tri(hx - hr * .5, hy - hr * .55, hr * .62, hr * 1.05, shade(earC, -.1), -.2); tri(hx + hr * .1, hy - hr * .7, hr * .62, hr * 1.1, earC, .1); if (B.white) tri(hx + hr * .1, hy - hr * .8, hr * .3, hr * .6, "#e9a3a3", .1); }
+    if (B.fluffy) { for (let i = 0; i < 8; i++) { const a = i / 8 * 6.28; blob(hx + Math.cos(a) * hr * .55, hy + Math.sin(a) * hr * .55, hr * .5, hr * .5, i % 2 ? B.c : B.d); } }
+    blob(hx, hy, hr, hr * .95, B.c);
+    if (B.white) { blob(hx + hr * .25, hy + hr * .35, hr * .75, hr * .55, "#f1efea"); blob(hx + hr * .05, hy - hr * .2, hr * .18, hr * .12, "#f1efea"); }
+    if (B.points) blob(hx + hr * .35, hy + hr * .15, hr * .6, hr * .55, B.d);
+    // морда
+    const sx = hx + hr * (B.cat ? .62 : .78), sy = hy + hr * .28, open = pose === "talk" ? Math.abs(Math.sin(t * 12)) : 0;
+    if (!B.cat) { blob(sx, sy, hr * (B.fluffy ? .45 : .62), hr * .38, B.white ? "#f1efea" : shade(B.c, .08)); if (B.mask) blob(sx + hr * .25, sy - hr * .02, hr * .4, hr * .3, B.mask); if (open > .2) blob(sx + hr * .15, sy + hr * .32, hr * .3, hr * .15 * open + hr * .03, "#7a2f35"); blob(sx + hr * (B.fluffy ? .38 : .58), sy - hr * .12, hr * .16, hr * .13, "#1f1c22"); }
+    else { blob(sx, sy + hr * .05, hr * .38, hr * .26, B.points ? B.d : shade(B.c, .15)); blob(sx + hr * .26, sy - hr * .05, hr * .08, hr * .06, "#d07b80"); x.strokeStyle = "rgba(255,255,255,.8)"; x.lineWidth = S * .008; [-1, 0, 1].forEach((k) => { x.beginPath(); x.moveTo(sx + hr * .2, sy + hr * .05); x.lineTo(sx + hr * .85, sy + k * hr * .14); x.stroke(); }); if (open > .2) blob(sx + hr * .15, sy + hr * .25, hr * .14, hr * .1 * open + hr * .02, "#7a2f35"); }
+    // очі
+    const blink = (t + sd * 1.3) % 4.1 < .13 || (lie && c.face === "sleep");
+    const ex = hx + hr * .25, ey = hy - hr * .12;
+    if (blink) { x.strokeStyle = "#1f1c22"; x.lineWidth = S * .018; x.beginPath(); x.moveTo(ex - hr * .12, ey); x.lineTo(ex + hr * .12, ey); x.stroke(); }
+    else if (B.cat) { blob(ex, ey, hr * .17, hr * .14, B.eye); blob(ex + hr * .03, ey, hr * .04, hr * .12, "#1f1c22"); }
+    else { blob(ex, ey, hr * .14, hr * .15, B.eye || "#2a2227"); if (B.eye) blob(ex + hr * .03, ey, hr * .06, hr * .07, "#1f1c22"); blob(ex + hr * .05, ey - hr * .05, hr * .04, hr * .04, "rgba(255,255,255,.9)"); }
+    if (B.ear === "flop") blob(hx - hr * .3, hy + hr * .1, hr * .28, hr * .55, B.d, .35);
+    if (B.ear === "fluff") for (let i = 0; i < 3; i++) blob(hx - hr * .5, hy + hr * (.05 + i * .28), hr * .3, hr * .26, i % 2 ? B.d : shade(B.d, -.08));
+    x.restore();
+    return { head: [X + hx * f, Y + hy], r: hr, h: S };
+  }
   // позиція кінця відрізка
   const seg = (x, y, ang, len, f) => [x + Math.sin(ang * D) * len * f, y + Math.cos(ang * D) * len];
   function limb(x, pts, w, col) { x.strokeStyle = col; x.lineWidth = w; x.lineCap = "round"; x.lineJoin = "round"; x.beginPath(); x.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) x.lineTo(pts[i][0], pts[i][1]); x.stroke(); }
@@ -361,22 +438,22 @@
     return { z, fx: fx + sx / z, fy: fy + sy / z };
   }
   function castState(sc, c, lt, d, i) {
-    let X = (c.x ?? .5) * W, pose = POSE[c.pose] || POSE.stand, P;
-    if (c.to != null) { const tw = Math.min(d * .65, Math.abs(c.to - (c.x ?? .5)) * 4.5 + .6), p = clamp(lt / tw); X = lerp((c.x ?? .5), c.to, ease(p)) * W;
+    let X = (c.x ?? .5) * W, pose = POSE[c.pose] || POSE.stand, P, moving = false;
+    if (c.to != null) { const tw = Math.min(d * .65, Math.abs(c.to - (c.x ?? .5)) * 4.5 + .6), p = clamp(lt / tw); X = lerp((c.x ?? .5), c.to, ease(p)) * W; moving = p < 1;
       if (p < 1) P = walkPose(lt * (c.pose === "run" ? 13 : 8), c.pose === "run"); else P = blendPose(walkPose(0), pose.walk ? POSE.stand : pose, clamp((lt - tw) / .3)); }
     else if (pose.walk) P = walkPose(lt * (pose.walk === 2 ? 13 : 8), pose.walk === 2);
     else { const enter = POSE[c.from] || POSE.stand; P = blendPose(enter, pose, clamp(lt / .45)); }
     if (c.pose === "wave") P = { ...P, a: [P.a[0], [150, 30 + Math.sin(lt * 9) * 25]] };
     if (c.pose === "talk") P = { ...P, a: [P.a[0], [38 + Math.sin(lt * 3.1 + i) * 12, 62 + Math.sin(lt * 4.3 + i) * 15]] };
     const f = c.look === "l" ? -1 : c.look === "r" ? 1 : (c.to != null ? Math.sign(c.to - (c.x ?? .5)) || 1 : (c.x ?? .5) > .55 ? -1 : 1);
-    const Y = c.y != null ? c.y * H : (POSE[c.pose]?.lie ? 1215 : POSE[c.pose]?.sit ? FLOOR - 20 : FLOOR + 40);
-    return { X, Y, P, f };
+    const Y = c.y != null ? c.y * H : WHO[c.who]?.pet ? FLOOR + 30 : (POSE[c.pose]?.lie ? 1215 : POSE[c.pose]?.sit ? FLOOR - 20 : FLOOR + 40);
+    return { X, Y, P, f, moving };
   }
   function drawScene(x, L, si, t) {
     const sc = L.scenes[si], lt = t - sc.t0, d = sc.t1 - sc.t0, tm = sc.time || "day", place = PLACES[sc.place] ? sc.place : "room";
     const hero = sc.cast?.find((c) => c.who === "hero") || sc.cast?.[0];
     // перший прохід — знайти голову героя для камери
-    let H0 = null; if (hero) { const s = castState(sc, hero, lt, d, 0); H0 = { head: [s.X, s.Y - (WHO[hero.who]?.s || 1) * 720 * .94], r: 85, h: 720 * (WHO[hero.who]?.s || 1) }; }
+    let H0 = null; if (hero && WHO[hero.who]?.pet) { const s = castState(sc, hero, lt, d, 0), S = (BREED[hero.breed] || BREED.labrador).S; H0 = { head: [s.X + S * .7 * s.f, s.Y - S * 1.05], r: S * .27, h: S * 1.4 }; } else if (hero) { const s = castState(sc, hero, lt, d, 0); H0 = { head: [s.X, s.Y - (WHO[hero.who]?.s || 1) * 720 * .94], r: 85, h: 720 * (WHO[hero.who]?.s || 1) }; }
     const cam = camOf(sc, lt, d, H0);
     x.save(); x.translate(W / 2, H / 2); x.scale(cam.z, cam.z); x.translate(-cam.fx, -cam.fy);
     x.drawImage(bgOf(place, tm, sc.seed || 1, cam.z > 1.6), 0, 0);
@@ -385,6 +462,7 @@
     if (Lp && tm !== "night") { x.save(); x.globalCompositeOperation = "screen"; for (let i = 0; i < 4; i++) { const a = .1 + .05 * Math.sin(t * .7 + i * 2), X0 = Lp[0] - 160 + i * 120, g = x.createLinearGradient(X0, Lp[1], X0 + 700, Lp[1] + 1300); g.addColorStop(0, T.ray + a + ")"); g.addColorStop(1, T.ray + "0)"); x.fillStyle = g; x.beginPath(); x.moveTo(X0, Lp[1]); x.lineTo(X0 + 90, Lp[1]); x.lineTo(X0 + 760, Lp[1] + 1400); x.lineTo(X0 + 540, Lp[1] + 1400); x.fill(); } x.restore(); }
     // люди
     const heads = {}; (sc.cast || []).forEach((c, i) => { const s = castState(sc, c, lt, d, i); const h = 720 * (c.scale || 1); const talk = c.who === "hero" && !L.silent && (L.words.some((w) => w.s <= t && w.e >= t));
+      if (WHO[c.who]?.pet) { heads[i] = animal(x, s.X, s.Y, { breed: c.breed || (c.who === "cat" ? "ginger" : "labrador"), pose: s.moving ? (c.pose === "run" ? "run" : "walk") : c.pose, face: c.face, f: s.f, seed: i * 5 + si, rim: tm === "night" ? "#8fa0ff" : T.tint }, lt); return; }
       heads[i] = figure(x, s.X, s.Y, s.P, { who: c.who || "man", col: c.who === "hero" ? L.hero.col : c.col || ["teal", "coral", "purple", "blue", "green"][i % 5], acc: c.who === "hero" ? L.hero.acc : c.acc, face: c.face || "calm", f: s.f, h, rim: tm === "night" ? "#8fa0ff" : T.tint, seed: i * 3 + si, talk: talk && c.face !== "shock" }, lt); });
     // предмети в руці — у світі; решта — поверх кадру, щоб не губились на крупних планах
     const hi = (sc.cast || []).findIndex((c) => c.who === "hero"), drawProp = (p, i, X, Y, k) => { const pl = lt - (p.at ?? 0); if (pl < 0) return; const s = (p.s || 1) * back(pl / .4);
@@ -486,7 +564,7 @@
   const SPEC = `Локації (place): ${Object.entries(PLACES).map(([k, v]) => `${k} — ${v.n}`).join("; ")}. Час (time): day | sunset | night.
 План (shot): wide — загальний (герой на весь зріст), medium — по пояс, close — плечі й голова, face — лише обличчя (емоція). Камера (cam): push — повільний наїзд, pull — від'їзд, pan_l / pan_r — проїзд, still, shake — тряска (шок).
 Перехід (tr) до сцени: cut — різка склейка, whip — швидкий змах (зміна думки), fade — через темряву (зміна часу, «пізніше», сон).
-Персонажі (cast, до 3): who — hero (головний герой, завжди той самий) | man | woman | kid | girl | doctor | boss | old; x — 0…1 по ширині; to — куди йде (0…1, тоді він іде/біжить); pose — ${Object.keys(POSE).join(" | ")}; face — ${FACE.join(" | ")}; look — l | r; acc (для не-героя) — ${ACC.join(" | ")}.
+Персонажі (cast, до 3): who — hero (головний герой, завжди той самий) | man | woman | kid | girl | doctor | boss | old | dog | cat; для dog/cat — breed: ${Object.entries(BREED).map(([k, v]) => `${k} (${v.n})`).join(", ")} і pose тільки ${PETPOSE.join(" | ")} (talk — гавкає/нявкає); x — 0…1 по ширині; to — куди йде (0…1, тоді він іде/біжить); pose — ${Object.keys(POSE).join(" | ")}; face — ${FACE.join(" | ")}; look — l | r; acc (для не-героя) — ${ACC.join(" | ")}.
 Предмети (props, до 2): k — ${Object.keys(PROPS).join(" | ")} | або будь-яка іконка англійською в полі q (k:"icon", q:"rocket"); t — короткий текст/число на предметі; t2 — підпис (для card/calendar); hold:1 — герой тримає в руці (pose hold або phone); x,y — 0…1 (якщо не в руці); i — номер слова, коли з'являється.
 HUD (hud) — пояснення поверх кадру: k — none | panel (вікно-«оновлення» з % і двома кнопками items) | chart (графік: v 1 росте, -1 падає) | bars | counter (велике число v, підпис t) | brain (світний мозок-мережа) | check (чекліст items) | compare (до/після, items:[2]) | rings | network; t — заголовок; i — номер слова; y — висота центру 0…1 (не накривай голову героя: герой стоїть унизу, HUD став у верхню половину y 0.25–0.4).
 Напис (cap): t — ДО 5 слів ВЕЛИКИМИ, ключове слово в *зірочках* (воно жовте), i — номер слова; k:"title" — титр часу/місця на весь кадр («*3 ДНІ* ТОМУ»).
@@ -504,13 +582,13 @@ hit — номери 1–2 найважливіших слів сцени (ле�
   function normPlan(r, L) { const n = L.words.length, okI = (v) => Number.isInteger(v) && v >= 0 && v < n ? v : null, num = (v, a, b, d) => { v = +v; return isFinite(v) ? clamp(v, a, b) : d; }, str = (v, m) => typeof v === "string" ? v.slice(0, m) : "";
     const sc = (Array.isArray(r?.scenes) ? r.scenes : []).filter((s) => s && okI(s.a) != null).sort((a, b) => a.a - b.a).filter((s, i, A) => !i || s.a > A[i - 1].a).slice(0, 60).map((s) => ({
       a: s.a, place: PLACES[s.place] && (!L.places?.length || L.places.includes(s.place) || s.place === "space") ? s.place : (L.places?.length ? L.places[s.a % L.places.length] : "room"), time: TIME[s.time] ? s.time : "day", shot: SHOT[s.shot] ? s.shot : "wide", cam: ["push", "pull", "pan_l", "pan_r", "still", "shake"].includes(s.cam) ? s.cam : "push", tr: ["cut", "whip", "fade"].includes(s.tr) ? s.tr : "cut",
-      cast: (Array.isArray(s.cast) ? s.cast : []).slice(0, 3).filter((c) => c && WHO[c.who]).map((c) => ({ who: c.who, x: num(c.x, .08, .92, .5), to: c.to != null ? num(c.to, .08, .92, null) : undefined, pose: POSE[c.pose] ? c.pose : "stand", face: FACE.includes(c.face) ? c.face : "calm", look: c.look === "l" || c.look === "r" ? c.look : undefined, acc: ACC.includes(c.acc) ? c.acc : undefined, col: HOOD[c.col] ? c.col : undefined })),
+      cast: (Array.isArray(s.cast) ? s.cast : []).slice(0, 3).filter((c) => c && WHO[c.who]).map((c) => ({ who: c.who, breed: WHO[c.who].pet ? (BREED[c.breed] && !!BREED[c.breed].cat === (c.who === "cat") ? c.breed : (c.who === "cat" ? "ginger" : "labrador")) : undefined, x: num(c.x, .08, .92, .5), to: c.to != null ? num(c.to, .08, .92, null) : undefined, pose: WHO[c.who].pet ? (PETPOSE.includes(c.pose) ? c.pose : "stand") : POSE[c.pose] ? c.pose : "stand", face: FACE.includes(c.face) ? c.face : "calm", look: c.look === "l" || c.look === "r" ? c.look : undefined, acc: ACC.includes(c.acc) ? c.acc : undefined, col: HOOD[c.col] ? c.col : undefined })),
       props: (Array.isArray(s.props) ? s.props : []).slice(0, 2).filter((p) => p && (PROPS[p.k] || p.q || p.k === "icon")).map((p) => ({ k: PROPS[p.k] ? p.k : "icon", q: str(p.q, 30) || undefined, t: str(String(p.t ?? ""), 16) || undefined, t2: str(p.t2, 16) || undefined, hold: p.hold ? 1 : undefined, x: num(p.x, .12, .76, .7), y: num(p.y, .15, .7, .4), i: okI(p.i), v: p.v != null ? num(p.v, -1, 1, 1) : undefined })),
       hud: s.hud && s.hud.k && s.hud.k !== "none" ? { k: ["panel", "chart", "bars", "counter", "brain", "check", "compare", "rings", "network"].includes(s.hud.k) ? s.hud.k : "panel", t: str(s.hud.t, 30), v: s.hud.v, items: Array.isArray(s.hud.items) ? s.hud.items.slice(0, 5).map((q) => str(String(q), 34)) : undefined, i: okI(s.hud.i), y: num(s.hud.y, .2, .6, .33) * H } : null,
       cap: s.cap && s.cap.t ? { t: str(s.cap.t, 60), i: okI(s.cap.i), k: s.cap.k === "title" ? "title" : undefined } : null,
       hit: (Array.isArray(s.hit) ? s.hit : []).map(okI).filter((v) => v != null).slice(0, 3),
     }));
-    sc.forEach((s) => { if (!s.cast.some((c) => c.who === "hero") && s.place !== "space" && s.cast.length < 3 && !s.hud) s.cast.unshift({ who: "hero", x: .5, pose: "talk", face: "calm" });
+    sc.forEach((s) => { if (!s.cast.some((c) => c.who === "hero") && !s.cast.some((c) => WHO[c.who]?.pet) && s.place !== "space" && s.cast.length < 3 && !s.hud) s.cast.unshift({ who: "hero", x: .5, pose: "talk", face: "calm" });
       if (s.cast.some((c) => c.who === "hero")) { const h = s.cast.find((c) => c.who === "hero"); s.props.forEach((p) => { if (p.hold && !["hold", "phone"].includes(h.pose)) h.pose = p.k === "phone" ? "phone" : "hold"; }); }
       else s.props.forEach((p) => p.hold = undefined);
       if (s.hud && s.cast.length) { s.cast.forEach((c) => { if (c.pose !== "lie") c.y = undefined; }); if (["panel", "chart", "bars", "check", "compare", "counter"].includes(s.hud.k)) s.hud.y = Math.min(s.hud.y, (s.hud.k === "counter" ? .24 : .27) * H); }
@@ -523,7 +601,7 @@ hit — номери 1–2 найважливіших слів сцени (ле�
     const ask = `Ти режисер вертикальних анімаційних Reels. Людина говорить за кадром. ${a0 > 0 ? `Це продовження ролика (слова ${a0}–${a1 - 1}); попередня сцена: ${prev || "—"}.` : `Це ${a1 < L.words.length ? "початок" : "весь"} ролик${a1 < L.words.length ? "у" : ""}.`} Дослівні слова з номерами:
 ${words}
 ${extra}
-${L.places?.length ? `Локації: використовуй ТІЛЬКИ ці — ${L.places.join(", ")} (і space для абстрактних пояснень).\n` : ""}${RULES}
+${L.pet && BREED[L.pet] ? `У героя є тварина: ${BREED[L.pet].dog ? "собака" : "кіт"} — ${BREED[L.pet].n} (who:"${BREED[L.pet].dog ? "dog" : "cat"}", breed:"${L.pet}"). Додавай її в сцени, де доречно (вдома, на прогулянці, у смішних і теплих моментах), — завжди цю саму.\n` : ""}${L.places?.length ? `Локації: використовуй ТІЛЬКИ ці — ${L.places.join(", ")} (і space для абстрактних пояснень).\n` : ""}${RULES}
 ${SPEC}
 ${a0 === 0 ? `Визнач mood музики: ${Object.entries(MOODS).map(([k, v]) => `${k} (${v.n})`).join(", ")}.\n` : ""}Розбий ці слова на сцени по черзі (перша сцена — зі слова ${a0}; a — номер слова початку; нова сцена ≈ кожні 4–9 слів). Пиши JSON компактно, без зайвих полів (порожні props/hud/cap/hit не пиши).
 Відповідай тільки JSON: ${PLAN_JSON}`;
@@ -543,6 +621,7 @@ ${a0 === 0 ? `Визнач mood музики: ${Object.entries(MOODS).map(([k, v
     for (let a = a0, i = Math.floor(a0 / 6); a < a1; a += 6, i++) { const sp = P[i % P.length] === "space", s = { a, place: P[i % P.length], time: ["day", "sunset", "night"][i % 3], shot: SH[i % SH.length], cam: i % 3 === 2 ? "pull" : "push", tr: i ? (i % 2 ? "whip" : "cut") : "cut",
       cast: [{ who: "hero", x: .5, pose: PO[i % PO.length], face: FA[i % FA.length], to: PO[i % PO.length] === "walk" ? .7 : undefined }] };
       if (sp) s.hud = { k: ["brain", "chart", "rings", "counter"][i % 4], i: a, v: 1 };
+      else if (L.pet && BREED[L.pet] && i % 2 === 0) s.cast.push({ who: BREED[L.pet].cat ? "cat" : "dog", breed: L.pet, x: .76, pose: ["stand", "sit", "talk"][i % 3] });
       if (i % 3 === 0) { const ws = L.words.slice(a, Math.min(a1, a + 4)).map((w) => w.w.replace(/[.,!?…:;«»"]/g, "")); if (ws.length) { ws[ws.length - 1] = "*" + ws[ws.length - 1] + "*"; s.cap = { t: ws.join(" ").toUpperCase(), i: a }; } }
       out.push(s); }
     return out; }
@@ -658,6 +737,7 @@ ${SPEC}
       <div class="sec"><h4>Стиль</h4><div class="styl"><canvas width="270" height="480" id="cdemo"></canvas><div><b>Кіно-чоловічок</b><span>Плаский герой у намальованих локаціях, світло й пил, наїзди камери, великі написи з виділеним словом, HUD-вікна, музика та звуки на діях. Стиль узято з YouTube-прикладів, переведено у вертикаль.</span></div></div></div>
       <div class="sec"><h4>Герой: колір худі</h4><div class="chips" id="ccol">${Object.entries(HOOD).filter(([k]) => k !== "grey").map(([k, v]) => `<button class="dot" type="button" data-col="${k}" style="background:${v}" aria-pressed="${OPT.col === k}" aria-label="${k}"></button>`).join("")}</div>
         <div class="chips" style="margin-top:8px">${[["none", "Без нічого"], ["beanie", "Шапка"], ["cap", "Кепка"], ["glasses", "Окуляри"], ["headphones", "Навушники"]].map(([k, n]) => `<button class="chip" type="button" data-acc="${k}" aria-pressed="${OPT.acc === k}">${n}</button>`).join("")}</div></div>
+      <div class="sec"><h4>Тварина в історії</h4><div class="chips"><button class="chip" type="button" data-pet="" aria-pressed="${!OPT.pet}">Без тварини</button>${Object.entries(BREED).map(([k, v]) => `<button class="chip" type="button" data-pet="${k}" aria-pressed="${OPT.pet === k}">${v.dog ? "🐕" : "🐈"} ${v.n}</button>`).join("")}</div></div>
       <div class="sec"><h4>Тривалість</h4><div class="chips">${[20, 30, 45, 60, 90].map((s) => `<button class="chip" type="button" data-sec="${s}" aria-pressed="${OPT.sec === s}">${s} с</button>`).join("")}</div></div>
       <div class="sec"><h4>Голос</h4><div class="vopt">${VOICES.map(([k, n, s]) => `<button type="button" data-v="${k}" aria-pressed="${OPT.voice === k}"><b>${n}</b><span>${s}</span></button>`).join("")}</div></div>
       <div class="sec"><h4>Музика</h4><div id="csmus"></div></div>
@@ -671,6 +751,7 @@ ${SPEC}
     musicList($(B, "#csmus"), OPT.music ? OPT.mood : "off", (v) => { OPT.music = v !== "off"; if (v !== "off") OPT.mood = v; saveOpt(); });
     if (!OPT.music || OPT.mood !== "auto") { const fx = $(B, "#csmus"); if (!fx.querySelector('[data-mk="auto"]')) { fx.querySelector(".vopt")?.insertAdjacentHTML("afterbegin", `<button type="button" data-mk="auto" aria-pressed="false"><b>AI вибере</b><span>Під настрій тексту</span></button>`); const ab = fx.querySelector('[data-mk="auto"]'); ab.onclick = () => { fx.querySelectorAll("[data-mk]").forEach((o) => o.setAttribute("aria-pressed", o === ab)); OPT.music = true; OPT.mood = "auto"; saveOpt(); }; } }
     $(B, "#csubs").onclick = (e) => { OPT.subs = !OPT.subs; e.currentTarget.setAttribute("aria-checked", OPT.subs); saveOpt(); };
+    pick("[data-pet]", "pet", (v) => { OPT.pet = v; });
     pick("[data-ss]", "ss", (v) => { OPT.subS = { ...SUBS0, ...(OPT.subS || {}), k: v }; });
     B.querySelectorAll("[data-pl]").forEach((b) => b.onclick = () => { const k = b.dataset.pl; let L2 = (OPT.places || []).filter((q) => PLACES[q]); if (!k) L2 = []; else L2 = L2.includes(k) ? L2.filter((q) => q !== k) : [...L2, k]; OPT.places = L2; saveOpt();
       B.querySelectorAll("[data-pl]").forEach((o) => o.setAttribute("aria-pressed", o.dataset.pl ? L2.includes(o.dataset.pl) : !L2.length)); });
@@ -718,7 +799,7 @@ ${SPEC}
         else { stage(src.tts ? "Озвучую текст…" : "Готую запис…"); y = src.tts ? await ttsAudio(src.tts.text, src.tts.voice) : await E().decode(src.buf); if (y.length / E().SR > MAX) { y = y.subarray(0, Math.round(MAX * E().SR)).slice(); say("Для Reels — до 1,5 хв. Беру початок"); } }
         if (!words) { stage("Розпізнаю слова…"); words = await sttWords(y); }
         if (words.length < 3) throw new Error("nowords");
-        L = { voice: y, words, dur: Math.max(y.length / E().SR, words[words.length - 1].e + 1.2), silent: !!src.silent, subs: OPT.subs, key: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), subS: { ...SUBS0, ...(OPT.subS || {}) }, places: (OPT.places || []).filter((k) => PLACES[k]), regen: 0, music: OPT.music, mood: OPT.mood === "auto" ? "curious" : OPT.mood, hero: { col: OPT.col, acc: OPT.acc }, hist: [], src };
+        L = { voice: y, words, dur: Math.max(y.length / E().SR, words[words.length - 1].e + 1.2), silent: !!src.silent, subs: OPT.subs, key: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), subS: { ...SUBS0, ...(OPT.subS || {}) }, places: (OPT.places || []).filter((k) => PLACES[k]), pet: BREED[OPT.pet] ? OPT.pet : "", regen: 0, music: OPT.music, mood: OPT.mood === "auto" ? "curious" : OPT.mood, hero: { col: OPT.col, acc: OPT.acc }, hist: [], src };
         stage("Режисую сцени…"); await aiPlan(L); if (OPT.mood !== "auto" && OPT.music) L.mood = OPT.mood; timeline(L);
         stage("Пишу музику й звуки…"); L.aud = await soundtrack(L); });
       track("ready", { v: `${L.scenes.length}sc/${Math.round(L.dur)}s/${L.mood}${L._auto ? "/auto" : ""}` }); screenEdit(L._auto ? `AI-режисер не відповів (${L._planErr || "помилка"}) — сцени розставлено автоматично. Можна натиснути «Інший варіант»` : "Тапни ▶, щоб подивитись. Правки — кнопкою ✎");
@@ -799,6 +880,7 @@ ${SPEC}
       <div class="sec"><h4>Камера</h4>${chips("cam", CAM_N, sc.cam)}</div>
       ${i ? `<div class="sec"><h4>Перехід у сцену</h4>${chips("tr", TR_N, sc.tr)}</div>` : ""}
       ${hero ? `<div class="sec"><h4>Поза героя</h4>${chips("pose", POSE_N, hero.pose)}</div><div class="sec"><h4>Емоція</h4>${chips("face", FACE_N, hero.face)}</div>` : ""}
+      <div class="sec"><h4>Тварина в сцені</h4>${(() => { const pet = sc.cast.find((c) => WHO[c.who]?.pet); return `<div class="chips"><button class="chip" type="button" data-spet="" aria-pressed="${!pet}">Немає</button>${Object.entries(BREED).map(([k, v]) => `<button class="chip" type="button" data-spet="${k}" aria-pressed="${pet?.breed === k}">${v.n}</button>`).join("")}</div>${pet ? `<div class="chips" style="margin-top:6px">${PETPOSE.map((q) => `<button class="chip" type="button" data-spp="${q}" aria-pressed="${pet.pose === q}">${{ stand: "Стоїть", walk: "Іде", run: "Біжить", sit: "Сидить", lie: "Лежить", talk: BREED[pet.breed]?.cat ? "Нявкає" : "Гавкає" }[q]}</button>`).join("")}</div>` : ""}`; })()}</div>
       <div class="sec"><h4>Вікно поверх кадру</h4>${chips("hud", HUD_N, sc.hud?.k || "none")}<input class="tx" id="cschud" style="margin-top:8px" placeholder="Заголовок вікна / число" value="${escH(sc.hud?.k === "counter" ? String(sc.hud?.v ?? "") : sc.hud?.t || "")}"></div>`);
     const apply = () => { timeline(L); AUD_DIRTY = true; refresh(i); };
     P.querySelector("[data-pclose]").onclick = async () => { P.remove(); await freshAudio(); };
@@ -806,6 +888,10 @@ ${SPEC}
       if (k === "pose" || k === "face") { if (hero) { hero[k] = v; if (k === "pose") { hero.to = undefined; hero.y = undefined; } } }
       else if (k === "hud") { if (v === "none") sc.hud = null; else { sc.hud = { ...(sc.hud || {}), k: v, i: sc.a, y: (sc.cast.length ? (v === "counter" ? .24 : v === "brain" ? .32 : .27) : .4) * H, t: sc.hud?.t || "", v: sc.hud?.v ?? (v === "counter" ? "100" : 1), items: sc.hud?.items || (v === "check" ? ["Крок 1", "Крок 2", "Крок 3"] : v === "compare" ? ["Було", "Стало"] : undefined) }; } }
       else sc[k] = v; apply(); });
+    P.querySelectorAll("[data-spet]").forEach((b) => b.onclick = () => { pushH(); const k = b.dataset.spet; sc.cast = sc.cast.filter((c) => !WHO[c.who]?.pet);
+      if (k) { const h = sc.cast.find((c) => c.who === "hero"); sc.cast = sc.cast.slice(0, 2); sc.cast.push({ who: BREED[k].cat ? "cat" : "dog", breed: k, x: h && (h.x ?? .5) > .5 ? .22 : .74, pose: "stand" }); }
+      apply(); sceneSheet(i, refresh); });
+    P.querySelectorAll("[data-spp]").forEach((b) => b.onclick = () => { const pet = sc.cast.find((c) => WHO[c.who]?.pet); if (!pet) return; pushH(); pet.pose = b.dataset.spp; pet.to = undefined; apply(); P.querySelectorAll("[data-spp]").forEach((o) => o.setAttribute("aria-pressed", o === b)); });
     P.querySelector("#csccap").onchange = (e) => { pushH(); const t = e.target.value.trim(); sc.cap = t ? { ...(sc.cap || {}), t: t.slice(0, 60), i: sc.cap?.i ?? sc.a } : null; apply(); };
     P.querySelector("#cschud").onchange = (e) => { if (!sc.hud) return; pushH(); const t = e.target.value.trim(); if (sc.hud.k === "counter") sc.hud.v = t; else sc.hud.t = t.slice(0, 30); apply(); };
     P.querySelector("[data-sp]").onclick = async () => { await freshAudio(); refresh(i, true); };
