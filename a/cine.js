@@ -425,7 +425,7 @@
           if (M.perc > 1 && k % 4 === 0) { const o = ac.createOscillator(), kg = ac.createGain(); o.frequency.setValueAtTime(110, ht); o.frequency.exponentialRampToValueAtTime(38, ht + .18); env(kg, ht, .003, .22, .3); o.connect(kg); kg.connect(mus); o.start(ht); o.stop(ht + .4); } } }
     }
     // ефекти на діях
-    const whoosh = (t, up = 1) => { const src = ac.createBufferSource(), bp = ac.createBiquadFilter(), g = ac.createGain(); src.buffer = NB; bp.type = "bandpass"; bp.Q.value = 1.2; bp.frequency.setValueAtTime(up ? 300 : 2800, t); bp.frequency.exponentialRampToValueAtTime(up ? 3200 : 300, t + .32); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(.32, t + .16); g.gain.exponentialRampToValueAtTime(0.0001, t + .4); src.connect(bp); bp.connect(g); g.connect(sfx); src.start(t, Math.random(), .45); };
+    const whoosh = (t, up = 1) => { t = Math.max(.01, t); const src = ac.createBufferSource(), bp = ac.createBiquadFilter(), g = ac.createGain(); src.buffer = NB; bp.type = "bandpass"; bp.Q.value = 1.2; bp.frequency.setValueAtTime(up ? 300 : 2800, t); bp.frequency.exponentialRampToValueAtTime(up ? 3200 : 300, t + .32); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(.32, t + .16); g.gain.exponentialRampToValueAtTime(0.0001, t + .4); src.connect(bp); bp.connect(g); g.connect(sfx); src.start(t, Math.random(), .45); };
     const pop = (t) => { const o = ac.createOscillator(), g = ac.createGain(); o.type = "sine"; o.frequency.setValueAtTime(520, t); o.frequency.exponentialRampToValueAtTime(1100, t + .07); env(g, t, .004, .22, .12); o.connect(g); g.connect(sfx); o.start(t); o.stop(t + .2); };
     const ding = (t) => { osc("sine", 1318, t, .003, .12, .7, sfx); osc("sine", 1976, t + .06, .003, .09, .6, sfx); };
     const blip = (t) => { osc("square", 1250, t, .002, .035, .05, sfx, 3000); osc("square", 1660, t + .07, .002, .03, .05, sfx, 3000); };
@@ -483,16 +483,36 @@ hit — номери 1–2 найважливіших слів сцени (ле�
       if (s.hud && s.cast.length) { s.cast.forEach((c) => { if (c.pose !== "lie") c.y = undefined; }); if (["panel", "chart", "bars", "check", "compare", "counter"].includes(s.hud.k)) s.hud.y = Math.min(s.hud.y, (s.hud.k === "counter" ? .24 : .27) * H); }
       s.props.forEach((p) => { if (!p.hold) { p.y = Math.min(p.y, s.cast.length ? .42 : .7); if (s.cap && p.y < .32) p.y = .36; } }); });
     if (!sc.length) throw new Error("plan"); if (sc[0].a !== 0) sc[0].a = 0; return sc; }
-  async function aiPlan(L, extra = "") {
-    const r = await sample.json(`Ти режисер вертикальних анімаційних Reels. Людина говорить за кадром — ось дослівні слова з номерами:
-${numbered(L)}
+  // план сцен: частинами по ~70 слів (короткий JSON — не обрізається), з повтором; якщо AI не впорався — автоплан
+  const PLAN_JSON = `{"mood":"curious","scenes":[{"a":0,"place":"space","time":"night","shot":"wide","cam":"push","tr":"cut","cast":[{"who":"hero","x":0.5,"pose":"shock","face":"shock"}],"props":[],"hud":{"k":"rings","i":0},"cap":{"t":"ЩО ЯКБИ *ТИ* …","i":1},"hit":[3]}]}`;
+  async function planPart(L, a0, a1, extra, prev) {
+    const words = L.words.slice(a0, a1).map((w, k) => `${a0 + k}:${w.w}`).join(" ");
+    const ask = `Ти режисер вертикальних анімаційних Reels. Людина говорить за кадром. ${a0 > 0 ? `Це продовження ролика (слова ${a0}–${a1 - 1}); попередня сцена: ${prev || "—"}.` : `Це ${a1 < L.words.length ? "початок" : "весь"} ролик${a1 < L.words.length ? "у" : ""}.`} Дослівні слова з номерами:
+${words}
 ${extra}
 ${RULES}
 ${SPEC}
-Також визнач mood музики: ${Object.entries(MOODS).map(([k, v]) => `${k} (${v.n})`).join(", ")}.
-Розбий на сцени по черзі на весь ролик (перша — зі слова 0; a — номер слова початку сцени; сцени ≈ кожні 4–10 слів).
-Відповідай тільки JSON: {"mood":"curious","scenes":[{"a":0,"place":"space","time":"night","shot":"wide","cam":"push","tr":"cut","cast":[{"who":"hero","x":0.5,"pose":"shock","face":"shock"}],"props":[],"hud":{"k":"rings","i":0},"cap":{"t":"ЩО ЯКБИ *ТИ* …","i":1},"hit":[3]}]}`, { cache: false, kb: ["style", "edit", "story", "hook", "camera", "color", "sound", "general"], max: 8000 });
-    L.scenes = normPlan(r, L); if (MOODS[r?.mood]) L.mood = r.mood; return L; }
+${a0 === 0 ? `Визнач mood музики: ${Object.entries(MOODS).map(([k, v]) => `${k} (${v.n})`).join(", ")}.\n` : ""}Розбий ці слова на сцени по черзі (перша сцена — зі слова ${a0}; a — номер слова початку; нова сцена ≈ кожні 4–9 слів). Пиши JSON компактно, без зайвих полів (порожні props/hud/cap/hit не пиши).
+Відповідай тільки JSON: ${PLAN_JSON}`;
+    let err; for (let k = 0; k < 2; k++) { try { const r = await sample.json(ask, { cache: false, kb: ["style", "edit", "story", "hook", "camera", "sound", "general"], max: 4000 }); if (Array.isArray(r?.scenes) && r.scenes.length) return r; err = new Error("plan_empty"); } catch (e) { err = e; if (/limit|login|no_key/.test(e?.message || "")) throw e; } }
+    throw err; }
+  async function aiPlan(L, extra = "") {
+    const n = L.words.length, STEP = 70, parts = []; for (let a = 0; a < n; a += STEP) parts.push([a, Math.min(n, a + STEP)]);
+    if (parts.length > 1 && parts[parts.length - 1][1] - parts[parts.length - 1][0] < 20) { const last = parts.pop(); parts[parts.length - 1][1] = last[1]; }
+    let scenes = [], mood = null, fails = 0;
+    const res = await Promise.all(parts.map(([a0, a1], i) => planPart(L, a0, a1, extra, i ? "продовжуй той самий стиль і героя" : "").then((r) => r, (e) => { if (/limit|login|no_key/.test(e?.message || "")) throw e; fails++; L._planErr = String(e?.message || e?.code || e).slice(0, 60); return null; })));
+    res.forEach((r, i) => { const [a0, a1] = parts[i]; if (!i && MOODS[r?.mood]) mood = r.mood;
+      const ok = (r?.scenes || []).filter((s) => Number.isInteger(s?.a) && s.a >= a0 && s.a < a1);
+      if (ok.length) { if (ok[0].a !== a0) ok[0].a = a0; scenes.push(...ok); } else scenes.push(...autoPlan(L, a0, a1)); });
+    L.scenes = normPlan({ scenes }, L); if (mood) L.mood = mood; L._auto = fails === parts.length; return L; }
+  // автоплан без AI: сцени кожні ~6 слів, різні локації й плани, написи на ключових місцях
+  function autoPlan(L, a0, a1) { const P = ["space", "room", "office", "street", "class", "cafe", "road", "park", "night", "lab"], SH = ["wide", "medium", "close", "wide", "face", "medium"], PO = ["talk", "think", "point", "shrug", "cheer", "walk", "phone", "sad"], FA = ["calm", "worried", "smirk", "shock", "happy", "sad"], out = [];
+    for (let a = a0, i = Math.floor(a0 / 6); a < a1; a += 6, i++) { const sp = P[i % P.length] === "space", s = { a, place: P[i % P.length], time: ["day", "sunset", "night"][i % 3], shot: SH[i % SH.length], cam: i % 3 === 2 ? "pull" : "push", tr: i ? (i % 2 ? "whip" : "cut") : "cut",
+      cast: [{ who: "hero", x: .5, pose: PO[i % PO.length], face: FA[i % FA.length], to: PO[i % PO.length] === "walk" ? .7 : undefined }] };
+      if (sp) s.hud = { k: ["brain", "chart", "rings", "counter"][i % 4], i: a, v: 1 };
+      if (i % 3 === 0) { const ws = L.words.slice(a, Math.min(a1, a + 4)).map((w) => w.w.replace(/[.,!?…:;«»"]/g, "")); if (ws.length) { ws[ws.length - 1] = "*" + ws[ws.length - 1] + "*"; s.cap = { t: ws.join(" ").toUpperCase(), i: a }; } }
+      out.push(s); }
+    return out; }
   async function aiEdit(L, text) {
     const strip = L.scenes.map(({ t0, t1, hitT, seed, dir, ...s }) => ({ ...s, props: (s.props || []).map(({ at, ...p }) => p), hud: s.hud ? (({ at, ...h }) => ({ ...h, y: +(h.y / H).toFixed(2) }))(s.hud) : null, cap: s.cap ? (({ at, ...c }) => c)(s.cap) : null }));
     const r = await sample.json(`Ти режисер вертикальної кіно-анімації. Слова озвучки з номерами:
@@ -610,11 +630,20 @@ ${SPEC}
     pick("[data-mood]", "mood", (v) => { OPT.music = v !== "off"; if (v !== "off") OPT.mood = v; });
     $(B, "#csubs").onclick = (e) => { OPT.subs = !OPT.subs; e.currentTarget.setAttribute("aria-checked", OPT.subs); saveOpt(); };
     $(F, "#cnext").onclick = () => { cancelAnimationFrame(DEMO); screenContent(); }; track("open"); }
-  async function voicePick(box) { let V = [], cl = null; try { [V, cl] = await Promise.all([SRV.voices(), OPT.voice === "clone" ? SRV.myClone() : null]); } catch (e) {} if (!box.isConnected) return;
+  const VPA = { a: null };
+  async function voicePick(box) { let V = [], cl = null, err = "";
+    try { V = (await SRV.voices()) || []; } catch (e) { err = e?.message || "err"; }
+    if (OPT.voice === "clone") { try { cl = await SRV.myClone(); } catch (e) {} }
+    if (!box.isConnected) return;
     if (OPT.voice === "clone") { box.innerHTML = cl?.has ? `<p class="cnt" style="margin:0">✓ Озвучимо твоїм голосом</p>` : `<p class="cnt" style="margin:0">Ще немає зразка твого голосу — створи його в «Озвучці» або вибери AI-голос.</p>`; DRAFT.vid = cl?.has ? "clone" : ""; return; }
-    if (!V.length) { box.innerHTML = `<p class="cnt" style="margin:0">Голоси зараз недоступні</p>`; return; } if (!V.some((v) => v.id === DRAFT.vid)) DRAFT.vid = V[0].id;
-    box.innerHTML = `<div class="chips">${V.map((v) => `<button class="chip" type="button" data-vid="${escH(v.id)}" aria-pressed="${DRAFT.vid === v.id}">${escH(v.name)}</button>`).join("")}</div>`;
-    box.querySelectorAll("[data-vid]").forEach((b) => b.onclick = () => { DRAFT.vid = b.dataset.vid; box.querySelectorAll("[data-vid]").forEach((o) => o.setAttribute("aria-pressed", o === b)); saveDraft(); }); }
+    if (!V.length) { box.innerHTML = `<p class="cnt" style="margin:0">Голоси не завантажились${err ? ` (${escH(err)})` : ""}. <button class="chip" type="button" id="cvr">Ще раз</button></p>`; $(box, "#cvr").onclick = () => { box.innerHTML = `<p class="cnt" style="margin:0">Завантажую голоси…</p>`; voicePick(box); }; return; }
+    if (!V.some((v) => v.id === DRAFT.vid)) DRAFT.vid = V[0].id;
+    box.innerHTML = `<div class="vopt">${V.map((v) => `<button type="button" data-vid="${escH(v.id)}" aria-pressed="${DRAFT.vid === v.id}" style="display:flex;align-items:center;gap:10px"><span style="flex:1"><b>${escH(v.name)}</b>${v.descr ? `<span>${escH(v.descr)}</span>` : ""}</span><i data-pv="${escH(v.id)}" role="button" aria-label="Прослухати" style="font-style:normal;flex:none;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.12);display:grid;place-items:center">▶</i></button>`).join("")}</div>`;
+    box.querySelectorAll("[data-vid]").forEach((b) => b.onclick = async (e) => { DRAFT.vid = b.dataset.vid; saveDraft(); box.querySelectorAll("[data-vid]").forEach((o) => o.setAttribute("aria-pressed", o === b));
+      const pv = e.target.closest("[data-pv]"); if (!pv) return; try { VPA.a?.pause(); } catch (x) {} if (pv.textContent === "■") { pv.textContent = "▶"; return; }
+      const v = V.find((q) => q.id === b.dataset.vid); let u = v.preview || v._u;
+      if (!u) { pv.textContent = "…"; try { const r = await SRV.tts({ text: "Привіт! Ось так звучатиме твоє відео.", voice: { kind: "preset", id: v.id }, quiet: true }); u = v._u = URL.createObjectURL(new Blob([b64Buf(r.audio)], { type: r.mime || "audio/mpeg" })); } catch (x) { pv.textContent = "▶"; say(TTS_ERR[x.message] || "Не вдалося прослухати"); return; } }
+      box.querySelectorAll("[data-pv]").forEach((o) => o.textContent = "▶"); VPA.a = new Audio(u); pv.textContent = "■"; VPA.a.onended = () => pv.textContent = "▶"; VPA.a.play().catch(() => pv.textContent = "▶"); }); }
   function screenContent(msg) { stopPlay(); const d = shell(), B = $(d, ".cb"), F = $(d, ".cf"), v = OPT.voice, rec = v === "rec" || v === "file";
     B.innerHTML = `${msg ? `<div class="msg">${escH(msg)}</div>` : ""}<div class="scr">
       <div class="sec"><h4>Про що відео?</h4><input class="tx" id="ctopic" placeholder="Напр.: що буде, якщо щодня знімати по одному відео" value="${escH(DRAFT.topic)}"></div>
@@ -630,14 +659,15 @@ ${SPEC}
     $(B, "#cwr").onclick = async () => { const topic = tp.value.trim() || ta.value.trim().slice(0, 300); if (!topic) { say("Напиши, про що відео"); tp.focus(); return; }
       try { const t = await E().busyRun("text", () => aiText(topic, OPT.sec, v === "none")); if (!t) throw new Error("empty"); ta.value = t; est(); $(B, "#cwr").textContent = "✨ Написати інакше"; track("ai_text"); } catch (e) { console.warn("cine text", e); say(e?.message === "limit" ? "Ліміт на сьогодні вичерпано" : "Не вийшло написати текст"); } };
     if (v === "ai" || v === "clone") voicePick($(B, "#cvl"));
-    $(F, "#cprev").onclick = () => screenSetup();
+    $(F, "#cprev").onclick = () => { try { VPA.a?.pause(); } catch (e) {} screenSetup(); };
     if (v === "rec") { const rb = $(F, "#crec"), rl = rb.innerHTML; rb.onclick = () => E().record(rb, rl, (buf) => build({ buf })); }
     else if (v === "file") $(F, "#cfile").onchange = async (e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) build({ buf: await f.arrayBuffer() }); };
-    else $(F, "#cgo").onclick = () => { const t = ta.value.trim(); if ((t.match(/\S+/g) || []).length < 4) { say("Додай текст — хоча б одне речення"); ta.focus(); return; }
+    else $(F, "#cgo").onclick = () => { try { VPA.a?.pause(); } catch (e) {} const t = ta.value.trim(); if ((t.match(/\S+/g) || []).length < 4) { say("Додай текст — хоча б одне речення"); ta.focus(); return; }
       if (v === "none") return build({ silent: true, text: t }); if (!DRAFT.vid) { say(v === "clone" ? "Спершу створи свій голос" : "Вибери голос"); return; }
       build({ tts: { text: t, voice: DRAFT.vid === "clone" ? { kind: "clone" } : { kind: "preset", id: DRAFT.vid } } }); }; }
+  let STAGE = "";
   async function build(src) { const MAX = 95;
-    try { await E().busyRun("montage", async () => { const stage = (t) => { try { yvBusy?.stage?.(t); } catch (e) {} };
+    STAGE = "старт"; try { await E().busyRun("montage", async () => { const stage = (t) => { STAGE = t.replace(/…$/, "").toLowerCase(); try { yvBusy?.stage?.(t); } catch (e) {} };
         await Promise.all([loadFont(), loadIcons()]); let y, words = null;
         if (src.silent) { const r = wordsFromText(src.text); words = r.ws.filter((w) => w.e < MAX - 1); y = new Float32Array(Math.round(Math.min(MAX, r.dur) * E().SR)); }
         else { stage(src.tts ? "Озвучую текст…" : "Готую запис…"); y = src.tts ? await ttsAudio(src.tts.text, src.tts.voice) : await E().decode(src.buf); if (y.length / E().SR > MAX) { y = y.subarray(0, Math.round(MAX * E().SR)).slice(); say("Для Reels — до 1,5 хв. Беру початок"); } }
@@ -646,8 +676,10 @@ ${SPEC}
         L = { voice: y, words, dur: Math.max(y.length / E().SR, words[words.length - 1].e + 1.2), silent: !!src.silent, subs: OPT.subs, music: OPT.music, mood: OPT.mood === "auto" ? "curious" : OPT.mood, hero: { col: OPT.col, acc: OPT.acc }, hist: [], src };
         stage("Режисую сцени…"); await aiPlan(L); if (OPT.mood !== "auto" && OPT.music) L.mood = OPT.mood; timeline(L);
         stage("Пишу музику й звуки…"); L.aud = await soundtrack(L); });
-      track("ready", { v: `${L.scenes.length}sc/${Math.round(L.dur)}s/${L.mood}` }); screenEdit("Тапни ▶, щоб подивитись. Правки — кнопкою ✎");
-    } catch (e) { console.error(e); const m = e?.message; say(TTS_ERR[m] || (m === "nowords" ? "Не почув слів — спробуй ще раз" : m === "limit" ? "Ліміт на сьогодні вичерпано" : m === "login" ? "Увійди в акаунт" : "Не вийшло зібрати анімацію. Спробуй ще раз")); L = null; screenContent(); } }
+      track("ready", { v: `${L.scenes.length}sc/${Math.round(L.dur)}s/${L.mood}${L._auto ? "/auto" : ""}` }); screenEdit(L._auto ? `AI-режисер не відповів (${L._planErr || "помилка"}) — сцени розставлено автоматично. Можна натиснути «Інший варіант»` : "Тапни ▶, щоб подивитись. Правки — кнопкою ✎");
+    } catch (e) { console.error(e); const m = e?.message || e?.code || String(e); track("fail", { v: `${STAGE}|${String(m).slice(0, 40)}` });
+      const msg = TTS_ERR[m] || (m === "nowords" ? "Не почув слів — спробуй ще раз" : m === "limit" ? "Ліміт на сьогодні вичерпано" : m === "login" ? "Увійди в акаунт" : `Не вийшло зібрати анімацію (етап: ${STAGE}; ${String(m).slice(0, 60)}). Спробуй ще раз або скинь цей текст Claude`);
+      say(msg); L = null; screenContent(msg); } }
   async function remix(fn, label) { stopPlay(); try { await E().busyRun("montage", async () => { const keep = JSON.stringify({ scenes: L.scenes, mood: L.mood }); L.hist.push(keep); if (L.hist.length > 15) L.hist.shift(); const r = await fn(); timeline(L); L.aud = await soundtrack(L); L._say = r; }); screenEdit(L._say || label); } catch (e) { console.error(e); say(e?.message === "limit" ? "Ліміт на сьогодні вичерпано" : "Не вийшло. Спробуй ще раз"); } }
   function screenEdit(msg) { stopPlay(); const d = shell(), B = $(d, ".cb"), F = $(d, ".cf");
     B.innerHTML = `${msg ? `<div class="msg">${escH(msg)}</div>` : ""}<div class="stage"><div class="cvw"><canvas width="540" height="960" id="ccv"></canvas><button class="pb" type="button" id="cpb" aria-label="Відтворити"><i>▶</i></button></div></div><div class="seek"><input type="range" id="cseek" min="0" max="${L.dur.toFixed(2)}" step="0.01" value="0"><span id="ctime">0:00 / ${fmt(L.dur)}</span></div>`;
