@@ -1143,14 +1143,21 @@ ${SPEC}
         TOPICS[TCAT] = [...arr, ...(TOPICS[TCAT] || [])].slice(0, 24); $(B, "#ctpl").innerHTML = list(); bind(); track("topic_more"); } catch (e) { say(e?.message === "limit" ? "Ліміт на сьогодні вичерпано" : "Не вийшло підібрати теми. Спробуй ще раз"); } };
     $(F, "#cnext").onclick = () => go($(B, "#ctopic").value.trim() || DRAFT.topic); track("open"); }
   let PENDING = null;
-  function screenSetup(msg) { stopPlay(); const d = shell(), B = $(d, ".cb"), F = $(d, ".cf");
+  /* ---------- шаблони кроку 3 (формат + герой + музика + субтитри) ---------- */
+  const TPLK = ["fmt", "col", "acc", "skin", "hair", "hairC", "beard", "pet", "music", "mood", "places", "subs", "subS"];
+  const TPLS = () => { try { return JSON.parse(localStorage.getItem("yvCineTpl") || "[]"); } catch (e) { return []; } };
+  const TPLSAVE = (a) => { try { localStorage.setItem("yvCineTpl", JSON.stringify(a.slice(0, 8))); } catch (e) {} };
+  let TPLSEL = null, TPLAUTO = false;
+  const tplPick = () => Object.fromEntries(TPLK.map((k) => [k, JSON.parse(JSON.stringify(OPT[k] ?? null))]));
+  const tplApply = (q) => { TPLK.forEach((k) => { if (q.o[k] !== undefined && q.o[k] !== null) OPT[k] = q.o[k]; }); saveOpt(); };
+  function screenSetup(msg) { if (!TPLAUTO) { TPLAUTO = true; const L0 = TPLS(), di = L0.findIndex((q) => q.def); if (di >= 0) { tplApply(L0[di]); TPLSEL = di; } } stopPlay(); const d = shell(), B = $(d, ".cb"), F = $(d, ".cf");
     B.innerHTML = `${msg ? `<div class="msg">${escH(msg)}</div>` : ""}<div class="scr">
       <div class="steps"><span>1 Тема</span><span>2 Текст і голос</span><b>3 Формат</b></div>
+      <div class="sec"><h4>Мої шаблони</h4><div class="chips" id="ctpls">${TPLS().map((q, i) => `<button class="chip" type="button" data-tpl="${i}" aria-pressed="${TPLSEL === i}">${q.def ? "★ " : ""}${escH(q.n)}</button>`).join("")}<button class="chip" type="button" id="ctpladd">＋ Зберегти поточний</button></div>
+        <div id="ctplf" hidden style="margin-top:8px"><div class="ask"><input class="tx" id="ctpln" maxlength="24" placeholder="Назва шаблону, напр.: Комікс про гроші"><button class="btn sq" type="button" id="ctplok">✓</button></div></div>
+        ${TPLSEL != null && TPLS()[TPLSEL] ? `<div class="chips" style="margin-top:8px"><button class="chip" type="button" id="ctpldef">${TPLS()[TPLSEL].def ? "★ Вибирається автоматично" : "☆ Вибирати автоматично"}</button><button class="chip" type="button" id="ctplup">Оновити поточними</button><button class="chip" type="button" id="ctpldel">Видалити</button></div>` : `<p class="cnt" style="margin:6px 0 0">Збережи формат, героя, музику й субтитри як шаблон — шаблон із ★ вибиратиметься сам щоразу.</p>`}</div>
       <div class="sec"><h4>Формат відео</h4><div class="fmtv"><canvas width="270" height="480" id="cdemo"></canvas><div class="fmtl">${Object.entries(FMTS).map(([k, v]) => `<button type="button" class="fmtc" data-fmt="${k}" aria-pressed="${(OPT.fmt || "kino") === k}"><b>${v.n}</b><span>${v.d}</span></button>`).join("")}<div class="fmtc soonf"><b>Ілюстрована пригода</b><span>Детальні намальовані світи — скоро</span></div></div></div></div>
 
-      <div class="sec"><h4>Реклама у відео</h4><p class="cnt" style="margin:-4px 0 8px">На цікавому місці історії персонаж дістає телефон — і тим самим голосом видно, як за кілька хвилин робиться таке відео, а за кожного, хто прийде за твоїм посиланням, ти отримуєш половину його першої оплати. Секунди вставки не списуються.</p><div class="chips">${Object.entries(AD_KINDS).map(([k, n]) => `<button class="chip" type="button" data-adk="${k}" aria-pressed="${(OPT.ad || "none") === k}">${n}</button>`).join("")}</div>
-        <input class="tx" id="cadw" style="margin-top:8px${OPT.ad === "comment" || ((OPT.ad || "none") === "none" && OPT.capK === "comment") ? "" : ";display:none"}" maxlength="14" placeholder="Слово для коментарів" value="${escH(OPT.adWord || "АНІМАЦІЯ")}"><div id="cadhint">${OPT.ad === "comment" ? DM_HINT : ""}</div>
-        <div id="ccapbox" style="margin-top:10px${(OPT.ad || "none") === "none" ? "" : ";display:none"}"><p class="cnt" style="margin:0 0 6px">Без вставки у відео — але можна привести людей підписом під відео. Ось текст, скопіюй його:</p><div class="chips" style="margin-bottom:8px">${["bio", "comment"].map((q) => `<button class="chip" type="button" data-ck="${q}" aria-pressed="${(OPT.capK || "bio") === q}">${AD_KINDS[q]}</button>`).join("")}</div><textarea class="tx" id="ccap0" rows="3" style="width:100%;resize:vertical" readonly></textarea><div class="row" style="margin-top:6px"><button class="btn" type="button" id="ccpy0">Скопіювати</button></div><p class="cnt" style="margin:6px 0 0">Після збереження відео дам підпис ще й з першим рядком про тему.</p></div>${isOwner() ? `<button class="btn" type="button" id="cadst" style="margin-top:10px">🎬 Студія вставки: текст і запис екрана · ТЕСТ</button>` : ""}</div>
       <details class="sec more"><summary>Герой, тварина, музика, локації, субтитри</summary>
       <div class="sec"><h4>Герой: колір одягу</h4><div class="chips" id="ccol">${Object.entries(HOOD).filter(([k]) => k !== "grey").map(([k, v]) => `<button class="dot" type="button" data-col="${k}" style="background:${v}" aria-pressed="${OPT.col === k}" aria-label="${k}"></button>`).join("")}</div>
         <div class="chips" style="margin-top:8px">${[["none", "Без нічого"], ["beanie", "Шапка"], ["cap", "Кепка"], ["glasses", "Окуляри"], ["headphones", "Навушники"]].map(([k, n]) => `<button class="chip" type="button" data-acc="${k}" aria-pressed="${OPT.acc === k}">${n}</button>`).join("")}</div></div>
@@ -1165,6 +1172,12 @@ ${SPEC}
         <div class="chips" style="margin-top:8px">${Object.entries(SUBST).map(([k, n]) => `<button class="chip" type="button" data-ss="${k}" aria-pressed="${(OPT.subS?.k || "classic") === k}">${n}</button>`).join("")}</div></div></details></div>`;
     F.innerHTML = `<div class="row"><button class="btn main" type="button" id="cnext">Створити відео</button><button class="btn sq" type="button" id="cprev" aria-label="Назад">‹</button></div>`;
     const cv = $(B, "#cdemo"); Promise.all([loadFont(), loadHand()]).then(() => demo(cv)); loadIcons();
+    B.querySelectorAll("[data-tpl]").forEach((b) => b.onclick = () => { const i = +b.dataset.tpl, q = TPLS()[i]; if (!q) return; tplApply(q); TPLSEL = i; screenSetup(`Шаблон «${q.n}» застосовано`); });
+    $(B, "#ctpladd").onclick = () => { $(B, "#ctplf").hidden = false; $(B, "#ctpln").focus(); };
+    $(B, "#ctplok").onclick = () => { const n = $(B, "#ctpln").value.trim() || FMTS[OPT.fmt || "kino"].n; const L0 = TPLS(); L0.push({ n, o: tplPick(), def: !L0.length }); TPLSAVE(L0); TPLSEL = L0.length - 1; track("tpl_save"); screenSetup(`Шаблон «${n}» збережено${L0.length === 1 ? " і вибиратиметься автоматично" : ""}`); };
+    const tdf = $(B, "#ctpldef"); if (tdf) tdf.onclick = () => { const L0 = TPLS(); const on = !L0[TPLSEL].def; L0.forEach((q, i) => q.def = on && i === TPLSEL); TPLSAVE(L0); screenSetup(on ? "Цей шаблон вибиратиметься автоматично" : "Автовибір шаблону вимкнено"); };
+    const tup = $(B, "#ctplup"); if (tup) tup.onclick = () => { const L0 = TPLS(); L0[TPLSEL].o = tplPick(); TPLSAVE(L0); say("Шаблон оновлено"); };
+    const tdl = $(B, "#ctpldel"); if (tdl) tdl.onclick = () => { const L0 = TPLS(); L0.splice(TPLSEL, 1); TPLSAVE(L0); TPLSEL = null; screenSetup("Шаблон видалено"); };
     B.querySelectorAll("[data-fmt]").forEach((b) => b.onclick = () => { OPT.fmt = b.dataset.fmt; saveOpt(); B.querySelectorAll("[data-fmt]").forEach((o) => o.setAttribute("aria-pressed", o === b)); demo(cv); track("fmt", { v: OPT.fmt }); });
     const pick = (sel, key, cb) => B.querySelectorAll(sel).forEach((b) => b.onclick = () => { B.querySelectorAll(sel).forEach((o) => o.setAttribute("aria-pressed", o === b)); cb(b.dataset[key]); saveOpt(); });
     pick("[data-col]", "col", (v) => { OPT.col = v; demo(cv); }); pick("[data-acc]", "acc", (v) => { OPT.acc = v; demo(cv); }); pick("[data-sec]", "sec", (v) => OPT.sec = +v); pick("[data-v]", "v", (v) => OPT.voice = v);
@@ -1173,14 +1186,6 @@ ${SPEC}
     $(B, "#csubs").onclick = (e) => { OPT.subs = !OPT.subs; e.currentTarget.setAttribute("aria-checked", OPT.subs); saveOpt(); };
     pick("[data-pet]", "pet", (v) => { OPT.pet = v; });
     pick("[data-skin]", "skin", (v) => { OPT.skin = v; demo(cv); }); pick("[data-hair]", "hair", (v) => { OPT.hair = v; demo(cv); }); pick("[data-hc]", "hc", (v) => { OPT.hairC = v; demo(cv); }); pick("[data-beard]", "beard", (v) => { OPT.beard = v === "1"; demo(cv); });
-    const capFill = () => { $(B, "#ccap0").value = capPromo(OPT.capK || "bio", OPT.adWord); };
-    pick("[data-adk]", "adk", (v) => { OPT.ad = v; $(B, "#cadw").style.display = v === "comment" || (v === "none" && OPT.capK === "comment") ? "" : "none"; $(B, "#cadhint").innerHTML = v === "comment" ? DM_HINT : ""; $(B, "#ccapbox").style.display = v === "none" ? "" : "none"; });
-    pick("[data-ck]", "ck", (v) => { OPT.capK = v; if (OPT.ad === "none") $(B, "#cadw").style.display = v === "comment" ? "" : "none"; capFill(); });
-    $(B, "#ccpy0").onclick = async (e) => { const ok = await copyText($(B, "#ccap0").value); e.currentTarget.textContent = ok ? "✓ Скопійовано" : "Виділи й скопіюй вручну"; };
-    capFill();
-    $(B, "#cadw").oninput = (e) => { OPT.adWord = e.target.value.trim().toUpperCase(); saveOpt(); capFill(); };
-    const ast = $(B, "#cadst"); if (ast) ast.onclick = () => adStudio();
-    if (OPT.ad && OPT.ad !== "none") loadAd();
     pick("[data-ss]", "ss", (v) => { OPT.subS = { ...SUBS0, ...(OPT.subS || {}), k: v }; });
     B.querySelectorAll("[data-pl]").forEach((b) => b.onclick = () => { const k = b.dataset.pl; let L2 = (OPT.places || []).filter((q) => PLACES[q]); if (!k) L2 = []; else L2 = L2.includes(k) ? L2.filter((q) => q !== k) : [...L2, k]; OPT.places = L2; saveOpt();
       B.querySelectorAll("[data-pl]").forEach((o) => o.setAttribute("aria-pressed", o.dataset.pl ? L2.includes(o.dataset.pl) : !L2.length)); });
@@ -1200,45 +1205,106 @@ ${SPEC}
       const v = V.find((q) => q.id === b.dataset.vid); let u = v.preview || v._u;
       if (!u) { pv.textContent = "…"; try { const r = await SRV.tts({ text: "Привіт! Ось так звучатиме твоє відео.", voice: { kind: "preset", id: v.id }, quiet: true }); u = v._u = URL.createObjectURL(new Blob([b64Buf(r.audio)], { type: r.mime || "audio/mpeg" })); } catch (x) { pv.textContent = "▶"; say(TTS_ERR[x.message] || "Не вдалося прослухати"); return; } }
       box.querySelectorAll("[data-pv]").forEach((o) => o.textContent = "▶"); VPA.a = new Audio(u); pv.textContent = "■"; VPA.a.onended = () => pv.textContent = "▶"; VPA.a.play().catch(() => pv.textContent = "▶"); }); }
-  /* ---------- крок 2: текст (AI пише сам) і голос ---------- */
-  function screenContent(msg) { stopPlay(); const d = shell(), B = $(d, ".cb"), F = $(d, ".cf"), v = OPT.voice, rec = v === "rec" || v === "file";
+  /* ---------- блок реклами (крок 2): вибирається до тексту, щоб вставка органічно вплелась ---------- */
+  function adBlockHTML() { return `<div class="sec"><h4>Реклама у відео</h4><p class="cnt" style="margin:-4px 0 8px">Вибери до тексту — AI органічно впише вставку в історію. На цікавому місці історії персонаж дістає телефон — і тим самим голосом видно, як за кілька хвилин робиться таке відео, а за кожного, хто прийде за твоїм посиланням, ти отримуєш половину його першої оплати. Секунди вставки не списуються.</p><div class="chips">${Object.entries(AD_KINDS).map(([k, n]) => `<button class="chip" type="button" data-adk="${k}" aria-pressed="${(OPT.ad || "none") === k}">${n}</button>`).join("")}</div>
+        <input class="tx" id="cadw" style="margin-top:8px${OPT.ad === "comment" || ((OPT.ad || "none") === "none" && OPT.capK === "comment") ? "" : ";display:none"}" maxlength="14" placeholder="Слово для коментарів" value="${escH(OPT.adWord || "АНІМАЦІЯ")}"><div id="cadhint">${OPT.ad === "comment" ? DM_HINT : ""}</div>
+        <div id="ccapbox" style="margin-top:10px${(OPT.ad || "none") === "none" ? "" : ";display:none"}"><p class="cnt" style="margin:0 0 6px">Без вставки у відео — але можна привести людей підписом під відео. Ось текст, скопіюй його:</p><div class="chips" style="margin-bottom:8px">${["bio", "comment"].map((q) => `<button class="chip" type="button" data-ck="${q}" aria-pressed="${(OPT.capK || "bio") === q}">${AD_KINDS[q]}</button>`).join("")}</div><textarea class="tx" id="ccap0" rows="3" style="width:100%;resize:vertical" readonly></textarea><div class="row" style="margin-top:6px"><button class="btn" type="button" id="ccpy0">Скопіювати</button></div><p class="cnt" style="margin:6px 0 0">Після збереження відео дам підпис ще й з першим рядком про тему.</p></div>${isOwner() ? `<button class="btn" type="button" id="cadst" style="margin-top:10px">🎬 Студія вставки: текст і запис екрана · ТЕСТ</button>` : ""}</div>`; }
+  function adBlockBind(B, onKind, onWord) { const pick = (sel, key, cb) => B.querySelectorAll(sel).forEach((b) => b.onclick = () => { B.querySelectorAll(sel).forEach((o) => o.setAttribute("aria-pressed", o === b)); cb(b.dataset[key]); saveOpt(); });
+    const capFill = () => { $(B, "#ccap0").value = capPromo(OPT.capK || "bio", OPT.adWord); };
+    pick("[data-adk]", "adk", (v) => { OPT.ad = v; onKind?.(v); $(B, "#cadw").style.display = v === "comment" || (v === "none" && OPT.capK === "comment") ? "" : "none"; $(B, "#cadhint").innerHTML = v === "comment" ? DM_HINT : ""; $(B, "#ccapbox").style.display = v === "none" ? "" : "none"; });
+    pick("[data-ck]", "ck", (v) => { OPT.capK = v; if (OPT.ad === "none") $(B, "#cadw").style.display = v === "comment" ? "" : "none"; capFill(); });
+    $(B, "#ccpy0").onclick = async (e) => { const ok = await copyText($(B, "#ccap0").value); e.currentTarget.textContent = ok ? "✓ Скопійовано" : "Виділи й скопіюй вручну"; };
+    capFill();
+    $(B, "#cadw").oninput = (e) => { OPT.adWord = e.target.value.trim().toUpperCase(); saveOpt(); capFill(); }; $(B, "#cadw").onchange = () => onWord?.();
+    const ast = $(B, "#cadst"); if (ast) ast.onclick = () => adStudio();
+    if (OPT.ad && OPT.ad !== "none") loadAd();
+  }
+  /* ---------- крок 2: тема → реклама → текст → голос → озвучити, прослухати, поправити й переозвучити ---------- */
+  const ADM0 = "⸻ реклама ⸻", ADM1 = "⸻ далі відео ⸻";
+  const splitAd = (t) => { t = String(t || ""); const i = t.indexOf(ADM0), j = t.indexOf(ADM1); if (i < 0 || j < i) return { a: t.replace(ADM0, "").replace(ADM1, "").trim(), ad: "", b: "" }; return { a: t.slice(0, i).trim(), ad: t.slice(i + ADM0.length, j).trim(), b: t.slice(j + ADM1.length).trim() }; };
+  const sentences = (t) => (String(t).match(/[^.!?…]+[.!?…]+["»”]?|\S[^.!?…]*$/g) || []).map((q) => q.trim()).filter(Boolean);
+  async function adWeave(story, kind, word) { await Promise.race([loadAd(), new Promise((r) => setTimeout(r, 6000))]); const ss = sentences(story); if (ss.length < 4) return story;
+    const k = Math.max(2, Math.min(ss.length - 2, Math.round(ss.length * .55))), before = ss.slice(0, k).join(" "), after = ss.slice(k).join(" ");
+    const br = await adBridge({ words: (before + " " + after).split(/\s+/).map((w) => ({ w })), topic: DRAFT.topic }, before.split(/\s+/).length);
+    const mid = [br.in, ...AD.beats.map((b) => adSay(b, kind, word)), br.out].join(" ").replace(/…\s*…/g, "… ");
+    return `${before}\n\n${ADM0}\n${mid}\n${ADM1}\n\n${after}`; }
+  // розкласти текст вставки на кроки (для синхрону екрана телефона з голосом)
+  function adPartsFrom(adt, kind, word) { const fx = AD.beats.map((b) => ({ id: b.id, t: adSay(b, kind, word) })), idx = []; let pos = 0, ok = true;
+    for (const f of fx) { const i = adt.indexOf(f.t, pos); if (i < 0) { ok = false; break; } idx.push(i); pos = i + f.t.length; }
+    if (ok) { const parts = [{ id: "in", t: adt.slice(0, idx[0]).trim() }]; fx.forEach((f, n) => parts.push({ id: f.id, t: f.t })); parts.push({ id: "out", t: adt.slice(pos).trim() }); return parts.map((q) => ({ ...q, t: q.t || "…" })); }
+    const ss = sentences(adt), mid = ss.slice(1, -1), n = Math.max(1, mid.length); return [{ id: "in", t: ss[0] || "…" }, ...fx.map((f, q) => ({ id: f.id, t: mid.slice(Math.floor(q * n / 4), Math.floor((q + 1) * n / 4)).join(" ") || "…" })), { id: "out", t: ss.length > 1 ? ss[ss.length - 1] : "…" }]; }
+  let VOICED = null, PAC = null;
+  const voiceKey = (t, v) => JSON.stringify([String(t).trim(), v, AD.speed]);
+  const catBuf = (list, g = .3) => { const SR = E().SR, gap = Math.round(g * SR), xs = list.filter(Boolean), n = xs.reduce((a, q) => a + q.length, 0) + gap * Math.max(0, xs.length - 1), y = new Float32Array(n); let o = 0; xs.forEach((q, i) => { y.set(q, o); o += q.length + (i < xs.length - 1 ? gap : 0); }); return y; };
+  const stopPrevA = () => { try { PAC?.close(); } catch (e) {} PAC = null; };
+  function playBuf(y, onEnd) { stopPrevA(); const ac = PAC = new (window.AudioContext || window.webkitAudioContext)(), b = ac.createBuffer(1, y.length, E().SR); b.copyToChannel(y, 0); const s2 = ac.createBufferSource(); s2.buffer = b; s2.connect(ac.destination); s2.onended = () => { if (PAC === ac) { stopPrevA(); onEnd?.(); } }; s2.start(); }
+  async function voiceText(text, voice) { const p = splitAd(text); const [a, ad, b] = await Promise.all([p.a ? ttsAudio(p.a, voice) : null, p.ad ? ttsAudio(p.ad, voice) : null, p.b ? ttsAudio(p.b, voice) : null]);
+    return { key: voiceKey(text, voice), a, ad: ad ? tstretch(ad, AD.speed) : null, b, adText: p.ad, voice }; }
+  function screenContent(msg) { stopPlay(); stopPrevA(); const d = shell(), B = $(d, ".cb"), F = $(d, ".cf"), v = OPT.voice, rec = v === "rec" || v === "file", tts = v === "ai" || v === "clone";
     B.innerHTML = `${msg ? `<div class="msg">${escH(msg)}</div>` : ""}<div class="scr">
       <div class="steps"><span>1 Тема</span><b>2 Текст і голос</b><span>3 Формат</span></div>
       <div class="sec"><h4>Тема</h4><div class="tpcur"><b>${escH(DRAFT.topic || "Без теми — свій текст")}</b><button class="chip" type="button" id="ctpch">Змінити</button></div></div>
+      ${adBlockHTML()}
       <div class="sec"><h4>${rec ? "Текст, який прочитаєш" : v === "none" ? "Текст на екрані" : "Текст для озвучки"}</h4>
-        <textarea id="ctext" rows="9" placeholder="AI напише текст за темою — або встав свій">${escH(DRAFT.text)}</textarea><div class="row" style="margin-top:8px"><button class="btn" type="button" id="cwr">✨ ${DRAFT.text ? "Інший варіант" : "Написати текст"}</button></div><p class="cnt" id="ccnt"></p></div>
+        <textarea id="ctext" rows="11" placeholder="AI напише текст за темою — або встав свій">${escH(DRAFT.text)}</textarea><p class="cnt" id="ccnt"></p>
+        <div class="row" style="margin-top:8px"><button class="btn" type="button" id="cwr">✨ ${DRAFT.text ? "Інший варіант" : "Написати текст"}</button></div>
+        <p class="cnt" style="margin:6px 0 0">Рекламна вставка — між рядками «${ADM0}» і «${ADM1}». Можна правити будь-що; ці два рядки не видаляй.</p></div>
       <div class="sec"><h4>Голос</h4><div class="chips">${VOICES.map(([k, n]) => `<button class="chip" type="button" data-v="${k}" aria-pressed="${v === k}">${n}</button>`).join("")}</div>
-        <p class="cnt" style="margin:6px 0 0">${escH((VOICES.find((q) => q[0] === v) || VOICES[0])[2])}</p>${v === "ai" || v === "clone" ? `<div id="cvl" style="margin-top:8px"><p class="cnt" style="margin:0">Завантажую голоси…</p></div>` : ""}</div></div>`;
+        <p class="cnt" style="margin:6px 0 0">${escH((VOICES.find((q) => q[0] === v) || VOICES[0])[2])}${rec && OPT.ad !== "none" ? ". Рекламну вставку озвучимо окремо готовим голосом" : ""}</p>${tts ? `<div id="cvl" style="margin-top:8px"><p class="cnt" style="margin:0">Завантажую голоси…</p></div>` : ""}
+        ${tts ? `<div class="vbox"><div class="row"><button class="btn" type="button" id="cvo">🔊 Озвучити</button><button class="btn" type="button" id="cvp" style="display:none">▶ Прослухати</button></div><p class="cnt" id="cvst" style="margin:6px 0 0">Озвуч, послухай — і якщо щось звучить не так, зміни текст і переозвуч.</p></div>` : ""}</div></div>`;
     F.innerHTML = v === "rec" ? `<div class="row"><button class="btn main" type="button" id="crec">🎙 Записати</button><button class="btn sq" type="button" id="cprev" aria-label="Назад">‹</button></div>`
       : v === "file" ? `<div class="row"><label class="btn main" for="cfile">Завантажити запис</label><button class="btn sq" type="button" id="cprev" aria-label="Назад">‹</button></div><input type="file" id="cfile" accept="audio/*,video/*" hidden>`
       : `<div class="row"><button class="btn main" type="button" id="cgo">Далі — формат</button><button class="btn sq" type="button" id="cprev" aria-label="Назад">‹</button></div>`;
-    const ta = $(B, "#ctext"), cnt = $(B, "#ccnt");
-    const est = () => { DRAFT.text = ta.value; saveDraft(); const n = (ta.value.match(/\S+/g) || []).length; cnt.textContent = n ? `${n} слів · ≈ ${fmt(v === "none" ? wordsFromText(ta.value).dur : n / 2.4)}` : `Ціль ≈ ${OPT.sec} с`; };
-    ta.oninput = est; est();
+    const ta = $(B, "#ctext"), cnt = $(B, "#ccnt"), voiceOf = () => DRAFT.vid === "clone" ? { kind: "clone" } : { kind: "preset", id: DRAFT.vid };
+    const st = (t) => { const e = $(B, "#cvst"); if (e) e.textContent = t; };
+    const fresh = () => VOICED && VOICED.key === voiceKey(ta.value, voiceOf());
+    const mark = () => { if (!tts) return; const ok = fresh(), bo = $(B, "#cvo"), bp = $(B, "#cvp"); bo.textContent = VOICED ? (ok ? "🔊 Переозвучити" : "🔊 Переозвучити зі змінами") : "🔊 Озвучити"; bp.style.display = ok ? "" : "none";
+      if (VOICED && !ok) st("Текст або голос змінено — переозвуч, щоб почути новий варіант."); };
+    const est = () => { DRAFT.text = ta.value; saveDraft(); const pp = splitAd(ta.value), n = (ta.value.replace(ADM0, "").replace(ADM1, "").match(/\S+/g) || []).length, na = (pp.ad.match(/\S+/g) || []).length;
+      cnt.textContent = n ? `${n} слів · ≈ ${fmt(v === "none" ? wordsFromText(ta.value).dur : (n - na) / 2.4 + na / 2.4 / AD.speed)}${na ? " з рекламою" : ""}` : `Ціль ≈ ${OPT.sec} с`; mark(); };
+    ta.oninput = est;
+    const weaveNow = async () => { const p = splitAd(ta.value), story = [p.a, p.b].filter(Boolean).join(" ").trim(); if (!story) return;
+      if (OPT.ad === "none" || !tts) { ta.value = story; est(); return; }
+      try { ta.value = await E().busyRun("text", () => adWeave(story, OPT.ad, OPT.adWord)); est(); } catch (e) { console.warn(e); } };
     const write = async () => { const topic = DRAFT.topic || ta.value.trim().slice(0, 300); if (!topic) { say("Вибери тему"); screenTopic(); return; }
-      try { const t = await E().busyRun("text", () => aiText(topic, OPT.sec, v === "none")); if (!t) throw new Error("empty"); ta.value = t; est(); $(B, "#cwr").textContent = "✨ Інший варіант"; track("ai_text"); } catch (e) { console.warn("cine text", e); say(e?.message === "limit" ? "Ліміт на сьогодні вичерпано" : "Не вийшло написати текст — натисни ще раз"); } };
+      try { let t = await E().busyRun("text", () => aiText(topic, OPT.sec, v === "none")); if (!t) throw new Error("empty"); if (OPT.ad !== "none" && tts) t = await E().busyRun("text", () => adWeave(t, OPT.ad, OPT.adWord)); ta.value = t; est(); $(B, "#cwr").textContent = "✨ Інший варіант"; track("ai_text"); }
+      catch (e) { console.warn("cine text", e); say(e?.message === "limit" ? "Ліміт на сьогодні вичерпано" : "Не вийшло написати текст — натисни ще раз"); } };
     $(B, "#cwr").onclick = write;
-    $(B, "#ctpch").onclick = () => { try { VPA.a?.pause(); } catch (e) {} screenTopic(); };
+    adBlockBind(B, () => { if (ta.value.trim()) weaveNow(); }, () => { if (OPT.ad === "comment" && ta.value.includes(ADM0)) weaveNow(); });
+    est();
+    const doVoice = async () => { const t = ta.value.trim(); if ((t.match(/\S+/g) || []).length < 4) { say("Спершу потрібен текст"); return false; } if (!DRAFT.vid) { say(v === "clone" ? "Спершу створи свій голос" : "Вибери голос"); return false; }
+      try { VOICED = await E().busyRun("voice", () => voiceText(t, voiceOf())); const dur = (VOICED.a?.length || 0) + (VOICED.ad?.length || 0) + (VOICED.b?.length || 0); st(`✓ Озвучено · ${fmt(dur / E().SR)}. Послухай — якщо щось не так, зміни текст і переозвуч.`); mark(); track("voice_ok"); return true; }
+      catch (e) { console.warn(e); say(TTS_ERR[e?.message] || "Не вийшло озвучити. Спробуй ще раз"); if (e?.message === "no_clone_quota") window.yvFeatureSheet?.("clone"); return false; } };
+    if (tts) { $(B, "#cvo").onclick = async () => { if (await doVoice()) $(B, "#cvp").click(); };
+      $(B, "#cvp").onclick = (e) => { const b = e.currentTarget; if (PAC) { stopPrevA(); b.textContent = "▶ Прослухати"; return; } if (!fresh()) return; b.textContent = "■ Стоп"; playBuf(catBuf([VOICED.a, VOICED.ad, VOICED.b]), () => { b.textContent = "▶ Прослухати"; }); }; }
+    $(B, "#ctpch").onclick = () => { try { VPA.a?.pause(); } catch (e) {} stopPrevA(); screenTopic(); };
     B.querySelectorAll("[data-v]").forEach((b) => b.onclick = () => { OPT.voice = b.dataset.v; saveOpt(); DRAFT.text = ta.value; saveDraft(); try { VPA.a?.pause(); } catch (e) {} screenContent(); });
-    if (v === "ai" || v === "clone") voicePick($(B, "#cvl"));
-    $(F, "#cprev").onclick = () => { try { VPA.a?.pause(); } catch (e) {} screenTopic(); };
-    const next = (src) => { try { VPA.a?.pause(); } catch (e) {} PENDING = src; screenSetup(); };
+    if (tts) voicePick($(B, "#cvl")).then(() => { $(B, "#cvl")?.addEventListener("click", () => setTimeout(mark, 0)); mark(); });
+    $(F, "#cprev").onclick = () => { try { VPA.a?.pause(); } catch (e) {} stopPrevA(); screenTopic(); };
+    const next = (src) => { try { VPA.a?.pause(); } catch (e) {} stopPrevA(); PENDING = src; screenSetup(); };
+    const plain = () => { const p = splitAd(ta.value); return [p.a, p.b].filter(Boolean).join(" ").trim(); };
     if (v === "rec") { const rb = $(F, "#crec"), rl = rb.innerHTML; rb.onclick = () => E().record(rb, rl, (buf) => next({ buf })); }
     else if (v === "file") $(F, "#cfile").onchange = async (e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) next({ buf: await f.arrayBuffer() }); };
-    else $(F, "#cgo").onclick = () => { const t = ta.value.trim(); if ((t.match(/\S+/g) || []).length < 4) { say("Спершу потрібен текст — натисни «Написати текст»"); return; }
-      if (v === "none") return next({ silent: true, text: t }); if (!DRAFT.vid) { say(v === "clone" ? "Спершу створи свій голос" : "Вибери голос"); return; }
-      next({ tts: { text: t, voice: DRAFT.vid === "clone" ? { kind: "clone" } : { kind: "preset", id: DRAFT.vid } } }); };
+    else $(F, "#cgo").onclick = async () => { const t = ta.value.trim(); if ((t.match(/\S+/g) || []).length < 4) { say("Спершу потрібен текст — натисни «Написати текст»"); return; }
+      if (v === "none") return next({ silent: true, text: plain() });
+      if (!fresh() && !(await doVoice())) return;
+      next({ voiced: { ...VOICED, kind: VOICED.ad ? (AD_KINDS[OPT.ad] && OPT.ad !== "none" ? OPT.ad : "bio") : "none", word: OPT.adWord } }); };
     if (!DRAFT.text.trim() && DRAFT.topic && !rec) setTimeout(write, 50); }
   let STAGE = "";
   async function build(src) { const MAX = 95;
     STAGE = "старт"; try { await E().busyRun("montage", async () => { const stage = (t) => { STAGE = t.replace(/…$/, "").toLowerCase(); try { yvBusy?.stage?.(t); } catch (e) {} };
         await Promise.all([loadFont(), loadIcons(), loadHand()]); let y, words = null;
         if (src.silent) { const r = wordsFromText(src.text); words = r.ws.filter((w) => w.e < MAX - 1); y = new Float32Array(Math.round(Math.min(MAX, r.dur) * E().SR)); }
+        else if (src.voiced) { stage("Готую озвучку…"); y = catBuf([src.voiced.a, src.voiced.b]); if (y.length / E().SR > MAX) { y = y.subarray(0, Math.round(MAX * E().SR)).slice(); say("Для Reels — до 1,5 хв. Беру початок"); } }
         else { stage(src.tts ? "Озвучую текст…" : "Готую запис…"); y = src.tts ? await ttsAudio(src.tts.text, src.tts.voice) : await E().decode(src.buf); if (y.length / E().SR > MAX) { y = y.subarray(0, Math.round(MAX * E().SR)).slice(); say("Для Reels — до 1,5 хв. Беру початок"); } }
         if (!words) { stage("Розпізнаю слова…"); words = await sttWords(y); }
         if (words.length < 3) throw new Error("nowords");
         L = { voice: y, words, dur: Math.max(y.length / E().SR, words[words.length - 1].e + 1.2), silent: !!src.silent, subs: OPT.subs, key: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), subS: { ...SUBS0, ...(OPT.subS || {}) }, places: (OPT.places || []).filter((k) => PLACES[k]), pet: BREED[OPT.pet] ? OPT.pet : "", regen: 0, music: OPT.music, mood: OPT.mood === "auto" ? "curious" : OPT.mood, fmt: FMTS[OPT.fmt] ? OPT.fmt : "kino", hero: { col: OPT.col, acc: OPT.acc, skin: OPT.skin, hair: OPT.hair, hairC: OPT.hairC, beard: OPT.beard }, hist: [], src };
-        L.ad = AD_KINDS[OPT.ad] ? OPT.ad : "none"; L.adWord = (OPT.adWord || "АНІМАЦІЯ").trim().slice(0, 14); L.topic = DRAFT.topic; if (L.ad !== "none") { stage("Додаю рекламну вставку…"); await placeAd(L); }
+        L.ad = AD_KINDS[OPT.ad] ? OPT.ad : "none"; L.adWord = (OPT.adWord || "АНІМАЦІЯ").trim().slice(0, 14); L.topic = DRAFT.topic;
+        if (src.voiced) { const V = src.voiced; L.ad = V.ad ? V.kind : "none"; L.adWord = (V.word || L.adWord).trim().slice(0, 14);
+          if (V.ad && L.words.length >= 6) { await Promise.race([loadAd(), new Promise((r) => setTimeout(r, 9000))]); const SR = E().SR, ta = (V.a?.length || 0) / SR; let k = L.words.findIndex((w) => w.s >= ta - .05); if (k < 1) k = adPoint(L) ?? Math.round(L.words.length * .55);
+            const parts = adPartsFrom(V.adText, L.ad, L.adWord); insertAd(L, k, V.ad, adTiming(parts, V.ad)); L.adV = { voice: V.voice, br: { in: parts[0].t, out: parts[parts.length - 1].t } }; } }
+        else if (L.ad !== "none") { stage("Додаю рекламну вставку…"); await placeAd(L); }
         stage("Режисую сцени…"); await aiPlan(L); ensureAd(L); if (OPT.mood !== "auto" && OPT.music) L.mood = OPT.mood; timeline(L);
         stage("Пишу музику й звуки…"); L.aud = await soundtrack(L); });
       track("ready", { v: `${L.scenes.length}sc/${Math.round(L.dur)}s/${L.mood}${L._auto ? "/auto" : ""}` }); screenEdit(L._auto ? `AI-режисер не відповів (${L._planErr || "помилка"}) — сцени розставлено автоматично. Можна натиснути «Інший варіант»` : "Тапни ▶, щоб подивитись. Правки — кнопкою ✎");
