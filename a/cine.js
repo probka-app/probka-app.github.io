@@ -950,7 +950,9 @@ ${L.pet && BREED[L.pet] ? `У героя є тварина: ${BREED[L.pet].dog ?
 ${SPEC}
 ${a0 === 0 ? `Визнач mood музики: ${Object.entries(MOODS).map(([k, v]) => `${k} (${v.n})`).join(", ")}.\n` : ""}Розбий ці слова на сцени по черзі (перша сцена — зі слова ${a0}; a — номер слова початку; нова сцена ≈ кожні 4–9 слів). Пиши JSON компактно, без зайвих полів (порожні props/hud/cap/hit не пиши).
 Відповідай тільки JSON: ${PLAN_JSON}`;
-    let err; for (let k = 0; k < 2; k++) { try { const r = await sample.json(ask, { cache: false, kb: ["style", "edit", "story", "hook", "camera", "sound", "general"], max: 4000 }); if (Array.isArray(r?.scenes) && r.scenes.length) return r; err = new Error("plan_empty"); } catch (e) { err = e; if (/limit|login|no_key/.test(e?.message || "")) throw e; } }
+    // якщо модель повертає порожньо — пробуємо з меншою базою знань (коротший контекст)
+    const KBS = [["style", "edit", "story", "hook", "camera", "sound", "general"], ["style", "camera", "hook"], []];
+    let err; for (let k = 0; k < 3; k++) { try { const r = await sample.json(ask, { cache: false, ...(KBS[k].length ? { kb: KBS[k] } : {}), max: k ? 3200 : 4000 }); if (Array.isArray(r?.scenes) && r.scenes.length) return r; err = new Error("plan_empty"); } catch (e) { err = e; if (/limit|login|no_key/.test(e?.message || "")) throw e; } }
     throw err; }
   async function aiPlan(L, extra = "") {
     const n = L.words.length, STEP = 70, parts = []; for (let a = 0; a < n; a += STEP) parts.push([a, Math.min(n, a + STEP)]);
@@ -1105,6 +1107,33 @@ ${SPEC}
 До 9 слів, один доречний емодзі в кінці, без хештегів, без назв сервісів і без реклами. Відповідай тільки JSON {"line":"…"}`, { cache: false, max: 200 }), new Promise((_, j) => setTimeout(() => j(new Error("timeout")), 12000))]);
       line = String(r?.line || "").replace(/\s+/g, " ").trim(); if (line.split(" ").length > 14 || /yuvi|реклам/i.test(line)) line = ""; } catch (e) {}
     return (L.capLine = line || String(L.topic || "").trim()); }
+  /* ---------- після збереження: на телефон або опублікувати (опис під кожну соцмережу) ---------- */
+  const NETS = { ig: "Instagram", tt: "TikTok", yt: "YouTube Shorts" }, NETURL = { ig: "https://www.instagram.com/", tt: "https://www.tiktok.com/upload", yt: "https://studio.youtube.com/" };
+  async function saveFile(f) { if (navigator.canShare?.({ files: [f] })) { try { await navigator.share({ files: [f] }); return true; } catch (x) { if (x?.name === "AbortError") return false; } }
+    const a = document.createElement("a"); a.href = URL.createObjectURL(f); a.download = f.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 6e4); return true; }
+  async function netText(net) { L._net = L._net || {}; if (L._net[net]) return L._net[net];
+    const kind = L.ad && L.ad !== "none" ? L.ad : (OPT.capK || "bio"), promo = capPromo(kind, L.ad === "comment" ? L.adWord : OPT.adWord), text = (L.words || []).map((w) => w.w).join(" ").slice(0, 800);
+    const ask = { ig: `підпис для Instagram Reels: text — перший рядок-гачок до 9 слів з одним емодзі (його видно в стрічці), далі 1–2 короткі рядки, чому варто додивитись; tags — 5 доречних хештегів`, tt: `опис для TikTok: text — до 140 знаків, гачок + інтрига, один емодзі; tags — 4 доречні хештеги`, yt: `для YouTube Shorts: title — назва до 60 знаків з інтригою (чесна, без обману), text — опис 2 речення; tags — 4 доречні хештеги` }[net];
+    let o = {}; try { o = await E().busyRun("text", () => Promise.race([sample.json(`Відео (текст озвучки): «${text}»${L.topic ? `\nТема: ${L.topic}` : ""}\nНапиши ${ask}. Українською, живо, без назв сервісів і без реклами (рекламний рядок додамо самі). Відповідай тільки JSON {"title":"…","text":"…","tags":["#…"]}`, { cache: false, max: 600, kb: ["title", "hook", "general"] }), new Promise((_, j) => setTimeout(() => j(new Error("timeout")), 20000))])) || {}; } catch (e) { console.warn("net text", e); }
+    const t = String(o.text || "").trim() || (await capLine(L)) || String(L.topic || ""), tags = (Array.isArray(o.tags) ? o.tags : []).map((q) => "#" + String(q).replace(/^#+/, "").replace(/\s+/g, "")).filter((q) => q.length > 1).slice(0, 5).join(" ");
+    const title = net === "yt" ? (String(o.title || "").trim() || String(L.topic || t).slice(0, 60)) : "";
+    const body = net === "yt" ? `${t}\n\n${promo}\n\n${tags}${tags.includes("#shorts") ? "" : " #shorts"}`.trim() : net === "tt" ? `${t} ${promo} ${tags}`.trim() : `${t}\n\n${promo}\n\n${tags}`.trim();
+    return (L._net[net] = { title, body }); }
+  function donePanel(f) { if (!UI.root?.isConnected || !L) return;
+    const P = panel("Відео готове ✓", `<div class="row"><button class="btn main" type="button" id="cdsv">⬇ Зберегти на телефон</button></div>
+      <div class="sec"><h4>Опублікувати</h4><p class="cnt" style="margin:-4px 0 8px">Вибери соцмережу — напишу назву й опис саме під неї.</p><div class="chips">${Object.entries(NETS).map(([k, n]) => `<button class="chip" type="button" data-net="${k}">${n}</button>`).join("")}</div><div id="cnet" style="margin-top:10px"></div></div>`);
+    P.querySelector("[data-pclose]").onclick = () => P.remove();
+    P.querySelector("#cdsv").onclick = async (e) => { const b = e.currentTarget; if (await saveFile(f)) { b.textContent = "✓ Збережено"; track("save_phone"); } };
+    const box = P.querySelector("#cnet");
+    P.querySelectorAll("[data-net]").forEach((b) => b.onclick = async () => { const net = b.dataset.net; P.querySelectorAll("[data-net]").forEach((o) => o.setAttribute("aria-pressed", o === b)); box.innerHTML = `<p class="cnt">Пишу опис для ${NETS[net]}…</p>`;
+      const r = await netText(net); if (!box.isConnected) return;
+      box.innerHTML = `${net === "yt" ? `<label class="cnt" style="display:block;margin:0 0 4px">Назва</label><input class="tx" id="cnt0" maxlength="100" value="${escH(r.title)}"><div class="row" style="margin:6px 0 10px"><button class="btn" type="button" data-cp="cnt0">Скопіювати назву</button></div><label class="cnt" style="display:block;margin:0 0 4px">Опис</label>` : ""}
+        <textarea class="tx" id="cnt1" rows="7" style="width:100%;resize:vertical">${escH(r.body)}</textarea><div class="row" style="margin-top:6px"><button class="btn" type="button" data-cp="cnt1">Скопіювати опис</button></div>
+        <div class="row" style="margin-top:10px"><button class="btn main" type="button" id="cpub">📤 Поділитися в ${NETS[net]}</button></div><p class="cnt" style="margin:6px 0 0">Опис скопіюється сам — у застосунку встав його в підпис.${L.ad === "comment" || (L.ad === "none" && OPT.capK === "comment") ? " Порада: увімкни автовідповідь у Direct на слово з коментарів." : ""}</p>`;
+      box.querySelectorAll("[data-cp]").forEach((q) => q.onclick = async () => { const ok = await copyText(box.querySelector("#" + q.dataset.cp).value); q.textContent = ok ? "✓ Скопійовано" : "Виділи й скопіюй вручну"; });
+      box.querySelector("#cpub").onclick = async () => { const all = (net === "yt" ? box.querySelector("#cnt0").value + "\n\n" : "") + box.querySelector("#cnt1").value; await copyText(net === "yt" ? box.querySelector("#cnt0").value : all); track("publish", { v: net });
+        if (navigator.canShare?.({ files: [f] })) { try { await navigator.share({ files: [f] }); return; } catch (x) { if (x?.name === "AbortError") return; } }
+        await saveFile(f); window.open(NETURL[net], "_blank", "noopener"); say("Відео збережено, опис скопійовано — завантаж відео в застосунку й встав опис"); }; }); }
   function capPanel() { if (!UI.root?.isConnected || !L) return; const k0 = L.ad && L.ad !== "none" ? L.ad : (OPT.capK || "bio"); let k = k0;
     const P = panel("Підпис до відео", `<p class="cnt" style="margin:0 0 8px">Відео збережене. Встав цей підпис під ним в Instagram чи TikTok:</p>
       ${L.ad && L.ad !== "none" ? "" : `<div class="chips" style="margin-bottom:8px">${["bio", "comment"].map((q) => `<button class="chip" type="button" data-ck="${q}" aria-pressed="${q === k}">${AD_KINDS[q]}</button>`).join("")}</div>`}
@@ -1567,9 +1596,10 @@ ${SPEC}
     $(F, "#cback").onclick = () => { stopPlay(); screenContent(); };
     $(F, "#csave").onclick = async (e) => { const b = e.currentTarget, lbl = b.textContent; b.disabled = true; stopPlay();
       const ok = await canSave(); if (ok !== true) { b.disabled = false; if (ok === "buy") buyPanel(() => $(F, "#csave")?.click(), L._need); return; } await freshAudio();
-      try { const r = await exportVideo((p) => b.textContent = `Зберігаю… ${Math.round(p * 100)}%`); const name = `yuvi-kino-${Date.now()}.${r.ext}`, f = new File([r.blob], name, { type: r.blob.type });
-        if (navigator.canShare?.({ files: [f] })) { try { await navigator.share({ files: [f] }); } catch (x) {} } else { const a = document.createElement("a"); a.href = URL.createObjectURL(r.blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 6e4); }
-        track("export", { v: `${Math.round(L.dur)}s` }); setTimeout(capPanel, 300); } catch (x) { console.error(x); say(x?.message === "noenc" ? "Цей браузер не вміє зберігати відео — спробуй Chrome або Safari 17+" : "Не вдалося зберегти"); }
+      try { const t0 = performance.now(); const r = await E().busyRun("save", () => exportVideo((p) => { const el = (performance.now() - t0) / 1000, left = p > .04 ? el * (1 - p) / p : null;
+          window.yvBusy?.progress?.(p, left == null ? "Рахую, скільки чекати…" : left < 5 ? "Майже готово…" : `Залишилось ≈ ${left < 60 ? Math.max(5, Math.ceil(left / 5) * 5) + " с" : Math.ceil(left / 60) + " хв"}`); }));
+        const name = `yuvi-kino-${Date.now()}.${r.ext}`, f = new File([r.blob], name, { type: r.blob.type });
+        track("export", { v: `${Math.round(L.dur)}s` }); setTimeout(() => donePanel(f), 500); } catch (x) { console.error(x); say(x?.message === "noenc" ? "Цей браузер не вміє зберігати відео — спробуй Chrome або Safari 17+" : "Не вдалося зберегти"); }
       b.disabled = false; b.textContent = lbl; }; }
   window.YVCine = { adStudio: () => adStudio(), open(o = {}) { if (o.text) { DRAFT.text = String(o.text); DRAFT.topic = String(o.topic || ""); saveDraft(); return screenContent(); } screenTopic(); }, close, _t: { loadHand, DEMOPLAN, placeAd, removeAd, ensureAd, adPoint, loadAd, soundtrack, normPlan, aiPlan, set: (l) => { L = l; }, L: () => L, screenEdit, exportVideo, loadFont, drawFrame, timeline, PLACES, POSE, HOOD, figure, loadIcons, sceneAt } };
 })();

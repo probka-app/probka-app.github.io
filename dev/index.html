@@ -1118,7 +1118,7 @@ body.pub .fmts{margin-top:14px}body.pub .fmt .fs,body.pub .fmt .fopen,body.pub .
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="YuVi DEV">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>window.YV_DEV=true;window.YV_BUILD="02.11 01:08";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
+<script>window.YV_DEV=true;window.YV_BUILD="02.11 01:23";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="server.js?v=10428086"></script>
@@ -4690,8 +4690,9 @@ async function loadUIF(){ if(!window.SRV?.uiFlags) { applyUIF(); return; } const
                image:{t:"Малюю картинку…",m:["Продумую кадр","Малюю","Додаю деталі","Перевіряю якість","Майже готово"]},
                voice:{t:"Озвучую…",m:["Готую голос","Записую","Вирівнюю звук","Майже готово"]},
                listen:{t:"Слухаю запис…",m:["Розпізнаю слова","Ставлю мітки часу","Майже готово"]},
-               montage:{t:"Монтую відео…",m:["Збираю кадри","Накладаю голос","Додаю звуки й рух","Майже готово"]} };
-  let el, n=0, p=0, timer=null, endT=null, msgT=null, bgT=null, kind="text", hidden=false, last={t:"",at:0};
+               montage:{t:"Монтую відео…",m:["Збираю кадри","Накладаю голос","Додаю звуки й рух","Майже готово"]},
+               save:{t:"Зберігаю відео…",m:["Рахую, скільки чекати…"]} };
+  let el, n=0, p=0, timer=null, endT=null, msgT=null, bgT=null, kind="text", hidden=false, last={t:"",at:0}, real=false;
   document.addEventListener("click",e=>{ const b=e.target.closest?.("button"); if(b) last={t:(b.textContent||"").replace(/\s+/g," ").trim().slice(0,60),at:Date.now()}; },true);
   const C=2*Math.PI*54;
   function mount(){ if(el) return; el=document.createElement("div"); el.id="yvbusy"; el.setAttribute("role","status"); el.setAttribute("aria-live","polite");
@@ -4715,13 +4716,16 @@ async function loadUIF(){ if(!window.SRV?.uiFlags) { applyUIF(); return; } const
     p=Math.min(96,p+j); draw(j>4); timer=setTimeout(tick,250+Math.random()*650); }
   function msgs(){ const L=KIND[kind].m; let i=0; const s=el.querySelector(".st"); const sub=Date.now()-last.at<2500&&last.t?last.t:"";
     s.textContent=sub||L[0]; msgT=setInterval(()=>{ i=Math.min(i+1,L.length-1); s.style.opacity=0; setTimeout(()=>{ s.textContent=L[i]; s.style.opacity=1; },200); },2600); }
-  function begin(k){ mount(); kind=KIND[k]?k:"text"; p=0; hidden=false; el.querySelector(".ti").textContent=KIND[kind].t; draw(); el.classList.add("on"); el.querySelector(".bg").classList.remove("v");
-    clearTimeout(timer); clearInterval(msgT); clearTimeout(bgT); msgs(); timer=setTimeout(tick,180); bgT=setTimeout(()=>el.querySelector(".bg").classList.add("v"),9000); }
+  function begin(k){ mount(); kind=KIND[k]?k:"text"; p=0; hidden=false; real=false; el.querySelector(".ti").textContent=KIND[kind].t; draw(); el.classList.add("on"); el.querySelector(".bg").classList.remove("v");
+    clearTimeout(timer); clearInterval(msgT); clearTimeout(bgT); msgs(); if(kind!=="save"){ timer=setTimeout(tick,180); bgT=setTimeout(()=>el.querySelector(".bg").classList.add("v"),9000); } }
   function finish(){ clearTimeout(timer); clearInterval(msgT); clearTimeout(bgT); p=100; draw(true); try{ if(sndOn()&&!hidden){ ac(); const t=AC.currentTime+.02; bell(784,t,.045,1.2); bell(1174.7,t+.08,.035,1.4); } }catch(e){} setTimeout(()=>{ el.classList.remove("on"); },420); }
   window.yvBusy={
     start(k){ if(endT){ clearTimeout(endT); endT=null; n++; return; } if(n++===0) begin(k); },
     end(){ n=Math.max(0,n-1); if(n) return; endT=setTimeout(()=>{ endT=null; if(!n) finish(); },450); },   // коротка пауза — щоб серія картинок ішла одним завантаженням
     // справжній етап роботи (замість загальних фраз): «Озвучую…», «Розпізнаю слова…»
+    // справжній прогрес (0…1) і підпис, напр. «Залишилось ≈ 40 с» — без «продовжити у фоні»
+    progress(v,note){ if(!el||!el.classList.contains("on")) return; real=true; clearTimeout(timer); timer=null; clearTimeout(bgT); clearInterval(msgT); el.querySelector(".bg").classList.remove("v");
+      const nv=Math.max(p,Math.min(99,(+v||0)*100)), dv=nv-p; p=nv; draw(dv>4); if(note!=null) el.querySelector(".st").textContent=String(note); },
     stage(t){ if(!el||!el.classList.contains("on")) return; clearInterval(msgT); const s=el.querySelector(".st"); s.style.opacity=0; setTimeout(()=>{ s.textContent=String(t||""); s.style.opacity=1; },150); }
   };
 })();
