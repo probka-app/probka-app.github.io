@@ -673,7 +673,14 @@ out — повернення в історію після вставки, до 7
     x.restore();
   }
   // таймінг сцен зі слів
-  function timeline(L) { const ws = L.words, n = ws.length; L.scenes.sort((a, b) => a.a - b.a || (b.ad ? 1 : 0) - (a.ad ? 1 : 0)); if (L.scenes[0]) L.scenes[0].a = 0;
+  // щоб текст не налазив на текст: напис угорі, вікно-підказка нижче, субтитри внизу
+  const HUDH = { panel: 270, chart: 250, bars: 240, counter: 130, brain: 230, check: 250, compare: 230, rings: 220, network: 240 };
+  function fixLayout(L, sc, force) { if (!sc || sc.ad) return; const subTop = L.subs ? (L.subS?.y || 1370) - 120 : H - 300, hk = sc.hud?.k && sc.hud.k !== "none" ? sc.hud.k : null, hh = hk ? (HUDH[hk] || 240) : 0;
+    if (sc.cap?.t) { const big = sc.cap.k === "title", ch = big ? 140 : 115; let cy = sc.cap.y || (big ? H * .42 : 470);
+      if (hk) { const hy = sc.hud.y || 700; if (force || (cy + ch + 30 > hy - hh && cy - ch - 30 < hy + hh)) { cy = sc.cap.y = 300; sc.hud.y = Math.max(hy, 300 + ch + 40 + hh); } }
+      if (cy + ch > subTop) sc.cap.y = 470; }
+    if (hk && (sc.hud.y || 700) + hh > subTop) { sc.hud.y = Math.max(230 + hh, subTop - hh - 20); if (sc.cap?.t && (sc.cap.y || 470) + 130 > sc.hud.y - hh) sc.cap = null; } }
+  function timeline(L) { (L.scenes || []).forEach((s) => fixLayout(L, s)); const ws = L.words, n = ws.length; L.scenes.sort((a, b) => a.a - b.a || (b.ad ? 1 : 0) - (a.ad ? 1 : 0)); if (L.scenes[0]) L.scenes[0].a = 0;
     L.scenes.forEach((s, i) => { s.t0 = i === 0 ? 0 : s.ad ? (L.adT ?? Math.max(0, ws[Math.max(0, s.a - 1)].e + .1)) : Math.max(0, ws[Math.min(n - 1, s.a)].s - .12); s.seed = s.seed || (i * 7 + 3); });
     L.scenes.forEach((s, i) => { s.t1 = i + 1 < L.scenes.length ? L.scenes[i + 1].t0 : L.dur; const at = (k) => k != null && ws[k] ? Math.max(0, ws[k].s - s.t0) : null;
       (s.props || []).forEach((p) => { p.at = at(p.i) ?? .15; }); if (s.hud) s.hud.at = at(s.hud.i) ?? .1; if (s.cap) s.cap.at = at(s.cap.i) ?? .05; s.hitT = (s.hit || []).map(at).filter((v) => v != null); s.dir = i % 2 ? -1 : 1; }); }
@@ -811,7 +818,7 @@ ${SPEC}
     if (Array.isArray(r?.scenes) && r.scenes.length) L.scenes = normPlan(r, L); if (MOODS[r?.mood]) L.mood = r.mood; return r?.say || "Готово."; }
   async function aiText(topic, sec, silent) { const want = Math.round(sec * (silent ? 1.6 : 2.4));
     const r = await sample.json(`Напиши ${silent ? "текст для анімаційного Reels БЕЗ голосу — він іде на екрані субтитрами, короткі речення по 4–9 слів" : "текст для озвучки за кадром — жива розмовна українська, як людина говорить другу"} на тему: «${topic}».
-Формат: вертикальне кіно-анімаційне відео (герой-чоловічок, сцени змінюються кожні 2–4 с) ≈ ${sec} с. Перше речення — сильний гачок-питання або несподіваний факт; далі історія героя з поворотом (але/тому), конкретні числа й образи, які легко показати; фінал замикає петлю з початком.
+Формат: вертикальне кіно-анімаційне відео (герой-чоловічок, сцени змінюються кожні 2–4 с) ≈ ${sec} с. Мета — вірусність: людина має додивитися до кінця й захотіти переслати. Перше речення — сильний гачок-питання або несподіваний факт (до 10 слів, без розгону); одразу відкрий петлю, яку закриєш лише у фіналі; кожні 5–7 с — нова міні-інтрига чи поворот; далі історія героя з поворотом (але/тому), конкретні числа й образи, які легко показати; фінал замикає петлю з початком.
 Обсяг ≈ ${want} слів. Без хештегів, емодзі, ремарок і заголовків. Відповідай тільки JSON {"text":"…"}`, { cache: false, kbFmt: "tall", kb: ["hook", "script", "story", "general"], max: 3000 });
     return String(r?.text || "").trim(); }
 
@@ -874,7 +881,20 @@ ${SPEC}
 #yvcn .sec{margin-top:16px}#yvcn .sec h4{margin:0 0 8px;font-size:13.5px;color:#d4d4d8;font-weight:800}
 #yvcn .chips{display:flex;flex-wrap:wrap;gap:6px}#yvcn .chip{padding:7px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:#e4e4e7;font-weight:600;font-size:13px;font-family:inherit;cursor:pointer}#yvcn .chip[aria-pressed=true]{background:#f5f5f7;color:#0b0b0d}
 #yvcn .dot{width:34px;height:34px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}#yvcn .dot[aria-pressed=true]{border-color:#fff;box-shadow:0 0 0 2px #0b0b0d inset}
-#yvcn .styl{display:flex;gap:10px;align-items:center;padding:8px;border-radius:16px;border:1.5px solid #f5f5f7;background:rgba(255,255,255,.06)}#yvcn .styl canvas{width:96px;height:171px;border-radius:12px;flex:none;background:#222}#yvcn .styl b{display:block;font-size:15px}#yvcn .styl span{display:block;font-size:12.5px;color:#a1a1aa;margin-top:3px}
+#yvcn .styl{display:flex;gap:10px;align-items:center;padding:8px;border-radius:16px;border:1.5px solid #f5f5f7;background:rgba(255,255,255,.06)}#yvcn .styl canvas{width:96px;height:171px;border-radius:12px;flex:none;background:#222}#yvcn .styl b{display:block;font-size:15px}
+#yvcn .styl.soonf{margin-top:8px;border:1px dashed rgba(255,255,255,.2);background:transparent;opacity:.7;padding:12px}
+#yvcn .steps{display:flex;gap:6px;margin:0 0 12px;font-size:12px;font-weight:700}
+#yvcn .steps>*{flex:1;text-align:center;padding:6px 4px;border-radius:999px;background:rgba(255,255,255,.05);color:#71717a}
+#yvcn .steps>b{background:#f5f5f7;color:#0b0b0d}
+#yvcn .tpl{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+#yvcn .tpc{text-align:left;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#f5f5f7;font:600 15px/1.3 inherit;font-family:inherit;cursor:pointer}
+#yvcn .tpc[aria-pressed="true"]{border-color:#dbe86b;background:rgba(219,232,107,.1)}
+#yvcn .tpcur{display:flex;gap:10px;align-items:center;justify-content:space-between}
+#yvcn .tpcur b{font-size:16px;line-height:1.3}
+#yvcn details.more>summary{cursor:pointer;font-weight:700;font-size:14px;color:#e4e4e7;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.05);list-style:none}
+#yvcn details.more>summary::after{content:" ▾";color:#71717a}
+#yvcn details.more[open]>summary{margin-bottom:10px}
+#yvcn .fix{display:flex;flex-wrap:wrap;gap:6px}#yvcn .styl span{display:block;font-size:12.5px;color:#a1a1aa;margin-top:3px}
 #yvcn .vopt{display:grid;gap:6px}#yvcn .vopt button{display:block;text-align:left;padding:10px 12px;border-radius:14px;border:1.5px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:inherit;font-family:inherit;cursor:pointer}#yvcn .vopt button[aria-pressed=true]{border-color:#f5f5f7;background:rgba(255,255,255,.1)}#yvcn .vopt b{display:block;font-size:14.5px}#yvcn .vopt span{display:block;font-size:12.5px;color:#a1a1aa}
 #yvcn .tg{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1)}#yvcn .tg span{display:block;font-size:12.5px;color:#a1a1aa}
 #yvcn .sw{flex:none;width:48px;height:29px;border-radius:999px;background:rgba(255,255,255,.2);border:0;position:relative;cursor:pointer}#yvcn .sw::after{content:"";position:absolute;top:3px;left:3px;width:23px;height:23px;border-radius:50%;background:#fff;transition:transform .18s}#yvcn .sw[aria-checked=true]{background:#30d158}#yvcn .sw[aria-checked=true]::after{transform:translateX(19px)}
@@ -927,22 +947,53 @@ ${SPEC}
     P.querySelectorAll("[data-ck]").forEach((b) => b.onclick = () => { k = OPT.capK = b.dataset.ck; saveOpt(); P.querySelectorAll("[data-ck]").forEach((o) => o.setAttribute("aria-pressed", o === b)); fill(); });
     P.querySelector("#ccpy").onclick = async (e) => { const ok = await copyText(ta.value); e.currentTarget.textContent = ok ? "✓ Скопійовано" : "Виділи й скопіюй вручну"; track("caption_copy", { v: k }); };
     fill(); }
+  /* ---------- крок 1: тема (можна нічого не писати — вибрати з переліку) ---------- */
+  const TOPICS = {
+    "Що буде, якщо": ["Що буде, якщо 30 днів не брати телефон у руки", "Що буде, якщо щодня спати по 5 годин", "Що буде, якщо відкладати 100 гривень щодня", "Що буде, якщо щодня знімати по одному відео", "Що буде, якщо тиждень ні на що не скаржитись", "Що буде, якщо загубити собаку в місті"],
+    "Психологія": ["Чому ми відкладаємо важливе на потім", "Чому мозок любить погані новини", "Як тобою маніпулюють щодня, а ти не помічаєш", "Чому ми пам'ятаємо сором через десять років", "Ефект, через який ти купуєш непотрібне"],
+    "Гроші": ["Як одна звичка з'їдає твою зарплату", "Скільки насправді коштує щоденна кава за 10 років", "Чому навіть із великою зарплатою не вистачає грошей", "Як заробити перші гроші на відео без підписників", "Чому багаті купують дешеве, а бідні — дороге"],
+    "Факти": ["Найдорожча помилка в історії", "Що відбувається з тілом у космосі", "Людина, яка врятувала мільйони, а її ніхто не знає", "Чому літаки фарбують у білий"],
+    "Тварини": ["Що думає собака, коли ти йдеш з дому", "Чому коти скидають речі зі столу", "Як собака знаходить дорогу додому за 50 кілометрів"],
+    "Саморозвиток": ["Що зміниться, якщо вставати о 5 ранку", "Як за рік стати іншою людиною", "Чому дисципліна сильніша за мотивацію", "Що буде з тілом, якщо щодня проходити 10 000 кроків"] };
+  let TCAT = "Що буде, якщо";
+  function screenTopic(msg) { stopPlay(); const d = shell(), B = $(d, ".cb"), F = $(d, ".cf");
+    const list = () => (TOPICS[TCAT] || []).map((t) => `<button type="button" class="tpc" data-tp="${escH(t)}" aria-pressed="${DRAFT.topic === t}">${escH(t)}</button>`).join("");
+    B.innerHTML = `${msg ? `<div class="msg">${escH(msg)}</div>` : ""}<div class="scr">
+      <div class="steps"><b>1 Тема</b><span>2 Текст і голос</span><span>3 Формат</span></div>
+      <div class="sec"><h4>Тривалість</h4><div class="chips">${[20, 30, 45, 60, 90].map((s) => `<button class="chip" type="button" data-sec="${s}" aria-pressed="${OPT.sec === s}">${s} с</button>`).join("")}</div></div>
+      <div class="sec"><h4>Вибери тему — текст напише AI</h4><div class="chips" id="ccats">${Object.keys(TOPICS).map((k) => `<button class="chip" type="button" data-cat="${escH(k)}" aria-pressed="${k === TCAT}">${escH(k)}</button>`).join("")}</div>
+        <div class="tpl" id="ctpl">${list()}</div><button class="btn" type="button" id="cmore" style="margin-top:8px">✨ Підібрати ще теми</button></div>
+      <div class="sec"><h4>Або своя тема</h4><input class="tx" id="ctopic" placeholder="Напр.: чому ми боїмося починати" value="${escH(TOPICS[TCAT]?.includes(DRAFT.topic) ? "" : DRAFT.topic)}"></div></div>`;
+    F.innerHTML = `<button class="btn main" type="button" id="cnext">Далі — написати текст</button>`;
+    const go = (t) => { t = String(t || "").trim(); if (!t) { say("Вибери тему або напиши свою"); return; } if (t !== DRAFT.topic) { DRAFT.topic = t; DRAFT.text = ""; } saveDraft(); screenContent(); };
+    const bind = () => B.querySelectorAll("[data-tp]").forEach((b) => b.onclick = () => { track("topic_pick", { v: TCAT }); go(b.dataset.tp); });
+    bind();
+    B.querySelectorAll("[data-sec]").forEach((b) => b.onclick = () => { OPT.sec = +b.dataset.sec; saveOpt(); B.querySelectorAll("[data-sec]").forEach((o) => o.setAttribute("aria-pressed", o === b)); DRAFT.text = ""; saveDraft(); });
+    B.querySelectorAll("[data-cat]").forEach((b) => b.onclick = () => { TCAT = b.dataset.cat; B.querySelectorAll("[data-cat]").forEach((o) => o.setAttribute("aria-pressed", o === b)); $(B, "#ctpl").innerHTML = list(); bind(); });
+    $(B, "#cmore").onclick = async () => { try { const r = await E().busyRun("text", () => sample.json(`Придумай 8 тем для коротких вертикальних анімаційних відео (Reels/TikTok), які мають шанс стати вірусними. Категорія: «${TCAT}». Аудиторія — широка, українською.
+Кожна тема — одне конкретне речення до 11 слів із вбудованою інтригою (питання «що буде, якщо…», «чому…», несподіваний факт, конкретні числа). Без кліше й без повторів цих: ${(TOPICS[TCAT] || []).join(" | ")}.
+Відповідай тільки JSON-масивом рядків.`, { cache: false, kbFmt: "tall", kb: ["hook", "niche", "general"], max: 1200 }));
+        const arr = (Array.isArray(r) ? r : r?.topics || []).map((q) => String(q?.topic || q).trim()).filter((q) => q && q.length < 120); if (!arr.length) throw new Error("empty");
+        TOPICS[TCAT] = [...arr, ...(TOPICS[TCAT] || [])].slice(0, 24); $(B, "#ctpl").innerHTML = list(); bind(); track("topic_more"); } catch (e) { say(e?.message === "limit" ? "Ліміт на сьогодні вичерпано" : "Не вийшло підібрати теми. Спробуй ще раз"); } };
+    $(F, "#cnext").onclick = () => go($(B, "#ctopic").value.trim() || DRAFT.topic); track("open"); }
+  let PENDING = null;
   function screenSetup(msg) { stopPlay(); const d = shell(), B = $(d, ".cb"), F = $(d, ".cf");
     B.innerHTML = `${msg ? `<div class="msg">${escH(msg)}</div>` : ""}<div class="scr">
-      <div class="sec"><h4>Стиль</h4><div class="styl"><canvas width="270" height="480" id="cdemo"></canvas><div><b>Кіно-чоловічок</b><span>Плаский герой у намальованих локаціях, світло й пил, наїзди камери, великі написи з виділеним словом, HUD-вікна, музика та звуки на діях. Стиль узято з YouTube-прикладів, переведено у вертикаль.</span></div></div></div>
+      <div class="steps"><span>1 Тема</span><span>2 Текст і голос</span><b>3 Формат</b></div>
+      <div class="sec"><h4>Формат відео</h4><div class="styl on"><canvas width="270" height="480" id="cdemo"></canvas><div><b>Кіно-чоловічок ✓</b><span>Плаский герой у намальованих локаціях, наїзди камери, великі написи з виділеним словом, вікна-підказки, музика й звуки на діях.</span></div></div>
+        <div class="styl soonf"><div><b>Нові формати</b><span>Скоро — додаються з прикладів вірусних відео.</span></div></div></div>
+      <div class="sec"><h4>Реклама у відео</h4><p class="cnt" style="margin:-4px 0 8px">На цікавому місці історії персонаж дістає телефон — і тим самим голосом видно, як за кілька хвилин робиться таке відео, а за кожного, хто прийде за твоїм посиланням, ти отримуєш половину його першої оплати. Секунди вставки не списуються.</p><div class="chips">${Object.entries(AD_KINDS).map(([k, n]) => `<button class="chip" type="button" data-adk="${k}" aria-pressed="${(OPT.ad || "none") === k}">${n}</button>`).join("")}</div>
+        <input class="tx" id="cadw" style="margin-top:8px${OPT.ad === "comment" || ((OPT.ad || "none") === "none" && OPT.capK === "comment") ? "" : ";display:none"}" maxlength="14" placeholder="Слово для коментарів" value="${escH(OPT.adWord || "АНІМАЦІЯ")}"><div id="cadhint">${OPT.ad === "comment" ? DM_HINT : ""}</div>
+        <div id="ccapbox" style="margin-top:10px${(OPT.ad || "none") === "none" ? "" : ";display:none"}"><p class="cnt" style="margin:0 0 6px">Без вставки у відео — але можна привести людей підписом під відео. Ось текст, скопіюй його:</p><div class="chips" style="margin-bottom:8px">${["bio", "comment"].map((q) => `<button class="chip" type="button" data-ck="${q}" aria-pressed="${(OPT.capK || "bio") === q}">${AD_KINDS[q]}</button>`).join("")}</div><textarea class="tx" id="ccap0" rows="3" style="width:100%;resize:vertical" readonly></textarea><div class="row" style="margin-top:6px"><button class="btn" type="button" id="ccpy0">Скопіювати</button></div><p class="cnt" style="margin:6px 0 0">Після збереження відео дам підпис ще й з першим рядком про тему.</p></div>${isOwner() ? `<button class="btn" type="button" id="cadst" style="margin-top:10px">🎬 Студія вставки: текст і запис екрана · ТЕСТ</button>` : ""}</div>
+      <details class="sec more"><summary>Герой, тварина, музика, локації, субтитри</summary>
       <div class="sec"><h4>Герой: колір худі</h4><div class="chips" id="ccol">${Object.entries(HOOD).filter(([k]) => k !== "grey").map(([k, v]) => `<button class="dot" type="button" data-col="${k}" style="background:${v}" aria-pressed="${OPT.col === k}" aria-label="${k}"></button>`).join("")}</div>
         <div class="chips" style="margin-top:8px">${[["none", "Без нічого"], ["beanie", "Шапка"], ["cap", "Кепка"], ["glasses", "Окуляри"], ["headphones", "Навушники"]].map(([k, n]) => `<button class="chip" type="button" data-acc="${k}" aria-pressed="${OPT.acc === k}">${n}</button>`).join("")}</div></div>
       <div class="sec"><h4>Тварина в історії</h4><div class="chips"><button class="chip" type="button" data-pet="" aria-pressed="${!OPT.pet}">Без тварини</button>${Object.entries(BREED).map(([k, v]) => `<button class="chip" type="button" data-pet="${k}" aria-pressed="${OPT.pet === k}">${v.dog ? "🐕" : "🐈"} ${v.n}</button>`).join("")}</div></div>
-      <div class="sec"><h4>Реклама YuVi у відео</h4><p class="cnt" style="margin:-4px 0 8px">На цікавому місці історії персонаж дістає телефон — і тим самим голосом видно, як за кілька хвилин робиться таке відео, а за кожного, хто прийде за твоїм посиланням, ти отримуєш половину його першої оплати. Секунди вставки не списуються.</p><div class="chips">${Object.entries(AD_KINDS).map(([k, n]) => `<button class="chip" type="button" data-adk="${k}" aria-pressed="${(OPT.ad || "none") === k}">${n}</button>`).join("")}</div>
-        <input class="tx" id="cadw" style="margin-top:8px${OPT.ad === "comment" || ((OPT.ad || "none") === "none" && OPT.capK === "comment") ? "" : ";display:none"}" maxlength="14" placeholder="Слово для коментарів" value="${escH(OPT.adWord || "АНІМАЦІЯ")}"><div id="cadhint">${OPT.ad === "comment" ? DM_HINT : ""}</div>
-        <div id="ccapbox" style="margin-top:10px${(OPT.ad || "none") === "none" ? "" : ";display:none"}"><p class="cnt" style="margin:0 0 6px">Без вставки у відео — але можна привести людей підписом під відео. Ось текст, скопіюй його:</p><div class="chips" style="margin-bottom:8px">${["bio", "comment"].map((q) => `<button class="chip" type="button" data-ck="${q}" aria-pressed="${(OPT.capK || "bio") === q}">${AD_KINDS[q]}</button>`).join("")}</div><textarea class="tx" id="ccap0" rows="3" style="width:100%;resize:vertical" readonly></textarea><div class="row" style="margin-top:6px"><button class="btn" type="button" id="ccpy0">Скопіювати</button></div><p class="cnt" style="margin:6px 0 0">Після збереження відео дам підпис ще й з першим рядком про тему.</p></div>${isOwner() ? `<button class="btn" type="button" id="cadst" style="margin-top:10px">🎬 Студія вставки: текст і запис екрана · ТЕСТ</button>` : ""}</div>
-      <div class="sec"><h4>Тривалість</h4><div class="chips">${[20, 30, 45, 60, 90].map((s) => `<button class="chip" type="button" data-sec="${s}" aria-pressed="${OPT.sec === s}">${s} с</button>`).join("")}</div></div>
-      <div class="sec"><h4>Голос</h4><div class="vopt">${VOICES.map(([k, n, s]) => `<button type="button" data-v="${k}" aria-pressed="${OPT.voice === k}"><b>${n}</b><span>${s}</span></button>`).join("")}</div></div>
       <div class="sec"><h4>Музика</h4><div id="csmus"></div></div>
       <div class="sec"><h4>Локації</h4><p class="cnt" style="margin:-4px 0 8px">Вибери, де житиме історія, або залиш «AI вибере». Можна кілька.</p><div class="chips" id="cplc"><button class="chip" type="button" data-pl="" aria-pressed="${!OPT.places?.length}">AI вибере</button>${Object.entries(PLACES).filter(([k]) => k !== "void").map(([k, v]) => `<button class="chip" type="button" data-pl="${k}" aria-pressed="${(OPT.places || []).includes(k)}">${v.n}</button>`).join("")}</div></div>
       <div class="sec"><div class="tg"><div><b>Субтитри</b><span>Розмір і висоту можна змінити в редакторі</span></div><button class="sw" type="button" id="csubs" role="switch" aria-checked="${OPT.subs}"></button></div>
-        <div class="chips" style="margin-top:8px">${Object.entries(SUBST).map(([k, n]) => `<button class="chip" type="button" data-ss="${k}" aria-pressed="${(OPT.subS?.k || "classic") === k}">${n}</button>`).join("")}</div></div></div>`;
-    F.innerHTML = `<button class="btn main" type="button" id="cnext">Далі</button>`;
+        <div class="chips" style="margin-top:8px">${Object.entries(SUBST).map(([k, n]) => `<button class="chip" type="button" data-ss="${k}" aria-pressed="${(OPT.subS?.k || "classic") === k}">${n}</button>`).join("")}</div></div></details></div>`;
+    F.innerHTML = `<div class="row"><button class="btn main" type="button" id="cnext">Створити відео</button><button class="btn sq" type="button" id="cprev" aria-label="Назад">‹</button></div>`;
     const cv = $(B, "#cdemo"); loadFont().then(() => demo(cv)); loadIcons();
     const pick = (sel, key, cb) => B.querySelectorAll(sel).forEach((b) => b.onclick = () => { B.querySelectorAll(sel).forEach((o) => o.setAttribute("aria-pressed", o === b)); cb(b.dataset[key]); saveOpt(); });
     pick("[data-col]", "col", (v) => { OPT.col = v; demo(cv); }); pick("[data-acc]", "acc", (v) => { OPT.acc = v; demo(cv); }); pick("[data-sec]", "sec", (v) => OPT.sec = +v); pick("[data-v]", "v", (v) => OPT.voice = v);
@@ -961,7 +1012,8 @@ ${SPEC}
     pick("[data-ss]", "ss", (v) => { OPT.subS = { ...SUBS0, ...(OPT.subS || {}), k: v }; });
     B.querySelectorAll("[data-pl]").forEach((b) => b.onclick = () => { const k = b.dataset.pl; let L2 = (OPT.places || []).filter((q) => PLACES[q]); if (!k) L2 = []; else L2 = L2.includes(k) ? L2.filter((q) => q !== k) : [...L2, k]; OPT.places = L2; saveOpt();
       B.querySelectorAll("[data-pl]").forEach((o) => o.setAttribute("aria-pressed", o.dataset.pl ? L2.includes(o.dataset.pl) : !L2.length)); });
-    $(F, "#cnext").onclick = () => { cancelAnimationFrame(DEMO); stopPrev(); screenContent(); }; track("open"); }
+    $(F, "#cprev").onclick = () => { cancelAnimationFrame(DEMO); stopPrev(); screenContent(); };
+    $(F, "#cnext").onclick = () => { cancelAnimationFrame(DEMO); stopPrev(); if (!PENDING) { screenContent("Спершу підготуй текст і голос"); return; } track("create"); build(PENDING); }; }
   const VPA = { a: null };
   async function voicePick(box) { let V = [], cl = null, err = "";
     try { V = (await SRV.voices()) || []; } catch (e) { err = e?.message || "err"; }
@@ -976,27 +1028,35 @@ ${SPEC}
       const v = V.find((q) => q.id === b.dataset.vid); let u = v.preview || v._u;
       if (!u) { pv.textContent = "…"; try { const r = await SRV.tts({ text: "Привіт! Ось так звучатиме твоє відео.", voice: { kind: "preset", id: v.id }, quiet: true }); u = v._u = URL.createObjectURL(new Blob([b64Buf(r.audio)], { type: r.mime || "audio/mpeg" })); } catch (x) { pv.textContent = "▶"; say(TTS_ERR[x.message] || "Не вдалося прослухати"); return; } }
       box.querySelectorAll("[data-pv]").forEach((o) => o.textContent = "▶"); VPA.a = new Audio(u); pv.textContent = "■"; VPA.a.onended = () => pv.textContent = "▶"; VPA.a.play().catch(() => pv.textContent = "▶"); }); }
+  /* ---------- крок 2: текст (AI пише сам) і голос ---------- */
   function screenContent(msg) { stopPlay(); const d = shell(), B = $(d, ".cb"), F = $(d, ".cf"), v = OPT.voice, rec = v === "rec" || v === "file";
     B.innerHTML = `${msg ? `<div class="msg">${escH(msg)}</div>` : ""}<div class="scr">
-      <div class="sec"><h4>Про що відео?</h4><input class="tx" id="ctopic" placeholder="Напр.: що буде, якщо щодня знімати по одному відео" value="${escH(DRAFT.topic)}"></div>
-      <div class="sec"><h4>${rec ? "Текст, який прочитаєш (можна без нього)" : v === "none" ? "Текст на екрані" : "Текст для озвучки"}</h4><button class="btn" type="button" id="cwr" style="margin-bottom:8px">✨ ${DRAFT.text ? "Написати інакше" : "Написати текст з AI"}</button>
-        <textarea id="ctext" rows="8" placeholder="Встав свій текст або натисни «Написати з AI»">${escH(DRAFT.text)}</textarea><p class="cnt" id="ccnt"></p></div>
-      ${v === "ai" || v === "clone" ? `<div class="sec"><h4>Голос</h4><div id="cvl"><p class="cnt" style="margin:0">Завантажую голоси…</p></div></div>` : ""}</div>`;
+      <div class="steps"><span>1 Тема</span><b>2 Текст і голос</b><span>3 Формат</span></div>
+      <div class="sec"><h4>Тема</h4><div class="tpcur"><b>${escH(DRAFT.topic || "Без теми — свій текст")}</b><button class="chip" type="button" id="ctpch">Змінити</button></div></div>
+      <div class="sec"><h4>${rec ? "Текст, який прочитаєш" : v === "none" ? "Текст на екрані" : "Текст для озвучки"}</h4>
+        <textarea id="ctext" rows="9" placeholder="AI напише текст за темою — або встав свій">${escH(DRAFT.text)}</textarea><div class="row" style="margin-top:8px"><button class="btn" type="button" id="cwr">✨ ${DRAFT.text ? "Інший варіант" : "Написати текст"}</button></div><p class="cnt" id="ccnt"></p></div>
+      <div class="sec"><h4>Голос</h4><div class="chips">${VOICES.map(([k, n]) => `<button class="chip" type="button" data-v="${k}" aria-pressed="${v === k}">${n}</button>`).join("")}</div>
+        <p class="cnt" style="margin:6px 0 0">${escH((VOICES.find((q) => q[0] === v) || VOICES[0])[2])}</p>${v === "ai" || v === "clone" ? `<div id="cvl" style="margin-top:8px"><p class="cnt" style="margin:0">Завантажую голоси…</p></div>` : ""}</div></div>`;
     F.innerHTML = v === "rec" ? `<div class="row"><button class="btn main" type="button" id="crec">🎙 Записати</button><button class="btn sq" type="button" id="cprev" aria-label="Назад">‹</button></div>`
       : v === "file" ? `<div class="row"><label class="btn main" for="cfile">Завантажити запис</label><button class="btn sq" type="button" id="cprev" aria-label="Назад">‹</button></div><input type="file" id="cfile" accept="audio/*,video/*" hidden>`
-      : `<div class="row"><button class="btn main" type="button" id="cgo">Створити анімацію</button><button class="btn sq" type="button" id="cprev" aria-label="Назад">‹</button></div>`;
-    const ta = $(B, "#ctext"), tp = $(B, "#ctopic"), cnt = $(B, "#ccnt");
+      : `<div class="row"><button class="btn main" type="button" id="cgo">Далі — формат</button><button class="btn sq" type="button" id="cprev" aria-label="Назад">‹</button></div>`;
+    const ta = $(B, "#ctext"), cnt = $(B, "#ccnt");
     const est = () => { DRAFT.text = ta.value; saveDraft(); const n = (ta.value.match(/\S+/g) || []).length; cnt.textContent = n ? `${n} слів · ≈ ${fmt(v === "none" ? wordsFromText(ta.value).dur : n / 2.4)}` : `Ціль ≈ ${OPT.sec} с`; };
-    ta.oninput = est; est(); tp.oninput = () => { DRAFT.topic = tp.value; saveDraft(); };
-    $(B, "#cwr").onclick = async () => { const topic = tp.value.trim() || ta.value.trim().slice(0, 300); if (!topic) { say("Напиши, про що відео"); tp.focus(); return; }
-      try { const t = await E().busyRun("text", () => aiText(topic, OPT.sec, v === "none")); if (!t) throw new Error("empty"); ta.value = t; est(); $(B, "#cwr").textContent = "✨ Написати інакше"; track("ai_text"); } catch (e) { console.warn("cine text", e); say(e?.message === "limit" ? "Ліміт на сьогодні вичерпано" : "Не вийшло написати текст"); } };
+    ta.oninput = est; est();
+    const write = async () => { const topic = DRAFT.topic || ta.value.trim().slice(0, 300); if (!topic) { say("Вибери тему"); screenTopic(); return; }
+      try { const t = await E().busyRun("text", () => aiText(topic, OPT.sec, v === "none")); if (!t) throw new Error("empty"); ta.value = t; est(); $(B, "#cwr").textContent = "✨ Інший варіант"; track("ai_text"); } catch (e) { console.warn("cine text", e); say(e?.message === "limit" ? "Ліміт на сьогодні вичерпано" : "Не вийшло написати текст — натисни ще раз"); } };
+    $(B, "#cwr").onclick = write;
+    $(B, "#ctpch").onclick = () => { try { VPA.a?.pause(); } catch (e) {} screenTopic(); };
+    B.querySelectorAll("[data-v]").forEach((b) => b.onclick = () => { OPT.voice = b.dataset.v; saveOpt(); DRAFT.text = ta.value; saveDraft(); try { VPA.a?.pause(); } catch (e) {} screenContent(); });
     if (v === "ai" || v === "clone") voicePick($(B, "#cvl"));
-    $(F, "#cprev").onclick = () => { try { VPA.a?.pause(); } catch (e) {} screenSetup(); };
-    if (v === "rec") { const rb = $(F, "#crec"), rl = rb.innerHTML; rb.onclick = () => E().record(rb, rl, (buf) => build({ buf })); }
-    else if (v === "file") $(F, "#cfile").onchange = async (e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) build({ buf: await f.arrayBuffer() }); };
-    else $(F, "#cgo").onclick = () => { try { VPA.a?.pause(); } catch (e) {} const t = ta.value.trim(); if ((t.match(/\S+/g) || []).length < 4) { say("Додай текст — хоча б одне речення"); ta.focus(); return; }
-      if (v === "none") return build({ silent: true, text: t }); if (!DRAFT.vid) { say(v === "clone" ? "Спершу створи свій голос" : "Вибери голос"); return; }
-      build({ tts: { text: t, voice: DRAFT.vid === "clone" ? { kind: "clone" } : { kind: "preset", id: DRAFT.vid } } }); }; }
+    $(F, "#cprev").onclick = () => { try { VPA.a?.pause(); } catch (e) {} screenTopic(); };
+    const next = (src) => { try { VPA.a?.pause(); } catch (e) {} PENDING = src; screenSetup(); };
+    if (v === "rec") { const rb = $(F, "#crec"), rl = rb.innerHTML; rb.onclick = () => E().record(rb, rl, (buf) => next({ buf })); }
+    else if (v === "file") $(F, "#cfile").onchange = async (e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) next({ buf: await f.arrayBuffer() }); };
+    else $(F, "#cgo").onclick = () => { const t = ta.value.trim(); if ((t.match(/\S+/g) || []).length < 4) { say("Спершу потрібен текст — натисни «Написати текст»"); return; }
+      if (v === "none") return next({ silent: true, text: t }); if (!DRAFT.vid) { say(v === "clone" ? "Спершу створи свій голос" : "Вибери голос"); return; }
+      next({ tts: { text: t, voice: DRAFT.vid === "clone" ? { kind: "clone" } : { kind: "preset", id: DRAFT.vid } } }); };
+    if (!DRAFT.text.trim() && DRAFT.topic && !rec) setTimeout(write, 50); }
   let STAGE = "";
   async function build(src) { const MAX = 95;
     STAGE = "старт"; try { await E().busyRun("montage", async () => { const stage = (t) => { STAGE = t.replace(/…$/, "").toLowerCase(); try { yvBusy?.stage?.(t); } catch (e) {} };
@@ -1158,7 +1218,8 @@ ${SPEC}
     const chips = (key, map, cur) => `<div class="chips">${Object.entries(map).map(([k, n]) => `<button class="chip" type="button" data-sk="${key}" data-sv="${k}" aria-pressed="${cur === k}">${n}</button>`).join("")}</div>`;
     const P = panel(`Сцена ${i + 1} · ${fmt(sc.t0)}–${fmt(sc.t1)}`, `<p class="cnt" style="margin:0 0 8px;color:#e4e4e7">«${escH(L.words.slice(sc.a, a1).map((w) => w.w).join(" "))}»</p>
       <div class="row"><button class="btn" type="button" data-sp>▶ Переглянути сцену</button></div>
-      <div class="sec"><h4>Змінити словами</h4><div class="ask"><input class="tx" id="cscask" placeholder="Напр.: герой у кав'ярні, радіє, в руках телефон"><button class="btn sq" type="button" id="cscgo">✎</button></div><button class="btn" type="button" id="cscre" style="margin-top:8px">↻ Інший варіант цієї сцени</button></div>
+      <div class="sec"><h4>Що не так у сцені?</h4><div class="fix">${[["overlap", "Текст налазить на текст"], ["face", "Напис закриває героя"], ["cut", "Напис не влазить"], ["words", "Картинка не про ці слова"], ["pose", "Герой робить не те"], ["place", "Не та локація"], ["extra", "Зайве в кадрі"]].map(([k, n]) => `<button class="chip" type="button" data-fx="${k}">${n}</button>`).join("")}</div>
+        <div class="ask" style="margin-top:8px"><input class="tx" id="cscask" placeholder="Або опиши: що не так і як має бути"><button class="btn sq" type="button" id="cscgo" aria-label="Виправити">✎</button></div><button class="btn" type="button" id="cscre" style="margin-top:8px">↻ Інший варіант цієї сцени</button></div>
       <div class="sec"><h4>Напис</h4><input class="tx" id="csccap" placeholder="До 5 слів, *слово* — жовтим" value="${escH(sc.cap?.t || "")}"></div>
       <div class="sec"><h4>Локація</h4>${chips("place", Object.fromEntries(Object.entries(PLACES).map(([k, v]) => [k, v.n])), sc.place)}</div>
       <div class="sec"><h4>Час доби</h4>${chips("time", TIME_N, sc.time)}</div>
@@ -1183,7 +1244,12 @@ ${SPEC}
     P.querySelector("[data-sp]").onclick = async () => { await freshAudio(); refresh(i, true); };
     const ai = async (wish) => { if (!regenOk()) return; stopPlay(); pushH(); try { await E().busyRun("montage", async () => { try { yvBusy?.stage?.("Режисую сцену…"); } catch (e) {} await aiScene(L, i, wish); L.regen = (L.regen || 0) + 1; timeline(L); L.aud = await soundtrack(L); AUD_DIRTY = false; }); refresh(i); sceneSheet(i, refresh); } catch (e) { console.error(e); L.hist.pop(); say(e?.message === "limit" ? "Ліміт на сьогодні вичерпано" : "Не вийшло змінити сцену. Спробуй ще раз"); } };
     P.querySelector("#cscgo").onclick = () => { const t = P.querySelector("#cscask").value.trim(); if (!t) return P.querySelector("#cscask").focus(); ai(t); };
-    P.querySelector("#cscre").onclick = () => ai(""); }
+    P.querySelector("#cscre").onclick = () => ai("");
+    const FXW = { cut: "Напис не влазить у кадр — зроби його коротшим (до 3 слів), зміст той самий", words: "Картинка не відповідає словам цієї сцени — покажи буквально те, про що звучать слова", pose: "Герой робить не те — дай дію й емоцію, які точно відповідають словам", place: "Локація не підходить — вибери ту, що логічна для цих слів і для сусідніх сцен", extra: "У кадрі зайве — прибери предмети чи вікна, що не стосуються слів; залиш лише головне" };
+    P.querySelectorAll("[data-fx]").forEach((b) => b.onclick = () => { const k = b.dataset.fx, more = P.querySelector("#cscask").value.trim(); track("scene_fix", { v: k });
+      if (k === "overlap" || k === "face") { pushH(); if (k === "overlap") fixLayout(L, sc, true); if (k === "face" && sc.cap) sc.cap.y = 300; if (k === "face" && sc.hud?.k && sc.hud.k !== "none") sc.hud.y = Math.max(sc.hud.y || 700, 760); apply(); say(k === "overlap" ? "Розвів текст: напис угорі, вікно нижче, субтитри внизу" : "Напис піднято над героєм"); if (!more) return; }
+      ai((FXW[k] || "") + (more ? `. Ще: ${more}` : "")); });
+  }
   const pushH = () => { L.hist.push(JSON.stringify({ scenes: L.scenes, mood: L.mood, music: L.music })); if (L.hist.length > 25) L.hist.shift(); };
 
   /* ---------- плани збережень: 10 / 20 / 50 відео на 30 днів + докупівля ---------- */
@@ -1260,5 +1326,5 @@ ${SPEC}
         if (navigator.canShare?.({ files: [f] })) { try { await navigator.share({ files: [f] }); } catch (x) {} } else { const a = document.createElement("a"); a.href = URL.createObjectURL(r.blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 6e4); }
         track("export", { v: `${Math.round(L.dur)}s` }); setTimeout(capPanel, 300); } catch (x) { console.error(x); say(x?.message === "noenc" ? "Цей браузер не вміє зберігати відео — спробуй Chrome або Safari 17+" : "Не вдалося зберегти"); }
       b.disabled = false; b.textContent = lbl; }; }
-  window.YVCine = { adStudio: () => adStudio(), open(o = {}) { if (o.text) { DRAFT.text = String(o.text); DRAFT.topic = String(o.topic || ""); saveDraft(); } screenSetup(); }, close, _t: { DEMOPLAN, placeAd, removeAd, ensureAd, adPoint, loadAd, soundtrack, normPlan, aiPlan, set: (l) => { L = l; }, L: () => L, screenEdit, exportVideo, loadFont, drawFrame, timeline, PLACES, POSE, HOOD, figure, loadIcons, sceneAt } };
+  window.YVCine = { adStudio: () => adStudio(), open(o = {}) { if (o.text) { DRAFT.text = String(o.text); DRAFT.topic = String(o.topic || ""); saveDraft(); return screenContent(); } screenTopic(); }, close, _t: { DEMOPLAN, placeAd, removeAd, ensureAd, adPoint, loadAd, soundtrack, normPlan, aiPlan, set: (l) => { L = l; }, L: () => L, screenEdit, exportVideo, loadFont, drawFrame, timeline, PLACES, POSE, HOOD, figure, loadIcons, sceneAt } };
 })();
