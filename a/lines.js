@@ -615,7 +615,7 @@ ${extra}
 Придумай title — заголовок усього ролика в рамці зверху, 2–4 слова (суть, як «СДВГ — це дивно»), і cta — заклик у кінці до 5 слів («Збережи, якщо впізнав себе»).
 Розбий на сцени: одна сцена — одна думка, 3–8 секунд, по черзі на весь ролик, перша починається зі слова 0. Для кожної сцени: a — номер слова початку; title — назва цієї «фігури» 2–4 слова (буде «ФІГ. N — назва»), конкретна й з гумором («47 відкритих вкладок», «Невидима стіна»); items — 1–4 деталі, які наочно й смішно показують думку: майже завжди чоловічок, що щось робить, і 1–2 предмети або напис. Рухи став точно на ті слова, про які йдеться. Не захаращуй: простота й рух важливіші.
 ${SPEC}
-Відповідай тільки JSON: {"title":"…","cta":"…","scenes":[{"a":0,"title":"…","items":[{"k":"man","x":0.3,"y":0.92,"moves":[{"i":3,"m":"walk_to","x":0.6}]},{"k":"money","x":0.75,"y":0.5,"at":5,"moves":[{"i":5,"m":"pop"}]}]}]}`, { cache: false, kb: true, max: 4000 });
+Відповідай тільки JSON: {"title":"…","cta":"…","scenes":[{"a":0,"title":"…","items":[{"k":"man","x":0.3,"y":0.92,"moves":[{"i":3,"m":"walk_to","x":0.6}]},{"k":"money","x":0.75,"y":0.5,"at":5,"moves":[{"i":5,"m":"pop"}]}]}]}`, { cache: false, kb: ["board", "story", "general"], max: 4000 });
     const sc = normalize(r?.scenes || []); if (!sc.length) throw new Error("plan");
     if (typeof r?.title === "string") L.title = r.title.slice(0, 32); if (typeof r?.cta === "string") L.cta = r.cta.slice(0, 48); return sc;
   }
@@ -625,7 +625,7 @@ ${numbered()}
 Заголовок ролика: «${L.title || ""}», заклик у кінці: «${L.cta || ""}». Поточні сцени (JSON): ${JSON.stringify(L.scenes)}
 ${SPEC}
 Людина просить змінити: «${text}». Зміни лише те, про що просять (додай/прибери деталі, рухи, заголовки, перестав сцени). Якщо просить змінити фон/стиль — поле "style": один з ${Object.entries(THEMES).map(([k, v]) => `${k} (${v.n})`).join(", ")}; субтитри — "subs":true|false.
-Відповідай тільки JSON: {"title":"…","cta":"…","scenes":[…повний новий список…],"style":"…","subs":true,"say":"одне коротке речення — що зроблено"}`, { cache: false, kb: true, max: 4000 });
+Відповідай тільки JSON: {"title":"…","cta":"…","scenes":[…повний новий список…],"style":"…","subs":true,"say":"одне коротке речення — що зроблено"}`, { cache: false, kb: ["board", "story", "general"], max: 4000 });
     if (Array.isArray(r?.scenes) && r.scenes.length) { const sc = normalize(r.scenes); if (sc.length) L.scenes = sc; }
     if (typeof r?.title === "string") L.title = r.title.slice(0, 32); if (typeof r?.cta === "string") L.cta = r.cta.slice(0, 48);
     if (r?.style && STYLES[r.style]) L.style = r.style; if (typeof r?.subs === "boolean") L.subs = r.subs;
@@ -646,7 +646,7 @@ ${SPEC}
 ${txt}
 ${want.pops ? `pops — ${nP} фраз, що ВИСТРИБУЮТЬ великим текстом на екрані на ключових моментах: 1–4 слова, суть або число («500 ГРН ЗА ВІДЕО», «НЕ ЧЕКАЙ»), гачок на початку, не дублюй дослівно субтитри. i — номер слова, на якому фраза з'являється (можна з дужок або трохи далі, але < ${n}). c — колір: yellow (головне), green (результат, плюс), red (помилка, мінус), blue, purple, orange.` : ""}
 ${want.ins ? `ins — ${nI} вставок-ФОТО до наочних слів (предмет, місце, людина, дія): i — номер слова; q — 2–4 англійські слова для пошуку стокового фото (наприклад «woman laptop cafe», «money cash hands»). Не став вставки на перші 3 секунди.` : ""}
-Відповідай тільки JSON: {"pops":[{"i":0,"t":"…","c":"yellow"}],"ins":[{"i":10,"q":"…"}]}`, { cache: false, kb: true, max: 2500 });
+Відповідай тільки JSON: {"pops":[{"i":0,"t":"…","c":"yellow"}],"ins":[{"i":10,"q":"…"}]}`, { cache: false, kb: ["hook", "edit", "general"], max: 2500 });
     const okI = (v) => Number.isInteger(+v) && +v >= 0 && +v < n, at = (i) => L.words[+i].s;
     if (want.pops) { const P = (r?.pops || []).filter((o) => o && okI(o.i) && o.t).map((o) => ({ at: at(o.i), t: String(o.t).slice(0, 34), c: PLC[o.c] ? o.c : "yellow" })).sort((a, b) => a.at - b.at);
       P.forEach((o, k) => { o.d = clamp((P[k + 1]?.at ?? o.at + 9) - o.at - .15, .8, 2.4); }); L.pops = P; }
@@ -873,9 +873,9 @@ ${""}`;
   async function aiText(topic) { const wide = FMT === "wide", v = OPT.voice, want = wide ? DRAFT.len * 130 : v === "none" ? 70 : 150, wc = (t) => (t.match(/\S+/g) || []).length;
     const r = await sample.json(`Напиши ${v === "none" ? "текст для анімаційного відео БЕЗ голосу — він іде на екрані субтитрами, тож короткі прості речення по 4–9 слів" : "текст для озвучки за кадром — жива розмовна українська, як людина говорить другу"} на тему: «${topic}».
 Формат: ${wide ? `горизонтальне відео YouTube на ~${DRAFT.len} хв — одна історія з героєм, яку легко намалювати: герой, ситуація, проблема, поворот, результат, висновок` : "Reels до 1 хв: перше речення — сильний гачок, далі одна думка з наочним прикладом, у кінці — висновок і заклик"}.
-Обсяг ≈ ${want} слів. Без хештегів, емодзі, ремарок і заголовків. Відповідай тільки JSON {"text":"…"}`, { cache: false, kb: true, max: 4000 });
+Обсяг ≈ ${want} слів. Без хештегів, емодзі, ремарок і заголовків. Відповідай тільки JSON {"text":"…"}`, { cache: false, kb: ["hook", "script", "story", "general"], max: 4000 });
     let t = String(r?.text || "").trim();
-    for (let k = 0; wide && t && k < 3 && wc(t) < want * .8; k++) { const r2 = await sample.json(`Продовж текст для озвучки — та сама історія, той самий стиль. Додай ще ≈ ${Math.min(450, want - wc(t))} слів; якщо історія добігає кінця — заверши висновком. Кінець попереднього тексту: «${t.slice(-1500)}». Відповідай тільки JSON {"text":"…лише продовження…"}`, { cache: false, kb: true, max: 4000 });
+    for (let k = 0; wide && t && k < 3 && wc(t) < want * .8; k++) { const r2 = await sample.json(`Продовж текст для озвучки — та сама історія, той самий стиль. Додай ще ≈ ${Math.min(450, want - wc(t))} слів; якщо історія добігає кінця — заверши висновком. Кінець попереднього тексту: «${t.slice(-1500)}». Відповідай тільки JSON {"text":"…лише продовження…"}`, { cache: false, kb: ["hook", "script", "story", "general"], max: 4000 });
       const add = String(r2?.text || "").trim(); if (!add) break; t += " " + add; }
     return t; }
   function screenContent(msg) {
@@ -1035,7 +1035,7 @@ ${board.map((b, i) => `${i + 1}. фраза: «${b.phrase}»; малюнок: ${
 Зроби РІВНО ${board.length} сцен — по одній на кожну сцену розкадровки, у тому ж порядку. a — номер першого слова цієї фрази в озвучці. plaque і color — точно з розкадровки (або "" якщо немає). title — назва «фігури» 2–4 слова з гумором. items — намалюй задум сцени «малюнок» з деталей: чоловічок із рухами на потрібних словах + 1–3 предмети або напис.
 Також title ролика (2–4 слова) і cta (заклик у кінці до 5 слів).
 ${SPEC}
-Відповідай тільки JSON: {"title":"…","cta":"…","scenes":[{"a":0,"title":"…","plaque":"…","color":"red","items":[…]}]}`, { cache: false, kb: true, max: 4000 });
+Відповідай тільки JSON: {"title":"…","cta":"…","scenes":[{"a":0,"title":"…","plaque":"…","color":"red","items":[…]}]}`, { cache: false, kb: ["board", "story", "general"], max: 4000 });
     let sc = normalize(r?.scenes || []);
     // якщо AI не попав у кількість — розставляємо сцени за фразами пропорційно
     if (sc.length < Math.max(1, board.length - 1)) { const tot = board.reduce((a, b) => a + (String(b.phrase).match(/\S+/g) || []).length, 0) || 1, n = L.words.length; let acc = 0;
@@ -1079,7 +1079,7 @@ ${CASTSPEC}
 Деталі: "man" — людина (x 0…1, y — земля, зазвичай 0.92; f — 1 вправо / -1 вліво; face "neutral"|"happy"|"sad"; who); предмети: ${KINDS.join(", ")} (x, y — центр 0…1; s — розмір 0.6…2; acc:true — червоний акцент; t — слово на card або «?»/«!» у tab; sub — маленький підпис «5 хвилин», «+6 год»); "text" — напис до 3 слів чи число, поле t.
 Рухи man: talk (говорить — рот рухається; став, коли персонаж каже say), walk_to (x), run_to (x), jump, wave, cheer, think, point, shrug, sad, sit, stand, fall, hang, dance, push, work, shock, happy_face, sad_face; рухи предметів: pop, bounce, spin, shake, fly_to (x, y), grow, hide.
 Простота й рух важливіші за кількість. Не дублюй текст плашки написом.
-Відповідай тільки JSON: {"scenes":[{"items":[{"k":"man","x":0.4,"y":0.92,"moves":[{"p":0.3,"m":"walk_to","x":0.6}]},{"k":"money","x":0.75,"y":0.4,"at":0.4,"moves":[{"p":0.4,"m":"pop"}]}]}]}`, { cache: false, kb: true, max: 4000 });
+Відповідай тільки JSON: {"scenes":[{"items":[{"k":"man","x":0.4,"y":0.92,"moves":[{"p":0.3,"m":"walk_to","x":0.6}]},{"k":"money","x":0.75,"y":0.4,"at":0.4,"moves":[{"p":0.4,"m":"pop"}]}]}]}`, { cache: false, kb: ["board", "story", "general"], max: 4000 });
     const cl = (v, a = 0, b = 1) => clamp(+v || 0, a, b);
     return (r?.scenes || []).slice(0, board.length).map((s) => ({ items: (s?.items || []).map(fixK).filter((it) => it && (it.k === "man" || it.k === "text" || it.k === "icon" || SH[it.k] || ANIM[it.k])).slice(0, 6).map((it) => ({ k: it.k, ...WHO(it), x: cl(it.x ?? .5, .05, .95), y: cl(it.y == null ? (it.k === "man" || ANIM[it.k] ? (ANIM[it.k]?.bird ? .92 : .92) : .5) : it.y, .05, .98), s: clamp(+it.s || 1, .4, 2.4), f: +it.f === -1 ? -1 : 1, acc: !!it.acc, t: it.t ? String(it.t).slice(0, 18) : undefined, sub: it.sub ? String(it.sub).slice(0, 18) : undefined, face: ["neutral", "happy", "sad"].includes(it.face) ? it.face : undefined, at: it.at != null ? cl(it.at, 0, .95) : undefined,
       moves: (it.moves || []).filter((m) => m && MOVES.includes(m.m)).slice(0, 6).map((m) => ({ p: cl(m.p, 0, .98), m: m.m, x: m.x != null ? cl(m.x, .05, .95) : undefined, y: m.y != null ? cl(m.y, .05, .95) : undefined })) })) }));
@@ -1112,7 +1112,7 @@ ${CASTSPEC}
 Рухи man: talk (говорить — рот рухається; став, коли персонаж каже say), walk_to (x), run_to (x), jump, wave, cheer, think, point, shrug, sad, sit, stand, fall, hang, dance, push, work, shock, happy_face, sad_face, hide. Рухи предметів: pop, bounce, spin, shake, fly_to (x, y), grow, hide.
 Час: "at" — секунда появи деталі, у рухах "t" — секунда початку (точно на словах, про які йдеться). cam: [{"t":сек,"x":центр кадру 0.5…${areas - .5},"z":1–1.5 (наближення на важливому)}].
 8–20 деталей на весь ролик, постійний рух, але без хаосу.
-Відповідай тільки JSON: {"cam":[{"t":0,"x":0.5,"z":1}],"items":[{"k":"man","x":0.35,"y":0.92,"wear":["longhair","skirt"],"label":"мама","at":0.3,"moves":[{"t":1.5,"m":"wave"}]},{"k":"say","x":0.4,"y":0.3,"t":"Нарешті!","at":2,"moves":[{"t":4,"m":"hide"}]}]}`, { cache: false, kb: true, max: 4000 });
+Відповідай тільки JSON: {"cam":[{"t":0,"x":0.5,"z":1}],"items":[{"k":"man","x":0.35,"y":0.92,"wear":["longhair","skirt"],"label":"мама","at":0.3,"moves":[{"t":1.5,"m":"wave"}]},{"k":"say","x":0.4,"y":0.3,"t":"Нарешті!","at":2,"moves":[{"t":4,"m":"hide"}]}]}`, { cache: false, kb: ["board", "story", "general"], max: 4000 });
     const cl = (v, a, b) => clamp(+v || 0, a, b), WEAR = ["hair", "longhair", "bun", "bow", "hat", "cap", "crown", "glasses", "beard", "ears", "cat", "tail", "skirt", "tie", "cape"];
     const KS = new Set(["man", "text", "say", "thinkb", "count", ...KINDS]);
     const items = (r?.items || []).map(fixK).filter((it) => it && (KS.has(it.k) || KOK(it))).slice(0, 24).map((it) => ({ k: it.k, ...WHO(it), x: cl(it.x ?? .5, .05, areas - .05), y: cl(it.y == null ? (it.k === "man" || ANIM[it.k] ? (ANIM[it.k]?.bird ? .92 : .92) : .5) : it.y, .05, .98), s: cl(it.s || 1, .35, 2.4), r: it.r ? cl(it.r, -360, 360) : undefined, f: +it.f === -1 ? -1 : 1, acc: it.acc === true ? true : undefined,
@@ -1208,7 +1208,7 @@ ${CASTSPEC}
 Рухи man: talk (говорить — рот рухається; став, коли персонаж каже say), walk_to (x), run_to (x), jump, wave, cheer, think, point, shrug, sad, sit, stand, fall, hang, dance, push, work, shock, happy_face, sad_face, hide. Предмети: pop, bounce, spin, shake, fly_to (x, y), grow, hide.
 Час — секунди з тексту вище: "at" — поява, "t" у рухах — початок руху точно на потрібних словах. Наближення камери: cam [{"t":сек,"z":1–1.6}] на важливих моментах.
 ${extra}
-Відповідай тільки JSON: {"places":[{"x0":${x0},"x1":${x1},"kind":"field"}],"items":[{"k":"man","id":"Олег","hero":true,"x":${(x0 + .4).toFixed(2)},"y":0.92,"wear":["cap"],"label":"Олег","at":${seg.t0.toFixed(1)},"moves":[{"t":${(seg.t0 + 1).toFixed(1)},"m":"walk_to","x":${(x0 + 1).toFixed(2)}}]}],"moves":[{"id":"ім'я наявного персонажа","t":0,"m":"walk_to","x":0}],"cam":[{"t":0,"z":1.2}]}`, { cache: false, kb: true, max: 4000 });
+Відповідай тільки JSON: {"places":[{"x0":${x0},"x1":${x1},"kind":"field"}],"items":[{"k":"man","id":"Олег","hero":true,"x":${(x0 + .4).toFixed(2)},"y":0.92,"wear":["cap"],"label":"Олег","at":${seg.t0.toFixed(1)},"moves":[{"t":${(seg.t0 + 1).toFixed(1)},"m":"walk_to","x":${(x0 + 1).toFixed(2)}}]}],"moves":[{"id":"ім'я наявного персонажа","t":0,"m":"walk_to","x":0}],"cam":[{"t":0,"z":1.2}]}`, { cache: false, kb: ["board", "story", "general"], max: 4000 });
     const cl = (v, a, b) => clamp(+v || 0, a, b), T0 = seg.t0, T1 = seg.t1, WEAR = ["hair", "longhair", "bun", "bow", "hat", "cap", "crown", "glasses", "beard", "ears", "cat", "tail", "skirt", "tie", "cape"], KS = new Set(["man", "text", "say", "thinkb", "count", ...KINDS]);
     const mv = (m) => ({ t: cl(m.t, T0, T1), m: m.m, x: m.x != null ? cl(m.x, .05, x1 + 1) : undefined, y: m.y != null ? cl(m.y, .02, .98) : undefined, seg: i });
     const items = (r?.items || []).map(fixK).filter((it) => it && (KS.has(it.k) || KOK(it))).slice(0, 22).map((it) => ({ k: it.k, ...WHO(it), id: it.id ? String(it.id).slice(0, 16) : undefined, hero: !!it.hero, seg: i, x: cl(it.x ?? x0 + .5, .05, x1 + 1), y: cl(it.y == null ? (it.k === "man" || ANIM[it.k] ? (ANIM[it.k]?.bird ? .92 : .92) : .5) : it.y, .02, .98), s: cl(it.s || 1, .35, 2.4), r: it.r ? cl(it.r, -360, 360) : undefined, f: +it.f === -1 ? -1 : 1, acc: it.acc === true ? true : undefined,
