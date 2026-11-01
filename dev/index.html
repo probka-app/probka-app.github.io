@@ -1102,10 +1102,10 @@ body{background:radial-gradient(900px 640px at 8% -12%,var(--yv-glow-1),transpar
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="YuVi DEV">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>window.YV_DEV=true;window.YV_BUILD="01.11 19:07";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
+<script>window.YV_DEV=true;window.YV_BUILD="01.11 19:11";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="server.js?v=a98bc67a"></script>
+<script src="server.js?v=2fcf07c8"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.min.js"></script>
 <script>
@@ -2158,7 +2158,7 @@ function stNiche(el){
   el.querySelector("#s-dur").addEventListener("change",e=>{S.dur=+e.target.value;persist();});
   el.querySelector("#s-gen").addEventListener("click",async e=>{ const b=e.currentTarget; if(!needSample(el)) return; if(!S.interests.trim()){ st.textContent="Впиши хоча б один інтерес."; st.className="status err"; return; }
     busy(b,true,"Думаю…"); st.className="status"; st.textContent="Підбираю теми. Це займає до хвилини.";
-    try{ const r=await sample.json(`Ти допомагаєш авторові коротких відео Instagram Reels знайти теми під його інтереси.\nІнтереси автора: ${S.interests}\nЗапропонуй 12 конкретних тем для коротких роликів, які зацікавлять широку аудиторію, а не тільки фахівців. Змішай типи: «помилка новачків», «міф», «лайфхак», «чому так», «порівняння», «особистий досвід», «провокація». Кожна тема — одне конкретне речення до 12 слів, українською.\nВідповідай тільки JSON-масивом об'єктів {"type": "тип", "topic": "тема"}.`,{cache:false,kb:["niche","hook","general"]});
+    try{ const r=await sample.json(`Ти допомагаєш авторові коротких відео Instagram Reels знайти теми під його інтереси.\nІнтереси автора: ${S.interests}\nЗапропонуй 12 конкретних тем для коротких роликів, які зацікавлять широку аудиторію, а не тільки фахівців. Змішай типи: «помилка новачків», «міф», «лайфхак», «чому так», «порівняння», «особистий досвід», «провокація». Кожна тема — одне конкретне речення до 12 слів, українською.\nВідповідай тільки JSON-масивом об'єктів {"type": "тип", "topic": "тема"}.`,{cache:false,kbFmt:"tall",kb:["niche","hook","general"]});
       if(Array.isArray(r)){ S.topics=r.filter(t=>t&&t.topic).slice(0,15).map(t=>({type:String(t.type||""),topic:String(t.topic)})); persist(); draw(); st.textContent="Обери тему або впиши свою."; }
     }catch(err){ st.textContent=errText(err); st.className="status err"; }
     busy(b,false,"Інші теми"); });
@@ -2180,7 +2180,7 @@ function stHooks(el){
   own.addEventListener("input",()=>{ grow(own); S.hook=own.value; opts.querySelectorAll("input").forEach(r=>r.checked=(S.hooks[+r.value]?.text===S.hook)); persist(); });
   const run=async()=>{ if(!needSample(el)) return; if(!S.topic.trim()){ st.textContent="Спершу опиши задум на першому кроці."; st.className="status err"; return; }
     gen.disabled=true; re.disabled=true; const old=gen.textContent; gen.textContent="Думаю…"; st.className="status"; st.textContent="Пишу хуки. Це займає до хвилини.";
-    try{ const r=await sample.json(`${FORMAT}\nЗадум відео: ${S.topic}\nТривалість: ${S.dur} секунд.\n${S.hooks.length?`Ці хуки вже були, придумай зовсім інші: ${S.hooks.map(h=>h.text).join(" | ")}\n`:""}Напиши 5 хуків — першу фразу, яка звучить на першому кадрі й зупиняє скрол. Кожен до 12 слів, різкий і конкретний. Тип відео: ${vtype().n}. Типи хуків по одному: ${vtype().hooks}.\nВідповідай тільки JSON-масивом об'єктів {"type": "тип", "text": "хук"}.`,{cache:false,kb:["hook","general"]});
+    try{ const r=await sample.json(`${FORMAT}\nЗадум відео: ${S.topic}\nТривалість: ${S.dur} секунд.\n${S.hooks.length?`Ці хуки вже були, придумай зовсім інші: ${S.hooks.map(h=>h.text).join(" | ")}\n`:""}Напиши 5 хуків — першу фразу, яка звучить на першому кадрі й зупиняє скрол. Кожен до 12 слів, різкий і конкретний. Тип відео: ${vtype().n}. Типи хуків по одному: ${vtype().hooks}.\nВідповідай тільки JSON-масивом об'єктів {"type": "тип", "text": "хук"}.`,{cache:false,kbFmt:"tall",kb:["hook","general"]});
       if(Array.isArray(r)){ S.hooks=r.filter(h=>h&&h.text).slice(0,6).map(h=>({type:String(h.type||""),text:String(h.text)})); persist(); draw(); st.textContent="Обери один, і він з'явиться в полі вище."; }
     }catch(err){ st.textContent=errText(err); st.className="status err"; }
     gen.disabled=false; re.disabled=false; gen.textContent=old; };
@@ -2195,7 +2195,7 @@ function stScript(el){
   stop.addEventListener("click",()=>ctl?.abort());
   el.querySelector("#s-gen").addEventListener("click",async e=>{ const b=e.currentTarget; if(!needSample(el)) return;
     busy(b,true,"Пишу…"); stop.hidden=false; st.className="status"; st.textContent="Пишу текст…"; ctl=new AbortController();
-    try{ const {text}=await sample(`${FORMAT}\nТема: ${S.topic||"(визнач з хука)"}\nНапиши сценарій на ${S.dur} секунд, приблизно ${wordsFor(S.dur)} слів.\n${S.hook?`Почни дослівно з хука: «${S.hook}»\n`:""}${endingRule()}\nРечення короткі й різкі. Кожне речення з нового рядка. Тільки текст для озвучки, без заголовків, ремарок і лапок навколо всього тексту.`,{cache:false,signal:ctl.signal,kb:["script","story","hook","general"],onText:({text})=>{ ta.value=text; grow(ta); st.textContent=""; }});
+    try{ const {text}=await sample(`${FORMAT}\nТема: ${S.topic||"(визнач з хука)"}\nНапиши сценарій на ${S.dur} секунд, приблизно ${wordsFor(S.dur)} слів.\n${S.hook?`Почни дослівно з хука: «${S.hook}»\n`:""}${endingRule()}\nРечення короткі й різкі. Кожне речення з нового рядка. Тільки текст для озвучки, без заголовків, ремарок і лапок навколо всього тексту.`,{cache:false,signal:ctl.signal,kbFmt:"tall",kb:["script","story","hook","general"],onText:({text})=>{ ta.value=text; grow(ta); st.textContent=""; }});
       S.script=text.trim(); ta.value=S.script; grow(ta); S.scenes=[]; persist(); st.textContent="Можна правити текст прямо в полі.";
     }catch(err){ if(err?.text) { ta.value=err.text; S.script=err.text; persist(); } const m=errText(err); st.textContent=m; st.className=m?"status err":"status"; }
     stop.hidden=true; busy(b,false,S.script?"↻ Інший текст":"Згенерувати"); count(); });
@@ -2257,7 +2257,7 @@ function stBoard(el){
   draw();
   el.querySelector("#s-gen").addEventListener("click",async e=>{ const b=e.currentTarget; if(!needSample(el)) return; if(!S.script.trim()){ st.textContent="Спершу потрібен текст сценарію."; st.className="status err"; return; }
     busy(b,true,"Думаю…"); st.className="status"; st.textContent="Розбиваю сценарій. Це займає до хвилини.";
-    try{ const r=await sample.json(`${FORMAT}\nТип відео: ${vtype().n}.\nЗадум автора (враховуй його побажання щодо картинок): ${S.topic||"—"}\nОсь сценарій:\n${S.script}\n\n${BOARD_ASK[S.format]||BOARD_ASK.marker}`,{cache:false,kb:["board","general"]});
+    try{ const r=await sample.json(`${FORMAT}\nТип відео: ${vtype().n}.\nЗадум автора (враховуй його побажання щодо картинок): ${S.topic||"—"}\nОсь сценарій:\n${S.script}\n\n${BOARD_ASK[S.format]||BOARD_ASK.marker}`,{cache:false,kbFmt:"tall",kb:["board","general"]});
       if(Array.isArray(r)){ const keys=["phrase","sec",...(FIELDS[S.format]||FIELDS.marker).map(f=>f[0])];
         S.scenes=r.filter(x=>x&&x.phrase).map(x=>{ const o={color:x.color==="green"?"green":"red"}; keys.forEach(k=>o[k]=x[k]==null?"":String(x[k])); return o; });
         markAd(); persist(); draw(); const tp=el.querySelector("#s-tip"); if(tp) tp.hidden=!S.scenes.length; st.textContent=`${S.scenes.length} ${film?"кадрів":"сцен"}. Правиш що хочеш, далі — ${film?"як знімати":"картинки"}.`; }
@@ -3447,7 +3447,7 @@ function openFree(key){ uiSnd("tap"); const T=FREE[key]; const D=FD[key]=Object.
       try{ let r;
         if(!sample&&window.YV_DEMO){ await new Promise(r=>setTimeout(r,900)); r=T.demo; }
         else if(!sample){ throw {code:"no_key"}; }
-        else r=await sample.json(T.prompt(t,T.single?[]:D.list.map(h=>h.text)),{cache:false,kb:["hook","script","title","general"]});
+        else r=await sample.json(T.prompt(t,T.single?[]:D.list.map(h=>h.text)),{cache:false,kbFmt:"tall",kb:["hook","script","title","general"]});
         const list=(T.parse(r)||[]).filter(h=>h&&h.text).slice(0,8);
         if(!list.length) throw {code:"invalid_json"};
         D.list=list.map(h=>({type:String(h.type||""),text:String(h.text),why:String(h.why||"")})); D.head=T.head?T.head(r):""; D.pick=-1; fdSave(); draw();
@@ -3776,16 +3776,17 @@ async function openKB(O={}){
   openSheet(`<div class="pshead"><h3>Навчання агента</h3></div><div class="atabs"><button type="button" data-kbt="base" aria-pressed="true">Папки</button><button type="button" data-kbt="up" aria-pressed="false">+ Додати</button><button type="button" data-kbt="chat" aria-pressed="false">Розмова</button></div><div id="kbb"></div>`,"plat kbsheet");
   const box=BS.querySelector("#kbb"); let L=[], folder="";
   const modSel=(cur,attr)=>`<select class="cpd" ${attr}>${KBM.map(m=>`<option value="${m[0]}"${m[0]===cur?" selected":""}>${m[1]}</option>`).join("")}</select>`;
-  const itemHTML=(i)=>`<div class="kbi ${i.status}" data-kbi="${i.id}"><small>${KBN[i.module||"general"]||"Загальне"} · ${KB_KIND[i.kind]||i.kind}${i.niche?` · ${esc(i.niche)}`:""}${i.status==="pending"?" · чекає підтвердження":""}</small><b>${esc(i.title)}</b>${i.body?`<p>${esc(i.body)}</p>`:""}${i.why?`<p><i>Чому:</i> ${esc(i.why)}</p>`:""}${i.how?`<p><i>Як:</i> ${esc(i.how)}</p>`:""}${i.src?`<p class="note" style="margin:2px 0 0">Джерело: ${esc(i.src)}</p>`:""}
+  const FMTN={all:"для всього",wide:"YouTube 16:9",tall:"Reels 9:16"}, fmtSel=(cur,attr)=>`<select class="cpd" ${attr}>${Object.entries(FMTN).map(([k,n])=>`<option value="${k}"${k===(cur||"all")?" selected":""}>${n[0].toUpperCase()+n.slice(1)}</option>`).join("")}</select>`;
+  const itemHTML=(i)=>`<div class="kbi ${i.status}" data-kbi="${i.id}"><small>${KBN[i.module||"general"]||"Загальне"}${i.fmt&&i.fmt!=="all"?` · <b>${FMTN[i.fmt]}</b>`:""} · ${KB_KIND[i.kind]||i.kind}${i.niche?` · ${esc(i.niche)}`:""}${i.status==="pending"?" · чекає підтвердження":""}</small><b>${esc(i.title)}</b>${i.body?`<p>${esc(i.body)}</p>`:""}${i.why?`<p><i>Чому:</i> ${esc(i.why)}</p>`:""}${i.how?`<p><i>Як:</i> ${esc(i.how)}</p>`:""}${i.src?`<p class="note" style="margin:2px 0 0">Джерело: ${esc(i.src)}</p>`:""}
     <div class="kbact">${i.status!=="confirmed"?`<button class="chip ink" type="button" data-kbok="${i.id}">✓ Так, правильно</button>`:""}<button class="chip" type="button" data-kbed="${i.id}">✎ Виправити</button><button class="chip" type="button" data-kbno="${i.id}">${i.module==="gaps"?"✓ Зроблено":"✕ Ні"}</button></div></div>`;
   const wireItems=(root,list,refresh)=>{
     root.querySelectorAll("[data-kbok]").forEach(b=>b.onclick=async()=>{ try{ await SRV.kbSet(b.dataset.kbok,{status:"confirmed"}); const it=list.find(x=>x.id===b.dataset.kbok); if(it) it.status="confirmed"; const e=root.querySelector(`[data-kbi="${b.dataset.kbok}"]`); e.className="kbi confirmed"; b.remove(); }catch(x){ toast("Не вдалося"); } });
     root.querySelectorAll("[data-kbno]").forEach(b=>b.onclick=async()=>{ try{ await SRV.kbSet(b.dataset.kbno,{status:"rejected"}); const k=list.findIndex(x=>x.id===b.dataset.kbno); if(k>=0) list.splice(k,1); root.querySelector(`[data-kbi="${b.dataset.kbno}"]`)?.remove(); refresh&&refresh(); }catch(x){ toast("Не вдалося"); } });
     root.querySelectorAll("[data-kbed]").forEach(b=>b.onclick=()=>{ const id=b.dataset.kbed, it=list.find(x=>x.id===id); if(!it) return; const e=root.querySelector(`[data-kbi="${id}"]`);
-      e.innerHTML=`${modSel(it.module||"general","data-kfm")}<select class="cpd" data-kf="kind">${Object.entries(KB_KIND).map(([k,n])=>`<option value="${k}"${k===it.kind?" selected":""}>${n}</option>`).join("")}</select><input class="cpd" data-kf="title" value="${esc(it.title)}"><textarea class="cpd" rows="2" data-kf="body" placeholder="Що саме">${esc(it.body)}</textarea><textarea class="cpd" rows="2" data-kf="why" placeholder="Чому працює">${esc(it.why)}</textarea><textarea class="cpd" rows="2" data-kf="how" placeholder="Як зробити">${esc(it.how)}</textarea><input class="cpd" data-kf="niche" value="${esc(it.niche||"")}" placeholder="Ніша (необов'язково)">
+      e.innerHTML=`${modSel(it.module||"general","data-kfm")}${fmtSel(it.fmt,"data-kff")}<select class="cpd" data-kf="kind">${Object.entries(KB_KIND).map(([k,n])=>`<option value="${k}"${k===it.kind?" selected":""}>${n}</option>`).join("")}</select><input class="cpd" data-kf="title" value="${esc(it.title)}"><textarea class="cpd" rows="2" data-kf="body" placeholder="Що саме">${esc(it.body)}</textarea><textarea class="cpd" rows="2" data-kf="why" placeholder="Чому працює">${esc(it.why)}</textarea><textarea class="cpd" rows="2" data-kf="how" placeholder="Як зробити">${esc(it.how)}</textarea><input class="cpd" data-kf="niche" value="${esc(it.niche||"")}" placeholder="Ніша (необов'язково)">
         <div class="kbact"><button class="chip ink" type="button" data-kbsv>Зберегти й підтвердити</button></div>`;
-      e.querySelector("[data-kbsv]").onclick=async()=>{ const o={status:"confirmed"}; e.querySelectorAll("[data-kf]").forEach(f=>o[f.dataset.kf]=f.value.trim()); const m=e.querySelector("[data-kfm]").value;
-        try{ await SRV.kbSet(id,o); if(m!==(it.module||"general")) await SRV.kbMove(id,m); Object.assign(it,o,{module:m}); e.outerHTML=itemHTML(it); refresh?refresh():wireItems(root,list); }catch(x){ toast("Не вдалося"); } }; }); };
+      e.querySelector("[data-kbsv]").onclick=async()=>{ const o={status:"confirmed"}; e.querySelectorAll("[data-kf]").forEach(f=>o[f.dataset.kf]=f.value.trim()); const m=e.querySelector("[data-kfm]").value, ff=e.querySelector("[data-kff]").value;
+        try{ await SRV.kbSet(id,o); if(m!==(it.module||"general")) await SRV.kbMove(id,m); if(ff!==(it.fmt||"all")) await SRV.kbFmt(id,ff); Object.assign(it,o,{module:m,fmt:ff}); e.outerHTML=itemHTML(it); refresh?refresh():wireItems(root,list); }catch(x){ toast("Не вдалося"); } }; }); };
   const chat=async()=>{ box.innerHTML=`<div class="kbc" id="kbc"><p class="status">Завантажую…</p></div>
       <div class="kbin"><textarea id="kbt" class="cpd" rows="3" placeholder="Розкажи, як ти робиш відео, що додаєш і чому. Можна надиктувати голосом — кнопка мікрофона на клавіатурі телефона або 🎙 тут."></textarea>
       <div class="row"><button class="chip" type="button" id="kbmic">🎙 Надиктувати</button><button class="big" type="button" id="kbsend" style="margin:0;flex:1">Надіслати</button></div></div>`;
@@ -3817,12 +3818,14 @@ async function openKB(O={}){
       box.querySelector("#kball")?.addEventListener("click",async e=>{ e.currentTarget.disabled=true; for(const i of pend){ try{ await SRV.kbSet(i.id,{status:"confirmed"}); i.status="confirmed"; }catch(x){} } draw(); });
       wireItems(box,L,draw); };
     draw(); };
-  const up=()=>{ let mod=O.mod||"", files=[], imgs=[], vids=[], found=[], meas=[];
+  const up=()=>{ let mod=O.mod||"", kf=O.fmt||"", files=[], imgs=[], vids=[], found=[], meas=[];
     box.innerHTML=`<p class="hint" style="display:block">${O.hint?esc(O.hint):"Встав текст, транскрипт відео чи нотатки, або додай файл. AI витягне суть своїми словами й розкладе по папках — ти перевіриш і збережеш."}</p>
       <textarea class="cpd" id="kbtx" rows="6" placeholder="Встав текст або транскрипт…"></textarea>
       <div class="chips" style="justify-content:flex-start;margin:8px 0"><label class="chip">📄 Текст, аудіо чи відео<input type="file" id="kbfile" accept=".txt,.md,.srt,.vtt,.json,audio/*,video/*" multiple hidden></label><label class="chip">🖼 Скріни прев'ю з назвами<input type="file" id="kbimg" accept="image/*" multiple hidden></label><label class="chip">🎬 Відео-приклад: розібрати стиль<input type="file" id="kbvid" accept="video/*" multiple hidden></label></div>
       <p class="note" id="kbfl" style="margin:0 0 6px"></p>
       <input class="cpd" id="kbsrc" placeholder="Звідки це (необов'язково): курс, канал, книга">
+      <h4>Для чого</h4><div class="chips" style="justify-content:flex-start"><button class="chip${kf?"":" ink"}" type="button" data-kbff="">Авто</button><button class="chip${kf==="all"?" ink":""}" type="button" data-kbff="all">Для всього</button><button class="chip${kf==="wide"?" ink":""}" type="button" data-kbff="wide">YouTube 16:9</button><button class="chip${kf==="tall"?" ink":""}" type="button" data-kbff="tall">Reels 9:16</button></div>
+      <p class="note" style="margin:4px 0 0">Авто: горизонтальні відео — YouTube, вертикальні — Reels, тексти — для всього.</p>
       <h4>Куди класти</h4><div class="chips" style="justify-content:flex-start"><button class="chip${mod?"":" ink"}" type="button" data-kbm="">Автоматично</button>${KBM.map(m=>`<button class="chip${mod===m[0]?" ink":""}" type="button" data-kbm="${m[0]}">${m[1]}</button>`).join("")}</div>
       <button class="big" type="button" id="kbgo">Розібрати</button><p class="status" id="kbst"></p><div id="kbres"></div>`;
     const st=box.querySelector("#kbst"), res=box.querySelector("#kbres"), fl=box.querySelector("#kbfl");
@@ -3830,13 +3833,15 @@ async function openKB(O={}){
     box.querySelector("#kbvid").onchange=e=>{ vids=[...vids,...e.target.files].slice(0,5); e.target.value=""; showFiles(); };
     box.querySelector("#kbfile").onchange=e=>{ files=[...files,...e.target.files]; e.target.value=""; showFiles(); };
     box.querySelector("#kbimg").onchange=e=>{ imgs=[...imgs,...e.target.files].slice(0,40); e.target.value=""; showFiles(); };
+    box.querySelectorAll("[data-kbff]").forEach(b=>b.onclick=()=>{ kf=b.dataset.kbff; box.querySelectorAll("[data-kbff]").forEach(x=>x.classList.toggle("ink",x===b)); });
     box.querySelectorAll("[data-kbm]").forEach(b=>b.onclick=()=>{ mod=b.dataset.kbm; box.querySelectorAll("[data-kbm]").forEach(x=>x.classList.toggle("ink",x===b)); });
     const review=()=>{ if(!found.length){ res.innerHTML=`<p class="note">Нічого корисного не знайшлося.</p>`; return; }
       const by={}; found.forEach((it,i)=>{ (by[it.module]=by[it.module]||[]).push([it,i]); });
-      const mh=meas.map(({name,M})=>`<div class="kbi" style="gap:6px"><small>Виміряно · ${esc(name)}</small><b style="font-size:14px">${M.dur} с · ${M.cuts} склейок (≈${M.shot} с на план) · рух ${M.motion}${M.bpm?` · ≈${M.bpm} BPM`:""}${M.wps?` · мова ${M.wps} сл/с`:""}</b><div style="display:flex;gap:4px">${M.pal.map(p=>`<i title="${p.hex} ${p.p}%" style="flex:${Math.max(4,p.p)};height:18px;border-radius:5px;background:${p.hex}"></i>`).join("")}</div><small>Яскравість ${M.bright}% · насиченість ${M.sat}% · контраст ${M.contrast}%</small>${M.cam?`<small>Камера: ${esc(M.cam)}</small>`:""}${M.bpm?`<small>Звук: баси ${M.bass}% · яскравість ${M.hiq}% · ${M.dens} різких звуків/с · ${M.onCut}% склейок на звук</small>`:""}</div>`).join("");
-      res.innerHTML=mh+`<h4>Знайдено ${found.length} — перевір</h4>${Object.entries(by).map(([m,arr])=>`<p class="note" style="margin:10px 0 4px"><b>${KBN[m]}</b> · ${arr.length}</p>${arr.map(([it,i])=>`<div class="kbi pending" style="display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:start"><input type="checkbox" data-kok="${i}" checked style="margin-top:4px;width:20px;height:20px"><div><small>${KB_KIND[it.kind]}</small><b>${esc(it.title)}</b>${it.body?`<p>${esc(it.body)}</p>`:""}${it.why?`<p><i>Чому:</i> ${esc(it.why)}</p>`:""}${modSel(it.module,`data-kmv="${i}"`)}</div></div>`).join("")}`).join("")}
+      const mh=meas.map(({name,M,fmt})=>`<div class="kbi" style="gap:6px"><small>Виміряно · ${esc(name)}${fmt?` · ${fmt==="wide"?"YouTube 16:9":fmt==="tall"?"Reels 9:16":"для всього"}`:""}</small><b style="font-size:14px">${M.dur} с · ${M.cuts} склейок (≈${M.shot} с на план) · рух ${M.motion}${M.bpm?` · ≈${M.bpm} BPM`:""}${M.wps?` · мова ${M.wps} сл/с`:""}</b><div style="display:flex;gap:4px">${M.pal.map(p=>`<i title="${p.hex} ${p.p}%" style="flex:${Math.max(4,p.p)};height:18px;border-radius:5px;background:${p.hex}"></i>`).join("")}</div><small>Яскравість ${M.bright}% · насиченість ${M.sat}% · контраст ${M.contrast}%</small>${M.cam?`<small>Камера: ${esc(M.cam)}</small>`:""}${M.bpm?`<small>Звук: баси ${M.bass}% · яскравість ${M.hiq}% · ${M.dens} різких звуків/с · ${M.onCut}% склейок на звук</small>`:""}</div>`).join("");
+      res.innerHTML=mh+`<h4>Знайдено ${found.length} — перевір</h4>${Object.entries(by).map(([m,arr])=>`<p class="note" style="margin:10px 0 4px"><b>${KBN[m]}</b> · ${arr.length}</p>${arr.map(([it,i])=>`<div class="kbi pending" style="display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:start"><input type="checkbox" data-kok="${i}" checked style="margin-top:4px;width:20px;height:20px"><div><small>${KB_KIND[it.kind]}</small><b>${esc(it.title)}</b>${it.body?`<p>${esc(it.body)}</p>`:""}${it.why?`<p><i>Чому:</i> ${esc(it.why)}</p>`:""}${modSel(it.module,`data-kmv="${i}"`)}${fmtSel(it.fmt,`data-kfv="${i}"`)}</div></div>`).join("")}`).join("")}
         <div class="row" style="gap:8px;margin-top:10px"><button class="big" type="button" id="kbsave" style="margin:0;flex:1">Зберегти вибране</button><button class="chip" type="button" id="kbsavep">На перевірку</button></div>`;
       res.querySelectorAll("[data-kmv]").forEach(s=>s.onchange=()=>{ found[+s.dataset.kmv].module=s.value; });
+      res.querySelectorAll("[data-kfv]").forEach(s=>s.onchange=()=>{ found[+s.dataset.kfv].fmt=s.value; });
       const save=async(status)=>{ const pick=found.filter((_,i)=>res.querySelector(`[data-kok="${i}"]`)?.checked); if(!pick.length) return toast("Нічого не вибрано");
         try{ for(let i=0;i<pick.length;i+=150) await SRV.kbAdd(pick.slice(i,i+150),status); toast(`Збережено ${pick.length}`); found=[]; files=[]; imgs=[]; box.querySelector("#kbtx").value=""; showFiles(); res.innerHTML=""; st.textContent="";
           setTab("base"); }catch(x){ toast(/function|does not exist|kb_add/.test(x.message||"")?"Спершу запусти в Supabase крок «База знань папками»":"Не вдалося зберегти"); } };
@@ -3844,12 +3849,12 @@ async function openKB(O={}){
     box.querySelector("#kbgo").onclick=async e=>{ const b=e.currentTarget, src=box.querySelector("#kbsrc").value.trim(); let text=box.querySelector("#kbtx").value.trim();
       if(!text&&!files.length&&!imgs.length&&!vids.length) return toast("Встав текст або додай файл"); b.disabled=true; found=[]; meas=[]; res.innerHTML="";
       try{
-        for(const f of files){ if(/\.json$/i.test(f.name)){ try{ const j=JSON.parse(await f.text()), arr=Array.isArray(j)?j:(j.items||[]); arr.filter(i=>i?.title).forEach(i=>found.push({module:KBN[i.module]?i.module:"general",kind:KB_KIND[i.kind]?i.kind:"note",title:String(i.title).slice(0,200),body:String(i.body||"").slice(0,1500),why:String(i.why||"").slice(0,400),how:String(i.how||"").slice(0,600),niche:String(i.niche||"").slice(0,80),src:String(i.src||src||f.name).slice(0,200)})); }catch(x){ toast("Не вдалося прочитати "+f.name); } continue; }
+        for(const f of files){ if(/\.json$/i.test(f.name)){ try{ const j=JSON.parse(await f.text()), arr=Array.isArray(j)?j:(j.items||[]); arr.filter(i=>i?.title).forEach(i=>found.push({module:KBN[i.module]?i.module:"general",kind:KB_KIND[i.kind]?i.kind:"note",title:String(i.title).slice(0,200),body:String(i.body||"").slice(0,1500),why:String(i.why||"").slice(0,400),how:String(i.how||"").slice(0,600),niche:String(i.niche||"").slice(0,80),src:String(i.src||src||f.name).slice(0,200),fmt:["wide","tall"].includes(i.fmt)?i.fmt:(kf||"all")})); }catch(x){ toast("Не вдалося прочитати "+f.name); } continue; }
           if(/^(audio|video)\//.test(f.type)||/\.(mp3|m4a|wav|mp4|mov|webm|ogg)$/i.test(f.name)){ st.textContent=`Розпізнаю «${f.name}»…`; text+="\n\n"+await kbTranscribe(f,(i,n)=>st.textContent=`Розпізнаю «${f.name}»: ${i+1} з ${n}…`); }
           else text+="\n\n"+String(await f.text()).replace(/^\d+\s*$/gm,"").replace(/^[\d:,.]+\s*-->\s*[\d:,.]+.*$/gm,"").replace(/^WEBVTT.*$/m,"").replace(/\n{3,}/g,"\n\n"); }
-        if(text.trim().length>40) found.push(...await kbDistill(text.trim(),src,mod,(i,n)=>st.textContent=n>1?`Розбираю частину ${i+1} з ${n}…`:"Розбираю…"));
-        for(let i=0;i<imgs.length;i++){ st.textContent=`Розбираю прев'ю ${i+1} з ${imgs.length}…`; try{ found.push(...await kbThumb(imgs[i],src)); }catch(x){} }
-        for(let i=0;i<vids.length;i++){ const pre=vids.length>1?`Відео ${i+1} з ${vids.length}: `:""; try{ const r=await kbVideoStyle(vids[i],src||vids[i].name,(t)=>st.textContent=pre+t); found.push(...r.items); meas.push({name:vids[i].name,M:r.M}); }catch(x){ console.warn(x); toast(`Не вдалося розібрати «${vids[i].name}»`); } }
+        if(text.trim().length>40) found.push(...(await kbDistill(text.trim(),src,mod,(i,n)=>st.textContent=n>1?`Розбираю частину ${i+1} з ${n}…`:"Розбираю…")).map(i=>({...i,fmt:kf||"all"})));
+        for(let i=0;i<imgs.length;i++){ st.textContent=`Розбираю прев'ю ${i+1} з ${imgs.length}…`; try{ found.push(...(await kbThumb(imgs[i],src)).map(i=>({...i,fmt:kf||"all"}))); }catch(x){} }
+        for(let i=0;i<vids.length;i++){ const pre=vids.length>1?`Відео ${i+1} з ${vids.length}: `:""; try{ const r=await kbVideoStyle(vids[i],src||vids[i].name,(t)=>st.textContent=pre+t); const [vw,vh]=String(r.M.size).split("×").map(Number), vf=kf||(vw>vh?"wide":"tall"); found.push(...r.items.map(i=>({...i,fmt:i.module==="gaps"?"all":vf}))); meas.push({name:vids[i].name,M:r.M,fmt:vf}); }catch(x){ console.warn(x); toast(`Не вдалося розібрати «${vids[i].name}»`); } }
         st.textContent=""; review(); }
       catch(x){ st.className="status err"; st.textContent=x?.code==="rate_limited"||x?.message==="limit"?"Ліміт AI на сьогодні вичерпано.":"Не вдалося розібрати. Спробуй ще раз."; if(found.length) review(); }
       b.disabled=false; }; };
@@ -4120,7 +4125,7 @@ function ownStep1(el){
 «${t}»
 Напиши текст для відео на ${OWN.dur} секунд — приблизно ${wordsFor(OWN.dur)} слів, українською, живою розмовною мовою від першої особи, як людина говорить у кадрі.
 Перше речення — сильний хук, що зачіпає з перших секунд. Далі — суть, конкретно і без води. В кінці — коротке завершення або питання до глядачів.
-Речення короткі. Кожне речення з нового рядка. Без заголовків, без розмітки, без лапок, без пояснень — лише сам текст.`,{kb:["script","story","hook","general"]}));
+Речення короткі. Кожне речення з нового рядка. Без заголовків, без розмітки, без лапок, без пояснень — лише сам текст.`,{kbFmt:"tall",kb:["script","story","hook","general"]}));
       OWN.script=text.trim(); OWN.scenes=[]; ownSave(); sc.value=OWN.script; res.hidden=false; count(); st.textContent="Готово. Текст можна правити прямо в полі.";
     }catch(err){ const m=errText(err); st.className=m?"status err":"status"; st.textContent=m||"Не вдалося. Спробуй ще раз."; }
     b.disabled=false; b.textContent="↻ Інший варіант тексту"; }; }
@@ -4150,7 +4155,7 @@ ${OWN.script}
 - "plaque": короткий текст на плашку 2–5 слів, якщо він посилює думку, інакше "";
 - "emph": одне найважливіше слово з "text" для акценту (зум і виділення), або "".
 Перша сцена — хук: кадр має одразу чіпляти. Чергуй плани, щоб було динамічно.
-Відповідай тільки JSON-масивом об'єктів з цими полями.`,{cache:false,kb:["board","edit","general"]});
+Відповідай тільки JSON-масивом об'єктів з цими полями.`,{cache:false,kbFmt:"tall",kb:["board","edit","general"]});
       else if(window.YV_DEMO) await new Promise(z=>setTimeout(z,700));
       let list=(Array.isArray(r)?r:r?.scenes||[]).filter(x=>x&&x.text);
       if(!list.length) list=parts.map((t,k)=>({text:t,shot:k===0?"Ти в кадрі, крупно, дивишся в камеру":"Кадр, що показує, про що ця фраза",angle:k===0?"крупно":"середній",secs:4,plaque:"",emph:""}));

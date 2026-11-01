@@ -46,7 +46,7 @@
     try {
       r = await fetch(`${FN}/ai-text`, { method: "POST", signal: opts?.signal,
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${SRV.session.access_token}`, apikey: CFG.key },
-        body: JSON.stringify({ prompt, json: !!asJson, max: opts?.max, kb: !!opts?.kb, ...(Array.isArray(opts?.kb) ? { kbm: opts.kb } : {}) }) });
+        body: JSON.stringify({ prompt, json: !!asJson, max: opts?.max, kb: !!opts?.kb, ...(Array.isArray(opts?.kb) ? { kbm: opts.kb } : {}), ...(opts?.kbFmt ? { kbf: opts.kbFmt } : {}) }) });
     } catch (e) { if (e?.name === "AbortError") throw { code: "cancelled" }; throw { code: "network" }; }
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw { code: { limit: "rate_limited", busy: "busy", no_key: "no_key" }[j.error] || "server", message: j.error };
@@ -267,6 +267,7 @@
   SRV.studioGrant = async (email, tools) => rpc("studio_grant", { p_email: email, p_tools: tools });
   SRV.studioRevoke = async (id) => rpc("studio_revoke", { p_user: id });
   SRV.kbAdd = async (items, status) => rpc("kb_add", { p_items: items, p_status: status || "pending" });
+  SRV.kbFmt = async (id, fmt) => rpc("kb_fmt", { p_id: id, p_fmt: fmt });
   SRV.kbMove = async (id, module) => rpc("kb_move", { p_id: id, p_module: module });
   SRV.kbSet = async (id, o) => rpc("kb_set", { p_id: id, p_status: o.status ?? null, p_title: o.title ?? null, p_body: o.body ?? null, p_why: o.why ?? null, p_how: o.how ?? null, p_kind: o.kind ?? null, p_niche: o.niche ?? null });
   SRV.kbChatList = async () => (await rpc("kb_chat_list", { p_limit: 60 })) || [];

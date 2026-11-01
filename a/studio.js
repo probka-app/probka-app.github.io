@@ -65,7 +65,7 @@ ${base}
 - подача: ${{ keep: "збережи тон оригіналу", live: "живіше, розмовно, як другу", fun: "з легким гумором", serious: "серйозно, впевнено" }[o.tone]};
 - перше речення — сильний гачок; без ремарок, хештегів, емодзі й заголовків у тексті.
 Також дай title — робочу назву (до 70 знаків) і beats — 4–10 кроків сценарію одним рядком кожен.
-Відповідай тільки JSON {"title":"…","beats":["…"],"text":"…"}`, { cache: false, kb: ["script", "story", "hook", "general"], max: 4000, quiet: true });
+Відповідай тільки JSON {"title":"…","beats":["…"],"text":"…"}`, { cache: false, kb: ["script", "story", "hook", "general"], ...(o.dur !== "orig" ? { kbFmt: +o.dur > 90 ? "wide" : "tall" } : {}), max: 4000, quiet: true });
     if (!r?.text) throw new Error("empty");
     return { title: String(r.title || ""), beats: (r.beats || []).map(String).slice(0, 12), text: String(r.text).trim(), lang: o.lang, dur: o.dur };
   }
@@ -135,7 +135,7 @@ ${src.slice(0, 7000)}
 Спирайся на приклади назв і прев'ю з бази знань (стиль, довжина, прийоми), але НЕ копіюй їх.
 titles — 3 різні назви ${en ? "англійською" : "українською"} до 70 знаків: інтрига або конкретна вигода, число чи несподіванка, без брехні й без капсу на все речення; why — чому клікнуть (до 80 знаків).
 thumbs — 3 різні прев'ю. Кожне: text — 2–4 слова великим текстом на прев'ю ${en ? "англійською" : "українською"} (не повторює назву дослівно); scene — що в кадрі одним реченням; who — man|woman|girl|boy|grandma|grandpa; emo — shock|cheer|think|sad|happy|point; prop — один предмет англійським словом (money, phone, laptop, rocket, clock…); color — yellow|green|red|blue; style — один з: ${P.join(", ")}.
-Відповідай тільки JSON {"titles":[{"t":"…","why":"…"}],"thumbs":[{"text":"…","scene":"…","who":"man","emo":"shock","prop":"money","color":"yellow","style":"youtube"}]}`, { cache: false, kb: ["title", "thumb", "hook", "niche"], max: 2000, quiet: true });
+Відповідай тільки JSON {"titles":[{"t":"…","why":"…"}],"thumbs":[{"text":"…","scene":"…","who":"man","emo":"shock","prop":"money","color":"yellow","style":"youtube"}]}`, { cache: false, kb: ["title", "thumb", "hook", "niche"], kbFmt: O.fmt === "wide" ? "wide" : "tall", max: 2000, quiet: true });
         const R = { fmt: O.fmt, titles: (r?.titles || []).filter((t) => t?.t).slice(0, 3).map((t) => ({ t: String(t.t).slice(0, 100), why: String(t.why || "").slice(0, 120) })),
           thumbs: (r?.thumbs || []).filter((c) => c?.text).slice(0, 3).map((c, i) => ({ text: String(c.text).slice(0, 40), scene: String(c.scene || "").slice(0, 160), who: String(c.who || "man"), emo: String(c.emo || "shock"), prop: String(c.prop || "").slice(0, 30), color: String(c.color || "yellow"), style: P.includes(c.style) ? c.style : P[i % P.length] })) };
         if (!R.titles.length) throw new Error("empty"); MEM.pk = R; saveMem(); st.textContent = ""; track("pack", { v: O.fmt }); draw(R); }
