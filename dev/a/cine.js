@@ -309,7 +309,21 @@
     chalk: { n: "Крейда на дошці", d: "Білі крейдяні контури на зеленій шкільній дошці — пояснення, поради, «як це працює»." },
     blueprint: { n: "Креслення", d: "Білі лінії на синьому кресленні з сіткою — бізнес, гроші, плани й стратегії." },
     retro: { n: "Ретро-плівка", d: "Тепла сепія, зерно й віньєтка старої плівки — спогади, «як було раніше», ностальгія." },
-    mono: { n: "Монохром з акцентом", d: "Увесь світ чорно-білий, лише герой у кольорі — стильно, чисто, фокус на головному." } };
+    mono: { n: "Монохром з акцентом", d: "Увесь світ чорно-білий, лише герой у кольорі — стильно, чисто, фокус на головному." },
+    toon30: { n: "Старий мультик", d: "Чорно-білий мультфільм на кремовій плівці: мерехтіння, пилинки, заокруглена рамка кадру — казково й ностальгійно." },
+    toon50: { n: "Мультик 50-х", d: "Обмежена тепла палітра середини століття: гірчиця, бірюза, корал і кремовий папір — стильно й затишно." },
+    toon80: { n: "Мультик з касети", d: "Соковиті кольори суботніх мультиків 80–90-х, м'які рядки кінескопа й легкий шум касети." },
+    book: { n: "Казкова книжка", d: "Акварельні м'які кольори на фактурному папері й теплий коричневий контур — як ілюстрації дитячої книжки." } };
+  // ретро-мультики: рушій «Комікс» + своя палітра (pf), колір контуру й накладка плівки/паперу/кінескопа
+  const toHex = (a) => "#" + a.map((v) => Math.round(clamp(v, 0, 255)).toString(16).padStart(2, "0")).join("");
+  const PAL50 = ["#f1e4c6", "#e6c88f", "#dda33a", "#d9733f", "#d65a4a", "#e7a59a", "#2e8b85", "#8fc4bd", "#8c9a4c", "#6b4a32", "#2d4a63", "#3a2a20"].map(hex);
+  const sat = (c, k, add = 0) => { const L = .3 * c[0] + .59 * c[1] + .11 * c[2]; return c.map((v) => L + (v - L) * k + add); };
+  const RTOON = {
+    toon30: { ol: "#16130f", pf: (c) => { const L = .3 * c[0] + .59 * c[1] + .11 * c[2]; return gmap([[0, [24, 21, 18]], [110, [92, 86, 76]], [190, [196, 186, 164]], [255, [246, 238, 216]]], L); } },
+    toon50: { ol: "#2b2019", pf: (c) => { if (SKINH.has(toHex(c))) return sat(c, .85).map((v, i) => lerp(v, [236, 200, 160][i], .25)); const L0 = .3 * c[0] + .59 * c[1] + .11 * c[2], sc = Math.max(...c) - Math.min(...c); if (sc < 70 && L0 < 110) return c.map((v, i) => lerp(v, [74, 50, 36][i], .55)); let b = PAL50[0], d = 1e9; for (const q of PAL50) { const e = (q[0] - c[0]) ** 2 * .3 + (q[1] - c[1]) ** 2 * .59 + (q[2] - c[2]) ** 2 * .11 + Math.abs((.3 * q[0] + .59 * q[1] + .11 * q[2]) - (.3 * c[0] + .59 * c[1] + .11 * c[2])) * 40; if (e < d) { d = e; b = q; } } return b.map((v, i) => lerp(c[i], v, .72)); } },
+    toon80: { ol: "#1b1222", pf: (c) => SKINH.has(toHex(c)) ? sat(c, 1.15, 4) : sat(c, 1.6, 8) },
+    book: { ol: "#5b4636", pf: (c) => sat(c, .78).map((v, i) => lerp(v, [246, 236, 216][i], .24)) } };
+  const PFC = new Map(); let SKINH = new Set();
   // нові стилі будуються на «кіно»-рушії: фон перефарбовується, фігури — силуети з власним кольором, світінням і очима
   const STYL = { whatif: { bg: "bright" }, dark: { bg: "dark", fill: "#e9e9ec", eye: "#111114", edge: "rgba(0,0,0,.85)" }, neon: { bg: "navy", fill: "#0c0d12", eye: "#ffffff", neon: 1 }, sil: { bg: "grey", fill: "#141416", eye: "#ffffff" },
     pastel: { bg: "pastel" }, golden: { bg: "golden", fill: "#1d1218", eye: "#ffe2b8", rim: "#ffb35c" }, chalk: { bg: "chalk", fill: "#2a4337", eye: "#f3f1e6", line: "#f3f1e6" },
@@ -317,12 +331,43 @@
   const KN = () => FMT === "kino" || !!STYL[FMT];
   const NEONC = { hero: "#4dd0e1", man: "#ffd166", woman: "#f72585", kid: "#7be38f", girl: "#ff9ecb", doctor: "#a5f3fc", boss: "#ff7b54", old: "#f4a261", shadow: "#ff2a2a" };
   const SKIN = { ink: "#232129", white: "#f7f6f2", porcelain: "#f7ddca", light: "#eccdb2", medium: "#d7ae8c", tan: "#b98a66", brown: "#8a5b3e", dark: "#5e3c2b" };
+  SKINH = new Set(Object.values(SKIN).map((h) => h.toLowerCase()));
   const SKIN_N = { auto: "Під формат", ink: "Чорний", white: "Білий", porcelain: "Світла", light: "Тепла", medium: "Смаглява", tan: "Засмагла", brown: "Темна", dark: "Дуже темна" };
   const HAIR_N = { none: "Без волосся", short: "Коротке", messy: "Скуйовджене", long: "Довге", bob: "Каре", curly: "Кучері", bun: "Пучок" };
   const HAIRC = { black: "#2b2a30", dbrown: "#4b3a32", brown: "#7a5a45", blond: "#d6b86c", red: "#a5512f", grey: "#b8b5ae" };
   const hsh = (s) => { let h = 2166136261; for (const ch of String(s)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; };
-  const OLC = () => FMT === "paper" ? "#3a3027" : "#141414";
-  const pf = (c) => FMT === "paper" ? mix(c, "#f0e3c8", .5) : c;
+  const OLC = () => RTOON[FMT]?.ol || (FMT === "paper" ? "#3a3027" : "#141414");
+  const pf = (c) => { if (FMT === "paper") return mix(c, "#f0e3c8", .5); const R = RTOON[FMT]; if (!R || typeof c !== "string" || !/^#[0-9a-f]{6}$/i.test(c)) return c; const k = FMT + c; if (!PFC.has(k)) { if (PFC.size > 600) PFC.clear(); PFC.set(k, toHex(R.pf(hex(c)))); } return PFC.get(k); };
+  // накладки ретро-мультиків (по кадру; шум — з кількох закешованих плиток)
+  const NZ = [];
+  function noiseTile(i) { if (NZ[i]) return NZ[i]; const c = document.createElement("canvas"); c.width = 270; c.height = 480; const o = c.getContext("2d"), d = o.createImageData(270, 480);
+    for (let k = 0; k < d.data.length; k += 4) { const v = rnd(k + i * 7919, 3) * 255; d.data[k] = d.data[k + 1] = d.data[k + 2] = v; d.data[k + 3] = 255; } o.putImageData(d, 0, 0); return NZ[i] = c; }
+  const PAPT = {};
+  function paperTex(kind) { if (PAPT[kind]) return PAPT[kind]; const c = document.createElement("canvas"); c.width = W / 2; c.height = H / 2; const o = c.getContext("2d"); o.fillStyle = "#fff"; o.fillRect(0, 0, c.width, c.height);
+    for (let i = 0; i < (kind === "book" ? 140 : 60); i++) { const X = rnd(i, 21) * c.width, Y = rnd(i, 22) * c.height, R = 30 + rnd(i, 23) * (kind === "book" ? 170 : 90), g = o.createRadialGradient(X, Y, 0, X, Y, R); const a = kind === "book" ? .025 + rnd(i, 24) * .035 : .03 + rnd(i, 24) * .04, tc = kind === "book" ? [[214, 170, 130], [160, 180, 210], [200, 160, 190], [170, 200, 160]][i % 4].join(",") : "150,120,85"; g.addColorStop(0, `rgba(${tc},${a})`); g.addColorStop(.7, `rgba(${tc},${a * .6})`); g.addColorStop(1, `rgba(${tc},0)`); o.fillStyle = g; o.fillRect(X - R, Y - R, R * 2, R * 2); }
+    o.strokeStyle = "rgba(120,95,70,.07)"; o.lineWidth = 1; for (let i = 0; i < 900; i++) { const X = rnd(i, 31) * c.width, Y = rnd(i, 32) * c.height, a = rnd(i, 33) * 6.28, l = 4 + rnd(i, 34) * 14; o.beginPath(); o.moveTo(X, Y); o.lineTo(X + Math.cos(a) * l, Y + Math.sin(a) * l); o.stroke(); }
+    return PAPT[kind] = c; }
+  function retroPost(x, t) { const F = Math.floor(t * 24), R = FMT; x.save();
+    if (R === "toon30") { x.globalCompositeOperation = "saturation"; x.fillStyle = "#808080"; x.fillRect(0, 0, W, H); x.globalCompositeOperation = "multiply"; x.fillStyle = "#f3e7cb"; x.fillRect(0, 0, W, H);
+      const fl = (rnd(F, 41) - .5) * .09; x.globalCompositeOperation = "source-over"; x.fillStyle = fl > 0 ? `rgba(255,248,230,${fl})` : `rgba(20,16,10,${-fl})`; x.fillRect(0, 0, W, H);
+      x.globalCompositeOperation = "overlay"; x.globalAlpha = .22; x.drawImage(noiseTile(F % 4), 0, 0, W, H); x.globalAlpha = 1; x.globalCompositeOperation = "source-over";
+      for (let i = 0; i < 7; i++) if (rnd(F * 13 + i, 42) > .55) { x.fillStyle = rnd(i, F) > .5 ? "rgba(12,10,8,.55)" : "rgba(255,250,235,.5)"; x.beginPath(); x.arc(rnd(F + i, 43) * W, rnd(F + i, 44) * H, 2 + rnd(F + i, 45) * 4, 0, 7); x.fill(); }
+      if (rnd(Math.floor(t * 3), 46) > .7) { x.strokeStyle = "rgba(15,12,8,.4)"; x.lineWidth = 2; const hx = rnd(Math.floor(t * 3), 47) * W, hy = rnd(Math.floor(t * 3), 48) * H; x.beginPath(); x.moveTo(hx, hy); x.bezierCurveTo(hx + 30, hy + 40, hx - 20, hy + 70, hx + 15, hy + 110); x.stroke(); }
+      if (rnd(F, 49) > .9) { x.fillStyle = "rgba(250,244,226,.35)"; x.fillRect(rnd(F, 50) * W, 0, 2, H); }
+      const v = x.createRadialGradient(W / 2, H / 2, H * .32, W / 2, H / 2, H * .72); v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(20,15,8,.6)"); x.fillStyle = v; x.fillRect(0, 0, W, H);
+      x.fillStyle = "#0e0c0a"; x.beginPath(); x.rect(0, 0, W, H); x.roundRect ? x.roundRect(14, 14, W - 28, H - 28, 70) : x.rect(14, 14, W - 28, H - 28); x.fill("evenodd"); }
+    else if (R === "toon50") { x.globalCompositeOperation = "multiply"; x.drawImage(paperTex("p50"), 0, 0, W, H); x.fillStyle = "#fbf1dc"; x.fillRect(0, 0, W, H);
+      x.globalCompositeOperation = "soft-light"; x.globalAlpha = .18; x.drawImage(noiseTile(0), 0, 0, W, H); x.globalAlpha = 1;
+      x.globalCompositeOperation = "multiply"; const v = x.createRadialGradient(W / 2, H / 2, H * .35, W / 2, H / 2, H * .78); v.addColorStop(0, "rgba(255,255,255,0)"); v.addColorStop(1, "rgba(190,150,100,.35)"); x.fillStyle = v; x.fillRect(0, 0, W, H); }
+    else if (R === "toon80") { x.globalCompositeOperation = "soft-light"; x.fillStyle = "rgba(255,170,120,.18)"; x.fillRect(0, 0, W, H); x.globalCompositeOperation = "source-over";
+      x.fillStyle = "rgba(0,0,0,.11)"; for (let y = (F % 2) * 2; y < H; y += 5) x.fillRect(0, y, W, 2);
+      x.globalCompositeOperation = "overlay"; x.globalAlpha = .1; x.drawImage(noiseTile(F % 4), 0, 0, W, H); x.globalAlpha = 1; x.globalCompositeOperation = "source-over";
+      const ph = (t % 7) / 7; if (ph > .86) { const by = (ph - .86) / .14 * H; x.globalAlpha = .35; x.drawImage(noiseTile((F + 1) % 4), 0, 0, 270, 12, 0, by, W, 26); x.globalAlpha = 1; }
+      const v = x.createRadialGradient(W / 2, H / 2, H * .38, W / 2, H / 2, H * .8); v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(20,8,30,.45)"); x.fillStyle = v; x.fillRect(0, 0, W, H); }
+    else if (R === "book") { x.globalCompositeOperation = "multiply"; x.drawImage(paperTex("book"), 0, 0, W, H); x.fillStyle = "#fbf3e2"; x.fillRect(0, 0, W, H);
+      x.globalCompositeOperation = "soft-light"; x.globalAlpha = .14; x.drawImage(noiseTile(1), 0, 0, W, H); x.globalAlpha = 1; x.globalCompositeOperation = "multiply";
+      const v = x.createRadialGradient(W / 2, H * .46, H * .3, W / 2, H / 2, H * .74); v.addColorStop(0, "rgba(255,255,255,0)"); v.addColorStop(1, "rgba(190,160,120,.26)"); x.fillStyle = v; x.fillRect(0, 0, W, H); }
+    x.restore(); }
   // зовнішність: герой — з налаштувань; інші — стабільно від ролі й позиції в кадрі
   function looks(c) { const who = c.who || "man", key = who + ":" + (c.key ?? ""), k = hsh(key), k2 = hsh("b" + key);
     if (who === "hero") { const sk = c.skin && c.skin !== "auto" ? c.skin : KN() ? "ink" : "light"; return { skin: sk, hair: c.hair || (KN() ? "none" : "messy"), hairC: HAIRC[c.hairC] || HAIRC.dbrown, beard: !!c.beard }; }
@@ -1069,7 +1114,7 @@ out — повернення в історію після вставки, до 6
       else { const a = off("a"), b = off("b"), ax = a.getContext("2d"), bx = b.getContext("2d"); drawScene(ax, L, si - 1, t); drawScene(bx, L, si, t); const e = ease(p), dir = sc.dir || 1;
         x.fillStyle = "#000"; x.fillRect(0, 0, W, H); x.filter = `blur(${Math.round(Math.sin(p * Math.PI) * 26)}px)`; x.drawImage(a, -e * W * dir, 0); x.drawImage(b, (1 - e) * W * dir, 0); x.filter = "none"; } }
     else if (sc.ad) drawAd(x, L, si, lt, t); else drawScene(x, L, si, t);
-    FMT = FMTS[L.fmt] ? L.fmt : "kino"; if (FMT === "paper") paperFrame(x);
+    FMT = FMTS[L.fmt] ? L.fmt : "kino"; if (FMT === "paper") paperFrame(x); if (RTOON[FMT]) retroPost(x, t);
     if (L.subs && !sc.ad) subs(x, t, L);
     else if (L.subs && sc.ad && L.adInline && L.adTm) { const lt = t - sc.t0, S = L.adTm.seg, up = lt >= Math.max(.9, S.in[1]) && lt < S.out[0]; subs(x, t, up ? { ...L, subS: { ...SUBS0, ...(L.subS || {}), y: 330 } } : L); }
     else if (L.subs && sc.ad && L.adWords && L.adTm) { const lt = t - sc.t0, S = L.adTm.seg, inE = Math.max(.9, S.in[1]), up = lt >= inE && lt < S.out[0]; if (lt < inE - .32 || lt >= inE) subs(x, t, { ...L, subS: up ? { ...SUBS0, ...(L.subS || {}), y: 330 } : L.subS, words: L.adWords.map((w) => ({ w: w.w, s: w.s + sc.t0, e: w.e + sc.t0 })) }); }
