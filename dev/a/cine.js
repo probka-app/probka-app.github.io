@@ -1162,14 +1162,14 @@ hit — номери 1–2 найважливіших слів сцени (ле�
 loc — плашка часу/місця зліва вгорі («СУБОТА • 21:14», «6 ГОДИН ТОМУ», «ДЕНЬ 1»).
 fx — ефекти сцени (масив, до 3): confetti — конфеті (перемога, гроші прийшли), black — чорний екран (хук-фраза на темряві з cap tw:1), rain — дощ (смуток, поганий день), crack — скло тріскається (удар правди, «ти залежний»), flash — білий спалах (шок, зрив, удар), spot — промінь світла на героя, навколо темрява (самотність, інсайт).`;
   const RULES = `Стиль — кінематографічний мультик із пласким героєм-чоловічком (темна кругла голова, світлі очі, худі), як популярні YouTube-канали «що, якби…», але ВЕРТИКАЛЬНО 9:16 для Reels:
-— ХУК: перша сцена (слова 0–6) — найсильніший кадр усього відео: shot close або face, cam shake або push, емоція shock/angry/worried, cap із гачком і виділеним словом, плюс предмет або HUD, що з'являється на ключовому слові; НЕ починай із загального плану, порожнього space чи героя, що просто стоїть;
+— ХУК: перша сцена (слова 0–6) — найсильніший кадр усього відео, у ньому вже щось відбувається на ключовому слові; конкретний рецепт хука для ЦЬОГО ролика дано нижче — роби саме за ним, а не за звичкою;
 — УТРИМАННЯ: у перші 6 секунд — щонайменше 3 різні сцени; далі сцена 1,5–3 с, не довше 3,5 с; дві сцени поспіль не мають однаковий plan і локацію; кожні 5–7 с — поворот (whip/shake/face + cap);
 — абстрактні ідеї показуй через локацію space + HUD (brain, panel, chart, counter), конкретні — через героя в побутовій локації з предметом у руці;
 — «що, якби…» і числа: мітки й таймери над головами (tag/timer), натовп на вулиці чи зупинці (crowd, crowdTimer), а пояснення чисел — окремими сценами place:"board" з timeline / timer / rules / split (чисті лінії, як у роликах What If);
 — внутрішній ворог (лінь, страх, сумнів, «у тебе не вийде», залежність) — тінь-демон who:"shadow" поруч із героєм або за спиною; коли герой здається — тінь росте (grow 2), коли перемагає — меншає (grow 0.3);
 — прогрес у часі: «День 1 → День 90», серія днів — hud day (зрив — v менше за v0) або calendar (успіх — mark:"check"); накопичені гроші — hud jar; «час пролетів у телефоні» — hud clock; повідомлення, коментарі, підтримка друга — hud chat;
 — мітки над головами (tag) — головний прийом роликів «що, якби…»: число над кожною людиною (дохід, підписники, години, шанси), колір — стан (red — погано, green — добре), tag0 — перебіг числа, delta — зміна; натовп із різними мітками — crowd + crowdTag; на реакцію героя — cam punch;
-— хук: перша сцена може бути fx:["black"] + cap tw:1 — коротка фраза-парадокс («Він бачив тисячу відео. Жодного не зняв.»), але друга сцена — вже до 2 с; спокуса/внутрішній голос — say у тіні; удар правди — fx crack або flash; самотність — fx spot; поганий день — fx rain;
+— друга сцена — до 2 с від початку, інший план і бажано інша локація; спокуса/внутрішній голос — say у тіні; удар правди — fx crack або flash; самотність — fx spot; поганий день — fx rain;
 — емоцію героя показуй тілом і обличчям (pose + face), на поворотах — close/face і shake;
 — cap не в кожній сцені: лише гачок, числа, повороти й висновок (≈ кожна друга-третя сцена);
 — зміна часу/місця → tr:fade і cap k:"title"; зміна думки → whip; продовження дії → cut;
@@ -1198,7 +1198,28 @@ fx — ефекти сцени (масив, до 3): confetti — конфеті
       s.props.forEach((p) => { if (!p.hold) { p.y = Math.min(p.y, s.cast.length ? .42 : .7); if (s.cap && p.y < .32) p.y = .36; } }); });
     if (!sc.length) throw new Error("plan"); if (sc[0].a !== 0) sc[0].a = 0; return sc; }
   // план сцен: частинами по ~70 слів (короткий JSON — не обрізається), з повтором; якщо AI не впорався — автоплан
-  const PLAN_JSON = `{"mood":"curious","scenes":[{"a":0,"place":"space","time":"night","shot":"wide","cam":"push","tr":"cut","cast":[{"who":"hero","x":0.5,"pose":"shock","face":"shock"}],"props":[],"hud":{"k":"rings","i":0},"cap":{"t":"ЩО ЯКБИ *ТИ* …","i":1},"hit":[3]}]}`;
+  const PLAN_JSON = `{"mood":"<mood>","scenes":[{"a":0,"place":"<place>","time":"<time>","shot":"<shot>","cam":"<cam>","tr":"cut","cast":[{"who":"<who>","x":0.5,"pose":"<pose>","face":"<face>"}],"cap":{"t":"<ДО 5 СЛІВ, *КЛЮЧОВЕ*>","i":1},"hit":[3]},{"a":"<номер слова>","…":"наступні сцени"}]}`;
+  // різноманітність: щоразу інший рецепт першої сцени й інший набір акцентних прийомів (без повторів останніх роликів)
+  const HOOKS = [
+    ["black", "Чорний екран: fx:[\"black\"] без героя, cap tw:1 друкує першу фразу-парадокс; друга сцена — різкий перехід (whip) у яскраву дію."],
+    ["tag", "Число над головою: герой або інша людина на середньому плані, над головою tag із головним числом ролика (tag0 — перебіг, tagC за змістом); на ключовому слові — cam punch."],
+    ["action", "У розпал дії: герой уже біжить/падає/хапає щось (pose run або shock, поле to), cam shake, предмет у кадрі; жодного вступу."],
+    ["face", "Обличчя впритул: shot face, емоція за змістом першої фрази (не обов'язково shock), cap гачка зверху; за 1 с — cam punch або whip на ширший план."],
+    ["object", "Предмет-доказ крупно: героя в першій сцені немає або він на краю кадру; у центрі великий предмет (телефон, гроші, годинник, календар, графік) через props або hud, що з'являється на ключовому слові."],
+    ["shadow", "Внутрішній голос: герой на середньому плані, поруч або за спиною тінь-демон (who shadow) зі say-шепотом першої думки; fx spot."],
+    ["crowd", "Натовп із мітками: place street, crowd 4–6 із crowdTag або crowdTimer, герой виділяється своєю міткою іншого кольору; cam pan."],
+    ["info", "Інфографіка першою: place board без героя, одразу hud із головним числом або порівнянням (counter, people, pie, gauge, compare, timeline) — і лише в другій сцені герой."],
+    ["contrast", "Контраст двох: два персонажі в одному кадрі з протилежними емоціями й мітками (tag) — «він / ти», «було / стало»."],
+    ["loc", "Точний момент: плашка loc з днем і часом («ПОНЕДІЛОК • 7:12»), загальний план локації з дією героя, hud clock або day; відчуття «історія вже почалась»."],
+    ["question", "Звернення до глядача: герой дивиться в камеру (shot close, look до центру, pose point), think або cap з питанням-гачком; фон — локація теми."],
+    ["stamp", "Вирок: hud stamp з одним словом-вироком («НЕМОЖЛИВО», «БРЕХНЯ», «0 ₴») на board або поверх героя в шоці, flash."],
+  ];
+  const ACCENTS = ["hud day або calendar (прогрес у днях)", "hud jar або counter (гроші)", "hud chat (листування, коментарі)", "hud clock (час летить)", "мітки над головами з delta", "тінь-демон зі say", "fx rain / spot для настрою", "hud people або pie (статистика)", "split / compare (до-після)", "think-думки персонажів", "crowd на вулиці", "props у руці героя (hold)", "hud gauge або chart", "fx confetti / flash на перемозі", "loc-плашки зміни часу", "stamp на поворотах"];
+  const MEM = { get: () => { try { return JSON.parse(localStorage.getItem("yvHookMem") || "[]"); } catch (e) { return []; } }, put: (q) => { try { const m = MEM.get(); m.push(q); localStorage.setItem("yvHookMem", JSON.stringify(m.slice(-6))); } catch (e) {} } };
+  function variety(L) { if (L._var) return L._var; const mem = MEM.get(), used = new Set(mem.map((q) => q.h)), pool = HOOKS.filter(([k]) => !used.has(k)), hk = (pool.length ? pool : HOOKS)[Math.floor(Math.random() * (pool.length || HOOKS.length))];
+    const acc = [...ACCENTS].sort(() => Math.random() - .5).slice(0, 4), sh = ["wide", "medium", "close", "face"][Math.floor(Math.random() * 4)];
+    L._var = { h: hk[0], text: `РЕЦЕПТ ХУКА ДЛЯ ЦЬОГО РОЛИКА: ${hk[1]} (Якщо він зовсім не пасує до першої фрази — візьми найближчий за духом інший прийом, але НЕ шаблон «крупно + шок + напис».)\nАКЦЕНТИ ЦЬОГО РОЛИКА (використай щонайменше 2 з них там, де пасують до змісту): ${acc.join("; ")}.\nПЕРЕВАЖНИЙ ПЛАН ДРУГОЇ СЦЕНИ: ${sh}.${mem.length ? `\nПопередні ролики цього автора починались так: ${[...new Set(mem.map((q) => q.h))].join(", ")} — НЕ повторюй їхні перші кадри й послідовність.` : ""}` };
+    MEM.put({ h: hk[0] }); return L._var; }
   async function planPart(L, a0, a1, extra, prev) {
     const words = L.words.slice(a0, a1).map((w, k) => `${a0 + k}:${w.w}`).join(" ");
     const ask = `Ти режисер вертикальних анімаційних Reels. Людина говорить за кадром. ${a0 > 0 ? `Це продовження ролика (слова ${a0}–${a1 - 1}); попередня сцена: ${prev || "—"}.` : `Це ${a1 < L.words.length ? "початок" : "весь"} ролик${a1 < L.words.length ? "у" : ""}.`} Дослівні слова з номерами:
@@ -1206,7 +1227,7 @@ ${words}
 ${extra}
 ${L.pet && BREED[L.pet] ? `У героя є тварина: ${BREED[L.pet].dog ? "собака" : "кіт"} — ${BREED[L.pet].n} (who:"${BREED[L.pet].dog ? "dog" : "cat"}", breed:"${L.pet}"). Додавай її в сцени, де доречно (вдома, на прогулянці, у смішних і теплих моментах), — завжди цю саму.\n` : ""}${L.places?.length ? `Локації: використовуй ТІЛЬКИ ці — ${L.places.join(", ")} (і space для абстрактних пояснень).\n` : ""}${RULES}
 ${SPEC}
-${a0 === 0 ? `Визнач mood музики: ${Object.entries(MOODS).map(([k, v]) => `${k} (${v.n})`).join(", ")}.\n` : ""}Розбий ці слова на сцени по черзі (перша сцена — зі слова ${a0}; a — номер слова початку; нова сцена ≈ кожні 4–9 слів). Пиши JSON компактно, без зайвих полів (порожні props/hud/cap/hit не пиши).
+${a0 === 0 ? variety(L).text + "\n" : variety(L).text.split("\n").slice(1, 2).join("") + "\n"}${a0 === 0 ? `Визнач mood музики: ${Object.entries(MOODS).map(([k, v]) => `${k} (${v.n})`).join(", ")}.\n` : ""}Розбий ці слова на сцени по черзі (перша сцена — зі слова ${a0}; a — номер слова початку; нова сцена ≈ кожні 4–9 слів). Пиши JSON компактно, без зайвих полів (порожні props/hud/cap/hit не пиши).
 Відповідай тільки JSON: ${PLAN_JSON}`;
     // якщо модель повертає порожньо — пробуємо з меншою базою знань (коротший контекст)
     const KBS = [["style", "edit", "story", "hook", "camera", "sound", "general"], ["style", "camera", "hook"], []];
@@ -1222,7 +1243,8 @@ ${a0 === 0 ? `Визнач mood музики: ${Object.entries(MOODS).map(([k, v
       if (ok.length) { if (ok[0].a !== a0) ok[0].a = a0; scenes.push(...ok); } else scenes.push(...autoPlan(L, a0, a1)); });
     L.scenes = normPlan({ scenes }, L); if (mood) L.mood = mood; L._auto = fails === parts.length; return L; }
   // автоплан без AI: сцени кожні ~6 слів, різні локації й плани, написи на ключових місцях
-  function autoPlan(L, a0, a1) { const P = L.places?.length ? [...L.places, "space"] : ["space", "room", "office", "street", "blog", "cafe", "road", "park", "night", "lab"], SH = ["close", "wide", "face", "medium", "wide", "close", "medium"], CM = ["shake", "pan_r", "push", "pull", "pan_l", "push"], PO = ["shock", "walk", "think", "point", "run", "shrug", "cheer", "phone", "sad"], FA = ["shock", "worried", "smirk", "happy", "angry", "sad"], out = [];
+  function autoPlan(L, a0, a1) { const sd = Math.floor(hsh(L.key || Math.random()) * 1e6), rot = (A) => A.map((_, i) => A[(i + sd) % A.length]);
+    const P = rot(L.places?.length ? [...L.places, "space"] : ["space", "room", "office", "street", "blog", "cafe", "road", "park", "night", "lab"]), SH = rot(["close", "wide", "face", "medium", "wide", "close", "medium"]), CM = rot(["shake", "pan_r", "push", "pull", "pan_l", "push", "punch"]), PO = rot(["shock", "walk", "think", "point", "run", "shrug", "cheer", "phone", "sad"]), FA = rot(["shock", "worried", "smirk", "happy", "angry", "sad"]), out = [];
     for (let a = a0, i = Math.floor(a0 / 5); a < a1; a += 5, i++) { const sp = P[(i >> 1) % P.length] === "space", s = { a, place: P[(i >> 1) % P.length], time: ["day", "sunset", "night"][(i >> 2) % 3], shot: SH[i % SH.length], cam: CM[i % CM.length], tr: i ? (i % 3 === 0 ? "whip" : "cut") : "cut",
       cast: [{ who: "hero", x: (i % 2 ? .38 : .58), pose: PO[i % PO.length], face: FA[i % FA.length], to: PO[i % PO.length] === "walk" || PO[i % PO.length] === "run" ? (i % 2 ? .7 : .3) : undefined }] };
       if (sp) s.hud = { k: ["brain", "chart", "rings", "counter"][i % 4], i: a, v: 1 };
@@ -1250,8 +1272,7 @@ ${SPEC}
     return out; }
   // зауваження, які видно без AI (тривалість, повтори, хук, написи)
   function autoChecks(L) { const S = L.scenes, out = []; const ns = S.filter((z) => !z.ad);
-    if (ns[0] && (ns[0].shot === "wide" || ns[0].cam === "still")) out.push("перша сцена — загальний план або нерухома камера: слабкий хук");
-    if (ns[0] && !ns[0].cap) out.push("на першій сцені немає напису-гачка");
+    if (ns[0] && ns[0].cam === "still" && !ns[0].hud && !ns[0].fx?.length && !ns[0].cap && !ns[0].cast?.some((c) => c.tag || c.say || c.think || c.to != null)) out.push("перша сцена статична й порожня: у ній має щось відбуватися на ключовому слові");
     if (ns[1] && ns[1].t0 > 2.2) out.push(`друга сцена з'являється лише на ${ns[1].t0.toFixed(1)} с`);
     S.forEach((z, i) => { if (z.ad) return; const d = z.t1 - z.t0; if (d > 3.6) out.push(`сцена #${i} триває ${d.toFixed(1)} с — задовго`);
       const q = S[i + 1]; if (q && !q.ad && q.place === z.place && q.shot === z.shot) out.push(`сцени #${i} і #${i + 1}: однакові локація й план`);
@@ -1269,6 +1290,7 @@ ${SPEC}
 Слова озвучки з номерами:
 ${numbered(L)}
 ${hint}
+${L._var?.text || ""}
 ${SPEC}
 План (n — номер сцени на кадрах, d — тривалість, с):
 ${JSON.stringify({ mood: L.mood, scenes: strip })}
