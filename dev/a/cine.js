@@ -17,6 +17,7 @@
   const rnd = (a, b = 0) => { const x = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return x - Math.floor(x); };
   const ease = (v) => v < .5 ? 4 * v * v * v : 1 - Math.pow(-2 * v + 2, 3) / 2;
   const eout = (v) => 1 - Math.pow(1 - clamp(v), 3);
+  const eio = (v) => { v = clamp(v); return v < .5 ? 4 * v * v * v : 1 - Math.pow(-2 * v + 2, 3) / 2; };
   const back = (v) => { v = clamp(v); const c = 1.7; return 1 + (c + 1) * Math.pow(v - 1, 3) + c * Math.pow(v - 1, 2); };
   const D = Math.PI / 180;
   const FONT = "Rubik";
@@ -62,6 +63,7 @@
     dog: { s: 1, pet: 1 }, cat: { s: 1, pet: 1 },
     hero: { s: 1 }, man: { s: 1 }, woman: { s: .96, hair: 1 }, kid: { s: .66, hs: 1.18 }, doctor: { s: 1, coat: 1, glasses: 1 },
     boss: { s: 1.03, suit: 1 }, old: { s: .95, grey: 1, lean: 6 }, girl: { s: .7, hs: 1.16, hair: 1 },
+    shadow: { s: 1 }, // тінь-демон: чорний силует із червоним світінням (лінь, страх, залежність, внутрішній голос)
   };
   const ACC = ["none", "beanie", "glasses", "cap", "headphones"];
 
@@ -550,6 +552,30 @@
     else if (k === "counter") { const v = String(h.v ?? "0"), num = parseFloat(v.replace(",", ".").replace(/[^\d.\-]/g, "")), pr = eout(lt / 1.2); x.globalAlpha = ap;
       let shown = v; if (isFinite(num)) { const dec = (v.split(/[.,]/)[1] || "").replace(/\D/g, "").length, cur = num * pr; shown = v.replace(/-?[\d][\d\s.,]*/, cur.toLocaleString("uk-UA", { minimumFractionDigits: dec, maximumFractionDigits: dec })); }
       if (h.t) txt(x, String(h.t).toUpperCase().slice(0, 30), W / 2, Y - 120, 38, "rgba(230,232,255,.85)", 700); x.shadowColor = "rgba(0,0,0,.4)"; x.shadowBlur = 20; txt(x, shown, W / 2, Y, fitTxt(x, shown, W - 160, 190), "#fff", 900); x.shadowBlur = 0; }
+    else if (k === "day") { // «ДЕНЬ 47»: число перебігає з v0 до v; якщо падає (зрив) — червоний спалах і тряска
+      const to = Math.round(+String(h.v ?? 1).replace(/[^\d-]/g, "") || 0), from = h.v0 != null ? Math.round(+h.v0 || 0) : to, pr = eio(clamp(lt / Math.max(.3, Math.min(1.6, Math.abs(to - from) * .05 + .3)))), cur = Math.round(from + (to - from) * pr), drop = to < from && pr >= 1;
+      x.globalAlpha = ap; const lab = String(h.t || "ДЕНЬ").toUpperCase().slice(0, 26), q = `${lab} ${cur}`, sh = drop ? Math.sin(lt * 60) * 10 * clamp(1 - (lt - 1) * 2) : 0; x.translate(sh, 0);
+      x.font = `900 120px "${FONT}", system-ui, sans-serif`; const tw = x.measureText(q).width; x.fillStyle = drop ? "rgba(140,20,20,.75)" : "rgba(12,12,16,.55)"; rr(x, W / 2 - tw / 2 - 50, Y - 95, tw + 100, 190, 30); x.fill();
+      txt(x, q, W / 2, Y, fitTxt(x, q, W - 160, 120), drop ? "#ff4d4d" : "#ffffff", 900); if (h.items?.[0]) txt(x, String(h.items[0]).toUpperCase().slice(0, 28), W / 2, Y + 150, 40, "rgba(235,238,255,.8)", 700); }
+    else if (k === "calendar") { // сітка 7×5, дні перекреслюються по черзі (дисципліна, «30 днів поспіль»)
+      x.globalAlpha = ap; const n = clamp(Math.round(+String(h.v ?? 30).replace(/[^\d]/g, "") || 30), 1, 35), cw = 118, ch = 104, X0 = W / 2 - cw * 3.5, T0 = Y - ch * 2.5 + 30;
+      if (h.t) { const ttl = String(h.t).toUpperCase().slice(0, 26); txt(x, ttl, W / 2, T0 - 80, fitTxt(x, ttl, 760, 50), "#ffffff", 900); }
+      x.fillStyle = "rgba(12,12,18,.55)"; rr(x, X0 - 24, T0 - 24, cw * 7 + 48, ch * 5 + 48, 26); x.fill(); x.strokeStyle = "rgba(235,238,255,.55)"; x.lineWidth = 3;
+      for (let i = 0; i < 35; i++) { const cx = X0 + (i % 7) * cw, cy = T0 + Math.floor(i / 7) * ch; x.strokeRect(cx + 6, cy + 6, cw - 12, ch - 12); txt(x, String(i + 1), cx + 26, cy + 28, 22, "rgba(235,238,255,.5)", 700); }
+      const sp = Math.min(.09, 1.8 / n); x.strokeStyle = "#ff3b3b"; x.lineWidth = 9; x.lineCap = "round";
+      for (let i = 0; i < n; i++) { const p0 = clamp((lt - .25 - i * sp) / .12); if (p0 <= 0) break; const cx = X0 + (i % 7) * cw + cw / 2, cy = T0 + Math.floor(i / 7) * ch + ch / 2, r = 30, p1 = clamp(p0 * 2), p2 = clamp(p0 * 2 - 1);
+        x.beginPath(); x.moveTo(cx - r, cy - r); x.lineTo(cx - r + 2 * r * p1, cy - r + 2 * r * p1); x.stroke(); if (p2 > 0) { x.beginPath(); x.moveTo(cx + r, cy - r); x.lineTo(cx + r - 2 * r * p2, cy - r + 2 * r * p2); x.stroke(); } }
+      if (h.items?.[0] && lt > .3 + n * sp) txt(x, String(h.items[0]).toUpperCase().slice(0, 24), W / 2, T0 + ch * 5 + 80, 46, "#ffd166", 900); }
+    else if (k === "jar") { // банка, що наповнюється монетами; сума перебігає вгору (заробіток, накопичення)
+      x.globalAlpha = ap; const v = String(h.v ?? "1 000 $"), num = parseFloat(v.replace(/\s/g, "").replace(",", ".").replace(/[^\d.\-]/g, "")), pr = eout(clamp(lt / 1.8)), fill = (h.v0 != null ? clamp(+h.v0) : .85) * pr;
+      const jw = 380, jh = 470, X = W / 2 - jw / 2, T = Y - jh / 2 + 40, bot = T + jh;
+      if (h.t) { const ttl = String(h.t).toUpperCase().slice(0, 26); txt(x, ttl, W / 2, T - 160, fitTxt(x, ttl, 760, 50), "#ffffff", 900); }
+      x.save(); x.beginPath(); rr(x, X, T, jw, jh, 60); x.clip(); const lvl = bot - (jh - 30) * fill;
+      for (let row = 0; bot - row * 34 > lvl - 10; row++) for (let i = 0; i < 6; i++) { const cx = X + 40 + i * 62 + (row % 2) * 30, cy = bot - 24 - row * 34; x.fillStyle = (row + i) % 3 ? "#e9c46a" : "#f4d58d"; x.beginPath(); x.ellipse(cx, cy, 30, 13, 0, 0, 7); x.fill(); x.strokeStyle = "#b8891f"; x.lineWidth = 3; x.stroke(); }
+      x.restore(); for (let i = 0; i < 4; i++) { const ph = ((lt * 1.6 + i * .25) % 1), cy = T - 120 + ph * (lvl - T + 120); if (lt > 1.8 && ph > .9) continue; x.fillStyle = "#f4d58d"; x.beginPath(); x.ellipse(W / 2 - 60 + i * 40, cy, 26, 11, Math.sin(i + lt * 4) * .6, 0, 7); x.fill(); }
+      x.strokeStyle = "rgba(235,238,255,.85)"; x.lineWidth = 6; rr(x, X, T, jw, jh, 60); x.stroke(); x.fillStyle = "rgba(235,238,255,.85)"; rr(x, X + 40, T - 34, jw - 80, 34, 10); x.fill();
+      let shown = v; if (isFinite(num)) { const cur = Math.round(num * pr); shown = v.replace(/-?\d[\d\s.,]*/, cur.toLocaleString("uk-UA") + " "); }
+      x.shadowColor = "rgba(0,0,0,.5)"; x.shadowBlur = 16; txt(x, shown.trim(), W / 2, bot + 110, fitTxt(x, shown.trim(), W - 200, 110), "#7fe0b0", 900); x.shadowBlur = 0; }
     else if (k === "brain") { brain(x, W / 2, Y, 300, t, ap * eout(lt / .6)); if (h.t) { x.globalAlpha = ap; glass(x, W / 2 + 40, Y + 250, 420, 190, "brain_os", ap); x.globalAlpha = ap; const n = String(h.t).toUpperCase().slice(0, 18); txt(x, n, W / 2 + 250, Y + 340, fitTxt(x, n, 360, 34), "#e9ecff"); } }
     else if (k === "check") { const it = (h.items || []).slice(0, 5), w = 800, hh = 150 + it.length * 96, X = (W - w) / 2, T = Y - hh / 2; glass(x, X, T, w, hh, h.t2 || "checklist", ap); x.globalAlpha = ap; if (h.t) txt(x, String(h.t).toUpperCase().slice(0, 26), X + w / 2, T + 100, 40, "#e9ecff");
       it.forEach((s, i) => { const a = clamp((lt - .3 - i * .45) / .3); if (a <= 0) return; x.globalAlpha = ap * a; const yy = T + 170 + i * 96; x.fillStyle = "#7fe0b0"; rr(x, X + 50, yy - 26, 52, 52, 12); x.fill(); x.strokeStyle = "#1c2a24"; x.lineWidth = 7; x.beginPath(); x.moveTo(X + 62, yy); x.lineTo(X + 74, yy + 12); x.lineTo(X + 92, yy - 12); x.stroke(); const n = String(s).slice(0, 34); txt(x, n, X + 130, yy, fitTxt(x, n, w - 180, 38, 600), "#e9ecff", 600, "left"); }); }
@@ -573,6 +599,22 @@
         [0, 1].forEach((i) => { const a = clamp((lt - .2 - i * .4) / .3); if (a <= 0) return; x.globalAlpha = ap * a; const q = String(it[i]).toUpperCase().slice(0, 14); lab(q, W / 2 + (i ? 230 : -230), Y - 150, fitTxt(x, q, 400, 44), i ? G : Wt); }); x.globalAlpha = ap; if (lt > 1.4) lab("?", W / 2 + 230, Y + 80, 140 + Math.sin(t * 4) * 6, G); } }
     x.restore();
   }
+  // тінь-демон: силует з пульсуючим червоним світінням, щілини очей і оскал; scale → grow протягом сцени, поява з темряви
+  function shadowFig(x, s, c, lt, d, t) { const g = c.grow != null ? c.scale + (c.grow - c.scale) * eio(clamp(lt / Math.max(.6, d * .8))) : (c.scale || 1), h = 720 * g, a = clamp(lt / .5);
+    if (a <= 0) return null;
+    // малюємо фігуру окремо й перефарбовуємо в суцільний чорний силует (без взуття, кишень і обличчя), потім кладемо з червоним світінням
+    const cv = x.canvas, off = SHC.c && SHC.c.width === cv.width && SHC.c.height === cv.height ? SHC.c : (SHC.c = Object.assign(document.createElement("canvas"), { width: cv.width, height: cv.height })), o = off.getContext("2d");
+    o.setTransform(1, 0, 0, 1, 0, 0); o.globalAlpha = 1; o.shadowBlur = 0; o.shadowColor = "transparent"; o.globalCompositeOperation = "source-over"; o.clearRect(0, 0, off.width, off.height); o.setTransform(x.getTransform());
+    const hd = figure(o, s.X, s.Y, s.P, { who: "shadow", key: "sh", col: "#0b0b0d", face: "calm", f: s.f, h, seed: 9 }, t);
+    if (hd) { o.fillStyle = "#000"; o.beginPath(); o.arc(hd.head[0], hd.head[1], hd.r * 1.04, 0, 7); o.fill(); }
+    o.setTransform(1, 0, 0, 1, 0, 0); o.globalAlpha = 1; o.shadowBlur = 0; o.globalCompositeOperation = "source-in"; o.fillStyle = "#0a0a0c"; o.fillRect(0, 0, off.width, off.height); o.globalCompositeOperation = "source-over";
+    x.save(); x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = a * .97; const sc0 = Math.hypot(x.getTransform().a, x.getTransform().b) || 1;
+    x.shadowColor = "rgba(255,30,30,.95)"; x.shadowBlur = (26 + 10 * Math.sin(t * 3.2)) * Math.min(1.6, .6 + g * .5) * (cv.width / W); x.drawImage(off, 0, 0); x.shadowBlur = 12 * (cv.width / W); x.drawImage(off, 0, 0); x.shadowBlur = 0; x.shadowColor = "transparent"; x.drawImage(off, 0, 0); x.restore();
+    if (hd) { x.save(); x.globalAlpha = a; const [hx, hy] = hd.head, r = hd.r; x.fillStyle = "#ff2a2a"; x.shadowColor = "#ff2a2a"; x.shadowBlur = 18; const ey = hy - r * .12, ew = r * .34, eh = r * .09, tilt = .28 * s.f;
+      [-1, 1].forEach((k) => { x.save(); x.translate(hx + k * r * .36 + s.f * r * .08, ey); x.rotate(k * tilt * -1); x.beginPath(); x.ellipse(0, 0, ew, eh, 0, 0, 7); x.fill(); x.restore(); });
+      if (c.face !== "calm") { x.strokeStyle = "#cc2222"; x.lineWidth = r * .07; x.beginPath(); x.moveTo(hx - r * .38, hy + r * .34); x.quadraticCurveTo(hx, hy + r * .58, hx + r * .38, hy + r * .34); x.stroke(); } x.restore(); }
+    return hd; }
+  const SHC = {};
   // люди на фоні (зупинка, вулиця) — менші, з мітками/таймерами над головами
   function drawCrowd(x, sc, L, lt, t, heroX) { const n = clamp(Math.round(sc.crowd), 0, 6), cols = ["teal", "coral", "purple", "blue", "green", "pink"], whos = ["man", "woman", "old", "man", "woman", "kid"];
     for (let i = 0; i < n; i++) { const fx = (i + .5) / n, X = W * (.08 + fx * .84) + (rnd(i, 81) - .5) * 60; if (Math.abs(X - heroX) < 120) continue; const c = { who: whos[i % 6], key: "crowd" + i, col: cols[i % 6], face: ["calm", "worried", "happy", "sad"][i % 4], f: X > W / 2 ? -1 : 1, h: 430, seed: i * 7 };
@@ -591,6 +633,11 @@
     parts.forEach((p) => { const w = x.measureText(p.w).width; if (lw + w > maxW && lines[lines.length - 1].length) { lines.push([]); lw = 0; } lines[lines.length - 1].push({ ...p, wd: w }); lw += w + sp; });
     const scale = Math.min(1, ...lines.map((l) => maxW / (l.reduce((a, p) => a + p.wd + sp, -sp))));
     const size = size0 * scale, lh = size * 1.08, outA = cap.out ? clamp((cap.out - lt) / .25) : 1; let idx = 0;
+    // друк по літері (typewriter): ~20 знаків/с, курсор блимає
+    if (cap.tw) { const shown = Math.floor(Math.max(0, lt) * 20); let ci = 0, cur = null; x.font = FF(size); x.textBaseline = "middle"; x.textAlign = "left"; x.lineJoin = "round"; x.globalAlpha = outA;
+      lines.forEach((l, li) => { const tw = l.reduce((a, p) => a + p.wd * scale + sp * scale, -sp * scale); let X = SCX - tw / 2; const Y = cy + (li - (lines.length - 1) / 2) * lh;
+        l.forEach((p) => { const vis = p.w.slice(0, Math.max(0, shown - ci)); ci += p.w.length + 1; if (vis) { x.strokeStyle = hand ? "#141414" : "rgba(20,18,30,.85)"; x.lineWidth = size * (hand ? .16 : .14); x.strokeText(vis, X, Y); x.fillStyle = p.hl ? (cap.c || "#dbe86b") : "#ffffff"; x.fillText(vis, X, Y); cur = [X + x.measureText(vis).width + 6, Y]; } X += (p.wd + sp) * scale; }); });
+      if (cur && Math.floor(lt * 2.5) % 2 === 0) { x.fillStyle = "#ffffff"; x.fillRect(cur[0], cur[1] - size * .4, size * .08, size * .8); } x.restore(); return; }
     lines.forEach((l, li) => { const tw = l.reduce((a, p) => a + p.wd * scale + sp * scale, -sp * scale); let X = SCX - tw / 2; const Y = cy + (li - (lines.length - 1) / 2) * lh;
       l.forEach((p) => { const a = clamp((lt - idx * .07) / .16) * outA, s = 1 + (1 - eout((lt - idx * .07) / .22)) * .35; idx++; if (a <= 0) { X += (p.wd + sp) * scale; return; }
         x.save(); x.globalAlpha = a; x.translate(X + p.wd * scale / 2, Y); x.scale(s, s); x.font = FF(size); x.textAlign = "center"; x.textBaseline = "middle"; x.lineJoin = "round";
@@ -659,6 +706,7 @@
     const heads = {}; (sc.cast || []).forEach((c, i) => { const s = castState(sc, c, lt, d, i); const h = 720 * (c.scale || 1); const talk = c.who === "hero" && !L.silent && (L.words.some((w) => w.s <= t && w.e >= t));
       if (WHO[c.who]?.pet) { heads[i] = animal(x, s.X, s.Y, { breed: c.breed || (c.who === "cat" ? "ginger" : "labrador"), pose: s.moving ? (c.pose === "run" ? "run" : "walk") : c.pose, face: c.face, f: s.f, seed: i * 5 + si, rim: tm === "night" ? "#8fa0ff" : T.tint }, lt); return; }
       if (i === 0 && sc.crowd > 0) drawCrowd(x, sc, L, lt, t, s.X);
+      if (c.who === "shadow") { heads[i] = shadowFig(x, s, c, lt, d, t); return; }
       heads[i] = figure(x, s.X, s.Y, s.P, { who: c.who || "man", key: i, skin: c.who === "hero" ? L.hero.skin : c.skin, hair: c.who === "hero" ? L.hero.hair : undefined, hairC: c.who === "hero" ? L.hero.hairC : undefined, beard: c.who === "hero" ? L.hero.beard : undefined, col: c.who === "hero" ? L.hero.col : c.col || ["teal", "coral", "purple", "blue", "green"][i % 5], acc: c.who === "hero" ? L.hero.acc : c.acc, face: c.face || "calm", f: s.f, h, rim: tm === "night" ? "#8fa0ff" : T.tint, seed: i * 3 + si, talk: talk && c.face !== "shock" }, lt); });
     (sc.cast || []).forEach((c, i) => { if (!WHO[c.who]?.pet) drawTag(x, heads[i], c, lt, t); });
     // предмети в руці — у світі; решта — поверх кадру, щоб не губились на крупних планах
@@ -957,17 +1005,19 @@ out — повернення в історію після вставки, до 6
   const SPEC = `Локації (place): ${Object.entries(PLACES).map(([k, v]) => `${k} — ${v.n}`).join("; ")}. Час (time): day | sunset | night.
 План (shot): wide — загальний (герой на весь зріст), medium — по пояс, close — плечі й голова, face — лише обличчя (емоція). Камера (cam): push — повільний наїзд, pull — від'їзд, pan_l / pan_r — проїзд, still, shake — тряска (шок).
 Перехід (tr) до сцени: cut — різка склейка, whip — швидкий змах (зміна думки), fade — через темряву (зміна часу, «пізніше», сон).
-Персонажі (cast, до 3): who — hero (головний герой, завжди той самий) | man | woman | kid | girl | doctor | boss | old | dog | cat; для dog/cat — breed: ${Object.entries(BREED).map(([k, v]) => `${k} (${v.n})`).join(", ")} і pose тільки ${PETPOSE.join(" | ")} (talk — гавкає/нявкає); x — 0…1 по ширині; to — куди йде (0…1, тоді він іде/біжить); pose — ${Object.keys(POSE).join(" | ")}; face — ${FACE.join(" | ")}; look — l | r; acc (для не-героя) — ${ACC.join(" | ")}; tag — коротка мітка над головою («41 РІК», «БОРГ 2 000 ₴»); timer — секунди, тоді над головою цифровий таймер, що біжить назад.
+Персонажі (cast, до 3): who — hero (головний герой, завжди той самий) | man | woman | kid | girl | doctor | boss | old | shadow | dog | cat; shadow — тінь-демон (чорний силует з червоним світінням і червоними очима): лінь, страх, сумнів, залежність, внутрішній голос «у тебе не вийде»; став поруч із героєм або за спиною; scale — розмір 0.3…2.5 (2 — нависає над героєм), grow — до якого розміру росте/меншає за сцену (перемога над страхом: grow 0.3); для dog/cat — breed: ${Object.entries(BREED).map(([k, v]) => `${k} (${v.n})`).join(", ")} і pose тільки ${PETPOSE.join(" | ")} (talk — гавкає/нявкає); x — 0…1 по ширині; to — куди йде (0…1, тоді він іде/біжить); pose — ${Object.keys(POSE).join(" | ")}; face — ${FACE.join(" | ")}; look — l | r; acc (для не-героя) — ${ACC.join(" | ")}; tag — коротка мітка над головою («41 РІК», «БОРГ 2 000 ₴»); timer — секунди, тоді над головою цифровий таймер, що біжить назад.
 Натовп: crowd — 0…6 людей на фоні (зупинка, вулиця, черга); crowdTimer:1 — у кожного над головою свій таймер; crowdTag — масив коротких міток для них.
 Предмети (props, до 2): k — ${Object.keys(PROPS).join(" | ")} | або будь-яка іконка англійською в полі q (k:"icon", q:"rocket"); t — короткий текст/число на предметі; t2 — підпис (для card/calendar); hold:1 — герой тримає в руці (pose hold або phone); x,y — 0…1 (якщо не в руці); i — номер слова, коли з'являється.
-HUD (hud) — пояснення поверх кадру: k — none | panel (вікно-«оновлення» з % і двома кнопками items) | chart (графік: v 1 росте, -1 падає) | bars | counter (велике число v, підпис t) | brain (світний мозок-мережа) | check (чекліст items) | compare (до/після, items:[2]) | rings | network | timeline (шкала 0–100 з позначкою: v — значення, items[0] — підпис позначки, напр. «73 РОКИ») | timer (цифровий таймер, що біжить назад: v — секунд; items — підписи «ДНІВ, ГОДИН, ХВИЛИН, СЕКУНД», тоді справа розкладка) | rules (пронумеровані кола: v — скільки, items — короткі підписи) | split (два стовпці з заголовками items[0] і items[1] і знаком питання); для timeline/timer/rules/split найкраще місце place:"board" (темна інфографіка) без героя; t — заголовок; i — номер слова; y — висота центру 0…1 (не накривай голову героя: герой стоїть унизу, HUD став у верхню половину y 0.25–0.4).
-Напис (cap): t — ДО 5 слів ВЕЛИКИМИ, ключове слово в *зірочках* (воно жовте), i — номер слова; k:"title" — титр часу/місця на весь кадр («*3 ДНІ* ТОМУ»); k:"note" — рукописний підпис зі стрілкою до героя (ім'я/вік/рік: «Олег, 2015», «я в 17»), звичайним регістром, до 4 слів.
+HUD (hud) — пояснення поверх кадру: k — none | panel (вікно-«оновлення» з % і двома кнопками items) | chart (графік: v 1 росте, -1 падає) | bars | counter (велике число v, підпис t) | brain (світний мозок-мережа) | check (чекліст items) | compare (до/після, items:[2]) | rings | network | timeline (шкала 0–100 з позначкою: v — значення, items[0] — підпис позначки, напр. «73 РОКИ») | timer (цифровий таймер, що біжить назад: v — секунд; items — підписи «ДНІВ, ГОДИН, ХВИЛИН, СЕКУНД», тоді справа розкладка) | rules (пронумеровані кола: v — скільки, items — короткі підписи) | split (два стовпці з заголовками items[0] і items[1] і знаком питання) | day (великий лічильник «ДЕНЬ 47»: t — підпис, напр. «ДЕНЬ» або «ДНІВ БЕЗ…», v — число, v0 — з якого перебігає; якщо v менше за v0 — червоний «зрив»; items[0] — підпис знизу) | calendar (календар, дні перекреслюються по черзі: v — скільки днів, t — заголовок, items[0] — підсумок) | jar (банка наповнюється монетами: v — сума з валютою «12 000 ₴», t — заголовок, v0 — наповненість 0…1); для timeline/timer/rules/split найкраще місце place:"board" (темна інфографіка) без героя; t — заголовок; i — номер слова; y — висота центру 0…1 (не накривай голову героя: герой стоїть унизу, HUD став у верхню половину y 0.25–0.4).
+Напис (cap): t — ДО 5 слів ВЕЛИКИМИ, ключове слово в *зірочках* (воно жовте), i — номер слова; k:"title" — титр часу/місця на весь кадр («*3 ДНІ* ТОМУ»); k:"note" — рукописний підпис зі стрілкою до героя (ім'я/вік/рік: «Олег, 2015», «я в 17»), звичайним регістром, до 4 слів; tw:1 — друкується по літері з курсором (хук на темному фоні, думка героя, «Ще 5 хвилин…»).
 hit — номери 1–2 найважливіших слів сцени (легкий удар камери).`;
   const RULES = `Стиль — кінематографічний мультик із пласким героєм-чоловічком (темна кругла голова, світлі очі, худі), як популярні YouTube-канали «що, якби…», але ВЕРТИКАЛЬНО 9:16 для Reels:
 — ХУК: перша сцена (слова 0–6) — найсильніший кадр усього відео: shot close або face, cam shake або push, емоція shock/angry/worried, cap із гачком і виділеним словом, плюс предмет або HUD, що з'являється на ключовому слові; НЕ починай із загального плану, порожнього space чи героя, що просто стоїть;
 — УТРИМАННЯ: у перші 6 секунд — щонайменше 3 різні сцени; далі сцена 1,5–3 с, не довше 3,5 с; дві сцени поспіль не мають однаковий plan і локацію; кожні 5–7 с — поворот (whip/shake/face + cap);
 — абстрактні ідеї показуй через локацію space + HUD (brain, panel, chart, counter), конкретні — через героя в побутовій локації з предметом у руці;
 — «що, якби…» і числа: мітки й таймери над головами (tag/timer), натовп на вулиці чи зупинці (crowd, crowdTimer), а пояснення чисел — окремими сценами place:"board" з timeline / timer / rules / split (чисті лінії, як у роликах What If);
+— внутрішній ворог (лінь, страх, сумнів, «у тебе не вийде», залежність) — тінь-демон who:"shadow" поруч із героєм або за спиною; коли герой здається — тінь росте (grow 2), коли перемагає — меншає (grow 0.3);
+— прогрес у часі: «День 1 → День 90», серія днів — hud day (зрив — v менше за v0) або calendar; накопичені гроші — hud jar; хук-думка на початку — cap tw:1 на темному фоні;
 — емоцію героя показуй тілом і обличчям (pose + face), на поворотах — close/face і shake;
 — cap не в кожній сцені: лише гачок, числа, повороти й висновок (≈ кожна друга-третя сцена);
 — зміна часу/місця → tr:fade і cap k:"title"; зміна думки → whip; продовження дії → cut;
@@ -978,16 +1028,17 @@ hit — номери 1–2 найважливіших слів сцени (ле�
   function normPlan(r, L) { const n = L.words.length, okI = (v) => Number.isInteger(v) && v >= 0 && v < n ? v : null, num = (v, a, b, d) => { v = +v; return isFinite(v) ? clamp(v, a, b) : d; }, str = (v, m) => typeof v === "string" ? v.slice(0, m) : "";
     const sc = (Array.isArray(r?.scenes) ? r.scenes : []).filter((s) => s && okI(s.a) != null).sort((a, b) => a.a - b.a).filter((s, i, A) => !i || s.a > A[i - 1].a).slice(0, 60).map((s) => ({
       a: s.a, place: PLACES[s.place] && (!L.places?.length || L.places.includes(s.place) || s.place === "space") ? s.place : (L.places?.length ? L.places[s.a % L.places.length] : "room"), time: TIME[s.time] ? s.time : "day", shot: SHOT[s.shot] ? s.shot : "wide", cam: ["push", "pull", "pan_l", "pan_r", "still", "shake"].includes(s.cam) ? s.cam : "push", tr: ["cut", "whip", "fade"].includes(s.tr) ? s.tr : "cut",
-      cast: (Array.isArray(s.cast) ? s.cast : []).slice(0, 3).filter((c) => c && WHO[c.who]).map((c) => ({ who: c.who, breed: WHO[c.who].pet ? (BREED[c.breed] && !!BREED[c.breed].cat === (c.who === "cat") ? c.breed : (c.who === "cat" ? "ginger" : "labrador")) : undefined, x: num(c.x, .08, .92, .5), to: c.to != null ? num(c.to, .08, .92, null) : undefined, pose: WHO[c.who].pet ? (PETPOSE.includes(c.pose) ? c.pose : "stand") : POSE[c.pose] ? c.pose : "stand", face: FACE.includes(c.face) ? c.face : "calm", look: c.look === "l" || c.look === "r" ? c.look : undefined, acc: ACC.includes(c.acc) ? c.acc : undefined, col: HOOD[c.col] ? c.col : undefined, tag: str(c.tag, 18) || undefined, timer: c.timer != null && isFinite(+c.timer) ? clamp(+c.timer, 0, 3.2e9) : undefined })),
+      cast: (Array.isArray(s.cast) ? s.cast : []).slice(0, 3).filter((c) => c && WHO[c.who]).map((c) => ({ who: c.who, breed: WHO[c.who].pet ? (BREED[c.breed] && !!BREED[c.breed].cat === (c.who === "cat") ? c.breed : (c.who === "cat" ? "ginger" : "labrador")) : undefined, x: num(c.x, .08, .92, .5), to: c.to != null ? num(c.to, .08, .92, null) : undefined, pose: WHO[c.who].pet ? (PETPOSE.includes(c.pose) ? c.pose : "stand") : POSE[c.pose] ? c.pose : "stand", face: FACE.includes(c.face) ? c.face : "calm", look: c.look === "l" || c.look === "r" ? c.look : undefined, acc: ACC.includes(c.acc) ? c.acc : undefined, col: HOOD[c.col] ? c.col : undefined, tag: str(c.tag, 18) || undefined, timer: c.timer != null && isFinite(+c.timer) ? clamp(+c.timer, 0, 3.2e9) : undefined, scale: c.who === "shadow" ? num(c.scale, .3, 2.5, 1) : undefined, grow: c.who === "shadow" && c.grow != null ? num(c.grow, .2, 2.5, 1) : undefined })),
       crowd: s.crowd ? clamp(Math.round(+s.crowd) || 0, 0, 6) : undefined, crowdTimer: s.crowdTimer ? 1 : undefined, crowdTag: Array.isArray(s.crowdTag) ? s.crowdTag.slice(0, 6).map((q) => str(String(q), 14)) : undefined,
       props: (Array.isArray(s.props) ? s.props : []).slice(0, 2).filter((p) => p && (PROPS[p.k] || p.q || p.k === "icon")).map((p) => ({ k: PROPS[p.k] ? p.k : "icon", q: str(p.q, 30) || undefined, t: str(String(p.t ?? ""), 16) || undefined, t2: str(p.t2, 16) || undefined, hold: p.hold ? 1 : undefined, x: num(p.x, .12, .76, .7), y: num(p.y, .15, .7, .4), i: okI(p.i), v: p.v != null ? num(p.v, -1, 1, 1) : undefined })),
-      hud: s.hud && s.hud.k && s.hud.k !== "none" ? { k: ["panel", "chart", "bars", "counter", "brain", "check", "compare", "rings", "network", "timeline", "timer", "rules", "split"].includes(s.hud.k) ? s.hud.k : "panel", t: str(s.hud.t, 30), v: s.hud.v, items: Array.isArray(s.hud.items) ? s.hud.items.slice(0, 5).map((q) => str(String(q), 34)) : undefined, i: okI(s.hud.i), y: num(s.hud.y, .2, .6, .33) * H } : null,
-      cap: s.cap && s.cap.t ? { t: str(s.cap.t, 60), i: okI(s.cap.i), k: s.cap.k === "title" || s.cap.k === "note" ? s.cap.k : undefined } : null,
+      hud: s.hud && s.hud.k && s.hud.k !== "none" ? { k: ["panel", "chart", "bars", "counter", "brain", "check", "compare", "rings", "network", "timeline", "timer", "rules", "split", "day", "calendar", "jar"].includes(s.hud.k) ? s.hud.k : "panel", t: str(s.hud.t, 30), v: s.hud.v, v0: s.hud.v0 != null && isFinite(+s.hud.v0) ? +s.hud.v0 : undefined, items: Array.isArray(s.hud.items) ? s.hud.items.slice(0, 5).map((q) => str(String(q), 34)) : undefined, i: okI(s.hud.i), y: num(s.hud.y, .2, .6, .33) * H } : null,
+      cap: s.cap && s.cap.t ? { t: str(s.cap.t, 60), i: okI(s.cap.i), k: s.cap.k === "title" || s.cap.k === "note" ? s.cap.k : undefined, tw: s.cap.tw ? 1 : undefined } : null,
       hit: (Array.isArray(s.hit) ? s.hit : []).map(okI).filter((v) => v != null).slice(0, 3),
     }));
     sc.forEach((s) => { if (!s.cast.some((c) => c.who === "hero") && !s.cast.some((c) => WHO[c.who]?.pet) && s.place !== "space" && s.cast.length < 3 && !s.hud) s.cast.unshift({ who: "hero", x: .5, pose: "talk", face: "calm" });
       if (s.cast.some((c) => c.who === "hero")) { const h = s.cast.find((c) => c.who === "hero"); s.props.forEach((p) => { if (p.hold && !["hold", "phone"].includes(h.pose)) h.pose = p.k === "phone" ? "phone" : "hold"; }); }
       else s.props.forEach((p) => p.hold = undefined);
+      if (s.hud?.k === "day" && s.cast.length) s.hud.y = .17 * H; // «ДЕНЬ N» над героєм, не на голові
       if (s.hud && s.cast.length) { s.cast.forEach((c) => { if (c.pose !== "lie") c.y = undefined; }); if (["panel", "chart", "bars", "check", "compare", "counter"].includes(s.hud.k)) s.hud.y = Math.min(s.hud.y, (s.hud.k === "counter" ? .24 : .27) * H); }
       s.props.forEach((p) => { if (!p.hold) { p.y = Math.min(p.y, s.cast.length ? .42 : .7); if (s.cap && p.y < .32) p.y = .36; } }); });
     if (!sc.length) throw new Error("plan"); if (sc[0].a !== 0) sc[0].a = 0; return sc; }
@@ -1536,7 +1587,7 @@ ${imgs.length ? `Контакт-аркуші: ${imgs.length} зображ., на
   const POSE_N = { stand: "Стоїть", talk: "Говорить", think: "Думає", point: "Показує", shrug: "Розводить руками", cheer: "Радіє", sad: "Сумує", phone: "З телефоном", shock: "Шок", wave: "Махає", hold: "Тримає", sit: "Сидить", sitsad: "Сидить сумно", lie: "Лежить", walk: "Іде", run: "Біжить" };
   const FACE_N = { calm: "Спокій", happy: "Радість", sad: "Сум", angry: "Злість", shock: "Шок", smirk: "Хитра усмішка", worried: "Тривога", sleep: "Спить" };
   const SHOT_N = { wide: "Загальний", medium: "По пояс", close: "Крупно", face: "Обличчя" }, CAM_N = { push: "Наїзд", pull: "Від'їзд", pan_l: "Вліво", pan_r: "Вправо", still: "Стоїть", shake: "Тряска" }, TR_N = { cut: "Склейка", whip: "Змах", fade: "Темрява" }, TIME_N = { day: "День", sunset: "Захід", night: "Ніч" };
-  const HUD_N = { none: "Немає", panel: "Вікно з %", chart: "Графік", bars: "Стовпці", counter: "Число", brain: "Мозок", check: "Чекліст", compare: "До/після", rings: "Кільця", network: "Мережа" };
+  const HUD_N = { none: "Немає", panel: "Вікно з %", chart: "Графік", bars: "Стовпці", counter: "Число", day: "День N", calendar: "Календар", jar: "Банка грошей", brain: "Мозок", check: "Чекліст", compare: "До/після", rings: "Кільця", network: "Мережа" };
   async function aiScene(L, i, wish) { const sc = L.scenes[i], a1 = L.scenes[i + 1]?.a ?? L.words.length, words = L.words.slice(sc.a, a1).map((w, k) => `${sc.a + k}:${w.w}`).join(" ");
     const strip = (o) => o ? (({ t0, t1, hitT, seed, dir, ...r }) => ({ ...r, hud: r.hud ? { ...r.hud, y: +(r.hud.y / H).toFixed(2), at: undefined } : null }))(o) : null;
     const r = await sample.json(`Ти режисер вертикальної кіно-анімації. Переробляєш ОДНУ сцену. Її слова з номерами: ${words}
@@ -1785,8 +1836,9 @@ ${SPEC}
       "Камера: push, pull, pan_l, pan_r, still, shake; переходи: cut, whip, fade.",
       "Персонаж: пози " + k(POSE) + "; емоції " + FACE.join(", ") + "; шкіра/зачіски/борода; тваринка; натовп (crowd) з таймерами/тегами.",
       "Пропси: " + k(PROPS) + ".",
-      "Інфографіка (hud): panel, chart, bars, counter, brain, check, compare, rings, network, timeline, timer, rules, split.",
-      "Текст: підписи-тези (cap), теги над персонажем (tag), таймери (timer), субтитри стилів " + k(SUBST) + ".",
+      "Інфографіка (hud): panel, chart, bars, counter, brain, check, compare, rings, network, timeline, timer, rules, split, day (лічильник днів із перебігом і «зривом»), calendar (перекреслені дні), jar (банка з монетами й сумою).",
+      "Тінь-демон (who: shadow): чорний силует із червоним світінням і очима, розмір scale і зміна grow за сцену.",
+      "Текст: підписи-тези (cap; tw — друк по літері з курсором), теги над персонажем (tag), таймери (timer), субтитри стилів " + k(SUBST) + ".",
       "Звук: фонова музика за настроєм, sfx на переходах; озвучка TTS з підгонкою під довжину.",
       "Реклама: реальний телефон у руці з кадрами інтерфейсу, виліт телефона до глядача.",
       "НЕМАЄ: імпорту відео/фото у кадр, 3D, ліпсінку, кількох персонажів, що взаємодіють руками, складної анімації тіла (біг, стрибки), частинок окрім простих."
