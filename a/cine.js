@@ -1182,7 +1182,7 @@ fx — ефекти сцени (масив, до 3): confetti — конфеті
       a: s.a, place: PLACES[s.place] && (!L.places?.length || L.places.includes(s.place) || s.place === "space") ? s.place : (L.places?.length ? L.places[s.a % L.places.length] : "room"), time: TIME[s.time] ? s.time : "day", shot: SHOT[s.shot] ? s.shot : "wide", cam: ["push", "pull", "pan_l", "pan_r", "still", "shake", "punch"].includes(s.cam) ? s.cam : "push", tr: ["cut", "whip", "fade"].includes(s.tr) ? s.tr : "cut",
       cast: (Array.isArray(s.cast) ? s.cast : []).slice(0, 3).filter((c) => c && WHO[c.who]).map((c) => ({ who: c.who, breed: WHO[c.who].pet ? (BREED[c.breed] && !!BREED[c.breed].cat === (c.who === "cat") ? c.breed : (c.who === "cat" ? "ginger" : "labrador")) : undefined, x: num(c.x, .08, .92, .5), to: c.to != null ? num(c.to, .08, .92, null) : undefined, pose: WHO[c.who].pet ? (PETPOSE.includes(c.pose) ? c.pose : "stand") : POSE[c.pose] ? c.pose : "stand", face: FACE.includes(c.face) ? c.face : "calm", look: c.look === "l" || c.look === "r" ? c.look : undefined, acc: ACC.includes(c.acc) ? c.acc : undefined, col: HOOD[c.col] ? c.col : undefined, tag: str(c.tag, 22) || undefined, timer: c.timer != null && isFinite(+c.timer) ? clamp(+c.timer, 0, 3.2e9) : undefined, scale: c.who === "shadow" ? num(c.scale, .3, 2.5, 1) : undefined, grow: c.who === "shadow" && c.grow != null ? num(c.grow, .2, 2.5, 1) : undefined, glow: c.who === "shadow" && SHGLOW[c.glow] ? c.glow : undefined, die: c.who === "shadow" && c.die ? 1 : undefined, say: str(c.say, 44) || undefined, think: !c.say && str(c.think, 44) || undefined,
         tagC: TAGC[c.tagC] ? c.tagC : undefined, tag0: c.tag0 != null && isFinite(parseFloat(String(c.tag0).replace(/[\s,]/g, ""))) ? String(c.tag0).slice(0, 16) : undefined, tag2: str(c.tag2, 18) || undefined, tagIcon: c.tagIcon === "heart" ? "heart" : undefined, delta: str(c.delta == null ? "" : String(c.delta), 8) || undefined })),
-      loc: str(s.loc, 26) || undefined,
+      loc: str(s.loc, 26) || undefined, see: str(s.see, 140) || undefined,
       fx: Array.isArray(s.fx) ? [...new Set(s.fx.filter((q) => ["black", "rain", "crack", "flash", "spot", "confetti"].includes(q)))].slice(0, 3) : typeof s.fx === "string" && ["black", "rain", "crack", "flash", "spot", "confetti"].includes(s.fx) ? [s.fx] : undefined,
       crowd: s.crowd ? clamp(Math.round(+s.crowd) || 0, 0, 6) : undefined, crowdTimer: s.crowdTimer ? 1 : undefined, crowdTag: Array.isArray(s.crowdTag) ? s.crowdTag.slice(0, 6).map((q) => str(String(q), 14)) : undefined,
       props: (Array.isArray(s.props) ? s.props : []).slice(0, 2).filter((p) => p && (PROPS[p.k] || p.q || p.k === "icon")).map((p) => ({ k: PROPS[p.k] ? p.k : "icon", q: str(p.q, 30) || undefined, t: str(String(p.t ?? ""), 16) || undefined, t2: str(p.t2, 16) || undefined, hold: p.hold ? 1 : undefined, x: num(p.x, .12, .76, .7), y: num(p.y, .15, .7, .4), i: okI(p.i), v: p.v != null ? num(p.v, -1, 1, 1) : undefined })),
@@ -1198,7 +1198,7 @@ fx — ефекти сцени (масив, до 3): confetti — конфеті
       s.props.forEach((p) => { if (!p.hold) { p.y = Math.min(p.y, s.cast.length ? .42 : .7); if (s.cap && p.y < .32) p.y = .36; } }); });
     if (!sc.length) throw new Error("plan"); if (sc[0].a !== 0) sc[0].a = 0; return sc; }
   // план сцен: частинами по ~70 слів (короткий JSON — не обрізається), з повтором; якщо AI не впорався — автоплан
-  const PLAN_JSON = `{"mood":"<mood>","scenes":[{"a":0,"place":"<place>","time":"<time>","shot":"<shot>","cam":"<cam>","tr":"cut","cast":[{"who":"<who>","x":0.5,"pose":"<pose>","face":"<face>"}],"cap":{"t":"<ДО 5 СЛІВ, *КЛЮЧОВЕ*>","i":1},"hit":[3]},{"a":"<номер слова>","…":"наступні сцени"}]}`;
+  const PLAN_JSON = `{"mood":"<mood>","scenes":[{"say":"<дослівна фраза цієї сцени>","see":"<що буквально бачить глядач: хто, що робить, які предмети/цифри — і як це ілюструє фразу>","a":0,"place":"<place>","time":"<time>","shot":"<shot>","cam":"<cam>","tr":"cut","cast":[{"who":"<who>","x":0.5,"pose":"<pose>","face":"<face>"}],"cap":{"t":"<ДО 5 СЛІВ, *КЛЮЧОВЕ*>","i":1},"hit":[3]},{"say":"<наступна фраза>","see":"<…>","a":"<номер першого слова фрази>","…":"наступні сцени"}]}`;
   // різноманітність: щоразу інший рецепт першої сцени й інший набір акцентних прийомів (без повторів останніх роликів)
   const HOOKS = [
     ["black", "Чорний екран: fx:[\"black\"] без героя, cap tw:1 друкує першу фразу-парадокс; друга сцена — різкий перехід (whip) у яскраву дію."],
@@ -1216,18 +1216,34 @@ fx — ефекти сцени (масив, до 3): confetti — конфеті
   ];
   const ACCENTS = ["hud day або calendar (прогрес у днях)", "hud jar або counter (гроші)", "hud chat (листування, коментарі)", "hud clock (час летить)", "мітки над головами з delta", "тінь-демон зі say", "fx rain / spot для настрою", "hud people або pie (статистика)", "split / compare (до-після)", "think-думки персонажів", "crowd на вулиці", "props у руці героя (hold)", "hud gauge або chart", "fx confetti / flash на перемозі", "loc-плашки зміни часу", "stamp на поворотах"];
   const MEM = { get: () => { try { return JSON.parse(localStorage.getItem("yvHookMem") || "[]"); } catch (e) { return []; } }, put: (q) => { try { const m = MEM.get(); m.push(q); localStorage.setItem("yvHookMem", JSON.stringify(m.slice(-6))); } catch (e) {} } };
+  // фрази озвучки: ріжемо по . ! ? … : ; (а довгі — ще по , — ), щоб кожна фраза мала свою сцену
+  function phrases(L, a0 = 0, a1 = L.words.length) { const W = L.words, out = []; let st = a0;
+    const end = (w) => /[.!?…:;]["»)]*$/.test(w), soft = (w) => /[,—–]["»)]*$/.test(w) || w === "—" || w === "–";
+    for (let i = a0; i < a1; i++) { const w = W[i].w, len = i - st + 1, nx = W[i + 1]?.w || "";
+      const cut = i === a1 - 1 || end(w) || (soft(w) && len >= 4 && a1 - i > 2) || len >= 11 || (len >= 8 && /^(і|й|а|але|та|бо|що|щоб|коли|тому|якщо|поки|ніж|or|and|but)$/i.test(nx));
+      if (cut) { out.push({ a: st, b: i, text: W.slice(st, i + 1).map((q) => q.w).join(" ") }); st = i + 1; } }
+    for (let k = out.length - 1; k > 0; k--) if (out[k].b - out[k].a < 1 && !end(out[k].text)) { out[k - 1].b = out[k].b; out[k - 1].text += " " + out[k].text; out.splice(k, 1); }
+    return out; }
   function variety(L) { if (L._var) return L._var; const mem = MEM.get(), used = new Set(mem.map((q) => q.h)), pool = HOOKS.filter(([k]) => !used.has(k)), hk = (pool.length ? pool : HOOKS)[Math.floor(Math.random() * (pool.length || HOOKS.length))];
     const acc = [...ACCENTS].sort(() => Math.random() - .5).slice(0, 4), sh = ["wide", "medium", "close", "face"][Math.floor(Math.random() * 4)];
-    L._var = { h: hk[0], text: `РЕЦЕПТ ХУКА ДЛЯ ЦЬОГО РОЛИКА: ${hk[1]} (Якщо він зовсім не пасує до першої фрази — візьми найближчий за духом інший прийом, але НЕ шаблон «крупно + шок + напис».)\nАКЦЕНТИ ЦЬОГО РОЛИКА (використай щонайменше 2 з них там, де пасують до змісту): ${acc.join("; ")}.\nПЕРЕВАЖНИЙ ПЛАН ДРУГОЇ СЦЕНИ: ${sh}.${mem.length ? `\nПопередні ролики цього автора починались так: ${[...new Set(mem.map((q) => q.h))].join(", ")} — НЕ повторюй їхні перші кадри й послідовність.` : ""}` };
+    L._var = { h: hk[0], text: `РЕЦЕПТ ХУКА ДЛЯ ЦЬОГО РОЛИКА: ${hk[1]} (Рецепт — лише ФОРМА подачі; ЗМІСТ першого кадру — те, про що перша фраза. Якщо рецепт не пасує до змісту першої фрази — візьми інший прийом, що пасує, але НЕ шаблон «крупно + шок + напис».)\nАКЦЕНТИ ЦЬОГО РОЛИКА (лише там, де вони ПРЯМО підсилюють зміст фрази; зміст фрази завжди важливіший за акцент): ${acc.join("; ")}.\nПЕРЕВАЖНИЙ ПЛАН ДРУГОЇ СЦЕНИ: ${sh}.${mem.length ? `\nПопередні ролики цього автора починались так: ${[...new Set(mem.map((q) => q.h))].join(", ")} — НЕ повторюй їхні перші кадри й послідовність.` : ""}` };
     MEM.put({ h: hk[0] }); return L._var; }
   async function planPart(L, a0, a1, extra, prev) {
-    const words = L.words.slice(a0, a1).map((w, k) => `${a0 + k}:${w.w}`).join(" ");
+    const words = L.words.slice(a0, a1).map((w, k) => `${a0 + k}:${w.w}`).join(" "), PH = phrases(L, a0, a1);
     const ask = `Ти режисер вертикальних анімаційних Reels. Людина говорить за кадром. ${a0 > 0 ? `Це продовження ролика (слова ${a0}–${a1 - 1}); попередня сцена: ${prev || "—"}.` : `Це ${a1 < L.words.length ? "початок" : "весь"} ролик${a1 < L.words.length ? "у" : ""}.`} Дослівні слова з номерами:
 ${words}
 ${extra}
 ${L.pet && BREED[L.pet] ? `У героя є тварина: ${BREED[L.pet].dog ? "собака" : "кіт"} — ${BREED[L.pet].n} (who:"${BREED[L.pet].dog ? "dog" : "cat"}", breed:"${L.pet}"). Додавай її в сцени, де доречно (вдома, на прогулянці, у смішних і теплих моментах), — завжди цю саму.\n` : ""}${L.places?.length ? `Локації: використовуй ТІЛЬКИ ці — ${L.places.join(", ")} (і space для абстрактних пояснень).\n` : ""}${RULES}
 ${SPEC}
-${a0 === 0 ? variety(L).text + "\n" : variety(L).text.split("\n").slice(1, 2).join("") + "\n"}${a0 === 0 ? `Визнач mood музики: ${Object.entries(MOODS).map(([k, v]) => `${k} (${v.n})`).join(", ")}.\n` : ""}Розбий ці слова на сцени по черзі (перша сцена — зі слова ${a0}; a — номер слова початку; нова сцена ≈ кожні 4–9 слів). Пиши JSON компактно, без зайвих полів (порожні props/hud/cap/hit не пиши).
+${a0 === 0 ? variety(L).text + "\n" : variety(L).text.split("\n").slice(1, 2).join("") + "\n"}${a0 === 0 ? `Визнач mood музики: ${Object.entries(MOODS).map(([k, v]) => `${k} (${v.n})`).join(", ")}.\n` : ""}ФРАЗИ ОЗВУЧКИ (номери слів):
+${PH.map((f, k) => `Ф${k + 1} [${f.a}–${f.b}]: «${f.text}»`).join("\n")}
+ВІЗУАЛЬНИЙ СТОРІТЕЛІНГ — ГОЛОВНЕ ПРАВИЛО: кожна фраза = своя окрема сцена, і картинка ІЛЮСТРУЄ саме те, що звучить у цю мить (глядач без звуку має зрозуміти зміст).
+— a сцени = номер першого слова фрази. Фраза довша за 8 слів → 2 сцени (друга — з ключового слова всередині фрази), і друга показує наступну думку фрази.
+— Іменники з фрази показуй предметами (props k або k:"icon", q:"англ. назва"), цифри й суми — tag/hud з цією цифрою, дії — позою й рухом героя (walk/run/phone/hold/sit…), місця — place, почуття — face, порівняння «до/після», «я/він» — compare/split або два персонажі, час — clock/calendar/day.
+— Метафору фрази показуй буквально (напр. «гроші течуть крізь пальці» → герой з грошима, монети падають; «стіна» → crack/спалах).
+— hit і cap.i ставь на слово з цієї ж фрази, яке несе зміст.
+— Не вставляй сцен, яких немає у фразах, і не показуй те, про що ще не сказано.
+Спершу в полі say напиши дослівну фразу, в see — що буквально в кадрі, і лише потім поля рушія, які це реалізують. Пиши JSON компактно, без зайвих полів (порожні props/hud/cap/hit не пиши).
 Відповідай тільки JSON: ${PLAN_JSON}`;
     // якщо модель повертає порожньо — пробуємо з меншою базою знань (коротший контекст)
     const KBS = [["style", "edit", "story", "hook", "camera", "sound", "general"], ["style", "camera", "hook"], []];
@@ -1236,6 +1252,7 @@ ${a0 === 0 ? variety(L).text + "\n" : variety(L).text.split("\n").slice(1, 2).jo
   async function aiPlan(L, extra = "") {
     const n = L.words.length, STEP = 70, parts = []; for (let a = 0; a < n; a += STEP) parts.push([a, Math.min(n, a + STEP)]);
     if (parts.length > 1 && parts[parts.length - 1][1] - parts[parts.length - 1][0] < 20) { const last = parts.pop(); parts[parts.length - 1][1] = last[1]; }
+    { const st = phrases(L).map((f) => f.a); for (let i = 1; i < parts.length; i++) { const b = parts[i][0], near = st.reduce((m, v) => Math.abs(v - b) < Math.abs(m - b) ? v : m, st[0] ?? b); if (near > parts[i - 1][0] + 10 && near < parts[i][1] - 5) { parts[i - 1][1] = near; parts[i][0] = near; } } }
     let scenes = [], mood = null, fails = 0;
     const res = await Promise.all(parts.map(([a0, a1], i) => planPart(L, a0, a1, extra, i ? "продовжуй той самий стиль і героя" : "").then((r) => r, (e) => { if (/limit|login|no_key/.test(e?.message || "")) throw e; fails++; L._planErr = String(e?.message || e?.code || e).slice(0, 60); return null; })));
     res.forEach((r, i) => { const [a0, a1] = parts[i]; if (!i && MOODS[r?.mood]) mood = r.mood;
@@ -1280,6 +1297,7 @@ ${SPEC}
       if (z.cam === "still" && d > 1.6) out.push(`сцена #${i}: нерухома камера ${d.toFixed(1)} с`); });
     let last = 0; S.forEach((z, i) => { if (z.ad) return; if (z.tr === "whip" || z.cam === "shake" || z.shot === "face" || (z.cap && z.cap.k !== "note")) { if (z.t0 - last > 8) out.push(`між ${last.toFixed(0)} і ${z.t0.toFixed(0)} с немає жодного «удару» (whip/shake/face/напис)`); last = z.t0; } });
     const caps = ns.filter((z) => z.cap).length; if (ns.length > 4 && caps < ns.length / 5) out.push("замало написів на екрані"); if (caps > ns.length * .75) out.push("написи майже в кожній сцені — перевантаження");
+    { const st = ns.map((z) => z.a); const AR = L.adRange || [-1, -1], miss = phrases(L).filter((f) => f.b - f.a >= 3 && !(f.a >= AR[0] && f.b <= AR[1]) && !st.some((v) => v >= f.a && v <= f.b)).map((f) => `«${f.text.slice(0, 40)}»`); if (miss.length) out.push(`фрази без власної сцени (візуал не змінився під них): ${miss.slice(0, 6).join(", ")}`); }
     const lastS = ns[ns.length - 1]; if (lastS && L.dur - lastS.t0 > 4.5) out.push("остання сцена задовга — фінал провисає");
     return out.slice(0, 25); }
   async function aiReview(L, hint = "") { if (!L?.scenes?.length) return null; timeline(L);
@@ -1290,6 +1308,8 @@ ${SPEC}
 Слова озвучки з номерами:
 ${numbered(L)}
 ${hint}
+Фрази озвучки: ${phrases(L).map((f, k) => `Ф${k + 1}[${f.a}–${f.b}] «${f.text}»`).join(" | ")}
+ГОЛОВНА ПЕРЕВІРКА: чи кожна фраза має свою сцену і чи картинка буквально показує те, що звучить у цей момент (поле see — задум, кадри — що вийшло насправді). Сцена, де візуал не про цю фразу (загальний герой «говорить», випадковий предмет, HUD не про те), — виправ через fix, щоб кадр ілюстрував фразу.
 ${L._var?.text || ""}
 ${SPEC}
 План (n — номер сцени на кадрах, d — тривалість, с):
