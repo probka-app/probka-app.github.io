@@ -1464,10 +1464,12 @@ ${imgs.length ? `Контакт-аркуші: ${imgs.length} зображ., на
     try { L.scenes = normPlan({ scenes: next }, L); if (MOODS[r?.mood]) L.mood = r.mood; } catch (e) { Object.assign(L, keep); return { issues: [], n: 0 }; }
     L._review = { issues: (r?.issues || []).slice(0, 12).map(String), n: fix.length + drop.size }; return L._review; }
   async function aiText(topic, sec, silent, scn) { const S = SCRIPTS[scn], want = Math.round(sec * (silent ? 1.6 : FIT.wps * FIT.base / FIT.sq * 1.04));
-    const r = await sample.json(`Напиши ${silent ? "текст для анімаційного Reels БЕЗ голосу — він іде на екрані субтитрами, короткі речення по 4–9 слів" : "текст для озвучки за кадром — жива розмовна українська, як людина говорить другу"} на тему: «${topic}».
+    const ask = `Напиши ${silent ? "текст для анімаційного Reels БЕЗ голосу — він іде на екрані субтитрами, короткі речення по 4–9 слів" : "текст для озвучки за кадром — жива розмовна українська, як людина говорить другу"} на тему: «${topic}».
 Формат: вертикальне кіно-анімаційне відео (герой-чоловічок, сцени змінюються кожні 2–4 с) ≈ ${sec} с. Мета — вірусність: людина має додивитися до кінця й захотіти переслати. Перше речення — сильний гачок-питання або несподіваний факт (до 10 слів, без розгону); одразу відкрий петлю, яку закриєш лише у фіналі; кожні 5–7 с — нова міні-інтрига чи поворот; далі історія героя з поворотом (але/тому), конкретні числа й образи, які легко показати; фінал — сильне коротке ствердження (НЕ питання і не заклик подумати), яке замикає петлю з початком.
-${S ? `СТРУКТУРА СЦЕНАРІЮ «${S.n}» — дотримуйся саме її, по черзі: ${S.p}. Не підписуй частини — текст суцільний, живий.\n` : ""}Обсяг — ${want}–${want + 8} слів (не менше ${want}: озвучку потім пришвидшимо й приберемо паузи). Без хештегів, емодзі, ремарок і заголовків. Відповідай тільки JSON {"text":"…"}`, { cache: false, kbFmt: "tall", kb: ["hook", "script", "story", "general"], max: 3000 });
-    return String(r?.text || "").trim(); }
+${S ? `СТРУКТУРА СЦЕНАРІЮ «${S.n}» — дотримуйся саме її, по черзі: ${S.p}. Не підписуй частини — текст суцільний, живий.\n` : ""}Обсяг — ${want}–${want + 8} слів (не менше ${want}: озвучку потім пришвидшимо й приберемо паузи). Без хештегів, емодзі, ремарок і заголовків. Відповідай тільки JSON {"text":"…"}`;
+    // якщо з базою знань не вийшло (довгий контекст, збій) — ще раз коротше, без неї
+    let err; for (const o of [{ kbFmt: "tall", kb: ["hook", "script", "story", "general"], max: 3000 }, { max: 2500 }]) { try { const r = await sample.json(ask, { cache: false, ...o }); const t = String(r?.text || (typeof r === "string" ? r : "")).trim(); if (t.split(/\s+/).length >= 12) return t; err = new Error("empty"); } catch (e) { err = e; if (/limit|login|no_key/.test(e?.code || e?.message || "")) throw e; } }
+    throw err; }
 
   /* ---------- голос і слова ---------- */
   function wordsFromText(text) { const ws = []; let t = .7; String(text).split(/\s+/).filter(Boolean).forEach((w) => { const d = .22 + Math.min(.5, w.length * .05); ws.push({ w, s: t, e: t + d }); t += d + .08; if (/[.!?…]$/.test(w)) t += .55; else if (/[,:;—–]$/.test(w)) t += .22; }); return { ws, dur: t + 1.2 }; }
@@ -1744,9 +1746,9 @@ ${S ? `СТРУКТУРА СЦЕНАРІЮ «${S.n}» — дотримуйся �
     $(B, "#cwr").onclick = async (ev) => { const btn = ev.currentTarget; OPT.ad = AD_PICK; saveOpt(); const topic = DRAFT.topic || ta.value.trim().slice(0, 300); if (!topic) return screenTopic("Напиши або обери тему");
       try { const adOn = AD_PICK && AD_PICK !== "none", adSec = adOn ? (OPT.sec <= 30 ? 11 : 17) + 3 : 0;
         let t = await E().busyRun("text", () => aiText(topic, Math.max(12, OPT.sec - adSec), OPT.voice === "none", scn)); if (!t) throw new Error("empty"); DRAFT.adMid = ""; DRAFT.adParts = null;
-        if (adOn) { const w = await E().busyRun("text", () => adWeave2(t, AD_PICK, OPT.adWord)); t = w.text; DRAFT.adMid = w.mid; DRAFT.adParts = w.parts; }
-        ta.value = t; DRAFT.gk = keyNow(); est(); btn.textContent = "✨ Написати інший варіант"; track("ai_text", { v: scn }); }
-      catch (e) { console.warn("cine text", e); say(/limit/.test(e?.code || e?.message || "") ? "Ліміт на сьогодні вичерпано" : "Не вийшло написати текст — натисни ще раз"); } };
+        let wv = false; if (adOn) { try { const w = await E().busyRun("text", () => adWeave2(t, AD_PICK, OPT.adWord)); t = w.text; DRAFT.adMid = w.mid; DRAFT.adParts = w.parts; wv = true; } catch (e) { console.warn("ad weave", e); } }
+        ta.value = t; DRAFT.gk = keyNow(); est(); btn.textContent = "✨ Написати інший варіант"; track("ai_text", { v: scn }); if (adOn && !wv) say("Текст готовий, але рекламу вплести не вийшло — натисни «Написати інший варіант»"); }
+      catch (e) { console.warn("cine text", e); const c = String(e?.code || e?.message || "err"); track("ai_text_err", { v: c.slice(0, 30) }); say(/limit/.test(c) ? "Ліміт на сьогодні вичерпано" : /login/.test(c) ? "Увійди, щоб написати текст" : /network/.test(c) ? "Немає зв'язку — перевір інтернет і натисни ще раз" : `Не вийшло написати текст — натисни ще раз (${c})`); } };
     $(F, "#cgo").onclick = () => { OPT.ad = AD_PICK; saveOpt(); if ((ta.value.match(/\S+/g) || []).length < 4) { say("Спершу потрібен текст — натисни «Написати текст» або напиши свій"); return; } DRAFT.text = ta.value; saveDraft(); screenContent(); }; }
   let PENDING = null;
   /* ---------- шаблони кроку 3 (формат + герой + музика + субтитри) ---------- */

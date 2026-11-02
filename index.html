@@ -558,7 +558,8 @@ body{background:var(--p-bg)}
 #yvbusy .sp{position:absolute;inset:-7px;border-radius:50%;border:2px solid transparent;border-top-color:rgba(120,160,255,.55);border-right-color:rgba(191,90,242,.25);animation:yvspin 1.4s linear infinite}
 @keyframes yvspin{to{transform:rotate(360deg)}}
 #yvbusy b{display:block;font-size:18px;letter-spacing:-.01em}
-#yvbusy .st{display:block;margin-top:4px;min-height:20px;font-size:14px;color:#a1a1aa;transition:opacity .2s}
+#yvbusy .st{display:none}
+#yvbusy b.ti{min-height:26px;font-size:17px;font-weight:700;color:#f5f5f7;padding:0 8px}#yvbusy .ti .dt i{font-style:normal;visibility:hidden}#yvbusy .ti .dt i.on{visibility:visible}
 #yvbusy .bg{display:none;margin-top:14px;background:none;border:0;color:#a1a1aa;font:inherit;font-size:13px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;visibility:hidden}
 #yvbusy .bg.v{display:none}
 #yvbusy .eta{display:block;margin-top:10px;font-size:15px;font-weight:700;color:#e4e4e7;font-variant-numeric:tabular-nums;min-height:20px}
@@ -1119,7 +1120,7 @@ body.pub .fmts{margin-top:14px}body.pub .fmt .fs,body.pub .fmt .fopen,body.pub .
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="YuVi">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>window.YV_DEV=false;window.YV_BUILD="02.11 15:07";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
+<script>window.YV_DEV=false;window.YV_BUILD="02.11 15:13";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="server.js?v=e036b5db"></script>
@@ -4820,7 +4821,7 @@ async function loadUIF(){ if(!window.SRV?.uiFlags) { applyUIF(); return; } const
 })();
 /* ===== Завантаження під час генерації: розмитий фон, кільце з відсотками (ривками) ===== */
 (function(){
-  const KIND={ text:{t:"Генерую…",m:["Підбираю слова","Шукаю сильний хук","Складаю сцени","Перевіряю, щоб чіпляло","Майже готово"]},
+  const KIND={ text:{t:"",m:["Підбираю слова","Шукаю сильний хук","Складаю історію","Перевіряю, щоб чіпляло","Майже готово"]},
                image:{t:"Малюю картинку…",m:["Продумую кадр","Малюю","Додаю деталі","Перевіряю якість","Майже готово"]},
                voice:{t:"Озвучую…",m:["Готую голос","Записую","Вирівнюю звук","Майже готово"]},
                listen:{t:"Слухаю запис…",m:["Розпізнаю слова","Ставлю мітки часу","Майже готово"]},
@@ -4855,19 +4856,23 @@ async function loadUIF(){ if(!window.SRV?.uiFlags) { applyUIF(); return; } const
   function tick(){ const j=p<55?3+Math.random()*13:p<80?1+Math.random()*7:p<92?Math.random()*2.5:Math.random()*.6;
     if(Math.random()<.22){ timer=setTimeout(tick,700+Math.random()*900); return; }   // пауза — «думає»
     p=Math.min(96,p+j); draw(j>4); timer=setTimeout(tick,250+Math.random()*650); }
-  function msgs(){ const L=KIND[kind].m; let i=0; const s=el.querySelector(".st"); const sub=Date.now()-last.at<2500&&last.t?last.t:"";
-    s.textContent=sub||L[0]; msgT=setInterval(()=>{ i=Math.min(i+1,L.length-1); s.style.opacity=0; setTimeout(()=>{ s.textContent=L[i]; s.style.opacity=1; },200); },2600); }
-  function begin(k){ mount(); kind=KIND[k]?k:"text"; p=0; hidden=false; real=false; t0=Date.now(); endAt=t0+(EST[kind]||15)*1000; lastSec=-1; clearInterval(cdT); cd(); cdT=setInterval(cd,250); el.querySelector(".ti").textContent=KIND[kind].t; draw(); el.classList.add("on"); el.querySelector(".bg").classList.remove("v");
+  // етап роботи друкується по літері, а три крапки з'являються по черзі й зникають — і знову
+  let typT=null, dotT=null, dotN=0, curLine="";
+  function line(t){ t=String(t||"").replace(/[\s.\u2026]+$/,""); if(!el||t===curLine) return; curLine=t; const ti=el.querySelector(".ti"); if(!ti.querySelector(".tx")) ti.innerHTML='<span class="tx"></span><span class="dt"><i>.</i><i>.</i><i>.</i></span>';
+    const tx=ti.querySelector(".tx"); clearInterval(typT); let k=0; tx.textContent=""; typT=setInterval(()=>{ k++; tx.textContent=t.slice(0,k); if(k>=t.length) clearInterval(typT); },38);
+    if(!dotT){ dotT=setInterval(()=>{ if(!el) return; dotN=(dotN+1)%4; el.querySelectorAll(".ti .dt i").forEach((d,i)=>d.classList.toggle("on",i<dotN)); },380); } }
+  function msgs(){ const L=KIND[kind].m; let i=0; line(L[0]); msgT=setInterval(()=>{ i=Math.min(i+1,L.length-1); line(L[i]); },2800); }
+  function begin(k){ mount(); kind=KIND[k]?k:"text"; p=0; hidden=false; real=false; t0=Date.now(); endAt=t0+(EST[kind]||15)*1000; lastSec=-1; clearInterval(cdT); cd(); cdT=setInterval(cd,250); curLine=""; draw(); el.classList.add("on"); el.querySelector(".bg").classList.remove("v");
     clearTimeout(timer); clearInterval(msgT); clearTimeout(bgT); msgs(); if(kind!=="save"){ timer=setTimeout(tick,180); bgT=setTimeout(()=>el.querySelector(".bg").classList.add("v"),9000); } }
-  function finish(){ clearTimeout(timer); clearInterval(msgT); clearTimeout(bgT); clearInterval(cdT); if(t0){ const took=(Date.now()-t0)/1000; if(took>1.5&&took<600){ EST[kind]=Math.round(((EST[kind]||took)*.6+took*.4)*10)/10; try{ localStorage.setItem("yvBusyEst",JSON.stringify(EST)); }catch(e){} } t0=0; } if(el) el.querySelector(".eta").textContent=""; p=100; draw(true); try{ if(sndOn()&&!hidden){ ac(); const t=AC.currentTime+.02; bell(784,t,.045,1.2); bell(1174.7,t+.08,.035,1.4); } }catch(e){} setTimeout(()=>{ el.classList.remove("on"); },420); }
+  function finish(){ clearTimeout(timer); clearInterval(msgT); clearTimeout(bgT); clearInterval(cdT); if(t0){ const took=(Date.now()-t0)/1000; if(took>1.5&&took<600){ EST[kind]=Math.round(((EST[kind]||took)*.6+took*.4)*10)/10; try{ localStorage.setItem("yvBusyEst",JSON.stringify(EST)); }catch(e){} } t0=0; } if(el) el.querySelector(".eta").textContent=""; p=100; draw(true); try{ if(sndOn()&&!hidden){ ac(); const t=AC.currentTime+.02; bell(784,t,.045,1.2); bell(1174.7,t+.08,.035,1.4); } }catch(e){} setTimeout(()=>{ el.classList.remove("on"); clearInterval(dotT); dotT=null; clearInterval(typT); },420); }
   window.yvBusy={
     start(k){ if(endT){ clearTimeout(endT); endT=null; n++; return; } if(n++===0) begin(k); },
     end(){ n=Math.max(0,n-1); if(n) return; endT=setTimeout(()=>{ endT=null; if(!n) finish(); },450); },   // коротка пауза — щоб серія картинок ішла одним завантаженням
     // справжній етап роботи (замість загальних фраз): «Озвучую…», «Розпізнаю слова…»
     // справжній прогрес (0…1) і підпис, напр. «Залишилось ≈ 40 с» — без «продовжити у фоні»
     progress(v,note){ if(!el||!el.classList.contains("on")) return; real=true; clearTimeout(timer); timer=null; clearTimeout(bgT); clearInterval(msgT); el.querySelector(".bg").classList.remove("v");
-      const nv=Math.max(p,Math.min(99,(+v||0)*100)), dv=nv-p; p=nv; draw(dv>4); if(v>.04){ const el2=(Date.now()-t0)/1000, left=el2*(1-v)/v, want=Date.now()+left*1000; endAt=endAt?endAt*.7+want*.3:want; } if(note!=null) el.querySelector(".st").textContent=String(note); },
-    stage(t){ if(!el||!el.classList.contains("on")) return; clearInterval(msgT); const s=el.querySelector(".st"); s.style.opacity=0; setTimeout(()=>{ s.textContent=String(t||""); s.style.opacity=1; },150); }
+      const nv=Math.max(p,Math.min(99,(+v||0)*100)), dv=nv-p; p=nv; draw(dv>4); if(v>.04){ const el2=(Date.now()-t0)/1000, left=el2*(1-v)/v, want=Date.now()+left*1000; endAt=endAt?endAt*.7+want*.3:want; } if(note!=null) line(note); },
+    stage(t){ if(!el||!el.classList.contains("on")) return; clearInterval(msgT); line(t); }
   };
 })();
 /* ===== «Скоро»: функції, які ще не підключені, людям показуються як «скоро» (власник користується як завжди) ===== */
