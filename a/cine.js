@@ -148,7 +148,7 @@
   function limb(x, pts, w, col) { x.strokeStyle = col; x.lineWidth = w; x.lineCap = "round"; x.lineJoin = "round"; x.beginPath(); x.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) x.lineTo(pts[i][0], pts[i][1]); x.stroke(); }
 
   // c: {who, col, acc, face, look, f(+1/-1), h(px), rim}
-  function figure(x, X, Y, P, c, t) { if (FMT !== "kino") return figureC(x, X, Y, P, c, t);
+  function figure(x, X, Y, P, c, t) { if (STYL[FMT]?.fill && !c._sil) return silFig(x, X, Y, P, c, t); if (!KN() && !c._sil) return figureC(x, X, Y, P, c, t);
     const lk0 = c.who === "hero" ? looks(c) : null, headC = lk0 && lk0.skin !== "ink" ? SKIN[lk0.skin] : INK; if (headC !== INK) c = { ...c, light: 1 };
     const sp = WHO[c.who] || WHO.man, h = (c.h || 560) * sp.s, f = c.f || 1, hs = sp.hs || 1;
     const col = c.who === "doctor" ? "#eceff2" : c.who === "boss" ? "#3d4256" : sp.grey ? "#a7a2a0" : (HOOD[c.col] || c.col || HOOD.yellow);
@@ -299,7 +299,15 @@
   let HANDP = null; const loadHand = () => HANDP ||= (async () => { try { if (!window.FontFace) return; const f = new FontFace(HANDF, "url(a/Caveat.woff)", { weight: "400 700" }); await f.load(); document.fonts.add(f); } catch (e) { console.warn("hand font", e); } })();
   const FMTS = { kino: { n: "Кіно-чоловічок", d: "Плаский герой у намальованих локаціях, наїзди камери, великі написи, вікна-підказки, музика й звуки." },
     comic: { n: "Комікс", d: "Персонажі з товстим контуром і кольором шкіри, пласкі кімнати, рукописні написи й підписи зі стрілкою — як у біографіях на YouTube." },
-    paper: { n: "Паперовий скетч", d: "Олівцевий малюнок на старому папері з рамкою: штриховка, м'які кольори, рукописні субтитри." } };
+    paper: { n: "Паперовий скетч", d: "Олівцевий малюнок на старому папері з рамкою: штриховка, м'які кольори, рукописні субтитри." },
+    whatif: { n: "What If", d: "Чорні чоловічки з білими очима в кольорових худі на світлих пласких фонах — як у роликах «що, якби…». Мітки й числа над головами." },
+    dark: { n: "Темний мінімалізм", d: "Майже чорні кімнати, світлий герой, червоні й рожеві неонові акценти — драма, лінь, залежність, дисципліна." },
+    neon: { n: "Неоновий контур", d: "Чорні силуети з кольоровим світним обведенням на темних фонах — напруга, таймери, ніч." },
+    sil: { n: "Силует", d: "Суцільні чорні силуети з білими очима на сірих пласких фонах — тихі історії про звички й маленькі кроки." } };
+  // нові стилі будуються на «кіно»-рушії: фон перефарбовується, фігури — силуети з власним кольором, світінням і очима
+  const STYL = { whatif: { bg: "bright" }, dark: { bg: "dark", fill: "#e9e9ec", eye: "#111114", edge: "rgba(0,0,0,.85)" }, neon: { bg: "navy", fill: "#0c0d12", eye: "#ffffff", neon: 1 }, sil: { bg: "grey", fill: "#141416", eye: "#ffffff" } };
+  const KN = () => FMT === "kino" || !!STYL[FMT];
+  const NEONC = { hero: "#4dd0e1", man: "#ffd166", woman: "#f72585", kid: "#7be38f", girl: "#ff9ecb", doctor: "#a5f3fc", boss: "#ff7b54", old: "#f4a261", shadow: "#ff2a2a" };
   const SKIN = { ink: "#232129", white: "#f7f6f2", porcelain: "#f7ddca", light: "#eccdb2", medium: "#d7ae8c", tan: "#b98a66", brown: "#8a5b3e", dark: "#5e3c2b" };
   const SKIN_N = { auto: "Під формат", ink: "Чорний", white: "Білий", porcelain: "Світла", light: "Тепла", medium: "Смаглява", tan: "Засмагла", brown: "Темна", dark: "Дуже темна" };
   const HAIR_N = { none: "Без волосся", short: "Коротке", messy: "Скуйовджене", long: "Довге", bob: "Каре", curly: "Кучері", bun: "Пучок" };
@@ -309,8 +317,8 @@
   const pf = (c) => FMT === "paper" ? mix(c, "#f0e3c8", .5) : c;
   // зовнішність: герой — з налаштувань; інші — стабільно від ролі й позиції в кадрі
   function looks(c) { const who = c.who || "man", key = who + ":" + (c.key ?? ""), k = hsh(key), k2 = hsh("b" + key);
-    if (who === "hero") { const sk = c.skin && c.skin !== "auto" ? c.skin : FMT === "kino" ? "ink" : "light"; return { skin: sk, hair: c.hair || (FMT === "kino" ? "none" : "messy"), hairC: HAIRC[c.hairC] || HAIRC.dbrown, beard: !!c.beard }; }
-    if (FMT === "kino") return { skin: "ink", hair: "none", hairC: HAIRC.dbrown, beard: false };
+    if (who === "hero") { const sk = c.skin && c.skin !== "auto" ? c.skin : KN() ? "ink" : "light"; return { skin: sk, hair: c.hair || (KN() ? "none" : "messy"), hairC: HAIRC[c.hairC] || HAIRC.dbrown, beard: !!c.beard }; }
+    if (KN()) return { skin: "ink", hair: "none", hairC: HAIRC.dbrown, beard: false };
     const fem = who === "woman" || who === "girl", skins = ["porcelain", "light", "light", "medium", "tan", "brown", "dark", "white"];
     return { skin: skins[Math.floor(k2 * skins.length)], hair: who === "old" ? "short" : fem ? ["long", "bob", "bun", "curly"][Math.floor(k * 4)] : ["short", "messy", "curly", "short", "none"][Math.floor(k * 5)],
       hairC: who === "old" ? HAIRC.grey : [HAIRC.black, HAIRC.dbrown, HAIRC.brown, HAIRC.blond, HAIRC.red][Math.floor(k2 * 5)], beard: !fem && who !== "kid" && k > .72 }; }
@@ -448,7 +456,7 @@
   // підпис зі стрілкою до героя («Олег, 2015»)
   function noteText(x, t, hd, lt, out) { const a = clamp(lt / .3) * (out ? clamp((out - lt) / .25) : 1); if (a <= 0 || !hd) return; const side = hd[0] > W / 2 ? -1 : 1, tx = clamp(hd[0] + side * -1 * 0 + (side > 0 ? 250 : -250), 220, W - 220), ty = Math.max(300, hd[1] - 220);
     x.save(); x.globalAlpha = a; x.font = `700 70px "${HANDF}", "${FONT}", cursive`; x.textAlign = "center"; x.textBaseline = "middle"; const tw = Math.min(x.measureText(t).width, W - 120);
-    const dark = FMT !== "kino"; x.lineJoin = "round"; if (!dark) { x.strokeStyle = "rgba(15,14,22,.9)"; x.lineWidth = 12; x.strokeText(t, tx, ty, W - 120); } x.fillStyle = dark ? OLC() : "#fff"; x.fillText(t, tx, ty, W - 120);
+    const dark = !KN(); x.lineJoin = "round"; if (!dark) { x.strokeStyle = "rgba(15,14,22,.9)"; x.lineWidth = 12; x.strokeText(t, tx, ty, W - 120); } x.fillStyle = dark ? OLC() : "#fff"; x.fillText(t, tx, ty, W - 120);
     const sx = tx - side * tw * .35, sy = ty + 46, ex = hd[0] + side * 70, ey = hd[1] - 30, p = eout(clamp((lt - .15) / .4));
     x.strokeStyle = dark ? OLC() : "#fff"; x.lineWidth = 6; x.lineCap = "round"; x.beginPath(); x.moveTo(sx, sy); const mx = lerp(sx, ex, .2), my = lerp(sy, ey, .9); const qx = lerp(sx, mx, p), qy = lerp(sy, my, p); x.quadraticCurveTo(qx, qy, lerp(sx, ex, p), lerp(sy, ey, p)); x.stroke();
     if (p > .95) { const ang = Math.atan2(ey - my, ex - mx); x.beginPath(); x.moveTo(ex, ey); x.lineTo(ex - Math.cos(ang - .5) * 26, ey - Math.sin(ang - .5) * 26); x.moveTo(ex, ey); x.lineTo(ex - Math.cos(ang + .5) * 26, ey - Math.sin(ang + .5) * 26); x.stroke(); }
@@ -520,8 +528,43 @@
   function bgOf(place, tm, seed, blur) { const key = FMT + place + tm + seed + (blur ? "b" : ""); if (BGC.has(key)) return BGC.get(key);
     const c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d");
     if (blur) { x.filter = "blur(10px)"; x.drawImage(bgOf(place, tm, seed, false), -20, -20, W + 40, H + 40); x.filter = "none"; }
-    else if (FMT !== "kino") bgC(x, PLACES[place] ? place : "room", tm, seed); else (PLACES[place] || PLACES.room).draw(x, tm, seed);
+    else if (!KN()) bgC(x, PLACES[place] ? place : "room", tm, seed); else { (PLACES[place] || PLACES.room).draw(x, tm, seed); if (STYL[FMT]) restyleBg(x, STYL[FMT].bg, tm); }
     if (BGC.size > 40) BGC.delete(BGC.keys().next().value); BGC.set(key, c); return c; }
+
+  // перефарбування фону під стиль (один раз на фон, потім із кешу)
+  function restyleBg(x, mode, tm) { let d; try { d = x.getImageData(0, 0, W, H); } catch (e) { return; } const a = d.data, night = tm === "night";
+    for (let i = 0; i < a.length; i += 4) { const r = a[i], g = a[i + 1], b = a[i + 2], L = .3 * r + .59 * g + .11 * b;
+      if (mode === "bright") { const k = .78, m = night ? 20 : 58; a[i] = r * k + m + (L - r) * .12; a[i + 1] = g * k + m + (L - g) * .12; a[i + 2] = b * k + m + (L - b) * .12; }
+      else if (mode === "dark") { const v = 9 + L * .2; a[i] = v; a[i + 1] = v; a[i + 2] = v * 1.05; }
+      else if (mode === "navy") { a[i] = 8 + L * .14; a[i + 1] = 11 + L * .17; a[i + 2] = 24 + L * .27; }
+      else if (mode === "grey") { const v = (night ? 70 : 150) + L * (night ? .22 : .38); a[i] = v; a[i + 1] = v + 2; a[i + 2] = v + 6; } }
+    x.putImageData(d, 0, 0); }
+  // фігура-силует: малюємо звичайну фігуру окремо, заливаємо одним кольором, кладемо зі світінням, зверху — очі за емоцією
+  const SILC = {};
+  function silFig(x, X, Y, P, c, t) { const st = STYL[FMT], cv = x.canvas, off = SILC.c && SILC.c.width === cv.width && SILC.c.height === cv.height ? SILC.c : (SILC.c = Object.assign(document.createElement("canvas"), { width: cv.width, height: cv.height })), o = off.getContext("2d");
+    const TM = x.getTransform(), hh = (c.h || 560) * ((WHO[c.who] || WHO.man).s || 1), mg = 70 * cv.width / W;
+    const x0 = Math.max(0, Math.floor(TM.a * (X - hh * .85) + TM.e - mg)), y0 = Math.max(0, Math.floor(TM.d * (Y - hh * 1.2) + TM.f - mg)), x1 = Math.min(cv.width, Math.ceil(TM.a * (X + hh * .85) + TM.e + mg)), y1 = Math.min(cv.height, Math.ceil(TM.d * (Y + hh * .3) + TM.f + mg)), bw = x1 - x0, bh = y1 - y0;
+    if (bw <= 0 || bh <= 0) return null;
+    o.setTransform(1, 0, 0, 1, 0, 0); o.globalAlpha = 1; o.shadowBlur = 0; o.globalCompositeOperation = "source-over"; o.clearRect(x0, y0, bw, bh); o.setTransform(TM);
+    const hd = figure(o, X, Y, P, { ...c, _sil: 1 }, t);
+    o.setTransform(1, 0, 0, 1, 0, 0); o.globalCompositeOperation = "source-in"; o.fillStyle = st.fill; o.fillRect(x0, y0, bw, bh); o.globalCompositeOperation = "source-over";
+    x.save(); x.setTransform(1, 0, 0, 1, 0, 0); const gc = st.neon ? (c.who === "hero" && HOOD[c.col] ? mix(HOOD[c.col], "#ffffff", .25) : NEONC[c.who] || HOOD[c.col] || "#4dd0e1") : st.edge;
+    if (gc) { x.shadowColor = gc; x.shadowBlur = (st.neon ? 22 + 6 * Math.sin(t * 2.4 + (c.seed || 0)) : 6) * cv.width / W; x.drawImage(off, x0, y0, bw, bh, x0, y0, bw, bh); if (st.neon) { x.shadowBlur = 8 * cv.width / W; x.drawImage(off, x0, y0, bw, bh, x0, y0, bw, bh); } x.shadowBlur = 0; x.shadowColor = "transparent"; }
+    x.drawImage(off, x0, y0, bw, bh, x0, y0, bw, bh); x.restore();
+    if (hd) silEyes(x, hd, c.face || "calm", c.f || 1, st.eye, t, (c.seed || 0) + X);
+    return hd; }
+  // очі силуету: форма передає емоцію (спокій, радість, сум, злість, шок, хитрість, сон), моргання
+  function silEyes(x, hd, face, f, col, t, sd) { const [hx, hy] = hd.head, r = hd.r, blink = ((t + rnd(Math.floor(sd), 7) * 4) % 4.2) < .12, ex = hx + f * r * .16, ey = hy - r * .04, dx = r * .3;
+    x.save(); x.fillStyle = col; x.strokeStyle = col; x.lineWidth = r * .09; x.lineCap = "round";
+    [-1, 1].forEach((k) => { const cx = ex + k * dx, ew = r * .12, eh = r * .19;
+      if (blink || face === "sleep") { x.beginPath(); x.moveTo(cx - ew, ey); x.lineTo(cx + ew, ey); x.stroke(); return; }
+      if (face === "happy") { x.beginPath(); x.arc(cx, ey + eh * .3, ew * 1.1, Math.PI * 1.1, Math.PI * 1.9); x.stroke(); return; }
+      if (face === "shock") { x.beginPath(); x.arc(cx, ey, ew * 1.5, 0, 7); x.fill(); x.fillStyle = x.strokeStyle === col ? (col === "#ffffff" ? "#111" : "#eee") : "#111"; x.beginPath(); x.arc(cx, ey, ew * .45, 0, 7); x.fill(); x.fillStyle = col; return; }
+      if (face === "smirk" && k === -1 * f) { x.beginPath(); x.moveTo(cx - ew, ey); x.quadraticCurveTo(cx, ey - eh * .5, cx + ew, ey); x.stroke(); return; }
+      x.beginPath(); x.ellipse(cx, ey, ew, eh, 0, 0, 7); x.fill();
+      if (face === "sad" || face === "worried") { x.save(); x.fillStyle = STYL[FMT]?.fill || "#111"; x.beginPath(); x.moveTo(cx - ew * 1.6, ey - eh * 1.3); x.lineTo(cx + ew * 1.6, ey - eh * 1.3); x.lineTo(cx + ew * 1.6 * -k * -1, ey - eh * (face === "sad" ? .1 : .35)); x.lineTo(cx - ew * 1.6 * k, ey - eh * (face === "sad" ? -.15 : .05)); x.closePath(); x.fill(); x.restore(); }
+      if (face === "angry") { x.beginPath(); x.moveTo(cx - k * ew * 1.4, ey - eh * 1.5); x.lineTo(cx + k * ew * 1.2, ey - eh * .9); x.stroke(); } });
+    x.restore(); }
 
   /* ---------- HUD, «великі написи», субтитри ---------- */
   function glass(x, X, Y, w, h, title, ap) { x.save(); x.globalAlpha *= ap; x.fillStyle = "rgba(28,26,58,.78)"; rr(x, X, Y, w, h, 18); x.fill(); x.strokeStyle = "rgba(190,200,255,.55)"; x.lineWidth = 3; rr(x, X, Y, w, h, 18); x.stroke();
@@ -645,7 +688,7 @@
     // малюємо фігуру окремо й перефарбовуємо в суцільний чорний силует (без взуття, кишень і обличчя), потім кладемо з червоним світінням
     const cv = x.canvas, off = SHC.c && SHC.c.width === cv.width && SHC.c.height === cv.height ? SHC.c : (SHC.c = Object.assign(document.createElement("canvas"), { width: cv.width, height: cv.height })), o = off.getContext("2d");
     o.setTransform(1, 0, 0, 1, 0, 0); o.globalAlpha = 1; o.shadowBlur = 0; o.shadowColor = "transparent"; o.globalCompositeOperation = "source-over"; o.clearRect(0, 0, off.width, off.height); o.setTransform(x.getTransform());
-    const hd = figure(o, s.X, s.Y, s.P, { who: "shadow", key: "sh", col: "#0b0b0d", face: "calm", f: s.f, h, seed: 9 }, t);
+    const hd = figure(o, s.X, s.Y, s.P, { who: "shadow", key: "sh", col: "#0b0b0d", face: "calm", f: s.f, h, seed: 9, _sil: 1 }, t);
     if (hd) { o.fillStyle = "#000"; o.beginPath(); o.arc(hd.head[0], hd.head[1], hd.r * 1.04, 0, 7); o.fill(); }
     o.setTransform(1, 0, 0, 1, 0, 0); o.globalAlpha = 1; o.shadowBlur = 0; o.globalCompositeOperation = "source-in"; o.fillStyle = "#0a0a0c"; o.fillRect(0, 0, off.width, off.height); o.globalCompositeOperation = "source-over";
     x.save(); x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = a * .97; const sc0 = Math.hypot(x.getTransform().a, x.getTransform().b) || 1;
@@ -679,7 +722,7 @@
     if (c.delta) { const dl = lt - .7; if (dl > 0 && dl < 1.2) { const neg = /^\s*[-−]/.test(c.delta); x.save(); x.globalAlpha = a * (1 - clamp((dl - .6) / .6)); x.font = `900 ${sz * 1.1}px "${FONT}", system-ui, sans-serif`; x.textAlign = "left"; x.textBaseline = "middle"; x.fillStyle = neg ? "#ff3b4a" : "#3ee07f"; x.shadowColor = "rgba(0,0,0,.6)"; x.shadowBlur = 8; x.fillText(String(c.delta), X + sz * 2.2, Y - dl * 90); x.restore(); } } }
   // «ЯКЩО ТВІЙ *IQ* …» — виділене слово в зірочках
   function capText(x, cap, lt, cy, style) {
-    const hand = FMT !== "kino", parts = String(cap.t || "")[hand ? "toString" : "toUpperCase"]().split(/(\*[^*]+\*)/).filter(Boolean).flatMap((s) => { const hl = s.startsWith("*"); return s.replace(/\*/g, "").trim().split(/\s+/).filter(Boolean).map((w) => ({ w, hl })); });
+    const hand = !KN(), parts = String(cap.t || "")[hand ? "toString" : "toUpperCase"]().split(/(\*[^*]+\*)/).filter(Boolean).flatMap((s) => { const hl = s.startsWith("*"); return s.replace(/\*/g, "").trim().split(/\s+/).filter(Boolean).map((w) => ({ w, hl })); });
     if (!parts.length) return; const big = style === "title", size0 = (big ? 118 : 96) * (hand ? 1.25 : 1), FF = (z) => hand ? `700 ${z}px "${HANDF}", cursive` : `900 ${z}px "${FONT}", system-ui, sans-serif`;
     x.save(); x.font = FF(size0); const sp = size0 * .28, maxW = SAFEW - 40, lines = [[]]; let lw = 0;
     parts.forEach((p) => { const w = x.measureText(p.w).width; if (lw + w > maxW && lines[lines.length - 1].length) { lines.push([]); lw = 0; } lines[lines.length - 1].push({ ...p, wd: w }); lw += w + sp; });
@@ -699,7 +742,7 @@
   }
   const SUBST = { hand: "Рукописні", classic: "Класичні", box: "Плашка", pop: "Караоке", one: "По слову", minimal: "Мінімал", yellow: "Жовті" };
   const SUBS0 = { k: "classic", size: 1, y: 1370 };
-  function subs(x, t, L) { const S = { ...SUBS0, ...(L.subS || {}) }, k0 = SUBST[S.k] ? S.k : "classic", k = k0 === "classic" && FMT !== "kino" ? "hand" : k0;
+  function subs(x, t, L) { const S = { ...SUBS0, ...(L.subS || {}) }, k0 = SUBST[S.k] ? S.k : "classic", k = k0 === "classic" && !KN() ? "hand" : k0;
     const ws = L.words; let i = ws.findIndex((w) => w.e > t - .05); if (i < 0) return; if (ws[i].s > t + .05 && (i === 0 || t - ws[i - 1].e > .5)) return;
     const N = k === "one" ? 1 : k === "box" ? 3 : 4, g0 = Math.floor(i / N) * N, grp = ws.slice(g0, g0 + N); if (!grp.length) return;
     const size = (k === "one" ? 92 : k === "minimal" ? 46 : 54) * clamp(+S.size || 1, .6, 1.8), Y = clamp(+S.y || 1370, 300, 1800);
@@ -754,7 +797,7 @@
     x.drawImage(bgOf(place, tm, sc.seed || 1, cam.z > 1.6), 0, 0);
     const T = TIME[tm] || TIME.day, Lp = PLACES[place].light;
     // промені світла
-    if (FMT === "kino" && Lp && tm !== "night") { x.save(); x.globalCompositeOperation = "screen"; for (let i = 0; i < 4; i++) { const a = .1 + .05 * Math.sin(t * .7 + i * 2), X0 = Lp[0] - 160 + i * 120, g = x.createLinearGradient(X0, Lp[1], X0 + 700, Lp[1] + 1300); g.addColorStop(0, T.ray + a + ")"); g.addColorStop(1, T.ray + "0)"); x.fillStyle = g; x.beginPath(); x.moveTo(X0, Lp[1]); x.lineTo(X0 + 90, Lp[1]); x.lineTo(X0 + 760, Lp[1] + 1400); x.lineTo(X0 + 540, Lp[1] + 1400); x.fill(); } x.restore(); }
+    if ((FMT === "kino" || FMT === "whatif") && Lp && tm !== "night") { x.save(); x.globalCompositeOperation = "screen"; for (let i = 0; i < 4; i++) { const a = .1 + .05 * Math.sin(t * .7 + i * 2), X0 = Lp[0] - 160 + i * 120, g = x.createLinearGradient(X0, Lp[1], X0 + 700, Lp[1] + 1300); g.addColorStop(0, T.ray + a + ")"); g.addColorStop(1, T.ray + "0)"); x.fillStyle = g; x.beginPath(); x.moveTo(X0, Lp[1]); x.lineTo(X0 + 90, Lp[1]); x.lineTo(X0 + 760, Lp[1] + 1400); x.lineTo(X0 + 540, Lp[1] + 1400); x.fill(); } x.restore(); }
     // fx black — «чорний екран»: хук-текст на порожній темряві (герой, якщо є, лишається видимим)
     if (sc.fx?.includes("black")) { x.fillStyle = "#050507"; x.fillRect(-W, -H, W * 3, H * 3); }
     // люди
@@ -769,7 +812,7 @@
       x.save(); x.translate(X, Y + (k ? 0 : Math.sin(t * 1.6 + i) * 8)); x.scale(k || 1, k || 1); if (PROPS[p.k]) PROPS[p.k](x, s, { ...p, lt: pl }, t); else drawIcon(x, p.q || p.k, s, p.c); x.restore(); };
     (sc.props || []).forEach((p, i) => { if (!p.hold) return; const hand = heads[hi >= 0 ? hi : 0]?.hand; if (hand) drawProp(p, i, hand[0], hand[1] - 26, .62); });
     // пил у світлі
-    x.save(); for (let i = 0; i < (FMT === "kino" ? 46 : 0); i++) { const X = (rnd(i, 31) * W + t * (8 + rnd(i, 32) * 14)) % W, Y = (rnd(i, 33) * H * .8 + Math.sin(t * .5 + i) * 40 + t * 6) % (H * .85); x.fillStyle = `rgba(255,250,235,${(.15 + rnd(i, 34) * .35) * (place === "space" ? .5 : 1)})`; x.beginPath(); x.arc(X, Y, 1.6 + rnd(i, 35) * 2.8, 0, 7); x.fill(); } x.restore();
+    x.save(); for (let i = 0; i < (KN() ? (STYL[FMT]?.bg === "grey" ? 0 : 46) : 0); i++) { const X = (rnd(i, 31) * W + t * (8 + rnd(i, 32) * 14)) % W, Y = (rnd(i, 33) * H * .8 + Math.sin(t * .5 + i) * 40 + t * 6) % (H * .85); x.fillStyle = `rgba(255,250,235,${(.15 + rnd(i, 34) * .35) * (place === "space" ? .5 : 1)})`; x.beginPath(); x.arc(X, Y, 1.6 + rnd(i, 35) * 2.8, 0, 7); x.fill(); } x.restore();
     x.restore();
     const hh = heads[hi >= 0 ? hi : 0], tight = cam.z > 1.5 && hh, hsx = hh ? (hh.head[0] - cam.fx) * cam.z + W / 2 : W / 2;
     (sc.props || []).forEach((p, i) => { if (p.hold && hh) return; if (tight) drawProp(p, i, hsx > W / 2 ? W * .24 : W * .76, H * .64, .8); else drawProp(p, i, (p.x ?? .72) * W, (p.y ?? .4) * H, 0); });
@@ -791,7 +834,7 @@
     // HUD поверх (без зуму камери, з легким паралаксом)
     if (sc.hud && sc.hud.k && sc.hud.k !== "none") { const hl = lt - (sc.hud.at ?? 0); if (hl >= 0) { x.save(); x.translate((cam.fx - W / 2) * -.05, 0); hud(x, { ...sc.hud, out: d - (sc.hud.at ?? 0) }, hl, t); x.restore(); } }
     // кольорокорекція, віньєтка
-    x.save(); x.globalCompositeOperation = "soft-light"; x.globalAlpha = FMT === "kino" ? .28 : 0; x.fillStyle = T.grade; x.fillRect(0, 0, W, H); x.restore();
+    x.save(); x.globalCompositeOperation = "soft-light"; x.globalAlpha = FMT === "kino" ? .28 : FMT === "whatif" ? .12 : 0; x.fillStyle = T.grade; x.fillRect(0, 0, W, H); x.restore();
     if (sc.cap?.t && sc.cap.k === "note") { const cl = lt - (sc.cap.at ?? 0); if (cl >= 0 && hh) noteText(x, sc.cap.t, [(hh.head[0] - cam.fx) * cam.z + W / 2, (hh.head[1] - cam.fy) * cam.z + H / 2], cl, d - (sc.cap.at ?? 0)); }
     else if (sc.cap?.t) { const cl = lt - (sc.cap.at ?? 0); if (cl >= 0) capText(x, { ...sc.cap, out: d - (sc.cap.at ?? 0) - .05 }, cl, sc.cap.y || (sc.cap.k === "title" ? H * .42 : 470), sc.cap.k); }
     if (sc.fx?.length) fxOver(x, sc, lt, d, t);
@@ -1010,7 +1053,7 @@ out — повернення в історію після вставки, до 6
     if (L.subs && !sc.ad) subs(x, t, L);
     else if (L.subs && sc.ad && L.adInline && L.adTm) { const lt = t - sc.t0, S = L.adTm.seg, up = lt >= Math.max(.9, S.in[1]) && lt < S.out[0]; subs(x, t, up ? { ...L, subS: { ...SUBS0, ...(L.subS || {}), y: 330 } } : L); }
     else if (L.subs && sc.ad && L.adWords && L.adTm) { const lt = t - sc.t0, S = L.adTm.seg, inE = Math.max(.9, S.in[1]), up = lt >= inE && lt < S.out[0]; if (lt < inE - .32 || lt >= inE) subs(x, t, { ...L, subS: up ? { ...SUBS0, ...(L.subS || {}), y: 330 } : L.subS, words: L.adWords.map((w) => ({ w: w.w, s: w.s + sc.t0, e: w.e + sc.t0 })) }); }
-    if (FMT === "kino") post(x, t);
+    if (KN()) post(x, t);
     const fo = Math.min(clamp(t / .35), clamp((L.dur - t) / .5)); if (fo < 1) { x.fillStyle = `rgba(6,5,14,${1 - fo})`; x.fillRect(0, 0, W, H); }
     x.restore();
   }
