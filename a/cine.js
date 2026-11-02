@@ -81,12 +81,13 @@
   };
   const PETPOSE = ["stand", "walk", "run", "sit", "lie", "talk"];
   function animal(x, X, Y, c, t) {
-    const B = BREED[c.breed] || BREED.labrador, S = B.S * (c.scale || 1), f = c.f || 1, pose = PETPOSE.includes(c.pose) ? c.pose : "stand", sd = (c.seed || 0);
+    const B = c._B || BREED[c.breed] || BREED.labrador, S = B.S * (c.scale || 1), f = c.f || 1, pose = PETPOSE.includes(c.pose) ? c.pose : "stand", sd = (c.seed || 0);
     const walk = pose === "walk" || pose === "run" ? Math.sin(t * (pose === "run" ? 16 : 9) + sd) : 0, sit = pose === "sit", lie = pose === "lie";
     const fill = (col, f2) => { x.fillStyle = col; x.beginPath(); f2(); x.fill(); };
     const blob = (cx, cy, rx, ry, col, rot = 0) => fill(col, () => x.ellipse(cx, cy, rx, ry, rot, 0, 7));
     x.save(); x.translate(X, Y); x.scale(f, 1);
-    x.save(); x.globalAlpha = .22; blob(0, 0, S * .85, S * .07, "#000"); x.restore();
+    if (c._gs) { const gs = c._gs; gs.save(); gs.setTransform(x.getTransform()); gs.globalAlpha = .22; gs.fillStyle = "#000"; gs.beginPath(); gs.ellipse(0, 0, S * .85, S * .07, 0, 0, 7); gs.fill(); gs.restore(); }
+    else { x.save(); x.globalAlpha = .22; blob(0, 0, S * .85, S * .07, "#000"); x.restore(); }
     const bodyY = lie ? -S * .3 : -S * .72 + Math.abs(walk) * S * .03, bodyTilt = sit ? -.55 : 0, rx = B.cat ? S * .62 : S * .7, ry = B.cat ? S * .25 : S * .3;
     const legW = B.cat ? S * .1 : S * .14, legC = B.points ? B.d : B.c, legD = shade(legC, -.18);
     // хвіст
@@ -620,12 +621,24 @@
   function gmap(st, L) { for (let k = 1; k < st.length; k++) if (L <= st[k][0]) { const [l0, c0] = st[k - 1], [l1, c1] = st[k], u = (L - l0) / Math.max(1, l1 - l0); return [c0[0] + (c1[0] - c0[0]) * u, c0[1] + (c1[1] - c0[1]) * u, c0[2] + (c1[2] - c0[2]) * u]; } return st[st.length - 1][1]; }
   // фігура-силует: малюємо звичайну фігуру окремо, заливаємо одним кольором, кладемо зі світінням, зверху — очі за емоцією
   const SILC = {};
-  function silFig(x, X, Y, P, c, t) { const st = STYL[FMT], cv = x.canvas, off = SILC.c && SILC.c.width === cv.width && SILC.c.height === cv.height ? SILC.c : (SILC.c = Object.assign(document.createElement("canvas"), { width: cv.width, height: cv.height })), o = off.getContext("2d");
-    const TM = x.getTransform(), hh = (c.h || 560) * ((WHO[c.who] || WHO.man).s || 1), mg = 70 * cv.width / W;
+  // тварини в стилі ролика: силует/об'єм/скло/золото — як люди; у мальованих стилях — контур і палітра стилю; у монохромі — сірі
+  function petDraw(x, X, Y, c, t) { const st = STYL[FMT], w = { _pet: c, who: "pet", f: c.f, face: c.face === "happy" ? "happy" : c.face === "sad" ? "sad" : "calm", seed: c.seed };
+    if (st?.fill || st?.fig) return silFig(x, X, Y, null, w, t);
+    if (st?.mono) return silFig(x, X, Y, null, w, t, { desat: 1 });
+    if (!KN()) { const B = BREED[c.breed] || BREED.labrador, P2 = (q) => q && q[0] === "#" ? (FMT === "toon50" ? mix(q, "#f1e4c6", .12) : pf(q)) : q; return silFig(x, X, Y, null, { ...w, _pet: { ...c, _B: { ...B, c: P2(B.c), d: P2(B.d), mask: P2(B.mask), eye: P2(B.eye) } } }, t, { outline: OLC() }); }
+    return animal(x, X, Y, c, t); }
+  function silFig(x, X, Y, P, c, t, st0) { const st = st0 || STYL[FMT], cv = x.canvas, off = SILC.c && SILC.c.width === cv.width && SILC.c.height === cv.height ? SILC.c : (SILC.c = Object.assign(document.createElement("canvas"), { width: cv.width, height: cv.height })), o = off.getContext("2d");
+    const TM = x.getTransform(), hh = c._pet ? (BREED[c._pet.breed] || BREED.labrador).S * 1.45 * (c._pet.scale || 1) : (c.h || 560) * ((WHO[c.who] || WHO.man).s || 1), mg = 70 * cv.width / W;
     const x0 = Math.max(0, Math.floor(TM.a * (X - hh * .85) + TM.e - mg)), y0 = Math.max(0, Math.floor(TM.d * (Y - hh * 1.2) + TM.f - mg)), x1 = Math.min(cv.width, Math.ceil(TM.a * (X + hh * .85) + TM.e + mg)), y1 = Math.min(cv.height, Math.ceil(TM.d * (Y + hh * .3) + TM.f + mg)), bw = x1 - x0, bh = y1 - y0;
     if (bw <= 0 || bh <= 0) return null;
     o.setTransform(1, 0, 0, 1, 0, 0); o.globalAlpha = 1; o.shadowBlur = 0; o.globalCompositeOperation = "source-over"; o.clearRect(x0, y0, bw, bh); o.setTransform(TM);
-    const hd = figure(o, X, Y, P, { ...c, _sil: 1, _gs: c.who === "shadow" ? undefined : x }, t), sk = cv.width / W;
+    const hd = c._pet ? animal(o, X, Y, { ...c._pet, _gs: x }, t) : figure(o, X, Y, P, { ...c, _sil: 1, _gs: c.who === "shadow" ? undefined : x }, t), sk = cv.width / W;
+    if (st.desat || st.outline) { o.setTransform(1, 0, 0, 1, 0, 0); x.save(); x.setTransform(1, 0, 0, 1, 0, 0);
+      if (st.desat) { try { const d = o.getImageData(x0, y0, bw, bh), a = d.data; for (let i = 0; i < a.length; i += 4) { const v = (.3 * a[i] + .59 * a[i + 1] + .11 * a[i + 2]) * .85 + 18; a[i] = v; a[i + 1] = v; a[i + 2] = v * 1.02; } o.putImageData(d, x0, y0); } catch (e) {} }
+      else { const c2 = SILC.c2 && SILC.c2.width === cv.width && SILC.c2.height === cv.height ? SILC.c2 : (SILC.c2 = Object.assign(document.createElement("canvas"), { width: cv.width, height: cv.height })), o2 = c2.getContext("2d"); o2.setTransform(1, 0, 0, 1, 0, 0); o2.clearRect(x0, y0, bw, bh); o2.drawImage(off, x0, y0, bw, bh, x0, y0, bw, bh);
+        o.globalCompositeOperation = "source-in"; o.fillStyle = st.outline; o.fillRect(x0, y0, bw, bh); o.globalCompositeOperation = "source-over"; const k = (FMT === "paper" ? 3.5 : 4.5) * sk;
+        for (let q = 0; q < 8; q++) { const an = q / 8 * 6.283; x.drawImage(off, x0, y0, bw, bh, x0 + Math.cos(an) * k, y0 + Math.sin(an) * k, bw, bh); } x.drawImage(c2, x0, y0, bw, bh, x0, y0, bw, bh); x.restore(); return hd; }
+      x.drawImage(off, x0, y0, bw, bh, x0, y0, bw, bh); x.restore(); return hd; }
     if (st.fig) { // об'ємні стилі: фігура в кольорі + світло/тінь зверху, м'яка тінь на «підлогу»
       o.setTransform(1, 0, 0, 1, 0, 0); o.globalCompositeOperation = "source-atop";
       if (st.fig === "clay") { const vg = o.createLinearGradient(TM.a * (X - hh * .4) + TM.e, y0, TM.a * (X + hh * .4) + TM.e, y1); vg.addColorStop(0, "rgba(255,248,236,.30)"); vg.addColorStop(.45, "rgba(255,248,236,0)"); vg.addColorStop(1, "rgba(30,16,46,.42)"); o.fillStyle = vg; o.fillRect(x0, y0, bw, bh);
@@ -935,7 +948,7 @@
     { const c0 = camOf(sc, 0, d, H0); drawWall(x, sc, lt, d, t, c0, H0 ? (H0.head[0] - c0.fx) * c0.z + W / 2 : null); }
     // люди
     const heads = {}; (sc.cast || []).forEach((c, i) => { const s = castState(sc, c, lt, d, i); const h = 720 * (c.scale || 1); const talk = c.who === "hero" && !L.silent && (L.words.some((w) => w.s <= t && w.e >= t));
-      if (WHO[c.who]?.pet) { heads[i] = animal(x, s.X, s.Y, { breed: c.breed || (c.who === "cat" ? "ginger" : "labrador"), pose: s.moving ? (c.pose === "run" ? "run" : "walk") : c.pose, face: c.face, f: s.f, seed: i * 5 + si, rim: tm === "night" ? "#8fa0ff" : T.tint }, lt); return; }
+      if (WHO[c.who]?.pet) { heads[i] = petDraw(x, s.X, s.Y, { breed: c.breed || (c.who === "cat" ? "ginger" : "labrador"), pose: s.moving ? (c.pose === "run" ? "run" : "walk") : c.pose, face: c.face, f: s.f, seed: i * 5 + si, rim: tm === "night" ? "#8fa0ff" : T.tint }, lt); return; }
       if (i === 0 && sc.crowd > 0) drawCrowd(x, sc, L, lt, t, s.X);
       if (c.who === "shadow") { heads[i] = shadowFig(x, s, c, lt, d, t); return; }
       heads[i] = figure(x, s.X, s.Y, s.P, { who: c.who || "man", key: i, skin: c.who === "hero" ? L.hero.skin : c.skin, hair: c.who === "hero" ? L.hero.hair : undefined, hairC: c.who === "hero" ? L.hero.hairC : undefined, beard: c.who === "hero" ? L.hero.beard : undefined, col: c.who === "hero" ? L.hero.col : c.col || ["teal", "coral", "purple", "blue", "green"][i % 5], acc: c.who === "hero" ? L.hero.acc : c.acc, face: c.face || "calm", f: s.f, h, rim: tm === "night" ? "#8fa0ff" : T.tint, seed: i * 3 + si, talk: talk && c.face !== "shock" }, lt); });
