@@ -1697,7 +1697,7 @@ ${S ? `СТРУКТУРА СЦЕНАРІЮ «${S.n}» — дотримуйся �
     F.innerHTML = `<button class="btn main" type="button" id="cnext">Далі →</button>`; { const mv = $(B, "#cmyv"); if (mv) mv.onclick = () => screenProjects(); }
     const nb = $(F, "#cnext"), upd = () => { const ok = !!DRAFT.topic.trim(); nb.disabled = !ok; nb.textContent = ok ? "Далі →" : "Напиши або обери тему"; };
     const setOpen = (v) => { TOPEN = v; const pk = $(B, "#cpick"), tg = $(B, "#ctgl"); if (pk) pk.hidden = !v; if (tg) tg.setAttribute("aria-expanded", v); const ar = $(B, "#ctgla"); if (ar) ar.textContent = v ? "▴" : "▾"; };
-    const bind = () => B.querySelectorAll("[data-tp]").forEach((b) => b.onclick = () => { DRAFT.topic = b.dataset.tp; saveDraft(); $(B, "#ctopic").value = DRAFT.topic; B.querySelectorAll("[data-tp]").forEach((o) => o.setAttribute("aria-pressed", o === b)); track("topic_pick", { v: TCAT }); setOpen(false); upd(); });
+    const bind = () => B.querySelectorAll("[data-tp]").forEach((b) => b.onclick = () => { DRAFT.topic = b.dataset.tp; saveDraft(); $(B, "#ctopic").value = DRAFT.topic; B.querySelectorAll("[data-tp]").forEach((o) => o.setAttribute("aria-pressed", o === b)); track("topic_pick", { v: TCAT }); upd(); });
     $(B, "#ctgl").onclick = () => setOpen(!TOPEN);
     bind();
     $(B, "#ctopic").oninput = (e) => { const v = e.target.value.trim(); DRAFT.topic = v; B.querySelectorAll("[data-tp]").forEach((o) => o.setAttribute("aria-pressed", o.dataset.tp === v)); saveDraft(); upd(); };
