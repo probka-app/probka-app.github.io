@@ -1706,12 +1706,17 @@ ${S ? `СТРУКТУРА СЦЕНАРІЮ «${S.n}» — дотримуйся �
       const ask = `Придумай 6 нових тем для коротких вертикальних анімаційних відео (Reels/TikTok), які мають шанс стати вірусними. Категорія: «${cat}». Аудиторія — широка, українською.
 Кожна тема — одне конкретне речення до 11 слів із вбудованою інтригою (питання «що буде, якщо…», «чому…», несподіваний факт, конкретні числа). Тема — це хук: перша фраза відео, яка зупиняє скрол. Без кліше і НЕ повторюй ці: ${old.join(" | ")}.
 Відповідай тільки JSON: {"topics":["…","…"]}`;
-      const pick = (r) => (Array.isArray(r) ? r : r?.topics || r?.items || []).map((q) => String(q?.topic || q?.t || q).replace(/^\s*\d+[.)]\s*/, "").trim()).filter((q) => q && q.length > 8 && q.length < 120 && !old.includes(q));
+      // приймаємо будь-яку форму відповіді: масив, {topics:[…]}, {будь-що:[…]}, об'єкти з текстом, або просто рядки
+      const strs = (a) => a.map((q) => typeof q === "string" ? q : q && typeof q === "object" ? Object.values(q).find((v) => typeof v === "string") || "" : String(q ?? ""));
+      const clean = (a) => a.map((q) => String(q).replace(/^\s*(\d+[.)]|[-•*–—])\s*/, "").replace(/^["«„]|["»“]$/g, "").trim()).filter((q) => q.length > 8 && q.length < 140 && !old.includes(q));
+      const pick = (r) => clean(Array.isArray(r) ? strs(r) : r && typeof r === "object" ? strs(Object.values(r).find(Array.isArray) || []) : typeof r === "string" ? r.split(/\n+/) : []);
       let arr = [], err = null;
-      for (const o of [{ kbFmt: "tall", kb: ["hook", "niche"] }, {}]) { try { arr = pick(await E().busyRun("text", () => sample.json(ask, { cache: false, max: 900, ...o }))); if (arr.length >= 3) break; } catch (e) { err = e; if (/limit|login/.test(e?.code || e?.message || "")) break; } }
+      const tries = [() => sample.json(ask, { cache: false, max: 1200, kbFmt: "tall", kb: ["hook", "niche"] }), () => sample.json(ask, { cache: false, max: 1200 }),
+        async () => (await sample(ask.replace(/Відповідай тільки JSON[^\n]*/, "Відповідай лише списком: кожна тема з нового рядка, без нумерації й пояснень."), { cache: false, max: 1200 }))?.text || ""];
+      for (const f of tries) { try { arr = pick(await E().busyRun("text", f)); if (arr.length >= 3) break; } catch (e) { err = e; console.warn("topics", e); if (/limit|login/.test(e?.code || e?.message || "")) break; } }
       if (btn.isConnected) { btn.disabled = false; btn.textContent = lbl; }
       if (arr.length >= 3) { TOPICS[cat] = arr.slice(0, 6); saveTopics(); if (TCAT === cat && $(B, "#ctpl")) { $(B, "#ctpl").innerHTML = list(); bind(); } track("topic_more"); }
-      else say(/limit/.test(err?.code || err?.message || "") ? "На сьогодні нові теми закінчились — спробуй завтра або напиши свою" : /login/.test(err?.code || "") ? "Увійди, щоб отримати нові теми" : "Не вийшло оновити теми. Спробуй ще раз"); };
+      else say(/limit/.test(err?.code || err?.message || "") ? "На сьогодні нові теми закінчились — спробуй завтра або напиши свою" : /login/.test(err?.code || "") ? "Увійди, щоб отримати нові теми" : `Не вийшло оновити теми. Спробуй ще раз${err ? ` (${String((err.code === "server" && err.message) || err.code || err.message || "").slice(0, 40)})` : ""}`); };
     nb.onclick = () => { if (nb.disabled) return; saveDraft(); screenScript(); };
     upd(); track("open"); }
   /* ---------- крок 2: довжина, реклама, сценарій і текст ---------- */
