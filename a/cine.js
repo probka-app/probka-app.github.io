@@ -852,6 +852,45 @@
     const Y = c.y != null ? c.y * H : WHO[c.who]?.pet ? FLOOR + 30 : (POSE[c.pose]?.lie ? 1215 : POSE[c.pose]?.sit ? FLOOR - 20 : FLOOR + 40);
     return { X, Y, P, f, moving };
   }
+  /* ---------- написи всередині світу: на дошці, екрані, плакаті, вивісці — не поверх кадру ---------- */
+  const WALLK = { room: "poster", bedroom: "poster", class: "chalk", office: "board", street: "sign", stop: "sign", board: "board", night: "neon", road: "sign", lab: "screen", hospital: "board", space: "neon", cafe: "chalk", park: "sign", stage: "screen", blog: "screen", kitchen: "paper", gym: "board", shop: "sign", void: "poster" };
+  const WALLS = ["board", "chalk", "screen", "poster", "sign", "neon", "paper"];
+  const wallKind = (sc) => sc.fx?.includes("black") ? "neon" : WALLS.includes(sc.cap?.on) ? sc.cap.on : sc.time === "night" && ["street", "road", "park", "stop"].includes(sc.place) ? "neon" : WALLK[sc.place] || "poster";
+  const WTX = { board: ["#1f3a8a", "#d62828", HANDF], chalk: ["#f2f0e6", "#ffd166", HANDF], screen: ["#f4f6ff", "#7fe0b0", FONT], poster: ["#2b2622", "#d62828", HANDF], sign: ["#1f1d24", "#e63946", FONT], neon: ["#ff4fa3", "#4dd9ff", HANDF], paper: ["#2b2622", "#d62828", HANDF] };
+  function wallLines(x, t, fam, maxW) { const ws = String(t).replace(/\s+/g, " ").trim().split(" ").map((w) => ({ k: /\*/.test(w), w: w.replace(/\*/g, "") })).filter((w) => w.w);
+    for (let fs = 92; fs >= 46; fs -= 6) { x.font = `${fam === FONT ? 900 : 700} ${fs}px "${fam}", "${FONT}", sans-serif`; const sp = x.measureText(" ").width, lines = [[]]; let cw = 0;
+      for (const w of ws) { w.m = x.measureText(w.w).width; if (cw && cw + sp + w.m > maxW) { lines.push([]); cw = 0; } lines[lines.length - 1].push(w); cw += (cw ? sp : 0) + w.m; }
+      const lw = Math.max(...lines.map((l) => l.reduce((s2, q, i) => s2 + q.m + (i ? sp : 0), 0))); if ((lines.length <= 3 && lw <= maxW) || fs <= 46) return { fs, sp, lines, w: lw }; } }
+  function wallFrame(x, k, w, h, t, ol, wy, z) { x.lineJoin = "round"; const X = -w / 2, Y = -h / 2;
+    if (k === "sign") { const fy = (FLOOR - wy) * z; x.fillStyle = "#5b5e66"; [-.3, .3].forEach((u) => x.fillRect(u * w - 9, h / 2 - 4, 18, Math.max(0, fy - h / 2))); x.fillStyle = "#fdfaf0"; rr(x, X, Y, w, h, 10); x.fill(); x.strokeStyle = "#2b2b33"; x.lineWidth = 12; x.stroke(); return; }
+    if (k === "board") { x.fillStyle = "rgba(0,0,0,.18)"; rr(x, X + 10, Y + 14, w, h, 12); x.fill(); x.fillStyle = "#f8f8f4"; rr(x, X, Y, w, h, 12); x.fill(); x.strokeStyle = "#a3a9b2"; x.lineWidth = 16; x.stroke(); x.fillStyle = "#8e949d"; x.fillRect(X + w * .2, Y + h + 4, w * .6, 14); x.fillStyle = "#d62828"; x.fillRect(X + w * .62, Y + h - 2, 56, 10); x.fillStyle = "rgba(120,140,170,.08)"; x.fillRect(X + 20, Y + 20, w * .4, h - 40); }
+    else if (k === "chalk") { x.fillStyle = "rgba(0,0,0,.22)"; rr(x, X + 10, Y + 14, w, h, 8); x.fill(); x.fillStyle = "#2f4a3c"; rr(x, X, Y, w, h, 8); x.fill(); x.strokeStyle = "#8a5a34"; x.lineWidth = 22; x.stroke(); x.fillStyle = "rgba(255,255,255,.05)"; for (let i = 0; i < 6; i++) { x.beginPath(); x.ellipse(X + rnd(i, 81) * w, Y + rnd(i, 82) * h, 90, 30, rnd(i, 83), 0, 7); x.fill(); } }
+    else if (k === "screen") { x.fillStyle = "#16161c"; rr(x, X - 22, Y - 22, w + 44, h + 44, 22); x.fill(); x.fillStyle = "#26262e"; x.fillRect(-40, Y + h + 22, 80, 40); rr(x, -120, Y + h + 58, 240, 16, 8); x.fill(); const g = x.createLinearGradient(0, Y, 0, Y + h); g.addColorStop(0, "#14203d"); g.addColorStop(1, "#0b1122"); x.fillStyle = g; rr(x, X, Y, w, h, 8); x.fill(); x.fillStyle = "rgba(255,255,255,.05)"; x.beginPath(); x.moveTo(X, Y); x.lineTo(X + w * .45, Y); x.lineTo(X + w * .2, Y + h); x.lineTo(X, Y + h); x.fill(); }
+    else if (k === "neon") { x.fillStyle = "rgba(12,10,20,.55)"; rr(x, X, Y, w, h, 24); x.fill(); x.strokeStyle = "rgba(255,79,163,.35)"; x.lineWidth = 4; x.stroke(); }
+    else { const pr = k === "paper"; x.rotate((pr ? 2.5 : -1.8) * D); x.fillStyle = "rgba(0,0,0,.16)"; x.fillRect(X + 8, Y + 12, w, h); x.fillStyle = pr ? "#fff6b8" : "#fbf6ea"; x.fillRect(X, Y, w, h); x.strokeStyle = "rgba(120,100,70,.25)"; x.lineWidth = 2; x.strokeRect(X, Y, w, h);
+      x.fillStyle = "rgba(255,236,170,.75)"; if (pr) x.fillRect(-50, Y - 16, 100, 34); else { x.save(); x.translate(X + 10, Y + 6); x.rotate(-.6); x.fillRect(-45, -14, 90, 30); x.restore(); x.save(); x.translate(X + w - 10, Y + 6); x.rotate(.6); x.fillRect(-45, -14, 90, 30); x.restore(); } }
+    if (!KN() && k !== "neon") { x.strokeStyle = ol; x.lineWidth = 5; k === "screen" ? rr(x, X - 22, Y - 22, w + 44, h + 44, 22) : rr(x, X, Y, w, h, k === "chalk" ? 8 : 12); x.stroke(); } }
+  function wallText(x, k, info, cl, t) { const [c0, c1, fam] = WTX[k], n = info.lines.flat().length, p = clamp(cl / (.16 * n + .25)); let idx = 0; const lh = info.fs * 1.08, y0 = -(info.lines.length - 1) * lh / 2;
+    x.font = `${fam === FONT ? 900 : 700} ${info.fs}px "${fam}", "${FONT}", sans-serif`; x.textBaseline = "middle"; x.textAlign = "left";
+    info.lines.forEach((l, li) => { const lw = l.reduce((s2, q, i) => s2 + q.m + (i ? info.sp : 0), 0); let cx = -lw / 2; const cy = y0 + li * lh;
+      l.forEach((w) => { const u = clamp(p * n - idx); idx++; if (u > 0) { x.save(); x.globalAlpha = u; x.fillStyle = w.k ? c1 : c0;
+          if (k === "neon") { x.shadowColor = x.fillStyle; x.shadowBlur = 26; const fl = rnd(Math.floor(t * 12), 91 + idx) > .97 ? .4 : 1; x.globalAlpha = u * fl; }
+          if (k === "chalk") x.globalAlpha = u * .92; x.fillText(w.w, cx, cy + (1 - u) * 10);
+          if (w.k && k !== "neon" && u >= 1) { const q = clamp((cl - (.16 * n + .25)) / .3); if (q > 0) { x.strokeStyle = c1; x.lineWidth = Math.max(4, info.fs * .07); x.lineCap = "round"; x.beginPath(); x.moveTo(cx, cy + info.fs * .5); x.quadraticCurveTo(cx + w.m * .5, cy + info.fs * .58, cx + w.m * q, cy + info.fs * .48); x.stroke(); } }
+          x.restore(); } cx += w.m + info.sp; }); }); }
+  const HUDOFF = {};
+  function drawWall(x, sc, lt, d, t, cam0, hsx) { const txt0 = sc.cap?.t || sc.loc || sc.cast?.find((c) => c.tag)?.tag || "", hasH = !!(sc.hud && sc.hud.k && sc.hud.k !== "none"); if (!txt0 && !hasH) return;
+    const z = cam0.z, toW = (cx, cy) => [(cx - W / 2) / z + cam0.fx, (cy - H / 2) / z + cam0.fy], ol = OLC(), side = hsx == null ? W / 2 : hsx > W / 2 ? 350 : W - 350;
+    const put = (cx, cy, fn) => { const [wx, wy] = toW(cx, cy); x.save(); x.translate(wx, wy); x.scale(1 / z, 1 / z); fn(wy); x.restore(); };
+    if (hasH) { const hl = lt - (sc.hud.at ?? 0), sw = hsx == null ? 720 : 540, sh = sw * .75, cy = txt0 ? 700 : 560, hx = hsx == null ? W / 2 : hsx > W / 2 ? 340 : W - 340;
+      put(hx, cy, (wy) => { wallFrame(x, "screen", sw, sh, t, ol, wy, z); if (hl < 0) return; const o = HUDOFF.c || (HUDOFF.c = Object.assign(document.createElement("canvas"), { width: 880, height: 660 })), ox = o.getContext("2d");
+        ox.setTransform(1, 0, 0, 1, 0, 0); ox.clearRect(0, 0, 880, 660); ox.translate(-(SCX - 440), -(700 - 330)); try { hud(ox, { ...sc.hud, y: 700, out: d - (sc.hud.at ?? 0) }, hl, t); } catch (e) {} x.drawImage(o, -sw / 2, -sh / 2, sw, sh); });
+      if (txt0) { const k = wallKind(sc) === "screen" ? "sign" : wallKind(sc); x.save(); x.font = "700 70px sans-serif"; const info = wallLines(x, txt0, WTX[k][2], 600); x.restore(); const bw = Math.min(760, info.w + 90), bh = info.lines.length * info.fs * 1.08 + 70;
+        put(clamp(hx, bw / 2 + 90, W - bw / 2 - 90), cy - sh / 2 - 40 - bh / 2, (wy) => { wallFrame(x, k === "sign" ? "poster" : k, bw, bh, t, ol, wy, z); wallText(x, k === "sign" ? "poster" : k, info, lt - (sc.cap?.at ?? 0), t); }); }
+      return; }
+    const k = wallKind(sc), blk = sc.fx?.includes("black"), maxW = blk ? 780 : k === "sign" || k === "screen" ? 600 : 520; x.save(); const info = wallLines(x, txt0, WTX[k][2], maxW); x.restore();
+    const bw = Math.min(maxW + 60, Math.max(360, info.w + 100)), bh = info.lines.length * info.fs * 1.08 + 90, cx = blk ? W / 2 : clamp(side, bw / 2 + 80, W - bw / 2 - 80), cy = blk ? 720 : 300 + bh / 2;
+    put(cx, cy, (wy) => { wallFrame(x, k, bw, bh, t, ol, wy, z); wallText(x, k, info, lt - (sc.cap?.at ?? 0), t); }); }
   function drawScene(x, L, si, t) { FMT = FMTS[L.fmt] ? L.fmt : "kino";
     const sc = L.scenes[si], lt = t - sc.t0, d = sc.t1 - sc.t0, tm = sc.time || "day", place = PLACES[sc.place] ? sc.place : "room";
     const hero = sc.cast?.find((c) => c.who === "hero") || sc.cast?.[0];
@@ -865,13 +904,14 @@
     if (["kino", "whatif", "pastel", "retro", "mono", "golden"].includes(FMT) && Lp && tm !== "night") { x.save(); x.globalCompositeOperation = "screen"; for (let i = 0; i < 4; i++) { const a = .1 + .05 * Math.sin(t * .7 + i * 2), X0 = Lp[0] - 160 + i * 120, g = x.createLinearGradient(X0, Lp[1], X0 + 700, Lp[1] + 1300); g.addColorStop(0, T.ray + a + ")"); g.addColorStop(1, T.ray + "0)"); x.fillStyle = g; x.beginPath(); x.moveTo(X0, Lp[1]); x.lineTo(X0 + 90, Lp[1]); x.lineTo(X0 + 760, Lp[1] + 1400); x.lineTo(X0 + 540, Lp[1] + 1400); x.fill(); } x.restore(); }
     // fx black — «чорний екран»: хук-текст на порожній темряві (герой, якщо є, лишається видимим)
     if (sc.fx?.includes("black")) { x.fillStyle = "#050507"; x.fillRect(-W, -H, W * 3, H * 3); }
+    { const c0 = camOf(sc, 0, d, H0); drawWall(x, sc, lt, d, t, c0, H0 ? (H0.head[0] - c0.fx) * c0.z + W / 2 : null); }
     // люди
     const heads = {}; (sc.cast || []).forEach((c, i) => { const s = castState(sc, c, lt, d, i); const h = 720 * (c.scale || 1); const talk = c.who === "hero" && !L.silent && (L.words.some((w) => w.s <= t && w.e >= t));
       if (WHO[c.who]?.pet) { heads[i] = animal(x, s.X, s.Y, { breed: c.breed || (c.who === "cat" ? "ginger" : "labrador"), pose: s.moving ? (c.pose === "run" ? "run" : "walk") : c.pose, face: c.face, f: s.f, seed: i * 5 + si, rim: tm === "night" ? "#8fa0ff" : T.tint }, lt); return; }
       if (i === 0 && sc.crowd > 0) drawCrowd(x, sc, L, lt, t, s.X);
       if (c.who === "shadow") { heads[i] = shadowFig(x, s, c, lt, d, t); return; }
       heads[i] = figure(x, s.X, s.Y, s.P, { who: c.who || "man", key: i, skin: c.who === "hero" ? L.hero.skin : c.skin, hair: c.who === "hero" ? L.hero.hair : undefined, hairC: c.who === "hero" ? L.hero.hairC : undefined, beard: c.who === "hero" ? L.hero.beard : undefined, col: c.who === "hero" ? L.hero.col : c.col || ["teal", "coral", "purple", "blue", "green"][i % 5], acc: c.who === "hero" ? L.hero.acc : c.acc, face: c.face || "calm", f: s.f, h, rim: tm === "night" ? "#8fa0ff" : T.tint, seed: i * 3 + si, talk: talk && c.face !== "shock" }, lt); });
-    (sc.cast || []).forEach((c, i) => { if (!WHO[c.who]?.pet) drawTag(x, heads[i], c, lt, t); });
+    // мітки над головами вимкнено: числа й слова — лише в самому світі (дошка/екран/вивіска)
     // предмети в руці — у світі; решта — поверх кадру, щоб не губились на крупних планах
     const hi = (sc.cast || []).findIndex((c) => c.who === "hero"), drawProp = (p, i, X, Y, k) => { const pl = lt - (p.at ?? 0); if (pl < 0) return; const s = (p.s || 1) * back(pl / .4);
       x.save(); x.translate(X, Y + (k ? 0 : Math.sin(t * 1.6 + i) * 8)); x.scale(k || 1, k || 1); if (PROPS[p.k]) PROPS[p.k](x, s, { ...p, lt: pl }, t); else drawIcon(x, p.q || p.k, s, p.c); x.restore(); };
@@ -897,14 +937,13 @@
         x.fillStyle = "#15131f"; x.textAlign = "center"; x.textBaseline = "middle"; const k = Math.min(1, (w - 40) / x.measureText(q).width); x.translate(X + w / 2, Y + hb / 2 + 2); x.scale(k, k); x.fillText(q, 0, 0); }
       x.restore(); });
     // HUD поверх (без зуму камери, з легким паралаксом)
-    if (sc.hud && sc.hud.k && sc.hud.k !== "none") { const hl = lt - (sc.hud.at ?? 0); if (hl >= 0) { x.save(); x.translate((cam.fx - W / 2) * -.05, 0); hud(x, { ...sc.hud, out: d - (sc.hud.at ?? 0) }, hl, t); x.restore(); } }
+    // HUD тепер показується на екрані всередині сцени (drawWall), не поверх кадру
     // кольорокорекція, віньєтка
     x.save(); x.globalCompositeOperation = "soft-light"; x.globalAlpha = FMT === "kino" ? .28 : FMT === "whatif" ? .12 : 0; x.fillStyle = T.grade; x.fillRect(0, 0, W, H); x.restore();
-    if (sc.cap?.t && sc.cap.k === "note") { const cl = lt - (sc.cap.at ?? 0); if (cl >= 0 && hh) noteText(x, sc.cap.t, [(hh.head[0] - cam.fx) * cam.z + W / 2, (hh.head[1] - cam.fy) * cam.z + H / 2], cl, d - (sc.cap.at ?? 0)); }
-    else if (sc.cap?.t) { const cl = lt - (sc.cap.at ?? 0); if (cl >= 0) capText(x, { ...sc.cap, out: d - (sc.cap.at ?? 0) - .05 }, cl, sc.cap.y || (sc.cap.k === "title" ? H * .42 : 470), sc.cap.k); }
+    // написи (cap) і плашки (loc) малюються в світі — drawWall
     if (sc.fx?.length) fxOver(x, sc, lt, d, t);
     // плашка часу/місця («СУБОТА • 21:14», «6 ГОДИН ТОМУ»)
-    if (sc.loc) { const a = clamp(lt / .2) * clamp((d - lt) / .25), sl = (1 - eout(lt / .3)) * -60; if (a > 0) { x.save(); x.globalAlpha = a; x.font = `900 40px "${FONT}", system-ui, sans-serif`; const q = sc.loc.toUpperCase(), w = x.measureText(q).width + 56; x.fillStyle = "#d8283a"; rr(x, 60, 270 + sl, w, 72, 16); x.fill(); x.fillStyle = "#fff"; x.textAlign = "left"; x.textBaseline = "middle"; x.fillText(q, 88, 308 + sl); x.restore(); } }
+    if (sc.loc && false) { const a = clamp(lt / .2) * clamp((d - lt) / .25), sl = (1 - eout(lt / .3)) * -60; if (a > 0) { x.save(); x.globalAlpha = a; x.font = `900 40px "${FONT}", system-ui, sans-serif`; const q = sc.loc.toUpperCase(), w = x.measureText(q).width + 56; x.fillStyle = "#d8283a"; rr(x, 60, 270 + sl, w, 72, 16); x.fill(); x.fillStyle = "#fff"; x.textAlign = "left"; x.textBaseline = "middle"; x.fillText(q, 88, 308 + sl); x.restore(); } }
   }
   // ефекти поверх кадру: дощ, тріщини скла, білий спалах
   function fxOver(x, sc, lt, d, t) { const f = sc.fx;
@@ -1202,25 +1241,25 @@ out — повернення в історію після вставки, до 6
 Натовп: crowd — 0…6 людей на фоні (зупинка, вулиця, черга); crowdTimer:1 — у кожного над головою свій таймер; crowdTag — масив коротких міток для них.
 Предмети (props, до 2): k — ${Object.keys(PROPS).join(" | ")} | або будь-яка іконка англійською в полі q (k:"icon", q:"rocket"); t — короткий текст/число на предметі; t2 — підпис (для card/calendar); hold:1 — герой тримає в руці (pose hold або phone); x,y — 0…1 (якщо не в руці); i — номер слова, коли з'являється.
 HUD (hud) — пояснення поверх кадру: k — none | panel (вікно-«оновлення» з % і двома кнопками items) | chart (графік: v 1 росте, -1 падає) | bars | counter (велике число v, підпис t) | brain (світний мозок-мережа) | check (чекліст items) | compare (до/після, items:[2]) | rings | network | timeline (шкала 0–100 з позначкою: v — значення, items[0] — підпис позначки, напр. «73 РОКИ») | timer (цифровий таймер, що біжить назад: v — секунд; items — підписи «ДНІВ, ГОДИН, ХВИЛИН, СЕКУНД», тоді справа розкладка) | rules (пронумеровані кола: v — скільки, items — короткі підписи) | split (два стовпці з заголовками items[0] і items[1] і знаком питання) | day (великий лічильник «ДЕНЬ 47»: t — підпис, напр. «ДЕНЬ» або «ДНІВ БЕЗ…», v — число, v0 — з якого перебігає; якщо v менше за v0 — червоний «зрив»; items[0] — підпис знизу) | calendar (календар, дні перекреслюються по черзі: v — скільки днів, t — заголовок, items[0] — підсумок) | jar (банка наповнюється монетами: v — сума з валютою «12 000 ₴», t — заголовок, v0 — наповненість 0…1) | clock (електронний годинник, час пролітає: v0 «3:17» → v «4:40»; t — підпис зверху, items[0] — знизу) | chat (телефон із листуванням: t — ім'я співрозмовника, items — до 5 повідомлень по черзі, мої починай з «я:») | stamp (штамп під кутом із ударом: t — 1–2 слова «НЕМОЖЛИВО», «F», «ПЕРЕВІРЕНО»; items[0]:"green" — зелений) | people (сітка людей: v — скільки всього до 100, v0 — скільки виділено червоним; t — заголовок; items[0] — підпис «1 З 20») | pie (кругова діаграма: v — відсоток, items[0] — підпис частини, items[1] — решти) | gauge (спідометр: v 0–100, червона зона після 80; items[0] — підпис); calendar: mark:"check" — зелені галочки замість хрестиків, v0 — номер дня зриву (рожева пляма); для timeline/timer/rules/split найкраще місце place:"board" (темна інфографіка) без героя; t — заголовок; i — номер слова; y — висота центру 0…1 (не накривай голову героя: герой стоїть унизу, HUD став у верхню половину y 0.25–0.4).
-Напис (cap): t — ДО 5 слів ВЕЛИКИМИ, ключове слово в *зірочках* (воно жовте), i — номер слова; k:"title" — титр часу/місця на весь кадр («*3 ДНІ* ТОМУ»); k:"note" — рукописний підпис зі стрілкою до героя (ім'я/вік/рік: «Олег, 2015», «я в 17»), звичайним регістром, до 4 слів; tw:1 — друкується по літері з курсором (хук на темному фоні, думка героя, «Ще 5 хвилин…»).
+Напис (cap) — НЕ поверх кадру, а ВСЕРЕДИНІ сцени, на предметі світу: t — ДО 5 слів, ключове слово в *зірочках* (його виділено кольором і підкреслено), i — номер слова, на якому напис з'являється (пишеться на очах); on — на чому написано: board (маркерна дошка на стіні), chalk (крейдяна дошка), screen (екран/телевізор), poster (аркуш на стіні), sign (вивіска/білборд на вулиці), neon (неонова вивіска в темряві), paper (записка-стікер). Якщо on не вказано — підбирається за локацією. Цифри, суми, дати, ключові слова показуй лише так або предметами — жодних плашок і титрів поверх.
 hit — номери 1–2 найважливіших слів сцени (легкий удар камери).
-loc — плашка часу/місця зліва вгорі («СУБОТА • 21:14», «6 ГОДИН ТОМУ», «ДЕНЬ 1»).
-fx — ефекти сцени (масив, до 3): confetti — конфеті (перемога, гроші прийшли), black — чорний екран (хук-фраза на темряві з cap tw:1), rain — дощ (смуток, поганий день), crack — скло тріскається (удар правди, «ти залежний»), flash — білий спалах (шок, зрив, удар), spot — промінь світла на героя, навколо темрява (самотність, інсайт).`;
+loc — час/місце («СУБОТА • 21:14», «ДЕНЬ 1») — теж пишеться на табличці/календарі в сцені, якщо в сцені немає cap.
+fx — ефекти сцени (масив, до 3): confetti — конфеті (перемога, гроші прийшли), black — темрява, в якій світиться неонова вивіска з фразою (cap), rain — дощ (смуток, поганий день), crack — скло тріскається (удар правди, «ти залежний»), flash — білий спалах (шок, зрив, удар), spot — промінь світла на героя, навколо темрява (самотність, інсайт).`;
   const RULES = `Стиль — кінематографічний мультик із пласким героєм-чоловічком (темна кругла голова, світлі очі, худі), як популярні YouTube-канали «що, якби…», але ВЕРТИКАЛЬНО 9:16 для Reels:
 — ХУК: перша сцена (слова 0–6) — найсильніший кадр усього відео, у ньому вже щось відбувається на ключовому слові; конкретний рецепт хука для ЦЬОГО ролика дано нижче — роби саме за ним, а не за звичкою;
-— УТРИМАННЯ: у перші 6 секунд — щонайменше 3 різні сцени; далі сцена 1,5–3 с, не довше 3,5 с; дві сцени поспіль не мають однаковий plan і локацію; кожні 5–7 с — поворот (whip/shake/face + cap);
+— УТРИМАННЯ: у перші 6 секунд — щонайменше 3 різні сцени; далі сцена 1,5–3 с, не довше 3,5 с; дві сцени поспіль не мають однаковий plan і локацію; кожні 5–7 с — поворот (whip/shake/face/flash);
 — абстрактні ідеї показуй через локацію space + HUD (brain, panel, chart, counter), конкретні — через героя в побутовій локації з предметом у руці;
-— «що, якби…» і числа: мітки й таймери над головами (tag/timer), натовп на вулиці чи зупинці (crowd, crowdTimer), а пояснення чисел — окремими сценами place:"board" з timeline / timer / rules / split (чисті лінії, як у роликах What If);
+— «що, якби…» і числа: числа на табличках, екранах і вивісках у самій сцені (cap з on, hud на екрані), натовп на вулиці чи зупинці (crowd), а пояснення чисел — окремими сценами place:"board" з timeline / timer / rules / split (чисті лінії, як у роликах What If);
 — внутрішній ворог (лінь, страх, сумнів, «у тебе не вийде», залежність) — тінь-демон who:"shadow" поруч із героєм або за спиною; коли герой здається — тінь росте (grow 2), коли перемагає — меншає (grow 0.3);
 — прогрес у часі: «День 1 → День 90», серія днів — hud day (зрив — v менше за v0) або calendar (успіх — mark:"check"); накопичені гроші — hud jar; «час пролетів у телефоні» — hud clock; повідомлення, коментарі, підтримка друга — hud chat;
-— мітки над головами (tag) — головний прийом роликів «що, якби…»: число над кожною людиною (дохід, підписники, години, шанси), колір — стан (red — погано, green — добре), tag0 — перебіг числа, delta — зміна; натовп із різними мітками — crowd + crowdTag; на реакцію героя — cam punch;
 — друга сцена — до 2 с від початку, інший план і бажано інша локація; спокуса/внутрішній голос — say у тіні; удар правди — fx crack або flash; самотність — fx spot; поганий день — fx rain;
 — емоцію героя показуй тілом і обличчям (pose + face), на поворотах — close/face і shake;
 — cap не в кожній сцені: лише гачок, числа, повороти й висновок (≈ кожна друга-третя сцена);
-— зміна часу/місця → tr:fade і cap k:"title"; зміна думки → whip; продовження дії → cut;
+— зміна часу/місця → tr:fade і табличка/календар у сцені (loc); зміна думки → whip; продовження дії → cut;
 — один герой через усе відео; другорядні — для діалогу/контрасту;
 — кожна сцена має щось, що рухається (наїзд, хода, жест, поява предмета/HUD точно на слові);
-— зони соцмереж: верхні 12% висоти, праву смугу (останні 15% ширини) і низ (нижні 25% висоти) закривають кнопки й підпис Reels/TikTok/Shorts — предмети (x ≤ 0.76, y 0.15–0.7), HUD і написи став у центрі, не в цих зонах.`;
+— зони соцмереж: верхні 12% висоти, праву смугу (останні 15% ширини) і низ (нижні 25% висоти) закривають кнопки й підпис Reels/TikTok/Shorts — предмети (x ≤ 0.76, y 0.15–0.7), предмети став у центрі, не в цих зонах.
+— ЖОДНОГО ТЕКСТУ ПОВЕРХ КАДРУ (крім субтитрів, які додаються автоматично): HUD (графіки, лічильники, календар, чат) показується на екрані/телевізорі в сцені, написи cap — на дошці, плакаті, вивісці, записці; мітки над головами (tag, timer, crowdTag) не використовуй — число пиши на табличці, екрані чи предметі.`;
   const numbered = (L) => L.words.map((w, i) => `${i}:${w.w}`).join(" ");
   function normPlan(r, L) { const n = L.words.length, okI = (v) => Number.isInteger(v) && v >= 0 && v < n ? v : null, num = (v, a, b, d) => { v = +v; return isFinite(v) ? clamp(v, a, b) : d; }, str = (v, m) => typeof v === "string" ? v.slice(0, m) : "";
     const sc = (Array.isArray(r?.scenes) ? r.scenes : []).filter((s) => s && okI(s.a) != null).sort((a, b) => a.a - b.a).filter((s, i, A) => !i || s.a > A[i - 1].a).slice(0, 60).map((s) => ({
@@ -1232,12 +1271,13 @@ fx — ефекти сцени (масив, до 3): confetti — конфеті
       crowd: s.crowd ? clamp(Math.round(+s.crowd) || 0, 0, 6) : undefined, crowdTimer: s.crowdTimer ? 1 : undefined, crowdTag: Array.isArray(s.crowdTag) ? s.crowdTag.slice(0, 6).map((q) => str(String(q), 14)) : undefined,
       props: (Array.isArray(s.props) ? s.props : []).slice(0, 2).filter((p) => p && (PROPS[p.k] || p.q || p.k === "icon")).map((p) => ({ k: PROPS[p.k] ? p.k : "icon", q: str(p.q, 30) || undefined, t: str(String(p.t ?? ""), 16) || undefined, t2: str(p.t2, 16) || undefined, hold: p.hold ? 1 : undefined, x: num(p.x, .12, .76, .7), y: num(p.y, .15, .7, .4), i: okI(p.i), v: p.v != null ? num(p.v, -1, 1, 1) : undefined })),
       hud: s.hud && s.hud.k && s.hud.k !== "none" ? { k: ["panel", "chart", "bars", "counter", "brain", "check", "compare", "rings", "network", "timeline", "timer", "rules", "split", "day", "calendar", "jar", "clock", "chat", "stamp", "people", "pie", "gauge"].includes(s.hud.k) ? s.hud.k : "panel", t: str(s.hud.t, 30), v: s.hud.v, v0: s.hud.k === "clock" ? (str(String(s.hud.v0 ?? ""), 6) || undefined) : s.hud.v0 != null && isFinite(+s.hud.v0) ? +s.hud.v0 : undefined, mark: s.hud.mark === "check" ? "check" : undefined, items: Array.isArray(s.hud.items) ? s.hud.items.slice(0, 5).map((q) => str(String(q), s.hud.k === "chat" ? 64 : 34)) : undefined, i: okI(s.hud.i), y: num(s.hud.y, .2, .6, .33) * H } : null,
-      cap: s.cap && s.cap.t ? { t: str(s.cap.t, 60), i: okI(s.cap.i), k: s.cap.k === "title" || s.cap.k === "note" ? s.cap.k : undefined, tw: s.cap.tw ? 1 : undefined } : null,
+      cap: s.cap && s.cap.t ? { t: str(s.cap.t, 60), on: WALLS.includes(s.cap.on) ? s.cap.on : undefined, i: okI(s.cap.i), k: s.cap.k === "title" || s.cap.k === "note" ? s.cap.k : undefined, tw: s.cap.tw ? 1 : undefined } : null,
       hit: (Array.isArray(s.hit) ? s.hit : []).map(okI).filter((v) => v != null).slice(0, 3),
     }));
     sc.forEach((s) => { if (!s.cast.some((c) => c.who === "hero") && !s.cast.some((c) => WHO[c.who]?.pet) && s.place !== "space" && s.cast.length < 3 && !s.hud && !s.fx?.includes("black")) s.cast.unshift({ who: "hero", x: .5, pose: "talk", face: "calm" });
       if (s.cast.some((c) => c.who === "hero")) { const h = s.cast.find((c) => c.who === "hero"); s.props.forEach((p) => { if (p.hold && !["hold", "phone"].includes(h.pose)) h.pose = p.k === "phone" ? "phone" : "hold"; }); }
       else s.props.forEach((p) => p.hold = undefined);
+      if (s.hud && s.cast.length) { if (s.shot === "face") s.shot = "medium"; const ppl = s.cast.filter((c) => !WHO[c.who]?.pet); if (ppl.length === 1 && Math.abs(ppl[0].x - .5) < .2) ppl[0].x = ppl[0].x >= .5 ? .74 : .26; }
       if (s.hud?.k === "day" && s.cast.length) s.hud.y = .17 * H; // «ДЕНЬ N» над героєм, не на голові
       if (s.hud && s.cast.length) { s.cast.forEach((c) => { if (c.pose !== "lie") c.y = undefined; }); if (["panel", "chart", "bars", "check", "compare", "counter"].includes(s.hud.k)) s.hud.y = Math.min(s.hud.y, (s.hud.k === "counter" ? .24 : .27) * H); }
       s.props.forEach((p) => { if (!p.hold) { p.y = Math.min(p.y, s.cast.length ? .42 : .7); if (s.cap && p.y < .32) p.y = .36; } }); });
@@ -1246,20 +1286,20 @@ fx — ефекти сцени (масив, до 3): confetti — конфеті
   const PLAN_JSON = `{"mood":"<mood>","scenes":[{"say":"<дослівна фраза цієї сцени>","see":"<що буквально бачить глядач: хто, що робить, які предмети/цифри — і як це ілюструє фразу>","a":0,"place":"<place>","time":"<time>","shot":"<shot>","cam":"<cam>","tr":"cut","cast":[{"who":"<who>","x":0.5,"pose":"<pose>","face":"<face>"}],"cap":{"t":"<ДО 5 СЛІВ, *КЛЮЧОВЕ*>","i":1},"hit":[3]},{"say":"<наступна фраза>","see":"<…>","a":"<номер першого слова фрази>","…":"наступні сцени"}]}`;
   // різноманітність: щоразу інший рецепт першої сцени й інший набір акцентних прийомів (без повторів останніх роликів)
   const HOOKS = [
-    ["black", "Чорний екран: fx:[\"black\"] без героя, cap tw:1 друкує першу фразу-парадокс; друга сцена — різкий перехід (whip) у яскраву дію."],
-    ["tag", "Число над головою: герой або інша людина на середньому плані, над головою tag із головним числом ролика (tag0 — перебіг, tagC за змістом); на ключовому слові — cam punch."],
+    ["black", "Темрява й неон: fx:[\"black\"], у темряві спалахує неонова вивіска з першою фразою-парадоксом (cap on:\"neon\"); друга сцена — різкий перехід (whip) у яскраву дію."],
+    ["tag", "Число в світі: головне число ролика написане на табличці, вивісці чи екрані поруч із героєм (cap з on або hud counter на екрані); на ключовому слові — cam punch."],
     ["action", "У розпал дії: герой уже біжить/падає/хапає щось (pose run або shock, поле to), cam shake, предмет у кадрі; жодного вступу."],
-    ["face", "Обличчя впритул: shot face, емоція за змістом першої фрази (не обов'язково shock), cap гачка зверху; за 1 с — cam punch або whip на ширший план."],
+    ["face", "Обличчя впритул: shot face, емоція за змістом першої фрази (не обов'язково shock), за спиною на стіні — дошка чи плакат зі словом-гачком (cap); за 1 с — cam punch або whip на ширший план."],
     ["object", "Предмет-доказ крупно: героя в першій сцені немає або він на краю кадру; у центрі великий предмет (телефон, гроші, годинник, календар, графік) через props або hud, що з'являється на ключовому слові."],
     ["shadow", "Внутрішній голос: герой на середньому плані, поруч або за спиною тінь-демон (who shadow) зі say-шепотом першої думки; fx spot."],
-    ["crowd", "Натовп із мітками: place street, crowd 4–6 із crowdTag або crowdTimer, герой виділяється своєю міткою іншого кольору; cam pan."],
+    ["crowd", "Натовп: place street, crowd 4–6, герой виділяється дією чи кольором; поруч вивіска (cap on:\"sign\") з головною думкою; cam pan."],
     ["info", "Інфографіка першою: place board без героя, одразу hud із головним числом або порівнянням (counter, people, pie, gauge, compare, timeline) — і лише в другій сцені герой."],
-    ["contrast", "Контраст двох: два персонажі в одному кадрі з протилежними емоціями й мітками (tag) — «він / ти», «було / стало»."],
-    ["loc", "Точний момент: плашка loc з днем і часом («ПОНЕДІЛОК • 7:12»), загальний план локації з дією героя, hud clock або day; відчуття «історія вже почалась»."],
-    ["question", "Звернення до глядача: герой дивиться в камеру (shot close, look до центру, pose point), think або cap з питанням-гачком; фон — локація теми."],
-    ["stamp", "Вирок: hud stamp з одним словом-вироком («НЕМОЖЛИВО», «БРЕХНЯ», «0 ₴») на board або поверх героя в шоці, flash."],
+    ["contrast", "Контраст двох: два персонажі в одному кадрі з протилежними емоціями й позами — «він / ти», «було / стало»; різницю в числах — на дошці між ними (cap) або hud compare на екрані."],
+    ["loc", "Точний момент: календар/табличка в сцені з днем і часом (loc або cap «ПОНЕДІЛОК • 7:12»), загальний план локації з дією героя; відчуття «історія вже почалась»."],
+    ["question", "Звернення до глядача: герой дивиться в камеру (shot close, look до центру, pose point), think-бабл або питання на дошці позаду (cap); фон — локація теми."],
+    ["stamp", "Вирок: hud stamp з одним словом-вироком («НЕМОЖЛИВО», «БРЕХНЯ», «0 ₴») на екрані в сцені, герой у шоці поруч, flash."],
   ];
-  const ACCENTS = ["hud day або calendar (прогрес у днях)", "hud jar або counter (гроші)", "hud chat (листування, коментарі)", "hud clock (час летить)", "мітки над головами з delta", "тінь-демон зі say", "fx rain / spot для настрою", "hud people або pie (статистика)", "split / compare (до-після)", "think-думки персонажів", "crowd на вулиці", "props у руці героя (hold)", "hud gauge або chart", "fx confetti / flash на перемозі", "loc-плашки зміни часу", "stamp на поворотах"];
+  const ACCENTS = ["hud day або calendar (прогрес у днях)", "hud jar або counter (гроші)", "hud chat (листування, коментарі)", "hud clock (час летить)", "число на табличці або вивісці в сцені", "тінь-демон зі say", "fx rain / spot для настрою", "hud people або pie (статистика)", "split / compare (до-після)", "think-думки персонажів", "crowd на вулиці", "props у руці героя (hold)", "hud gauge або chart", "fx confetti / flash на перемозі", "loc-плашки зміни часу", "stamp на поворотах"];
   const MEM = { get: () => { try { return JSON.parse(localStorage.getItem("yvHookMem") || "[]"); } catch (e) { return []; } }, put: (q) => { try { const m = MEM.get(); m.push(q); localStorage.setItem("yvHookMem", JSON.stringify(m.slice(-6))); } catch (e) {} } };
   // фрази озвучки: ріжемо по . ! ? … : ; (а довгі — ще по , — ), щоб кожна фраза мала свою сцену
   function phrases(L, a0 = 0, a1 = L.words.length) { const W = L.words, out = []; let st = a0;
