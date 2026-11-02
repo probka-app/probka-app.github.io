@@ -1120,7 +1120,7 @@ body.pub .fmts{margin-top:14px}body.pub .fmt .fs,body.pub .fmt .fopen,body.pub .
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="YuVi DEV">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>window.YV_DEV=true;window.YV_BUILD="02.11 03:47";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
+<script>window.YV_DEV=true;window.YV_BUILD="02.11 03:58";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="server.js?v=c6101e83"></script>
@@ -3933,6 +3933,7 @@ async function openKB(O={}){
       <div class="dvcard" style="margin-top:12px"><p class="note" id="dvqs" style="margin:0 0 8px">…</p><div class="row"><button class="chip ink" type="button" id="dvrun">▶ Розбирати чергу</button><button class="chip" type="button" id="dvretry">↻ Повторити помилки</button></div></div>
       <div class="row" style="margin-top:14px"><button class="chip" type="button" id="dvcp">📋 Задачі для Claude</button><button class="chip" type="button" id="dvdl">⬇ Усі розбори .md</button></div><div id="dvlist" style="margin-top:10px"><p class="status">Завантажую…</p></div>`;
     let files=[]; const $b=(q)=>box.querySelector(q), alive=()=>box.isConnected&&!!$b("#dvlist");
+    const vid=(u)=>String(u).match(/(?:v=|shorts\/|youtu\.be\/)([\w-]{11})/)?.[1]||String(u);
     const caps=async()=>{ try{ if(!window.YVCine){ await new Promise((ok,no)=>{ const sc=document.createElement("script"); sc.src="a/cine.js?v="+(window.YV_BUILD||Date.now()); sc.onload=ok; sc.onerror=no; document.head.appendChild(sc); }); } return YVCine._t.caps?.()||""; }catch(e){ return ""; } };
     const ERR={bad_url:"не YouTube-посилання",forbidden:"лише власник",busy:"ліміт Gemini — спробуй пізніше",too_big:"файл завеликий",no_key:"немає ключа Gemini",empty:"порожня відповідь",ai_failed:"Gemini не зміг (приватне/недоступне відео?)",network:"немає зв'язку",http_546:"функція не встигла — спробуй ще раз",http_504:"функція не встигла — спробуй ще раз",empty:"порожня відповідь Gemini"};
     const stats=()=>{ const q=LIST.filter(r=>r.status==="queue").length, e=LIST.filter(r=>r.status==="error").length, ok=LIST.filter(r=>!["queue","error"].includes(r.status)), nl=ok.filter(r=>!r.learned).length;
@@ -3956,13 +3957,17 @@ async function openKB(O={}){
     box.querySelectorAll("[data-dvm]").forEach(b=>b.onclick=()=>{ D.mins=+b.dataset.dvm; box.querySelectorAll("[data-dvm]").forEach(o=>o.classList.toggle("ink",o===b)); });
     // черга: беремо найстаріші «queue» по одному; між відео пауза, щоб не впертися в ліміт Gemini
     const run=async()=>{ if(D.run) return; D.run=true; D.stop=false; stats(); const cp=await caps(); let fails=0;
-      while(!D.stop){ let rows=[]; try{ rows=(await SRV.devSpecs()).filter(r=>r.status==="queue").reverse(); }catch(e){ break; } const it=rows[0]; if(!it) break; D.cur=it.url; if(alive()){ LIST=rows.length?LIST.map(r=>r):LIST; stats(); }
+      while(!D.stop){ let rows=[]; try{ rows=(await SRV.devSpecs()).filter(r=>r.status==="queue").reverse(); }catch(e){ break; } const it=rows[0]; if(!it) break; D.cur=it.url;
+        { const all=await SRV.devSpecs().catch(()=>[]), k=vid(it.url); if(all.some(r=>r.id!==it.id&&vid(r.url)===k&&(r.spec||(r.status==="queue"&&r.created_at<it.created_at)))){ await SRV.devSpecDel(it.id).catch(()=>{}); continue; } } if(alive()){ LIST=rows.length?LIST.map(r=>r):LIST; stats(); }
         try{ await SRV.videoSpec({ id:it.id, mins:it.mins||D.mins, caps:cp, ...(/^https?:/.test(it.url)?{url:it.url}:{path:it.url}) }); fails=0; }
         catch(e){ const m=String(e?.message||e?.code||e); if(m==="busy"){ fails++; if(fails>=3){ toast("Gemini на ліміті — продовжиш пізніше"); break; } await new Promise(r=>setTimeout(r,60000)); continue; } await SRV.devSpecErr(it.id,m); }
         if(alive()) await load(); await new Promise(r=>setTimeout(r,4000)); }
       D.run=false; D.cur=""; if(alive()) await load(); };
     $b("#dvrun").onclick=()=>{ if(D.run){ D.stop=true; $b("#dvrun").textContent="Зупиняю…"; } else run(); };
-    $b("#dvretry").onclick=async()=>{ const ids=LIST.filter(r=>r.status==="error"); try{ for(const r of ids){ await SRV.devSpecDel(r.id); } await SRV.devQueue(ids.map(r=>r.url),D.mins); await load(); run(); }catch(e){ toast("Не вдалося"); } };
+    // повтор помилок: прибираємо всі рядки з помилкою і ставимо в чергу кожне відео ОДИН раз (і лише якщо воно ще не розібране й не в черзі)
+    $b("#dvretry").onclick=async()=>{ const err=LIST.filter(r=>r.status==="error"), have=new Set(LIST.filter(r=>r.status!=="error").map(r=>vid(r.url))), urls=[]; const seen=new Set();
+      err.forEach(r=>{ const k=vid(r.url); if(!have.has(k)&&!seen.has(k)){ seen.add(k); urls.push(r.url); } });
+      try{ for(const r of err){ await SRV.devSpecDel(r.id); } if(urls.length) await SRV.devQueue(urls,D.mins); toast(`Повторно в черзі: ${urls.length}${err.length>urls.length?` (дублікатів прибрано: ${err.length-urls.length})`:""}`); await load(); run(); }catch(e){ toast("Не вдалося"); } };
     $b("#dvadd").onclick=async()=>{ const raw=$b("#dvl").value.split(/\s+/).map(q=>q.trim()).filter(Boolean), bad=raw.filter(u=>!/^https:\/\/(www\.|m\.)?(youtube\.com\/(watch\?v=|shorts\/)|youtu\.be\/)[\w-]{6,}/.test(u)), yid=(u)=>String(u).match(/(?:v=|shorts\/|youtu\.be\/)([\w-]{11})/)?.[1]||"", have=new Set(LIST.filter(r=>r.status!=="error").map(r=>yid(r.url)).filter(Boolean)), links=[...new Set(raw.filter(u=>!bad.includes(u)).map(u=>{ const id=yid(u); return id?(/shorts\//.test(u)?`https://www.youtube.com/shorts/${id}`:`https://www.youtube.com/watch?v=${id}`):u; }))].filter(u=>!have.has(yid(u)));
       if(!links.length&&!files.length){ toast(bad.length?"Це не схоже на посилання YouTube":"Встав посилання або додай відео"); return; }
       const btn=$b("#dvadd"); btn.disabled=true; btn.textContent="Додаю…";
