@@ -598,8 +598,9 @@
   const authCss = document.createElement("style");
   authCss.textContent = ".bs.authc .fhint{display:none}.bs.authc input:focus+.fhint,.bs.authc .fhint.ok,.bs.authc .fhint.bad{display:block}";
   document.head.appendChild(authCss);
-  const start = () => sb.auth.onAuthStateChange(async (_ev, session) => {
-    const was = !!SRV.session; SRV.session = session;
+  const start = () => sb.auth.onAuthStateChange((_ev, session) => { SRV.session = session; setTimeout(() => onAuth(_ev, session), 0); });
+  const onAuth = async (_ev, session) => {
+    const was = !!SRV._authSeen && !!SRV._prevSession; SRV._prevSession = session; SRV._authSeen = true; SRV.session = session;
     // поки свіжі дані акаунта вантажаться — показуємо останні відомі (пошта, нік, власник), щоб не було «Гість»
     if (session && !SRV.me) { try { const c = JSON.parse(localStorage.getItem("yvMe") || "null"); if (c && c.uid === session.user.id) { SRV.me = c.me; SRV.isOwner = !!c.owner; window.applyUIF?.(); window.renderTop?.(); window.renderBal?.(); } } catch (x) {} }
     if (!document.documentElement.classList.contains("gate")) logOpen(); else { const mo = new MutationObserver(() => { if (!document.documentElement.classList.contains("gate")) { mo.disconnect(); logOpen(); } }); mo.observe(document.documentElement, { attributes: true }); }
@@ -613,7 +614,7 @@
       if (after && after.startsWith("tool:")) { const id = after.slice(5); const el = id.startsWith("open-") ? document.querySelector(`.fmts [data-open="${id.slice(5)}"]`) : document.getElementById(id); setTimeout(() => el?.click(), 150); }
       else if (after === "pay" || after === "paytest") { if (payOpts || afterPay || after === "pay") setTimeout(() => SRV.pay(afterPay, payOpts), 150); else document.getElementById("testfmt")?.click(); } else if (after === "paidtest") toast("Перевіряємо тестову оплату…"); else if (after === "wallet") SRV.openWallet(); else if (after === "earn") openEarn(); else if (after === "paid") toast(SRV.me?.active ? "Підписку оформлено ✓" : "Перевіряємо оплату…");
     }
-  });
+  };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
   // повернулись у застосунок (з Instagram тощо) — одразу оновлюємо вхід і дані акаунта
   let resumeT = 0; const resume = async () => { if (document.visibilityState !== "visible" || Date.now() - resumeT < 3000) return; resumeT = Date.now();
