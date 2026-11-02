@@ -545,13 +545,13 @@ body{background:var(--p-bg)}
 .hkup{margin-top:16px;padding:14px;border-radius:16px;border:1px dashed var(--p-line,rgba(255,255,255,.18));font-size:14px}.hkup .lnk{margin:6px 0 0;padding:0;text-align:left}
 #yvbusy{position:fixed;inset:0;z-index:100000;display:grid;place-items:center;padding:24px;background:rgba(5,5,7,.38);-webkit-backdrop-filter:blur(14px) saturate(140%);backdrop-filter:blur(14px) saturate(140%);opacity:0;transition:opacity .25s ease;pointer-events:none}
 #yvbusy.on{opacity:1;pointer-events:auto}
-#yvbusy .bx{width:min(272px,74vw);height:min(272px,74vw);box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 18px;border-radius:28px;background:rgba(24,24,27,.82);border:1px solid rgba(255,255,255,.12);box-shadow:0 30px 80px -20px rgba(0,0,0,.7);color:#f5f5f7;text-align:center;font-family:var(--pfont,system-ui);transform:scale(.94);transition:transform .3s cubic-bezier(.2,.9,.3,1.3)}
+#yvbusy .bx{width:min(320px,84vw);height:min(320px,84vw);box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 18px;border-radius:28px;background:rgba(24,24,27,.82);border:1px solid rgba(255,255,255,.12);box-shadow:0 30px 80px -20px rgba(0,0,0,.7);color:#f5f5f7;text-align:center;font-family:var(--pfont,system-ui);transform:scale(.94);transition:transform .3s cubic-bezier(.2,.9,.3,1.3)}
 #yvbusy.on .bx{transform:scale(1)}
-#yvbusy .rg{position:relative;width:126px;height:126px;margin:0 auto 12px;flex:none}
+#yvbusy .rg{position:relative;width:150px;height:150px;margin:0 auto 14px;flex:none}
 #yvbusy svg{width:100%;height:100%;transform:rotate(-90deg)}
 #yvbusy .tr{fill:none;stroke:rgba(255,255,255,.1);stroke-width:9}
 #yvbusy .ar{fill:none;stroke:url(#yvbg);stroke-width:9;stroke-linecap:round;transition:stroke-dashoffset .45s cubic-bezier(.3,1.4,.5,1)}
-#yvbusy .pc{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+#yvbusy .pc{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
 #yvbusy .pc small{font-size:16px;font-weight:700;opacity:.6;margin-left:1px}
 #yvbusy .pc.bump{animation:yvbump .35s ease}
 @keyframes yvbump{40%{transform:scale(1.12)}}
@@ -559,10 +559,11 @@ body{background:var(--p-bg)}
 @keyframes yvspin{to{transform:rotate(360deg)}}
 #yvbusy b{display:block;font-size:18px;letter-spacing:-.01em}
 #yvbusy .st{display:none}
-#yvbusy b.ti{min-height:26px;font-size:17px;font-weight:700;color:#f5f5f7;padding:0 8px}#yvbusy .ti .dt i{font-style:normal;visibility:hidden}#yvbusy .ti .dt i.on{visibility:visible}
+#yvbusy .eta .dt i{font-style:normal;visibility:hidden}
+#yvbusy b.ti{min-height:26px;font-size:18px;font-weight:700;color:#f5f5f7;padding:0 8px}#yvbusy .ti .dt i{font-style:normal;visibility:hidden}#yvbusy .ti .dt i.on{visibility:visible}
 #yvbusy .bg{display:none;margin-top:14px;background:none;border:0;color:#a1a1aa;font:inherit;font-size:13px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;visibility:hidden}
 #yvbusy .bg.v{display:none}
-#yvbusy .eta{display:block;margin-top:6px;font-size:12.5px;font-weight:600;color:rgba(228,228,231,.5);font-variant-numeric:tabular-nums;min-height:20px}
+#yvbusy .eta{display:block;margin-top:6px;font-size:13px;font-weight:400;color:rgba(228,228,231,.5);font-variant-numeric:tabular-nums;min-height:20px}
 @media (prefers-reduced-motion:reduce){#yvbusy .sp{animation:none}#yvbusy .ar{transition:none}}
 .fmts>.fmt{padding:10px 12px;gap:12px;border-radius:20px}.fmts>.fmt .fprev{width:42px;height:54px;border-radius:10px}.fmts>.fmt canvas.fprev{width:42px;height:74px}
 .fmts>.fmt .fn{font-size:16px}.fmts>.fmt .fs{font-size:12.5px;margin-top:1px}.fmts>.fmt .fwip,.fmts>.fmt .fdev,.fmts>.fmt .ffree{margin-top:4px;padding:2px 8px;font-size:10.5px}.fmts>.fmt .chev{width:34px;height:34px}
@@ -1120,7 +1121,7 @@ body.pub .fmts{margin-top:14px}body.pub .fmt .fs,body.pub .fmt .fopen,body.pub .
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="YuVi">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>window.YV_DEV=false;window.YV_BUILD="02.11 15:57";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
+<script>window.YV_DEV=false;window.YV_BUILD="02.11 16:05";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="server.js?v=e036b5db"></script>
@@ -4830,11 +4831,12 @@ async function loadUIF(){ if(!window.SRV?.uiFlags) { applyUIF(); return; } const
   let el, n=0, p=0, timer=null, endT=null, msgT=null, bgT=null, kind="text", hidden=false, last={t:"",at:0}, real=false;
   // скільки зазвичай триває кожен вид роботи (вчиться на ділі) — для зворотного відліку
   const EST0={text:14,image:18,voice:12,listen:10,montage:75,save:40}; let EST={...EST0}; try{ Object.assign(EST,JSON.parse(localStorage.getItem("yvBusyEst")||"{}")); }catch(e){}
-  let t0=0, endAt=0, cdT=null, lastSec=-1;
+  let t0=0, endAt=0, cdT=null, lastSec=-1, etaT=null;
   function tickSnd(sec){ if(!sndOn()||hidden) return; try{ ac(); const t=AC.currentTime+.005, o=AC.createOscillator(), g=AC.createGain(), lp=AC.createBiquadFilter(); o.type="sine"; o.frequency.setValueAtTime(sec%2?720:640,t); o.frequency.exponentialRampToValueAtTime(sec%2?560:500,t+.07);
     lp.type="lowpass"; lp.frequency.value=1400; g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(.022,t+.006); g.gain.exponentialRampToValueAtTime(.0001,t+.11); o.connect(lp).connect(g).connect(AC.destination); o.start(t); o.stop(t+.13); }catch(e){} }
   function cd(){ if(!el) return; const left=Math.max(0,(endAt-Date.now())/1000), s2=Math.ceil(left), e=el.querySelector(".eta");
-    e.textContent=s2>0?`Залишилось ≈ ${Math.floor(s2/60)}:${String(s2%60).padStart(2,"0")}`:"Ще кілька секунд…"; if(s2!==lastSec){ if(s2>0&&lastSec!==-1) tickSnd(s2); lastSec=s2; } }
+    if(s2>0){ if(e.dataset.w){ e.dataset.w=""; clearInterval(etaT); etaT=null; } e.textContent=`Залишилось ≈ ${Math.floor(s2/60)}:${String(s2%60).padStart(2,"0")}`; }
+    else if(!e.dataset.w){ e.dataset.w="1"; e.innerHTML='Ще кілька секунд<span class="dt"><i>.</i><i>.</i><i>.</i></span>'; let k=0; clearInterval(etaT); etaT=setInterval(()=>{ k=(k+1)%4; e.querySelectorAll(".dt i").forEach((d,i)=>d.style.visibility=i<k?"visible":"hidden"); },520); } if(s2!==lastSec){ if(s2>0&&lastSec!==-1) tickSnd(s2); lastSec=s2; } }
   document.addEventListener("click",e=>{ const b=e.target.closest?.("button"); if(b) last={t:(b.textContent||"").replace(/\s+/g," ").trim().slice(0,60),at:Date.now()}; },true);
   const C=2*Math.PI*54;
   function mount(){ if(el) return; el=document.createElement("div"); el.id="yvbusy"; el.setAttribute("role","status"); el.setAttribute("aria-live","polite");
@@ -4871,7 +4873,7 @@ async function loadUIF(){ if(!window.SRV?.uiFlags) { applyUIF(); return; } const
   function begin(k){ mount(); kind=KIND[k]?k:"text"; const lb=Date.now()-last.at<2500&&last.t?nstage(last.t.replace(/[^\p{L}\p{N}\s]/gu,"")):""; key=kind+(lb?"|"+lb:""); p=0; hidden=false; real=false; t0=Date.now(); run=[{n:"_start",t:t0}]; stIdx=ORD[key]?.length?0:-1; stT0=t0; endAt=t0+(EST[key]||EST[kind]||15)*1000; lastSec=-1; clearInterval(cdT); cd(); cdT=setInterval(cd,250); curLine=""; draw(); el.classList.add("on"); el.querySelector(".bg").classList.remove("v");
     clearTimeout(timer); clearInterval(msgT); clearTimeout(bgT); msgs(); if(kind!=="save"){ timer=setTimeout(tick,180); bgT=setTimeout(()=>el.querySelector(".bg").classList.add("v"),9000); } }
   function finish(){ clearTimeout(timer); clearInterval(msgT); clearTimeout(bgT); clearInterval(cdT); if(t0){ const now=Date.now(), took=(now-t0)/1000; if(took>1.5&&took<900){ const m=(o,v)=>Math.round(((o??v)*.5+v*.5)*10)/10; EST[key]=m(EST[key],took); EST[kind]=m(EST[kind],took); try{ localStorage.setItem("yvBusyEst",JSON.stringify(EST)); }catch(e){}
-      if(run.length>1){ const old=ORD[key]||[], nw=run.map((q,i)=>{ const d=((run[i+1]?.t||now)-q.t)/1000, o=old.find(x=>x.n===q.n); return { n:q.n, d:Math.max(.3,Math.round((o?o.d*.5+d*.5:d)*10)/10) }; }); ORD[key]=nw; const ks=Object.keys(ORD); if(ks.length>40) delete ORD[ks[0]]; try{ localStorage.setItem("yvBusyOrd",JSON.stringify(ORD)); }catch(e){} } } t0=0; } if(el) el.querySelector(".eta").textContent=""; p=100; draw(true); try{ if(sndOn()&&!hidden){ ac(); const t=AC.currentTime+.02; bell(784,t,.045,1.2); bell(1174.7,t+.08,.035,1.4); } }catch(e){} setTimeout(()=>{ el.classList.remove("on"); clearInterval(dotT); dotT=null; clearInterval(typT); },420); }
+      if(run.length>1){ const old=ORD[key]||[], nw=run.map((q,i)=>{ const d=((run[i+1]?.t||now)-q.t)/1000, o=old.find(x=>x.n===q.n); return { n:q.n, d:Math.max(.3,Math.round((o?o.d*.5+d*.5:d)*10)/10) }; }); ORD[key]=nw; const ks=Object.keys(ORD); if(ks.length>40) delete ORD[ks[0]]; try{ localStorage.setItem("yvBusyOrd",JSON.stringify(ORD)); }catch(e){} } } t0=0; } if(el){ const e=el.querySelector(".eta"); e.textContent=""; e.dataset.w=""; } clearInterval(etaT); etaT=null; p=100; draw(true); try{ if(sndOn()&&!hidden){ ac(); const t=AC.currentTime+.02; bell(784,t,.045,1.2); bell(1174.7,t+.08,.035,1.4); } }catch(e){} setTimeout(()=>{ el.classList.remove("on"); clearInterval(dotT); dotT=null; clearInterval(typT); },420); }
   window.yvBusy={
     start(k){ if(endT){ clearTimeout(endT); endT=null; n++; return; } if(n++===0) begin(k); },
     end(){ n=Math.max(0,n-1); if(n) return; endT=setTimeout(()=>{ endT=null; if(!n) finish(); },450); },   // коротка пауза — щоб серія картинок ішла одним завантаженням
