@@ -1463,10 +1463,10 @@ ${imgs.length ? `Контакт-аркуші: ${imgs.length} зображ., на
     const keep = { scenes: L.scenes, mood: L.mood };
     try { L.scenes = normPlan({ scenes: next }, L); if (MOODS[r?.mood]) L.mood = r.mood; } catch (e) { Object.assign(L, keep); return { issues: [], n: 0 }; }
     L._review = { issues: (r?.issues || []).slice(0, 12).map(String), n: fix.length + drop.size }; return L._review; }
-  async function aiText(topic, sec, silent, scn) { const S = SCRIPTS[scn], want = Math.round(sec * (silent ? 1.6 : 2.4));
+  async function aiText(topic, sec, silent, scn) { const S = SCRIPTS[scn], want = Math.round(sec * (silent ? 1.6 : FIT.wps * FIT.base / FIT.sq * 1.04));
     const r = await sample.json(`Напиши ${silent ? "текст для анімаційного Reels БЕЗ голосу — він іде на екрані субтитрами, короткі речення по 4–9 слів" : "текст для озвучки за кадром — жива розмовна українська, як людина говорить другу"} на тему: «${topic}».
 Формат: вертикальне кіно-анімаційне відео (герой-чоловічок, сцени змінюються кожні 2–4 с) ≈ ${sec} с. Мета — вірусність: людина має додивитися до кінця й захотіти переслати. Перше речення — сильний гачок-питання або несподіваний факт (до 10 слів, без розгону); одразу відкрий петлю, яку закриєш лише у фіналі; кожні 5–7 с — нова міні-інтрига чи поворот; далі історія героя з поворотом (але/тому), конкретні числа й образи, які легко показати; фінал — сильне коротке ствердження (НЕ питання і не заклик подумати), яке замикає петлю з початком.
-${S ? `СТРУКТУРА СЦЕНАРІЮ «${S.n}» — дотримуйся саме її, по черзі: ${S.p}. Не підписуй частини — текст суцільний, живий.\n` : ""}Обсяг ≈ ${want} слів. Без хештегів, емодзі, ремарок і заголовків. Відповідай тільки JSON {"text":"…"}`, { cache: false, kbFmt: "tall", kb: ["hook", "script", "story", "general"], max: 3000 });
+${S ? `СТРУКТУРА СЦЕНАРІЮ «${S.n}» — дотримуйся саме її, по черзі: ${S.p}. Не підписуй частини — текст суцільний, живий.\n` : ""}Обсяг — ${want}–${want + 8} слів (не менше ${want}: озвучку потім пришвидшимо й приберемо паузи). Без хештегів, емодзі, ремарок і заголовків. Відповідай тільки JSON {"text":"…"}`, { cache: false, kbFmt: "tall", kb: ["hook", "script", "story", "general"], max: 3000 });
     return String(r?.text || "").trim(); }
 
   /* ---------- голос і слова ---------- */
@@ -1735,7 +1735,7 @@ ${S ? `СТРУКТУРА СЦЕНАРІЮ «${S.n}» — дотримуйся �
         <textarea id="ctext" rows="11" style="margin-top:10px" placeholder="Або напиши свій текст тут — його можна редагувати">${escH(DRAFT.text)}</textarea><p class="cnt" id="ccnt"></p></div></div>`;
     F.innerHTML = `<div class="row"><button class="btn main" type="button" id="cgo">Далі — голос</button><button class="btn sq" type="button" id="cprev" aria-label="Назад">‹</button></div>`;
     const ta = $(B, "#ctext"), cnt = $(B, "#ccnt"), keyNow = () => [DRAFT.topic, OPT.sec, AD_PICK, OPT.adWord, scn].join("|");
-    const est = () => { DRAFT.text = ta.value; saveDraft(); const n = (ta.value.match(/\S+/g) || []).length, sec = n / 2.6; cnt.textContent = n ? `${n} слів · ≈ ${fmt(sec)} (ціль ${OPT.sec} с)${sec > OPT.sec * 1.45 ? " — задовго, скороти" : ""}${DRAFT.gk && DRAFT.gk !== keyNow() && DRAFT.gk.split("|")[2] !== AD_PICK ? " · реклама змінилась — напиши текст заново" : ""}` : `Ціль ≈ ${OPT.sec} с`; };
+    const est = () => { DRAFT.text = ta.value; saveDraft(); const n = (ta.value.match(/\S+/g) || []).length, f = fitEst(n, OPT.sec); cnt.textContent = n ? `${n} слів · після озвучки ≈ ${fmt(f.dur)} (ціль ${OPT.sec} с)${f.dur > OPT.sec * 1.08 ? " — задовго, скороти" : f.dur < OPT.sec * .85 ? " — закоротко, можна додати" : ""}${DRAFT.gk && DRAFT.gk !== keyNow() && DRAFT.gk.split("|")[2] !== AD_PICK ? " · реклама змінилась — напиши текст заново" : ""}` : `Ціль ≈ ${OPT.sec} с`; };
     ta.oninput = est; est();
     B.querySelectorAll("[data-sec]").forEach((b) => b.onclick = () => { OPT.sec = +b.dataset.sec; saveOpt(); B.querySelectorAll("[data-sec]").forEach((o) => o.setAttribute("aria-pressed", o === b)); est(); });
     B.querySelectorAll("[data-adp]").forEach((b) => b.onclick = () => { AD_PICK = b.dataset.adp; OPT.ad = AD_PICK; saveOpt(); B.querySelectorAll("[data-adp]").forEach((o) => o.setAttribute("aria-pressed", o === b)); $(B, "#cadhint").innerHTML = AD_PICK === "comment" ? DM_HINT : ""; est(); });
@@ -1865,14 +1865,17 @@ ${S ? `СТРУКТУРА СЦЕНАРІЮ «${S.n}» — дотримуйся �
     const mid = [br.in, core, cta, br.out].join(" ");
     return { text: `${before}\n\n${mid}\n\n${after}${AD.outro ? " " + AD.outro : ""}`, mid, parts: { in: br.in, core, cta, out: br.out } }; }
   // стиснути довгі паузи (озвучка часто читає повільно й з паузами)
-  function squeeze(buf, keep = .22, min = .32) { const SR = E().SR, hop = Math.round(SR * .01), n = Math.floor(buf.length / hop); let mx = 0; const en = new Float32Array(n);
+  function squeeze(buf, keep = .1, min = .16) { const SR = E().SR, hop = Math.round(SR * .01), n = Math.floor(buf.length / hop); let mx = 0; const en = new Float32Array(n);
     for (let i = 0; i < n; i++) { let q = 0; for (let j = i * hop, e = j + hop; j < e; j++) q += buf[j] * buf[j]; en[i] = Math.sqrt(q / hop); if (en[i] > mx) mx = en[i]; }
     const th = mx * .05, out = new Float32Array(buf.length); let o = 0, i = 0;
     while (i < n) { if (en[i] > th) { out.set(buf.subarray(i * hop, (i + 1) * hop), o); o += hop; i++; continue; } let j = i; while (j < n && en[j] <= th) j++; const run = (j - i) * .01, kk = run > min ? Math.round(keep * 100) : j - i; out.set(buf.subarray(i * hop, (i + kk) * hop), o); o += kk * hop; i = j; }
     return out.slice(0, o); }
+  const FIT = { base: 1.12, max: 1.45, wps: 2.6, sq: .9 }; // слів/с звичайним темпом; частка, що лишається після вирізання пауз
+  const fitEst = (words, target) => { const nat = words / FIT.wps * FIT.sq, rate = clamp(Math.max(FIT.base, nat / target), 1, FIT.max); return { nat: words / FIT.wps, dur: nat / rate, rate }; };
   async function voiceFit(text, voice, target) { const SR = E().SR, parts = []; let cur = ""; sentences(text).forEach((q) => { if ((cur + " " + q).length > 2200 && cur) { parts.push(cur); cur = ""; } cur += (cur ? " " : "") + q; }); if (cur) parts.push(cur);
-    const bufs = []; for (const q of parts) bufs.push(await ttsAudio(q, voice)); let y = squeeze(catBuf(bufs, .2)); const nat = y.length / SR; let rate = 1;
-    if (nat > target * 1.02) { rate = Math.min(1.4, nat / target); y = tstretch(y, rate); }
+    const bufs = []; for (const q of parts) bufs.push(await ttsAudio(q, voice)); let y = squeeze(catBuf(bufs, .08)); const nat = y.length / SR;
+    // жвава подача: мова завжди трохи швидша (×1.12), а довгий текст підтискаємо під ціль (до ×1.45)
+    const rate = clamp(Math.max(FIT.base, nat / target), 1, FIT.max); y = tstretch(y, rate);
     return { key: voiceKey(text, voice) + target, buf: y, text, voice, rate, nat, dur: y.length / SR }; }
   function screenContent(msg) { stopPlay(); stopPrevA(); const d = shell(), B = $(d, ".cb"), F = $(d, ".cf"), v = OPT.voice, rec = v === "rec" || v === "file", tts = v === "ai" || v === "clone";
     const adN = { bio: "посилання в шапці", comment: `слово «${String(OPT.adWord || "АНІМАЦІЯ").toUpperCase()}» в коментарях`, none: "без реклами" }[OPT.ad] || "без реклами";
@@ -1883,14 +1886,14 @@ ${S ? `СТРУКТУРА СЦЕНАРІЮ «${S.n}» — дотримуйся �
         <button class="chip" type="button" id="ctxch" style="margin-top:6px">✏️ Змінити текст</button></div>
       <div class="sec"><h4>Голос</h4><div class="chips">${VOICES.map(([k, n]) => `<button class="chip" type="button" data-v="${k}" aria-pressed="${v === k}">${n}</button>`).join("")}</div>
         <p class="cnt" style="margin:6px 0 0">${escH((VOICES.find((q) => q[0] === v) || VOICES[0])[2])}</p>${tts ? `<div id="cvl" style="margin-top:8px"><p class="cnt" style="margin:0">Завантажую голоси…</p></div>
-        <div class="row" style="margin-top:10px"><button class="btn" type="button" id="cvo">🔊 Озвучити</button><button class="btn" type="button" id="cvp" style="display:none">▶ Прослухати</button></div><p class="cnt" id="cvst" style="margin:6px 0 0">Озвучка сама підженеться під ${OPT.sec} с: приберу довгі паузи й за потреби трохи пришвидшу.</p>` : ""}</div></div>`;
+        <div class="row" style="margin-top:10px"><button class="btn" type="button" id="cvo">🔊 Озвучити</button><button class="btn" type="button" id="cvp" style="display:none">▶ Прослухати</button></div><p class="cnt" id="cvst" style="margin:6px 0 0">Озвучка сама підженеться під ${OPT.sec} с: без пауз і жвавішим темпом.</p>` : ""}</div></div>`;
     F.innerHTML = v === "rec" ? `<div class="row"><button class="btn main" type="button" id="crec">🎙 Записати</button><button class="btn sq" type="button" id="cprev" aria-label="Назад">‹</button></div>`
       : v === "file" ? `<div class="row"><label class="btn main" for="cfile">Завантажити запис</label><button class="btn sq" type="button" id="cprev" aria-label="Назад">‹</button></div><input type="file" id="cfile" accept="audio/*,video/*" hidden>`
       : `<div class="row"><button class="btn main" type="button" id="cgo">Далі — персонажі</button><button class="btn sq" type="button" id="cprev" aria-label="Назад">‹</button></div>`;
     const ta = $(B, "#ctext"), cnt = $(B, "#ccnt"), voiceOf = () => DRAFT.vid === "clone" ? { kind: "clone" } : { kind: "preset", id: DRAFT.vid };
     const st = (t) => { const e = $(B, "#cvst"); if (e) e.textContent = t; }, kOf = () => voiceKey(ta.value.trim(), voiceOf()) + OPT.sec, fresh = () => VOICED && VOICED.key === kOf();
     const mark = () => { if (!tts) return; const ok = fresh(), bo = $(B, "#cvo"), bp = $(B, "#cvp"); bo.textContent = VOICED ? (ok ? "🔊 Переозвучити" : "🔊 Переозвучити зі змінами") : "🔊 Озвучити"; bp.style.display = ok ? "" : "none"; if (VOICED && !ok) st("Текст або голос змінено — переозвуч, щоб почути новий варіант."); };
-    const est = () => { DRAFT.text = ta.value; saveDraft(); const n = (ta.value.match(/\S+/g) || []).length, sec = n / 2.6; cnt.textContent = n ? `${n} слів · ≈ ${fmt(sec)} (ціль ${OPT.sec} с)${sec > OPT.sec * 1.45 ? " — задовго, скороти" : ""}` : `Ціль ≈ ${OPT.sec} с`; mark(); };
+    const est = () => { DRAFT.text = ta.value; saveDraft(); const n = (ta.value.match(/\S+/g) || []).length, f = fitEst(n, OPT.sec); cnt.textContent = n ? `${n} слів · після озвучки ≈ ${fmt(f.dur)} (ціль ${OPT.sec} с)${f.dur > OPT.sec * 1.08 ? " — задовго, скороти" : ""}` : `Ціль ≈ ${OPT.sec} с`; mark(); };
     ta.oninput = est;
     const write = async () => { const topic = DRAFT.topic || ta.value.trim().slice(0, 300); if (!topic) { screenTopic("Вибери тему"); return; }
       try { const adOn = OPT.ad && OPT.ad !== "none", adSec = adOn ? (OPT.sec <= 30 ? 11 : 17) + 3 : 0;
@@ -1901,7 +1904,7 @@ ${S ? `СТРУКТУРА СЦЕНАРІЮ «${S.n}» — дотримуйся �
     $(B, "#ctxch").onclick = () => { try { VPA.a?.pause(); } catch (e) {} stopPrevA(); screenScript(); }; est();
     const doVoice = async () => { const t = ta.value.trim(); if ((t.match(/\S+/g) || []).length < 4) { say("Спершу потрібен текст"); return false; } if (!DRAFT.vid) { say(v === "clone" ? "Спершу створи свій голос" : "Вибери голос"); return false; }
       try { const r = await E().busyRun("voice", () => voiceFit(t, voiceOf(), OPT.sec)); r.key = kOf(); VOICED = r;
-        st(`✓ Озвучено · ${fmt(r.dur)} (ціль ${OPT.sec} с)${r.rate > 1.01 ? ` · пришвидшено ×${r.rate.toFixed(2)}` : ""}${r.nat / 1.4 > OPT.sec * 1.05 ? " · текст задовгий — скороти, щоб не поспішало" : ""}. Послухай — якщо щось не так, зміни текст і переозвуч.`); mark(); track("voice_ok"); return true; }
+        st(`✓ Озвучено · ${fmt(r.dur)} (ціль ${OPT.sec} с)${r.rate > 1.01 ? ` · пришвидшено ×${r.rate.toFixed(2)}` : ""}${r.nat / FIT.max > OPT.sec * 1.05 ? " · текст задовгий — скороти, щоб не поспішало" : ""}. Послухай — якщо щось не так, зміни текст і переозвуч.`); mark(); track("voice_ok"); return true; }
       catch (e) { console.warn(e); say(TTS_ERR[e?.message] || "Не вийшло озвучити. Спробуй ще раз"); if (e?.message === "no_clone_quota") window.yvFeatureSheet?.("clone"); return false; } };
     if (tts) { $(B, "#cvo").onclick = async () => { if (await doVoice()) $(B, "#cvp").click(); };
       $(B, "#cvp").onclick = (e) => { const b = e.currentTarget; if (PAC) { stopPrevA(); b.textContent = "▶ Прослухати"; return; } if (!fresh()) return; b.textContent = "■ Стоп"; playBuf(VOICED.buf, () => { b.textContent = "▶ Прослухати"; }); }; }
