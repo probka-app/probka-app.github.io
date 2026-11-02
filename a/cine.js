@@ -148,7 +148,7 @@
   function limb(x, pts, w, col) { x.strokeStyle = col; x.lineWidth = w; x.lineCap = "round"; x.lineJoin = "round"; x.beginPath(); x.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) x.lineTo(pts[i][0], pts[i][1]); x.stroke(); }
 
   // c: {who, col, acc, face, look, f(+1/-1), h(px), rim}
-  function figure(x, X, Y, P, c, t) { if (STYL[FMT]?.fill && !c._sil) return silFig(x, X, Y, P, c, t); if (STYL[FMT]?.mono && c.who !== "hero" && c.who !== "shadow") c = { ...c, col: ["#8d8f96", "#6f7178", "#a9abb1"][Math.floor(hsh(String(c.key ?? c.who)) * 3)] }; if (!KN() && !c._sil) return figureC(x, X, Y, P, c, t);
+  function figure(x, X, Y, P, c, t) { if ((STYL[FMT]?.fill || STYL[FMT]?.fig) && !c._sil) return silFig(x, X, Y, P, c, t); if (STYL[FMT]?.mono && c.who !== "hero" && c.who !== "shadow") c = { ...c, col: ["#8d8f96", "#6f7178", "#a9abb1"][Math.floor(hsh(String(c.key ?? c.who)) * 3)] }; if (!KN() && !c._sil) return figureC(x, X, Y, P, c, t);
     const lk0 = c.who === "hero" ? looks(c) : null, headC = lk0 && lk0.skin !== "ink" ? SKIN[lk0.skin] : INK; if (headC !== INK) c = { ...c, light: 1 };
     const sp = WHO[c.who] || WHO.man, h = (c.h || 560) * sp.s, f = c.f || 1, hs = sp.hs || 1;
     const col = c.who === "doctor" ? "#eceff2" : c.who === "boss" ? "#3d4256" : sp.grey ? "#a7a2a0" : (HOOD[c.col] || c.col || HOOD.yellow);
@@ -157,7 +157,7 @@
     x.save(); x.translate(X, Y);
     if (lie) { x.rotate(-90 * D * f); x.translate(0, .47 * h); }
     // тінь
-    if (!lie) { x.save(); x.globalAlpha = .22; x.fillStyle = "#000"; x.beginPath(); x.ellipse(sit ? .06 * h * f : 0, 0, .2 * h, .028 * h, 0, 0, 7); x.fill(); x.restore(); }
+    if (!lie) { const gx = c._sil && c._gs ? c._gs : x; gx.save(); if (gx !== x) gx.setTransform(x.getTransform()); gx.globalAlpha = .22; gx.fillStyle = "#000"; gx.beginPath(); gx.ellipse(sit ? .06 * h * f : 0, 0, .2 * h, .028 * h, 0, 0, 7); gx.fill(); gx.restore(); }
     const hipY = -(sit ? .3 : .47) * h + (sit ? 0 : 0), hip = [0, hipY];
     // ноги
     const legs = P.l.map((l) => { const k = seg(hip[0], hip[1], l[0], uL, f), a = seg(k[0], k[1], l[0] + l[1], lL, f); return [hip, k, a]; });
@@ -310,6 +310,11 @@
     blueprint: { n: "Креслення", d: "Білі лінії на синьому кресленні з сіткою — бізнес, гроші, плани й стратегії." },
     retro: { n: "Ретро-плівка", d: "Тепла сепія, зерно й віньєтка старої плівки — спогади, «як було раніше», ностальгія." },
     mono: { n: "Монохром з акцентом", d: "Увесь світ чорно-білий, лише герой у кольорі — стильно, чисто, фокус на головному." },
+    clay: { n: "М'яке 3D", d: "Об'ємні м'які персонажі з тінню й світлом, як пластилін чи іграшки, на теплих розмитих фонах — дорого й дуже приємно." },
+    noir: { n: "Чорне золото", d: "Глибокий чорний, золоті контури й золотий пил у світлі — як реклама преміальних брендів. Гроші, статус, амбіції." },
+    aurora: { n: "Аврора і скло", d: "М'які градієнти бузкового, рожевого й персикового, персонажі з матового скла — сучасно й технологічно, як презентації Apple." },
+    cut: { n: "Паперовий колаж", d: "Сцени з шарів вирізаного кольорового паперу з тінями між ними — ручна дорога робота, тепло й стильно." },
+    cine: { n: "Блокбастер", d: "Кінокольорокорекція «бірюза + помаранч», сяйво, відблиски об'єктива й плівкове зерно — як трейлер фільму." },
     toon30: { n: "Старий мультик", d: "Чорно-білий мультфільм на кремовій плівці: мерехтіння, пилинки, заокруглена рамка кадру — казково й ностальгійно." },
     toon50: { n: "Мультик 50-х", d: "Обмежена тепла палітра середини століття: гірчиця, бірюза, корал і кремовий папір — стильно й затишно." },
     toon80: { n: "Мультик з касети", d: "Соковиті кольори суботніх мультиків 80–90-х, м'які рядки кінескопа й легкий шум касети." },
@@ -327,7 +332,8 @@
   // нові стилі будуються на «кіно»-рушії: фон перефарбовується, фігури — силуети з власним кольором, світінням і очима
   const STYL = { whatif: { bg: "bright" }, dark: { bg: "dark", fill: "#e9e9ec", eye: "#111114", edge: "rgba(0,0,0,.85)" }, neon: { bg: "navy", fill: "#0c0d12", eye: "#ffffff", neon: 1 }, sil: { bg: "grey", fill: "#141416", eye: "#ffffff" },
     pastel: { bg: "pastel" }, golden: { bg: "golden", fill: "#1d1218", eye: "#ffe2b8", rim: "#ffb35c" }, chalk: { bg: "chalk", fill: "#2a4337", eye: "#f3f1e6", line: "#f3f1e6" },
-    blueprint: { bg: "blue", fill: "#1f4f8f", eye: "#eaf3ff", line: "#eaf3ff" }, retro: { bg: "sepia" }, mono: { bg: "gray", mono: 1 } };
+    blueprint: { bg: "blue", fill: "#1f4f8f", eye: "#eaf3ff", line: "#eaf3ff" }, retro: { bg: "sepia" }, mono: { bg: "gray", mono: 1 },
+    clay: { bg: "clay", fig: "clay" }, noir: { bg: "noir", fill: "#0b0a0a", eye: "#f3c969", line: "gold" }, aurora: { bg: "aurora", fill: "glass", eye: "#2b2552", edge: "rgba(255,255,255,.95)" }, cut: { bg: "cut", fig: "paper" }, cine: { bg: "cine" } };
   const KN = () => FMT === "kino" || !!STYL[FMT];
   const NEONC = { hero: "#4dd0e1", man: "#ffd166", woman: "#f72585", kid: "#7be38f", girl: "#ff9ecb", doctor: "#a5f3fc", boss: "#ff7b54", old: "#f4a261", shadow: "#ff2a2a" };
   const SKIN = { ink: "#232129", white: "#f7f6f2", porcelain: "#f7ddca", light: "#eccdb2", medium: "#d7ae8c", tan: "#b98a66", brown: "#8a5b3e", dark: "#5e3c2b" };
@@ -592,13 +598,25 @@
       else if (mode === "navy") { a[i] = 8 + L * .14; a[i + 1] = 11 + L * .17; a[i + 2] = 24 + L * .27; }
       else if (mode === "grey") { const v = (night ? 70 : 150) + L * (night ? .22 : .38); a[i] = v; a[i + 1] = v + 2; a[i + 2] = v + 6; }
       else if (mode === "pastel") { const k = night ? .7 : .62, m = night ? 34 : 96; a[i] = r * k + m + (r - L) * .25; a[i + 1] = g * k + m + (g - L) * .25; a[i + 2] = b * k + m + 8 + (b - L) * .25; }
+      else if (mode === "clay") { a[i] = lerp(r, L, .12) * .74 + 72; a[i + 1] = lerp(g, L, .12) * .72 + 64; a[i + 2] = lerp(b, L, .12) * .7 + 62; }
+      else if (mode === "cine") { const u = L / 255, s2 = u * u * (3 - 2 * u), tr = lerp(16, 255, s2), tg = lerp(58, 176, s2), tb = lerp(70, 112, s2); a[i] = lerp(r, tr, .45) * 1.04 - 6; a[i + 1] = lerp(g, tg, .45) * 1.02 - 6; a[i + 2] = lerp(b, tb, .45) - 4; }
       else if (GMAP[mode]) { const q = gmap(GMAP[mode], night ? L * .7 : L); a[i] = q[0]; a[i + 1] = q[1]; a[i + 2] = q[2]; if (mode === "chalk" || mode === "sepia") { const nz = (rnd(i, 3) - .5) * (mode === "chalk" ? 10 : 14); a[i] += nz; a[i + 1] += nz; a[i + 2] += nz; } } }
+    if (mode === "cut") { // паперовий колаж: 6 шарів-кольорів + тінь від вищого шару
+      const n = W * H, band = new Uint8Array(n), PALC = [[52, 58, 74], [86, 104, 112], [196, 104, 82], [226, 168, 96], [140, 168, 132], [236, 222, 196]];
+      for (let i = 0, j = 0; j < n; i += 4, j++) band[j] = Math.min(5, Math.floor((.3 * a[i] + .59 * a[i + 1] + .11 * a[i + 2]) / 43));
+      for (let j = 0; j < n; j++) { const i = j * 4, bnd = band[j], hue = [a[i], a[i + 1], a[i + 2]], L = (bnd + .5) / 6, base = hue.map((v, q) => lerp(v * .5 + 120 * L + 26, PALC[bnd][q], .55)); const px = j % W, py = (j / W) | 0, k2 = (py >= 16 && px >= 12) ? j - 16 * W - 12 : j, k3 = (py >= 6 && px >= 4) ? j - 6 * W - 4 : j, sh = band[k3] > bnd ? .62 : band[k2] > bnd ? .8 : 1;
+        a[i] = base[0] * sh; a[i + 1] = base[1] * sh; a[i + 2] = base[2] * sh * .98; } }
     x.putImageData(d, 0, 0);
+    if (mode === "clay" || mode === "aurora") { const c2 = document.createElement("canvas"); c2.width = W; c2.height = H; c2.getContext("2d").drawImage(x.canvas, 0, 0); x.save(); x.filter = `blur(${mode === "clay" ? 3 : 16}px)`; x.drawImage(c2, 0, 0); x.filter = "none"; x.restore();
+      if (mode === "aurora") { x.save(); x.globalCompositeOperation = "screen"; [[.2, .2, "rgba(255,120,200,.35)"], [.85, .35, "rgba(120,170,255,.35)"], [.5, .75, "rgba(255,190,140,.3)"]].forEach(([u, v, c3]) => { const g = x.createRadialGradient(u * W, v * H, 0, u * W, v * H, 620); g.addColorStop(0, c3); g.addColorStop(1, "rgba(0,0,0,0)"); x.fillStyle = g; x.fillRect(0, 0, W, H); }); x.restore(); }
+      else { const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "rgba(255,236,214,.22)"); g.addColorStop(1, "rgba(120,80,110,.12)"); x.fillStyle = g; x.fillRect(0, 0, W, H); } }
+    if (mode === "noir") { const g = x.createRadialGradient(W * .7, H * .25, 20, W * .7, H * .25, 900); g.addColorStop(0, "rgba(255,200,110,.22)"); g.addColorStop(1, "rgba(0,0,0,0)"); x.fillStyle = g; x.fillRect(0, 0, W, H); }
     if (mode === "blue") { x.save(); x.strokeStyle = "rgba(220,235,255,.12)"; x.lineWidth = 2; for (let gx = 0; gx <= W; gx += 60) { x.beginPath(); x.moveTo(gx, 0); x.lineTo(gx, H); x.stroke(); } for (let gy = 0; gy <= H; gy += 60) { x.beginPath(); x.moveTo(0, gy); x.lineTo(W, gy); x.stroke(); } x.strokeStyle = "rgba(220,235,255,.22)"; x.lineWidth = 3; for (let gx = 0; gx <= W; gx += 300) { x.beginPath(); x.moveTo(gx, 0); x.lineTo(gx, H); x.stroke(); } for (let gy = 0; gy <= H; gy += 300) { x.beginPath(); x.moveTo(0, gy); x.lineTo(W, gy); x.stroke(); } x.restore(); }
     if (mode === "golden") { const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "rgba(255,170,90,0)"); g.addColorStop(.55, "rgba(255,150,80,.16)"); g.addColorStop(1, "rgba(80,20,40,.25)"); x.fillStyle = g; x.fillRect(0, 0, W, H); const s2 = x.createRadialGradient(W * .72, H * .3, 10, W * .72, H * .3, 520); s2.addColorStop(0, "rgba(255,230,170,.55)"); s2.addColorStop(1, "rgba(255,200,120,0)"); x.fillStyle = s2; x.fillRect(0, 0, W, H); } }
   // градієнтні карти: яскравість → колір (тон стилю)
   const GMAP = { golden: [[0, [34, 14, 40]], [90, [120, 38, 64]], [170, [222, 110, 78]], [255, [255, 214, 150]]], chalk: [[0, [26, 46, 38]], [150, [44, 70, 58]], [215, [96, 128, 112]], [255, [196, 214, 200]]],
-    blue: [[0, [14, 44, 92]], [140, [30, 74, 140]], [220, [70, 120, 190]], [255, [150, 190, 235]]], sepia: [[0, [38, 26, 18]], [110, [112, 80, 52]], [200, [196, 160, 112]], [255, [246, 226, 190]]], gray: [[0, [20, 20, 22]], [255, [236, 236, 238]]] };
+    blue: [[0, [14, 44, 92]], [140, [30, 74, 140]], [220, [70, 120, 190]], [255, [150, 190, 235]]], noir: [[0, [5, 5, 6]], [120, [18, 16, 14]], [210, [52, 42, 30]], [255, [104, 82, 52]]], aurora: [[0, [34, 26, 74]], [90, [88, 60, 150]], [170, [200, 120, 190]], [230, [255, 186, 170]], [255, [255, 228, 205]]],
+    sepia: [[0, [38, 26, 18]], [110, [112, 80, 52]], [200, [196, 160, 112]], [255, [246, 226, 190]]], gray: [[0, [20, 20, 22]], [255, [236, 236, 238]]] };
   function gmap(st, L) { for (let k = 1; k < st.length; k++) if (L <= st[k][0]) { const [l0, c0] = st[k - 1], [l1, c1] = st[k], u = (L - l0) / Math.max(1, l1 - l0); return [c0[0] + (c1[0] - c0[0]) * u, c0[1] + (c1[1] - c0[1]) * u, c0[2] + (c1[2] - c0[2]) * u]; } return st[st.length - 1][1]; }
   // фігура-силует: малюємо звичайну фігуру окремо, заливаємо одним кольором, кладемо зі світінням, зверху — очі за емоцією
   const SILC = {};
@@ -607,12 +625,22 @@
     const x0 = Math.max(0, Math.floor(TM.a * (X - hh * .85) + TM.e - mg)), y0 = Math.max(0, Math.floor(TM.d * (Y - hh * 1.2) + TM.f - mg)), x1 = Math.min(cv.width, Math.ceil(TM.a * (X + hh * .85) + TM.e + mg)), y1 = Math.min(cv.height, Math.ceil(TM.d * (Y + hh * .3) + TM.f + mg)), bw = x1 - x0, bh = y1 - y0;
     if (bw <= 0 || bh <= 0) return null;
     o.setTransform(1, 0, 0, 1, 0, 0); o.globalAlpha = 1; o.shadowBlur = 0; o.globalCompositeOperation = "source-over"; o.clearRect(x0, y0, bw, bh); o.setTransform(TM);
-    const hd = figure(o, X, Y, P, { ...c, _sil: 1 }, t);
-    o.setTransform(1, 0, 0, 1, 0, 0); o.globalCompositeOperation = "source-in"; o.fillStyle = st.fill; o.fillRect(x0, y0, bw, bh); o.globalCompositeOperation = "source-over";
+    const hd = figure(o, X, Y, P, { ...c, _sil: 1, _gs: c.who === "shadow" ? undefined : x }, t), sk = cv.width / W;
+    if (st.fig) { // об'ємні стилі: фігура в кольорі + світло/тінь зверху, м'яка тінь на «підлогу»
+      o.setTransform(1, 0, 0, 1, 0, 0); o.globalCompositeOperation = "source-atop";
+      if (st.fig === "clay") { const vg = o.createLinearGradient(TM.a * (X - hh * .4) + TM.e, y0, TM.a * (X + hh * .4) + TM.e, y1); vg.addColorStop(0, "rgba(255,248,236,.30)"); vg.addColorStop(.45, "rgba(255,248,236,0)"); vg.addColorStop(1, "rgba(30,16,46,.42)"); o.fillStyle = vg; o.fillRect(x0, y0, bw, bh);
+        if (hd) { const hx = TM.a * hd.head[0] + TM.e, hy = TM.d * hd.head[1] + TM.f, hr = TM.a * hd.r; const sg = o.createRadialGradient(hx - hr * .38, hy - hr * .42, 0, hx - hr * .38, hy - hr * .42, hr * .75); sg.addColorStop(0, "rgba(255,255,255,.55)"); sg.addColorStop(.35, "rgba(255,255,255,.14)"); sg.addColorStop(1, "rgba(255,255,255,0)"); o.fillStyle = sg; o.fillRect(hx - hr * 1.2, hy - hr * 1.2, hr * 2.4, hr * 2.4);
+          const ag = o.createRadialGradient(hx + hr * .3, hy + hr * .35, hr * .4, hx, hy, hr * 1.05); ag.addColorStop(0, "rgba(0,0,0,0)"); ag.addColorStop(1, "rgba(20,10,40,.35)"); o.fillStyle = ag; o.beginPath(); o.arc(hx, hy, hr * 1.05, 0, 7); o.fill(); } }
+      else { o.globalAlpha = .1; o.drawImage(noiseTile(2), x0, y0, bw, bh); o.globalAlpha = 1; }
+      o.globalCompositeOperation = "source-over"; x.save(); x.setTransform(1, 0, 0, 1, 0, 0);
+      if (st.fig === "clay") { x.shadowColor = "rgba(50,30,60,.32)"; x.shadowBlur = 30 * sk; x.shadowOffsetX = 12 * sk; x.shadowOffsetY = 18 * sk; } else { x.shadowColor = "rgba(30,20,10,.42)"; x.shadowBlur = 5 * sk; x.shadowOffsetX = 8 * sk; x.shadowOffsetY = 10 * sk; }
+      x.drawImage(off, x0, y0, bw, bh, x0, y0, bw, bh); x.restore(); return hd; }
+    const grad = (q) => { if (q === "gold") { const g = o.createLinearGradient(x0, y0, x1, y1); g.addColorStop(0, "#fff1b8"); g.addColorStop(.35, "#e2b04a"); g.addColorStop(.6, "#a8741e"); g.addColorStop(.8, "#f5d27a"); g.addColorStop(1, "#8a5a14"); return g; } if (q === "glass") { const g = o.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, "rgba(255,255,255,.62)"); g.addColorStop(.5, "rgba(255,255,255,.34)"); g.addColorStop(1, "rgba(255,255,255,.2)"); return g; } return q; };
+    o.setTransform(1, 0, 0, 1, 0, 0); o.globalCompositeOperation = "source-in"; o.fillStyle = grad(st.fill); o.fillRect(x0, y0, bw, bh); o.globalCompositeOperation = "source-over";
     if (st.line) { // контурний стиль: спершу товстий силует кольору лінії зі зсувами, потім заливка — чіткий «намальований» контур
-      o.globalCompositeOperation = "source-in"; o.fillStyle = st.line; o.fillRect(x0, y0, bw, bh); o.globalCompositeOperation = "source-over"; x.save(); x.setTransform(1, 0, 0, 1, 0, 0); const k = 5 * cv.width / W;
+      o.globalCompositeOperation = "source-in"; o.fillStyle = grad(st.line); o.fillRect(x0, y0, bw, bh); o.globalCompositeOperation = "source-over"; x.save(); x.setTransform(1, 0, 0, 1, 0, 0); const k = (st.line === "gold" ? 4 : 5) * cv.width / W; if (st.line === "gold") { x.shadowColor = "rgba(255,190,80,.55)"; x.shadowBlur = 14 * cv.width / W; }
       for (let q = 0; q < 8; q++) { const an = q / 8 * 6.283, jx = Math.cos(an) * k + (FMT === "chalk" ? (rnd(q + Math.floor(t * 8), 4) - .5) * 1.5 : 0), jy = Math.sin(an) * k; x.drawImage(off, x0, y0, bw, bh, x0 + jx, y0 + jy, bw, bh); } x.restore();
-      o.globalCompositeOperation = "source-in"; o.fillStyle = st.fill; o.fillRect(x0, y0, bw, bh); o.globalCompositeOperation = "source-over"; }
+      o.globalCompositeOperation = "source-in"; o.fillStyle = grad(st.fill); o.fillRect(x0, y0, bw, bh); o.globalCompositeOperation = "source-over"; }
     x.save(); x.setTransform(1, 0, 0, 1, 0, 0); const gc = st.rim ? st.rim : st.neon ? (c.who === "hero" && HOOD[c.col] ? mix(HOOD[c.col], "#ffffff", .25) : NEONC[c.who] || HOOD[c.col] || "#4dd0e1") : st.edge;
     if (gc) { x.shadowColor = gc; x.shadowBlur = (st.neon ? 22 + 6 * Math.sin(t * 2.4 + (c.seed || 0)) : st.rim ? 16 : 6) * cv.width / W; x.drawImage(off, x0, y0, bw, bh, x0, y0, bw, bh); if (st.neon) { x.shadowBlur = 8 * cv.width / W; x.drawImage(off, x0, y0, bw, bh, x0, y0, bw, bh); } x.shadowBlur = 0; x.shadowColor = "transparent"; }
     x.drawImage(off, x0, y0, bw, bh, x0, y0, bw, bh); x.restore();
@@ -901,7 +929,7 @@
     x.drawImage(bgOf(place, tm, sc.seed || 1, cam.z > 1.6), 0, 0);
     const T = TIME[tm] || TIME.day, Lp = PLACES[place].light;
     // промені світла
-    if (["kino", "whatif", "pastel", "retro", "mono", "golden"].includes(FMT) && Lp && tm !== "night") { x.save(); x.globalCompositeOperation = "screen"; for (let i = 0; i < 4; i++) { const a = .1 + .05 * Math.sin(t * .7 + i * 2), X0 = Lp[0] - 160 + i * 120, g = x.createLinearGradient(X0, Lp[1], X0 + 700, Lp[1] + 1300); g.addColorStop(0, T.ray + a + ")"); g.addColorStop(1, T.ray + "0)"); x.fillStyle = g; x.beginPath(); x.moveTo(X0, Lp[1]); x.lineTo(X0 + 90, Lp[1]); x.lineTo(X0 + 760, Lp[1] + 1400); x.lineTo(X0 + 540, Lp[1] + 1400); x.fill(); } x.restore(); }
+    if (["kino", "whatif", "pastel", "retro", "mono", "golden", "clay", "cine", "noir"].includes(FMT) && Lp && tm !== "night") { x.save(); x.globalCompositeOperation = "screen"; for (let i = 0; i < 4; i++) { const a = .1 + .05 * Math.sin(t * .7 + i * 2), X0 = Lp[0] - 160 + i * 120, g = x.createLinearGradient(X0, Lp[1], X0 + 700, Lp[1] + 1300); g.addColorStop(0, T.ray + a + ")"); g.addColorStop(1, T.ray + "0)"); x.fillStyle = g; x.beginPath(); x.moveTo(X0, Lp[1]); x.lineTo(X0 + 90, Lp[1]); x.lineTo(X0 + 760, Lp[1] + 1400); x.lineTo(X0 + 540, Lp[1] + 1400); x.fill(); } x.restore(); }
     // fx black — «чорний екран»: хук-текст на порожній темряві (герой, якщо є, лишається видимим)
     if (sc.fx?.includes("black")) { x.fillStyle = "#050507"; x.fillRect(-W, -H, W * 3, H * 3); }
     { const c0 = camOf(sc, 0, d, H0); drawWall(x, sc, lt, d, t, c0, H0 ? (H0.head[0] - c0.fx) * c0.z + W / 2 : null); }
@@ -917,7 +945,7 @@
       x.save(); x.translate(X, Y + (k ? 0 : Math.sin(t * 1.6 + i) * 8)); x.scale(k || 1, k || 1); if (PROPS[p.k]) PROPS[p.k](x, s, { ...p, lt: pl }, t); else drawIcon(x, p.q || p.k, s, p.c); x.restore(); };
     (sc.props || []).forEach((p, i) => { if (!p.hold) return; const hand = heads[hi >= 0 ? hi : 0]?.hand; if (hand) drawProp(p, i, hand[0], hand[1] - 26, .62); });
     // пил у світлі
-    x.save(); for (let i = 0; i < (KN() ? (STYL[FMT]?.bg === "grey" ? 0 : 46) : 0); i++) { const X = (rnd(i, 31) * W + t * (8 + rnd(i, 32) * 14)) % W, Y = (rnd(i, 33) * H * .8 + Math.sin(t * .5 + i) * 40 + t * 6) % (H * .85); x.fillStyle = `rgba(255,250,235,${(.15 + rnd(i, 34) * .35) * (place === "space" ? .5 : 1)})`; x.beginPath(); x.arc(X, Y, 1.6 + rnd(i, 35) * 2.8, 0, 7); x.fill(); } x.restore();
+    x.save(); for (let i = 0; i < (KN() ? (STYL[FMT]?.bg === "grey" ? 0 : 46) : 0); i++) { const X = (rnd(i, 31) * W + t * (8 + rnd(i, 32) * 14)) % W, Y = (rnd(i, 33) * H * .8 + Math.sin(t * .5 + i) * 40 + t * 6) % (H * .85); x.fillStyle = FMT === "noir" ? `rgba(255,${190 + rnd(i, 36) * 50 | 0},110,${.25 + rnd(i, 34) * .5})` : `rgba(255,250,235,${(.15 + rnd(i, 34) * .35) * (place === "space" ? .5 : 1)})`; x.beginPath(); x.arc(X, Y, 1.6 + rnd(i, 35) * 2.8, 0, 7); x.fill(); } x.restore();
     x.restore();
     const hh = heads[hi >= 0 ? hi : 0], tight = cam.z > 1.5 && hh, hsx = hh ? (hh.head[0] - cam.fx) * cam.z + W / 2 : W / 2;
     (sc.props || []).forEach((p, i) => { if (p.hold && hh) return; if (tight) drawProp(p, i, hsx > W / 2 ? W * .24 : W * .76, H * .64, .8); else drawProp(p, i, (p.x ?? .72) * W, (p.y ?? .4) * H, 0); });
@@ -955,6 +983,15 @@
         x.save(); x.translate(X, Y); x.rotate(l2 * (3 + rnd(i, 54) * 5) + i); x.scale(1, Math.abs(Math.cos(l2 * 6 + i))); x.fillStyle = C[i % 5]; x.fillRect(-9, -14, 18, 28); x.restore(); } x.restore(); }
     if (f.includes("flash")) { const a = 1 - clamp(lt / .22); if (a > 0) { x.fillStyle = `rgba(255,255,255,${a * .92})`; x.fillRect(0, 0, W, H); } } }
   const SHGLOW = { red: ["rgba(255,30,30,.95)", "#ff2a2a"], pink: ["rgba(255,42,133,.95)", "#ff2a85"], purple: ["rgba(171,71,188,.95)", "#d05ce3"] };
+  function premPost(x, t, L) { x.save();
+    if (FMT === "cine") { x.globalCompositeOperation = "screen"; const fy = H * .3 + Math.sin(t * .3) * 40, g = x.createLinearGradient(0, fy, 0, fy + 1); const s1 = x.createRadialGradient(W * .74, fy, 0, W * .74, fy, 520); s1.addColorStop(0, "rgba(255,200,140,.32)"); s1.addColorStop(1, "rgba(255,160,90,0)"); x.fillStyle = s1; x.fillRect(0, 0, W, H);
+      const st = x.createLinearGradient(0, 0, W, 0); st.addColorStop(0, "rgba(80,170,255,0)"); st.addColorStop(.74, "rgba(120,200,255,.42)"); st.addColorStop(1, "rgba(80,170,255,0)"); x.fillStyle = st; x.fillRect(0, fy - 3, W, 6); x.globalAlpha = .5; x.fillRect(0, fy - 14, W, 28); x.globalAlpha = 1;
+      [.55, .4, .25].forEach((u, i) => { x.fillStyle = `rgba(${i ? 255 : 120},${i ? 190 : 200},${i ? 120 : 255},.12)`; x.beginPath(); x.arc(lerp(W * .74, W * .3, u * 1.6), lerp(fy, H * .7, u * 1.6), 30 + i * 22, 0, 7); x.fill(); });
+      x.globalCompositeOperation = "multiply"; x.fillStyle = "rgba(255,240,225,1)"; x.fillRect(0, 0, W, H); }
+    else if (FMT === "aurora") { x.globalCompositeOperation = "soft-light"; const a = t * .25, g = x.createLinearGradient(W * (.5 + .5 * Math.cos(a)), 0, W * (.5 - .5 * Math.cos(a)), H); g.addColorStop(0, "rgba(255,150,210,.35)"); g.addColorStop(1, "rgba(120,170,255,.35)"); x.fillStyle = g; x.fillRect(0, 0, W, H); }
+    else if (FMT === "cut") { x.globalCompositeOperation = "multiply"; x.globalAlpha = .9; x.drawImage(paperTex("p50"), 0, 0, W, H); x.globalAlpha = 1; x.globalCompositeOperation = "soft-light"; x.globalAlpha = .16; x.drawImage(noiseTile(3), 0, 0, W, H); }
+    else if (FMT === "noir") { x.globalCompositeOperation = "source-over"; const v = x.createRadialGradient(W / 2, H * .45, H * .25, W / 2, H / 2, H * .72); v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,.55)"); x.fillStyle = v; x.fillRect(0, 0, W, H); }
+    x.restore(); }
   function post(x, t) { const g = x.createRadialGradient(W / 2, H * .48, H * .28, W / 2, H * .5, H * .78); g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, "rgba(8,6,20,.55)"); x.fillStyle = g; x.fillRect(0, 0, W, H);
     const gr = grain(), ox = Math.floor(rnd(Math.floor(t * 24), 4) * 256), oy = Math.floor(rnd(Math.floor(t * 24), 5) * 256); x.save(); x.globalCompositeOperation = "overlay"; x.fillStyle = x.createPattern(gr, "repeat"); x.translate(-ox, -oy); x.fillRect(ox, oy, W, H); x.restore(); }
   const OFF = {};
@@ -1157,7 +1194,7 @@ out — повернення в історію після вставки, до 6
     if (L.subs && !sc.ad) subs(x, t, L);
     else if (L.subs && sc.ad && L.adInline && L.adTm) { const lt = t - sc.t0, S = L.adTm.seg, up = lt >= Math.max(.9, S.in[1]) && lt < S.out[0]; subs(x, t, up ? { ...L, subS: { ...SUBS0, ...(L.subS || {}), y: 330 } } : L); }
     else if (L.subs && sc.ad && L.adWords && L.adTm) { const lt = t - sc.t0, S = L.adTm.seg, inE = Math.max(.9, S.in[1]), up = lt >= inE && lt < S.out[0]; if (lt < inE - .32 || lt >= inE) subs(x, t, { ...L, subS: up ? { ...SUBS0, ...(L.subS || {}), y: 330 } : L.subS, words: L.adWords.map((w) => ({ w: w.w, s: w.s + sc.t0, e: w.e + sc.t0 })) }); }
-    if (KN()) post(x, t);
+    if (KN()) post(x, t); if (["cine", "aurora", "cut", "noir"].includes(FMT)) premPost(x, t, L);
     if (FMT === "retro") { x.save(); x.globalCompositeOperation = "color"; x.globalAlpha = .55; x.fillStyle = "#8a5a2b"; x.fillRect(0, 0, W, H); x.globalCompositeOperation = "source-over"; x.globalAlpha = 1; for (let i = 0; i < 260; i++) { x.fillStyle = `rgba(${i % 2 ? 255 : 30},${i % 2 ? 240 : 20},${i % 2 ? 210 : 10},${.05 + rnd(i + Math.floor(t * 24) * 7, 5) * .08})`; x.fillRect(rnd(i, Math.floor(t * 24)) * W, rnd(i + 1, Math.floor(t * 24)) * H, 3, 3); }
       const v = x.createRadialGradient(W / 2, H / 2, H * .3, W / 2, H / 2, H * .75); v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(30,15,5,.55)"); x.fillStyle = v; x.fillRect(0, 0, W, H); if (rnd(Math.floor(t * 24), 9) > .93) { x.fillStyle = "rgba(255,240,210,.35)"; x.fillRect(rnd(Math.floor(t * 24), 10) * W, 0, 2, H); } x.restore(); }
     const fo = Math.min(clamp(t / .35), clamp((L.dur - t) / .5)); if (fo < 1) { x.fillStyle = `rgba(6,5,14,${1 - fo})`; x.fillRect(0, 0, W, H); }
