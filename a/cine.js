@@ -1727,5 +1727,20 @@ ${SPEC}
         const name = `yuvi-kino-${Date.now()}.${r.ext}`, f = new File([r.blob], name, { type: r.blob.type });
         track("export", { v: `${Math.round(L.dur)}s` }); setTimeout(() => donePanel(f), 500); } catch (q) { console.error(q); say(q?.message === "noenc" ? "Цей браузер не вміє зберігати відео — спробуй Chrome або Safari 17+" : "Не вдалося зберегти"); }
       b.disabled = false; b.textContent = lbl; }; }
-  window.YVCine = { adStudio: () => adStudio(), open(o = {}) { if (o.text) { DRAFT.text = String(o.text); DRAFT.topic = String(o.topic || ""); saveDraft(); return screenContent(); } screenTopic(); }, close, _t: { loadHand, DEMOPLAN, placeAd, removeAd, ensureAd, adPoint, loadAd, soundtrack, normPlan, aiPlan, set: (l) => { L = l; }, L: () => L, screenEdit, exportVideo, loadFont, drawFrame, timeline, PLACES, POSE, HOOD, figure, loadIcons, sceneAt } };
+  // короткий опис можливостей рушія — для розбору відео «для коду» (що вже є, щоб AI писав лише про прогалини)
+  function caps() { const k = (o) => Object.keys(o).join(", ");
+    return [
+      "Рушій: canvas 2D, 1080x1920, 30 fps, сцени прив'язані до слів озвучки (a = індекс слова).",
+      "Формати: " + Object.entries(FMTS).map(([x, v]) => x + " (" + v.n + ")").join(", ") + ".",
+      "Локації: " + k(PLACES) + "; час доби: " + k(TIME) + "; плани: " + k(SHOT) + ".",
+      "Камера: push, pull, pan_l, pan_r, still, shake; переходи: cut, whip, fade.",
+      "Персонаж: пози " + k(POSE) + "; емоції " + FACE.join(", ") + "; шкіра/зачіски/борода; тваринка; натовп (crowd) з таймерами/тегами.",
+      "Пропси: " + k(PROPS) + ".",
+      "Інфографіка (hud): panel, chart, bars, counter, brain, check, compare, rings, network, timeline, timer, rules, split.",
+      "Текст: підписи-тези (cap), теги над персонажем (tag), таймери (timer), субтитри стилів " + k(SUBST) + ".",
+      "Звук: фонова музика за настроєм, sfx на переходах; озвучка TTS з підгонкою під довжину.",
+      "Реклама: реальний телефон у руці з кадрами інтерфейсу, виліт телефона до глядача.",
+      "НЕМАЄ: імпорту відео/фото у кадр, 3D, ліпсінку, кількох персонажів, що взаємодіють руками, складної анімації тіла (біг, стрибки), частинок окрім простих."
+    ].join("\n"); }
+  window.YVCine = { adStudio: () => adStudio(), open(o = {}) { if (o.text) { DRAFT.text = String(o.text); DRAFT.topic = String(o.topic || ""); saveDraft(); return screenContent(); } screenTopic(); }, close, _t: { caps, loadHand, DEMOPLAN, placeAd, removeAd, ensureAd, adPoint, loadAd, soundtrack, normPlan, aiPlan, set: (l) => { L = l; }, L: () => L, screenEdit, exportVideo, loadFont, drawFrame, timeline, PLACES, POSE, HOOD, figure, loadIcons, sceneAt } };
 })();
