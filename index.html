@@ -1118,7 +1118,7 @@ body.pub .fmts{margin-top:14px}body.pub .fmt .fs,body.pub .fmt .fopen,body.pub .
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="YuVi">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>window.YV_DEV=false;window.YV_BUILD="02.11 02:00";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
+<script>window.YV_DEV=false;window.YV_BUILD="02.11 02:27";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="server.js?v=10428086"></script>
@@ -3871,7 +3871,10 @@ async function openKB(O={}){
       box.querySelector("#kball")?.addEventListener("click",async e=>{ e.currentTarget.disabled=true; for(const i of pend){ try{ await SRV.kbSet(i.id,{status:"confirmed"}); i.status="confirmed"; }catch(x){} } draw(); });
       wireItems(box,L,draw); };
     draw(); };
-  const up=()=>{ let mod=O.mod||"", kf=O.fmt||"", files=[], imgs=[], vids=[], found=[], meas=[];
+  // вибрані файли живуть поза вікном: на iPhone після вибору відео сторінка інколи перемальовується (поки телефон готує файл), і вибір губився
+  const KBQ=window.KBQ||(window.KBQ={files:[],imgs:[],vids:[]});
+  if(!window.__kbq){ window.__kbq=1; document.addEventListener("change",e=>{ const t=e.target, k={kbfile:"files",kbimg:"imgs",kbvid:"vids"}[t?.id]; if(!k||!t.files?.length) return; const lim={files:20,imgs:40,vids:5}[k]; KBQ[k]=[...KBQ[k],...t.files].slice(0,lim); try{ t.value=""; }catch(x){} document.querySelectorAll("#kbfl").forEach(el=>el.dispatchEvent(new Event("kbq"))); },true); }
+  const up=()=>{ let mod=O.mod||"", kf=O.fmt||"", files=KBQ.files, imgs=KBQ.imgs, vids=KBQ.vids, found=[], meas=[];
     box.innerHTML=`<p class="hint" style="display:block">${O.hint?esc(O.hint):"Встав текст, транскрипт відео чи нотатки, або додай файл. AI витягне суть своїми словами й розкладе по папках — ти перевіриш і збережеш."}</p>
       <textarea class="cpd" id="kbtx" rows="6" placeholder="Встав текст або транскрипт…"></textarea>
       <div class="chips" style="justify-content:flex-start;margin:8px 0"><label class="chip">📄 Текст, аудіо чи відео<input type="file" id="kbfile" accept=".txt,.md,.srt,.vtt,.json,audio/*,video/*" multiple hidden></label><label class="chip">🖼 Скріни прев'ю з назвами<input type="file" id="kbimg" accept="image/*" multiple hidden></label><label class="chip">🎬 Відео-приклад: розібрати стиль<input type="file" id="kbvid" accept="video/*" multiple hidden></label></div>
@@ -3883,9 +3886,8 @@ async function openKB(O={}){
       <button class="big" type="button" id="kbgo">Розібрати</button><p class="status" id="kbst"></p><div id="kbres"></div>`;
     const st=box.querySelector("#kbst"), res=box.querySelector("#kbres"), fl=box.querySelector("#kbfl");
     const showFiles=()=>{ fl.textContent=[...files.map(f=>"📄 "+f.name),...imgs.map(f=>"🖼 "+f.name),...vids.map(f=>"🎬 "+f.name)].join(" · "); };
-    box.querySelector("#kbvid").onchange=e=>{ vids=[...vids,...e.target.files].slice(0,5); e.target.value=""; showFiles(); };
-    box.querySelector("#kbfile").onchange=e=>{ files=[...files,...e.target.files]; e.target.value=""; showFiles(); };
-    box.querySelector("#kbimg").onchange=e=>{ imgs=[...imgs,...e.target.files].slice(0,40); e.target.value=""; showFiles(); };
+    fl.addEventListener("kbq",()=>{ files=KBQ.files; imgs=KBQ.imgs; vids=KBQ.vids; showFiles(); }); showFiles();
+    ["kbvid","kbfile","kbimg"].forEach(id=>{ const inp=box.querySelector("#"+id); inp.removeAttribute("hidden"); inp.className="sr"; inp.addEventListener("click",()=>{ fl.textContent="Відкриваю вибір… Після вибору відео телефон може кілька секунд його готувати"; }); });
     box.querySelectorAll("[data-kbff]").forEach(b=>b.onclick=()=>{ kf=b.dataset.kbff; box.querySelectorAll("[data-kbff]").forEach(x=>x.classList.toggle("ink",x===b)); });
     box.querySelectorAll("[data-kbm]").forEach(b=>b.onclick=()=>{ mod=b.dataset.kbm; box.querySelectorAll("[data-kbm]").forEach(x=>x.classList.toggle("ink",x===b)); });
     const review=()=>{ if(!found.length){ res.innerHTML=`<p class="note">Нічого корисного не знайшлося.</p>`; return; }
@@ -3902,7 +3904,7 @@ async function openKB(O={}){
         try{ for(let i=0;i<pick.length;i+=150){ sb.textContent=`Зберігаю… ${Math.min(pick.length,i+150)} з ${pick.length}`; await Promise.race([SRV.kbAdd(pick.slice(i,i+150),status),new Promise((_,no)=>setTimeout(()=>no(new Error("timeout")),30000))]); } done(); toast(`Збережено ${pick.length}`); found=[]; files=[]; imgs=[]; box.querySelector("#kbtx").value=""; showFiles(); res.innerHTML=""; st.textContent="";
           setTab("base"); }catch(x){ done(); console.warn("kb save",x); toast(/function|does not exist|kb_add/.test(x.message||"")?"Спершу запусти в Supabase крок «База знань папками»":x.message==="timeout"?"Сервер довго не відповідає. Перевір вкладку «Папки» — можливо, вже збереглось":/forbidden/.test(x.message||"")?"Зберігати знання може лише власник — увійди в свій акаунт":"Не вдалося зберегти: "+String(x.message||"").slice(0,80)); } };
       res.querySelector("#kbsave").onclick=()=>save("confirmed"); res.querySelector("#kbsavep").onclick=()=>save("pending"); };
-    box.querySelector("#kbgo").onclick=async e=>{ const b=e.currentTarget, src=box.querySelector("#kbsrc").value.trim(); let text=box.querySelector("#kbtx").value.trim();
+    box.querySelector("#kbgo").onclick=async e=>{ const b=e.currentTarget, src=box.querySelector("#kbsrc").value.trim(); let text=box.querySelector("#kbtx").value.trim(); files=[...KBQ.files]; imgs=[...KBQ.imgs]; vids=[...KBQ.vids]; KBQ.files=[]; KBQ.imgs=[]; KBQ.vids=[];
       if(!text&&!files.length&&!imgs.length&&!vids.length) return toast("Встав текст або додай файл"); b.disabled=true; found=[]; meas=[]; res.innerHTML="";
       try{
         for(const f of files){ if(/\.json$/i.test(f.name)){ try{ const j=JSON.parse(await f.text()), arr=Array.isArray(j)?j:(j.items||[]); arr.filter(i=>i?.title).forEach(i=>found.push({module:KBN[i.module]?i.module:"general",kind:KB_KIND[i.kind]?i.kind:"note",title:String(i.title).slice(0,200),body:String(i.body||"").slice(0,1500),why:String(i.why||"").slice(0,400),how:String(i.how||"").slice(0,600),niche:String(i.niche||"").slice(0,80),src:String(i.src||src||f.name).slice(0,200),fmt:["wide","tall"].includes(i.fmt)?i.fmt:(kf||"all")})); }catch(x){ toast("Не вдалося прочитати "+f.name); } continue; }
