@@ -1120,7 +1120,7 @@ body.pub .fmts{margin-top:14px}body.pub .fmt .fs,body.pub .fmt .fopen,body.pub .
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="YuVi DEV">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>window.YV_DEV=true;window.YV_BUILD="02.11 03:03";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
+<script>window.YV_DEV=true;window.YV_BUILD="02.11 03:33";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="server.js?v=638196a2"></script>
@@ -3963,7 +3963,7 @@ async function openKB(O={}){
       D.run=false; D.cur=""; if(alive()) await load(); };
     $b("#dvrun").onclick=()=>{ if(D.run){ D.stop=true; $b("#dvrun").textContent="Зупиняю…"; } else run(); };
     $b("#dvretry").onclick=async()=>{ const ids=LIST.filter(r=>r.status==="error"); try{ for(const r of ids){ await SRV.devSpecDel(r.id); } await SRV.devQueue(ids.map(r=>r.url),D.mins); await load(); run(); }catch(e){ toast("Не вдалося"); } };
-    $b("#dvadd").onclick=async()=>{ const raw=$b("#dvl").value.split(/\s+/).map(q=>q.trim()).filter(Boolean), bad=raw.filter(u=>!/^https:\/\/(www\.|m\.)?(youtube\.com\/(watch\?v=|shorts\/)|youtu\.be\/)[\w-]{6,}/.test(u)), links=[...new Set(raw.filter(u=>!bad.includes(u)))].filter(u=>!LIST.some(r=>r.url===u&&r.status!=="error"));
+    $b("#dvadd").onclick=async()=>{ const raw=$b("#dvl").value.split(/\s+/).map(q=>q.trim()).filter(Boolean), bad=raw.filter(u=>!/^https:\/\/(www\.|m\.)?(youtube\.com\/(watch\?v=|shorts\/)|youtu\.be\/)[\w-]{6,}/.test(u)), yid=(u)=>String(u).match(/(?:v=|shorts\/|youtu\.be\/)([\w-]{11})/)?.[1]||"", have=new Set(LIST.filter(r=>r.status!=="error").map(r=>yid(r.url)).filter(Boolean)), links=[...new Set(raw.filter(u=>!bad.includes(u)).map(u=>{ const id=yid(u); return id?(/shorts\//.test(u)?`https://www.youtube.com/shorts/${id}`:`https://www.youtube.com/watch?v=${id}`):u; }))].filter(u=>!have.has(yid(u)));
       if(!links.length&&!files.length){ toast(bad.length?"Це не схоже на посилання YouTube":"Встав посилання або додай відео"); return; }
       const btn=$b("#dvadd"); btn.disabled=true; btn.textContent="Додаю…";
       try{ const paths=[]; for(const f of files){ paths.push(await SRV.upload("spec/"+Date.now()+"-"+f.name.replace(/[^\w.-]+/g,"_"),f)); }
