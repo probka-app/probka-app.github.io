@@ -1050,6 +1050,7 @@ body.pub #ideacard{position:fixed;z-index:60;left:50%;transform:translateX(-50%)
 body.pub .fmts{margin-top:14px}body.pub .fmt .fs,body.pub .fmt .fopen,body.pub .fmt .fdevb{display:none!important}body.pub .fmt.fdevp{padding:12px 14px;align-items:center}body.pub .fdevp .fprev{width:36px;height:36px;border-radius:10px}body.pub .fdevp .fprev svg{width:20px;height:20px}body.pub .fmt .fn{font-size:16px}.fsoon{margin-left:auto;flex:none;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);color:rgba(255,255,255,.7)}.fprev.kprev{width:64px!important;height:114px!important;object-fit:cover;background:#000;padding:0}body.pub .ideacard small{display:none!important}.fdevb{display:inline-block;align-self:flex-start;width:max-content;margin-top:6px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.02em;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);color:rgba(255,255,255,.75)}
 .frdy{display:inline-block;margin-top:6px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;background:rgba(48,209,88,.16);color:#7fe0b0}
 #pubtog{display:block;margin:14px auto 0;padding:8px 14px;border-radius:999px;font-size:13px;background:rgba(255,255,255,.06);border:1px dashed rgba(255,255,255,.25);color:inherit}
+.dvcard{border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:12px 14px;margin:0 0 12px;background:rgba(255,255,255,.04)}
 </style>
 
 <div class="home" id="home"><script>document.body.classList.add("pub")</script>
@@ -1118,10 +1119,10 @@ body.pub .fmts{margin-top:14px}body.pub .fmt .fs,body.pub .fmt .fopen,body.pub .
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="YuVi">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>window.YV_DEV=false;window.YV_BUILD="02.11 02:48";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
+<script>window.YV_DEV=false;window.YV_BUILD="02.11 02:57";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="server.js?v=38181f15"></script>
+<script src="server.js?v=227661df"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.min.js"></script>
 <script>
@@ -3917,39 +3918,70 @@ async function openKB(O={}){
       catch(x){ st.className="status err"; st.textContent=x?.code==="rate_limited"||x?.message==="limit"?"Ліміт AI на сьогодні вичерпано.":"Не вдалося розібрати. Спробуй ще раз."; if(found.length) review(); }
       b.disabled=false; }; };
   // 🔧 Розбір для коду: Gemini дивиться відео (YouTube чи файл) і пише детальне ТЗ для рушія — черга на багато відео
-  const dev=async()=>{ const D=window.DEVQ||(window.DEVQ={q:[],busy:false,mins:10});
-    box.innerHTML=`<p class="note" style="margin:0 0 10px">Встав посилання на YouTube (кожне з нового рядка) або додай свої записи екрана. AI подивиться відео й складе технічне завдання для рушія: сцени з таймкодами, камера, персонажі, текст, інфографіка, звук, темп і «чого бракує нашому рушію». Потім натисни «Скопіювати нові для Claude» і встав мені в чат.</p>
+  // 🔧 Розбір для коду: черга відео на сервері → Gemini пише детальний технічний розбір → «Біблія режисера» (прихований промт генератора) + задачі для Claude
+  const dev=async()=>{ const D=window.DEVQ||(window.DEVQ={run:false,stop:false,mins:10,cur:""}); let LIST=[], BIB=null;
+    box.innerHTML=`<div class="dvcard"><h4 style="margin:0 0 4px">🧠 Біблія режисера</h4><p class="note" id="dvbs" style="margin:0 0 8px">…</p>
+        <div class="row"><button class="chip ink" type="button" id="dvlearn">Навчити режисера</button><button class="chip" type="button" id="dvbv">Переглянути</button></div><div id="dvbp"></div></div>
+      <h4>Додати відео</h4><p class="note" style="margin:0 0 8px">Посилання YouTube — кожне з нового рядка, хоч 100 за раз. Черга зберігається на сервері: можна закрити й продовжити пізніше.</p>
       <textarea class="cpd" id="dvl" rows="5" placeholder="https://www.youtube.com/watch?v=…&#10;https://youtube.com/shorts/…"></textarea>
       <div class="chips" style="justify-content:flex-start;margin:8px 0"><label class="chip">🎬 Свої відео<input type="file" id="dvf" accept="video/*" multiple class="sr"></label><span class="note" id="dvfn" style="margin:0"></span></div>
-      <h4>Скільки хвилин дивитись</h4><div class="chips" style="justify-content:flex-start">${[5,10,20,30].map(m=>`<button class="chip${D.mins===m?" ink":""}" type="button" data-dvm="${m}">${m} хв</button>`).join("")}</div>
-      <button class="big" type="button" id="dvgo">Розібрати</button><div id="dvq" style="margin-top:10px"></div>
-      <div class="row" style="margin-top:16px"><button class="chip ink" type="button" id="dvcp">📋 Скопіювати нові для Claude</button><button class="chip" type="button" id="dvdl">⬇ Завантажити все .md</button></div><div id="dvlist" style="margin-top:10px"><p class="status">Завантажую розбори…</p></div>`;
-    let files=[]; const qbox=box.querySelector("#dvq"), lst=box.querySelector("#dvlist");
-    const qdraw=()=>{ qbox.innerHTML=D.q.map(it=>`<div class="note" style="margin:2px 0">${it.st==="wait"?"⏳":it.st==="run"?"🔄":it.st==="ok"?"✅":"❌"} ${esc(it.n.slice(0,70))}${it.err?` — ${esc(it.err)}`:""}</div>`).join(""); };
+      <div class="chips" style="justify-content:flex-start">${[5,10,20,30].map(m=>`<button class="chip${D.mins===m?" ink":""}" type="button" data-dvm="${m}">${m} хв</button>`).join("")}</div>
+      <button class="big" type="button" id="dvadd">Додати в чергу</button>
+      <div class="dvcard" style="margin-top:12px"><p class="note" id="dvqs" style="margin:0 0 8px">…</p><div class="row"><button class="chip ink" type="button" id="dvrun">▶ Розбирати чергу</button><button class="chip" type="button" id="dvretry">↻ Повторити помилки</button></div></div>
+      <div class="row" style="margin-top:14px"><button class="chip" type="button" id="dvcp">📋 Задачі для Claude</button><button class="chip" type="button" id="dvdl">⬇ Усі розбори .md</button></div><div id="dvlist" style="margin-top:10px"><p class="status">Завантажую…</p></div>`;
+    let files=[]; const $b=(q)=>box.querySelector(q), alive=()=>box.isConnected&&!!$b("#dvlist");
     const caps=async()=>{ try{ if(!window.YVCine){ await new Promise((ok,no)=>{ const sc=document.createElement("script"); sc.src="a/cine.js?v="+(window.YV_BUILD||Date.now()); sc.onload=ok; sc.onerror=no; document.head.appendChild(sc); }); } return YVCine._t.caps?.()||""; }catch(e){ return ""; } };
-    const load=async()=>{ let L2=[]; try{ L2=await SRV.devSpecs(); }catch(e){ lst.innerHTML=`<p class="status">Не вдалося завантажити (виконай кроки 83–84 у Supabase).</p>`; return []; }
-      lst.innerHTML=L2.length?L2.map(r=>`<div class="kbi ${r.status==="new"?"pending":"confirmed"}" data-dv="${r.id}"><small>${new Date(r.created_at).toLocaleString("uk-UA")} · ${r.status==="new"?"нове":r.status==="sent"?"передано Claude":"зроблено"}</small><b>${esc(r.title||r.url)}</b><p class="note" style="margin:2px 0">${esc(r.url)}</p>
-        <div class="kbact"><button class="chip" type="button" data-dvv="${r.id}">Переглянути</button><button class="chip" type="button" data-dvc="${r.id}">Скопіювати</button><button class="chip" type="button" data-dvx="${r.id}">✕</button></div><pre class="dvsp" hidden style="white-space:pre-wrap;font-size:13px;max-height:50vh;overflow:auto">${esc(r.spec)}</pre></div>`).join(""):`<p class="status">Розборів ще немає.</p>`;
-      lst.querySelectorAll("[data-dvv]").forEach(b=>b.onclick=()=>{ const pr=b.closest(".kbi").querySelector(".dvsp"); pr.hidden=!pr.hidden; });
-      lst.querySelectorAll("[data-dvc]").forEach(b=>b.onclick=async()=>{ const r=L2.find(x=>x.id===b.dataset.dvc); try{ await navigator.clipboard.writeText(`# ${r.title}\n${r.url}\n\n${r.spec}`); b.textContent="✓ Скопійовано"; }catch(e){ toast("Не вдалося скопіювати"); } });
-      lst.querySelectorAll("[data-dvx]").forEach(b=>b.onclick=async()=>{ try{ await SRV.devSpecDel(b.dataset.dvx); b.closest(".kbi").remove(); }catch(e){ toast("Не вдалося"); } });
-      return L2; };
-    let LIST=await load();
-    box.querySelector("#dvf").onchange=e=>{ files=[...files,...e.target.files].slice(0,10); e.target.value=""; box.querySelector("#dvfn").textContent=files.map(f=>"🎬 "+f.name).join(" · "); };
+    const ERR={bad_url:"не YouTube-посилання",forbidden:"лише власник",busy:"ліміт Gemini — спробуй пізніше",too_big:"файл завеликий",no_key:"немає ключа Gemini",empty:"порожня відповідь",ai_failed:"Gemini не зміг (приватне/недоступне відео?)",network:"немає зв'язку"};
+    const stats=()=>{ const q=LIST.filter(r=>r.status==="queue").length, e=LIST.filter(r=>r.status==="error").length, ok=LIST.filter(r=>!["queue","error"].includes(r.status)), nl=ok.filter(r=>!r.learned).length;
+      $b("#dvqs").innerHTML=D.run?`🔄 Розбираю${D.cur?`: <b>${esc(D.cur.slice(0,50))}</b>`:"…"} · у черзі ${q} · не закривай цю вкладку`:`У черзі: <b>${q}</b> · розібрано: <b>${ok.length}</b>${e?` · помилок: <b>${e}</b>`:""}`;
+      $b("#dvrun").textContent=D.run?"■ Зупинити":"▶ Розбирати чергу"; $b("#dvretry").hidden=!e;
+      $b("#dvbs").innerHTML=`${BIB?.body?`Містить ${Math.round(BIB.body.length/100)/10} тис. знаків знань · оновлено ${new Date(BIB.updated_at).toLocaleString("uk-UA")}`:"Ще порожня — режисер працює за базовими правилами."}<br>Нових розборів, яких режисер ще не вивчив: <b>${nl}</b>. Ці знання непомітно для людей використовуються в кожному відео.`;
+      $b("#dvlearn").disabled=!nl||D.learn; };
+    const draw=()=>{ const done=LIST.filter(r=>r.status!=="queue");
+      $b("#dvlist").innerHTML=done.length?done.slice(0,60).map(r=>`<div class="kbi ${r.status==="error"?"pending":"confirmed"}"><small>${new Date(r.created_at).toLocaleString("uk-UA")} · ${r.status==="error"?"❌ "+esc(ERR[r.err]||r.err||"помилка"):r.learned?"🧠 вивчено":"нове"}${r.status==="sent"?" · передано Claude":""}</small><b>${esc(r.title||r.url)}</b><p class="note" style="margin:2px 0;word-break:break-all">${esc(r.url)}</p>
+        <div class="kbact">${r.spec?`<button class="chip" type="button" data-dvv="${r.id}">Переглянути</button><button class="chip" type="button" data-dvc="${r.id}">Скопіювати</button>`:""}<button class="chip" type="button" data-dvx="${r.id}">✕</button></div><pre class="dvsp" hidden style="white-space:pre-wrap;font-size:13px;max-height:50vh;overflow:auto"></pre></div>`).join("")+(done.length>60?`<p class="note">…і ще ${done.length-60} (усі — у «⬇ .md»)</p>`:""):`<p class="status">Розборів ще немає.</p>`;
+      $b("#dvlist").querySelectorAll("[data-dvv]").forEach(b=>b.onclick=()=>{ const pr=b.closest(".kbi").querySelector(".dvsp"); if(!pr.textContent) pr.textContent=LIST.find(x=>x.id===b.dataset.dvv)?.spec||""; pr.hidden=!pr.hidden; });
+      $b("#dvlist").querySelectorAll("[data-dvc]").forEach(b=>b.onclick=async()=>{ const r=LIST.find(x=>x.id===b.dataset.dvc); try{ await navigator.clipboard.writeText(`# ${r.title}\n${r.url}\n\n${r.spec}`); b.textContent="✓ Скопійовано"; }catch(e){ toast("Не вдалося скопіювати"); } });
+      $b("#dvlist").querySelectorAll("[data-dvx]").forEach(b=>b.onclick=async()=>{ try{ await SRV.devSpecDel(b.dataset.dvx); LIST=LIST.filter(x=>x.id!==b.dataset.dvx); draw(); }catch(e){ toast("Не вдалося"); } });
+      stats(); };
+    const load=async()=>{ try{ LIST=await SRV.devSpecs(); }catch(e){ $b("#dvlist").innerHTML=`<p class="status">Не вдалося завантажити (виконай кроки 83–85 у Supabase).</p>`; return; } try{ BIB=await SRV.bibleGet(); }catch(e){ BIB=null; } if(alive()) draw(); };
+    await load();
+    $b("#dvf").onchange=e=>{ files=[...files,...e.target.files].slice(0,20); e.target.value=""; $b("#dvfn").textContent=files.map(f=>"🎬 "+f.name).join(" · "); };
     box.querySelectorAll("[data-dvm]").forEach(b=>b.onclick=()=>{ D.mins=+b.dataset.dvm; box.querySelectorAll("[data-dvm]").forEach(o=>o.classList.toggle("ink",o===b)); });
-    qdraw();
-    box.querySelector("#dvgo").onclick=async()=>{ const links=box.querySelector("#dvl").value.split(/\s+/).map(q=>q.trim()).filter(q=>/^https?:\/\//.test(q)); if(!links.length&&!files.length){ toast("Встав посилання або додай відео"); return; }
-      links.forEach(u=>D.q.push({n:u,url:u,st:"wait"})); files.forEach(f=>D.q.push({n:f.name,file:f,st:"wait"})); files=[]; box.querySelector("#dvl").value=""; box.querySelector("#dvfn").textContent=""; qdraw();
-      if(D.busy) return; D.busy=true; const cp=await caps();
-      for(const it of D.q){ if(it.st!=="wait") continue; it.st="run"; qdraw();
-        try{ let o={mins:D.mins,caps:cp}; if(it.file){ o.path=await SRV.upload("spec/"+Date.now()+"-"+it.file.name.replace(/[^\w.-]+/g,"_"),it.file); } else o.url=it.url;
-          await SRV.videoSpec(o); it.st="ok"; }catch(e){ it.st="err"; it.err={bad_url:"не YouTube-посилання",forbidden:"лише власник",busy:"сервіс зайнятий — спробуй пізніше",too_big:"файл завеликий",no_key:"немає ключа Gemini",empty:"порожня відповідь",ai_failed:"Gemini не зміг розібрати (приватне/недоступне відео?)"}[e?.message]||String(e?.message||e).slice(0,60); }
-        qdraw(); if(box.isConnected&&box.querySelector("#dvlist")) LIST=await load(); }
-      D.busy=false; };
-    const mdAll=(rows)=>rows.map(r=>`# ${r.title}\n${r.url}\n\n${r.spec}`).join("\n\n---\n\n");
-    box.querySelector("#dvcp").onclick=async()=>{ const nw=(LIST||[]).filter(r=>r.status==="new"); if(!nw.length){ toast("Нових розборів немає"); return; }
-      try{ await navigator.clipboard.writeText(mdAll(nw)); await SRV.devSpecMark(nw.map(r=>r.id),"sent"); toast(`Скопійовано ${nw.length} — встав у чат з Claude`); LIST=await load(); }catch(e){ toast("Не вдалося скопіювати — спробуй «Завантажити .md»"); } };
-    box.querySelector("#dvdl").onclick=()=>{ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([mdAll(LIST||[])],{type:"text/markdown"})); a.download=`yuvi-rozbory-${Date.now()}.md`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),6e4); }; };
+    // черга: беремо найстаріші «queue» по одному; між відео пауза, щоб не впертися в ліміт Gemini
+    const run=async()=>{ if(D.run) return; D.run=true; D.stop=false; stats(); const cp=await caps(); let fails=0;
+      while(!D.stop){ let rows=[]; try{ rows=(await SRV.devSpecs()).filter(r=>r.status==="queue").reverse(); }catch(e){ break; } const it=rows[0]; if(!it) break; D.cur=it.url; if(alive()){ LIST=rows.length?LIST.map(r=>r):LIST; stats(); }
+        try{ await SRV.videoSpec({ id:it.id, mins:it.mins||D.mins, caps:cp, ...(/^https?:/.test(it.url)?{url:it.url}:{path:it.url}) }); fails=0; }
+        catch(e){ const m=String(e?.message||e?.code||e); if(m==="busy"){ fails++; if(fails>=3){ toast("Gemini на ліміті — продовжиш пізніше"); break; } await new Promise(r=>setTimeout(r,60000)); continue; } await SRV.devSpecErr(it.id,m); }
+        if(alive()) await load(); await new Promise(r=>setTimeout(r,4000)); }
+      D.run=false; D.cur=""; if(alive()) await load(); };
+    $b("#dvrun").onclick=()=>{ if(D.run){ D.stop=true; $b("#dvrun").textContent="Зупиняю…"; } else run(); };
+    $b("#dvretry").onclick=async()=>{ const ids=LIST.filter(r=>r.status==="error"); try{ for(const r of ids){ await SRV.devSpecDel(r.id); } await SRV.devQueue(ids.map(r=>r.url),D.mins); await load(); run(); }catch(e){ toast("Не вдалося"); } };
+    $b("#dvadd").onclick=async()=>{ const raw=$b("#dvl").value.split(/\s+/).map(q=>q.trim()).filter(Boolean), bad=raw.filter(u=>!/^https:\/\/(www\.|m\.)?(youtube\.com\/(watch\?v=|shorts\/)|youtu\.be\/)[\w-]{6,}/.test(u)), links=[...new Set(raw.filter(u=>!bad.includes(u)))].filter(u=>!LIST.some(r=>r.url===u&&r.status!=="error"));
+      if(!links.length&&!files.length){ toast(bad.length?"Це не схоже на посилання YouTube":"Встав посилання або додай відео"); return; }
+      const btn=$b("#dvadd"); btn.disabled=true; btn.textContent="Додаю…";
+      try{ const paths=[]; for(const f of files){ paths.push(await SRV.upload("spec/"+Date.now()+"-"+f.name.replace(/[^\w.-]+/g,"_"),f)); }
+        await SRV.devQueue([...links,...paths],D.mins); files=[]; $b("#dvl").value=bad.join("\n"); $b("#dvfn").textContent=""; toast(`У черзі +${links.length+paths.length}${bad.length?` · ${bad.length} посилань не YouTube — лишив у полі`:""}`); await load(); run(); }
+      catch(e){ toast(e?.message==="too_big"?"Файл завеликий":"Не вдалося додати"); } btn.disabled=false; btn.textContent="Додати в чергу"; };
+    // навчання режисера: нові розбори партіями по 3 зливаються в Біблію на сервері (там же й лежить — на сайті її не видно людям)
+    $b("#dvlearn").onclick=async()=>{ if(D.learn) return; const todo=LIST.filter(r=>r.spec&&!r.learned&&r.status!=="error"&&r.status!=="queue").reverse(); if(!todo.length) return; D.learn=true; stats(); const cp=await caps(), btn=$b("#dvlearn");
+      try{ for(let k=0;k<todo.length;k+=3){ const part=todo.slice(k,k+3); btn.textContent=`Вчу… ${Math.min(k+3,todo.length)}/${todo.length}`;
+          await SRV.bibleMerge(`МОЖЛИВОСТІ РУШІЯ (лише їх можна використовувати в правилах):\n${cp}\n\nНОВІ РОЗБОРИ (${part.length}):\n\n${part.map((r,n)=>`### Розбір ${n+1}\n${r.spec.slice(0,60000)}`).join("\n\n---\n\n")}`);
+          await SRV.devLearned(part.map(r=>r.id)); part.forEach(r=>r.learned=true); if(alive()) stats(); }
+        toast("Режисер вивчив нові розбори ✓"); }
+      catch(e){ toast(e?.code==="rate_limited"?"Ліміт AI на сьогодні":e?.message==="forbidden"?"Лише власник":"Не вдалося — спробуй ще раз (вивчене збережено)"); }
+      D.learn=false; btn.textContent="Навчити режисера"; if(alive()) await load(); };
+    $b("#dvbv").onclick=()=>{ const bp=$b("#dvbp"); if(bp.innerHTML){ bp.innerHTML=""; return; }
+      bp.innerHTML=`<textarea class="cpd" id="dvbt" rows="14" style="margin-top:8px;font-size:13px">${esc(BIB?.body||"")}</textarea><div class="row"><button class="chip ink" type="button" id="dvbsave">Зберегти правки</button></div><p class="note">Стара версія зберігається в історії на сервері.</p>`;
+      $b("#dvbsave").onclick=async()=>{ try{ await SRV.bibleSet($b("#dvbt").value.trim()); toast("Збережено"); await load(); }catch(e){ toast("Не вдалося"); } }; };
+    // для Claude — лише те, що треба кодити: «чого бракує рушію» і план з нових розборів + розділ «ЧЕКАЄ В РУШІЇ» з Біблії
+    const gaps=(t)=>{ const m=String(t||"").match(/#+\s*1[23]\.[\s\S]*$/); return m?m[0].trim():""; };
+    $b("#dvcp").onclick=async()=>{ const nw=LIST.filter(r=>r.spec&&r.status==="new"); const wait=(BIB?.body||"").match(/#*\s*ЧЕКАЄ В РУШІЇ[\s\S]*$/i)?.[0]||"";
+      if(!nw.length&&!wait){ toast("Нових задач немає"); return; }
+      const txt=`ЗАДАЧІ ДЛЯ РУШІЯ АНІМАЦІЙНОЇ СТУДІЇ\n\n${wait?`## З Біблії режисера\n${wait}\n\n`:""}${nw.map(r=>`## ${r.title}\n${r.url}\n${gaps(r.spec)||r.spec.slice(-4000)}`).join("\n\n---\n\n")}`;
+      try{ await navigator.clipboard.writeText(txt.slice(0,180000)); if(nw.length) await SRV.devSpecMark(nw.map(r=>r.id),"sent"); toast(`Скопійовано — встав у чат з Claude`); await load(); }catch(e){ toast("Не вдалося скопіювати — спробуй «⬇ .md»"); } };
+    $b("#dvdl").onclick=()=>{ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([LIST.filter(r=>r.spec).map(r=>`# ${r.title}\n${r.url}\n\n${r.spec}`).join("\n\n---\n\n")],{type:"text/markdown"})); a.download=`yuvi-rozbory-${Date.now()}.md`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),6e4); };
+    if(D.run) stats(); else if(LIST.some(r=>r.status==="queue")) $b("#dvqs").insertAdjacentHTML("beforeend"," — натисни «▶ Розбирати чергу»"); };
   const setTab=(t)=>{ BS.querySelectorAll("[data-kbt]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.kbt===t)); t==="chat"?chat():t==="up"?up():t==="dev"?dev():base(); };
   BS.querySelectorAll("[data-kbt]").forEach(b=>b.onclick=()=>setTab(b.dataset.kbt));
   setTab(O.tab||"base"); }
@@ -4730,7 +4762,7 @@ async function loadUIF(){ if(!window.SRV?.uiFlags) { applyUIF(); return; } const
                save:{t:"Зберігаю відео…",m:["Рахую, скільки чекати…"]} };
   let el, n=0, p=0, timer=null, endT=null, msgT=null, bgT=null, kind="text", hidden=false, last={t:"",at:0}, real=false;
   // скільки зазвичай триває кожен вид роботи (вчиться на ділі) — для зворотного відліку
-  const EST0={text:14,image:18,voice:12,listen:10,montage:35,save:40}; let EST={...EST0}; try{ Object.assign(EST,JSON.parse(localStorage.getItem("yvBusyEst")||"{}")); }catch(e){}
+  const EST0={text:14,image:18,voice:12,listen:10,montage:75,save:40}; let EST={...EST0}; try{ Object.assign(EST,JSON.parse(localStorage.getItem("yvBusyEst")||"{}")); }catch(e){}
   let t0=0, endAt=0, cdT=null, lastSec=-1;
   function tickSnd(sec){ if(!sndOn()||hidden) return; try{ ac(); const t=AC.currentTime+.005, o=AC.createOscillator(), g=AC.createGain(), lp=AC.createBiquadFilter(); o.type="sine"; o.frequency.setValueAtTime(sec%2?720:640,t); o.frequency.exponentialRampToValueAtTime(sec%2?560:500,t+.07);
     lp.type="lowpass"; lp.frequency.value=1400; g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(.022,t+.006); g.gain.exponentialRampToValueAtTime(.0001,t+.11); o.connect(lp).connect(g).connect(AC.destination); o.start(t); o.stop(t+.13); }catch(e){} }

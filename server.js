@@ -46,7 +46,7 @@
     try {
       r = await fetch(`${FN}/ai-text`, { method: "POST", signal: opts?.signal,
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${SRV.session.access_token}`, apikey: CFG.key },
-        body: JSON.stringify({ prompt, json: !!asJson, max: opts?.max, kb: !!opts?.kb, ...(Array.isArray(opts?.kb) ? { kbm: opts.kb } : {}), ...(opts?.kbFmt ? { kbf: opts.kbFmt } : {}) }) });
+        body: JSON.stringify({ prompt, json: !!asJson, max: opts?.max, kb: !!opts?.kb, ...(Array.isArray(opts?.kb) ? { kbm: opts.kb } : {}), ...(opts?.kbFmt ? { kbf: opts.kbFmt } : {}), ...(Array.isArray(opts?.sys) ? { sys: opts.sys } : {}), ...(Array.isArray(opts?.images) && opts.images.length ? { images: opts.images } : {}) }) });
     } catch (e) { if (e?.name === "AbortError") throw { code: "cancelled" }; throw { code: "network" }; }
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw { code: { limit: "rate_limited", busy: "busy", no_key: "no_key" }[j.error] || "server", message: j.error };
@@ -70,7 +70,7 @@
     const text = await aiText(prompt, opts, false); opts.onText?.({ text }); return { text };
   }, {
     json: async (prompt, opts = {}) => {
-      const t = (await aiText(prompt, { ...opts, max: 4000 }, true)).replace(/^```(?:json)?\s*|\s*```$/g, "").trim();
+      const t = (await aiText(prompt, { ...opts, max: opts.max || 4000 }, true)).replace(/^```(?:json)?\s*|\s*```$/g, "").trim();
       const a = Math.min(...["[", "{"].map((c) => { const i = t.indexOf(c); return i < 0 ? Infinity : i; }));
       const b = Math.max(t.lastIndexOf("]"), t.lastIndexOf("}"));
       try { return JSON.parse(a === Infinity ? t : t.slice(a, b + 1)); } catch (e) {}
@@ -259,8 +259,14 @@
   SRV.promoDel = async (names) => { try { await sb.storage.from("promo").remove(names); } catch (e) {} };
   // розбори відео «для коду» (лише власник)
   SRV.videoSpec = async (o) => busy("text", () => call("video-spec", o), true);
-  SRV.devSpecs = async () => { const { data, error } = await sb.from("dev_specs").select("id,url,title,spec,status,created_at").order("created_at", { ascending: false }).limit(200); if (error) throw new Error(error.message); return data || []; };
+  SRV.devQueue = async (urls, mins) => { const u = uid(); const { error } = await sb.from("dev_specs").insert(urls.map((url) => ({ owner: u, url, status: "queue", mins }))); if (error) throw new Error(error.message); };
+  SRV.devSpecErr = async (id, err) => { await sb.from("dev_specs").update({ status: "error", err: String(err).slice(0, 200) }).eq("id", id); };
+  SRV.bibleGet = async () => { const { data, error } = await sb.from("ai_prompts").select("key,body,updated_at").in("key", ["director_learned"]); if (error) throw new Error(error.message); return data?.[0] || null; };
+  SRV.bibleSet = async (body) => { const { data: old } = await sb.from("ai_prompts").select("body").eq("key", "director_learned").maybeSingle(); if (old?.body) await sb.from("ai_prompt_versions").insert({ key: "director_learned", body: old.body, note: "manual edit" }); const { error } = await sb.from("ai_prompts").upsert({ key: "director_learned", body, updated_at: new Date().toISOString() }); if (error) throw new Error(error.message); };
+  SRV.bibleMerge = async (prompt) => aiTextRaw(prompt, { sys: ["bible_merge"], max: 7000 }, false);
+  SRV.devSpecs = async () => { const { data, error } = await sb.from("dev_specs").select("id,url,title,spec,status,err,mins,learned,created_at").order("created_at", { ascending: false }).limit(500); if (error) throw new Error(error.message); return data || []; };
   SRV.devSpecMark = async (ids, status) => { const { error } = await sb.from("dev_specs").update({ status }).in("id", ids); if (error) throw new Error(error.message); };
+  SRV.devLearned = async (ids) => { const { error } = await sb.from("dev_specs").update({ learned: true }).in("id", ids); if (error) throw new Error(error.message); };
   SRV.devSpecDel = async (id) => { const { error } = await sb.from("dev_specs").delete().eq("id", id); if (error) throw new Error(error.message); };
   SRV.job = async (kind, input) => { try { return await rpc("job_create", { p_kind: kind, p_input: input }); } catch (x) { throw new Error(x.message); } };
   SRV.jobGet = async (id) => rpc("job_get", { p_id: id });

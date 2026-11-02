@@ -1004,7 +1004,7 @@ ${a0 === 0 ? `Визнач mood музики: ${Object.entries(MOODS).map(([k, v
 Відповідай тільки JSON: ${PLAN_JSON}`;
     // якщо модель повертає порожньо — пробуємо з меншою базою знань (коротший контекст)
     const KBS = [["style", "edit", "story", "hook", "camera", "sound", "general"], ["style", "camera", "hook"], []];
-    let err; for (let k = 0; k < 3; k++) { try { const r = await sample.json(ask, { cache: false, ...(KBS[k].length ? { kb: KBS[k] } : {}), max: k ? 3200 : 4000 }); if (Array.isArray(r?.scenes) && r.scenes.length) return r; err = new Error("plan_empty"); } catch (e) { err = e; if (/limit|login|no_key/.test(e?.message || "")) throw e; } }
+    let err; for (let k = 0; k < 3; k++) { try { const r = await sample.json(ask, { cache: false, ...(k < 2 ? { sys: ["director"] } : {}), ...(KBS[k].length ? { kb: KBS[k] } : {}), max: k ? 3200 : 4000 }); if (Array.isArray(r?.scenes) && r.scenes.length) return r; err = new Error("plan_empty"); } catch (e) { err = e; if (/limit|login|no_key/.test(e?.message || "")) throw e; } }
     throw err; }
   async function aiPlan(L, extra = "") {
     const n = L.words.length, STEP = 70, parts = []; for (let a = 0; a < n; a += STEP) parts.push([a, Math.min(n, a + STEP)]);
@@ -1031,8 +1031,55 @@ ${numbered(L)}
 ${SPEC}
 Поточний план (JSON): ${JSON.stringify({ mood: L.mood, scenes: strip })}
 Людина просить змінити: «${text}». Зміни лише те, про що просять. Музика — поле mood (${Object.keys(MOODS).join(", ")}).
-Відповідай тільки JSON: {"mood":"…","scenes":[…повний новий список…],"say":"одне коротке речення — що зроблено"}`, { cache: false, kb: ["style", "edit", "general"], max: 8000 });
+Відповідай тільки JSON: {"mood":"…","scenes":[…повний новий список…],"say":"одне коротке речення — що зроблено"}`, { cache: false, sys: ["director"], kb: ["style", "edit", "general"], max: 8000 });
     if (Array.isArray(r?.scenes) && r.scenes.length) L.scenes = normPlan(r, L); if (MOODS[r?.mood]) L.mood = r.mood; return r?.say || "Готово."; }
+  /* ---------- автоперевірка: AI-редактор дивиться кадри першого варіанта й виправляє план (1 прохід) ---------- */
+  // контакт-аркуші: по кадру з кожної сцени (до 36), 4×3 на аркуш, з номером сцени й часом
+  function contactSheets(L) { const sc = L.scenes.map((z, i) => [z, i]).filter(([z]) => !z.ad), N = sc.length, pick = N <= 36 ? sc : Array.from({ length: 36 }, (_, k) => sc[Math.floor(k * N / 36)]);
+    const TW = 240, TH = 427, out = [], big = document.createElement("canvas"); big.width = TW; big.height = TH; const bx = big.getContext("2d");
+    for (let p = 0; p < pick.length; p += 12) { const part = pick.slice(p, p + 12), cv = document.createElement("canvas"); cv.width = TW * 4; cv.height = TH * Math.ceil(part.length / 4); const x = cv.getContext("2d"); x.fillStyle = "#000"; x.fillRect(0, 0, cv.width, cv.height);
+      part.forEach(([z, i], k) => { const t = Math.min(z.t1 - .05, z.t0 + Math.min(1.1, (z.t1 - z.t0) * .6)); try { drawFrame(bx, L, t, TW, TH); } catch (e) {} const X = (k % 4) * TW, Y = Math.floor(k / 4) * TH; x.drawImage(big, X, Y);
+        x.fillStyle = "rgba(0,0,0,.7)"; x.fillRect(X, Y, 118, 30); x.fillStyle = "#ffe14d"; x.font = "700 20px system-ui,sans-serif"; x.textBaseline = "middle"; x.fillText(`#${i} ${z.t0.toFixed(1)}с`, X + 6, Y + 15); x.strokeStyle = "#000"; x.lineWidth = 2; x.strokeRect(X, Y, TW, TH); });
+      out.push({ mime: "image/jpeg", data: cv.toDataURL("image/jpeg", .72).split(",")[1] }); if (out.length >= 3) break; }
+    return out; }
+  // зауваження, які видно без AI (тривалість, повтори, хук, написи)
+  function autoChecks(L) { const S = L.scenes, out = []; const ns = S.filter((z) => !z.ad);
+    if (ns[0] && (ns[0].shot === "wide" || ns[0].cam === "still")) out.push("перша сцена — загальний план або нерухома камера: слабкий хук");
+    if (ns[0] && !ns[0].cap) out.push("на першій сцені немає напису-гачка");
+    if (ns[1] && ns[1].t0 > 2.2) out.push(`друга сцена з'являється лише на ${ns[1].t0.toFixed(1)} с`);
+    S.forEach((z, i) => { if (z.ad) return; const d = z.t1 - z.t0; if (d > 3.6) out.push(`сцена #${i} триває ${d.toFixed(1)} с — задовго`);
+      const q = S[i + 1]; if (q && !q.ad && q.place === z.place && q.shot === z.shot) out.push(`сцени #${i} і #${i + 1}: однакові локація й план`);
+      if (q && !q.ad && q.hud && z.hud && q.hud.k === z.hud.k) out.push(`сцени #${i} і #${i + 1}: однаковий HUD ${z.hud.k}`);
+      if (z.cam === "still" && d > 1.6) out.push(`сцена #${i}: нерухома камера ${d.toFixed(1)} с`); });
+    let last = 0; S.forEach((z, i) => { if (z.ad) return; if (z.tr === "whip" || z.cam === "shake" || z.shot === "face" || (z.cap && z.cap.k !== "note")) { if (z.t0 - last > 8) out.push(`між ${last.toFixed(0)} і ${z.t0.toFixed(0)} с немає жодного «удару» (whip/shake/face/напис)`); last = z.t0; } });
+    const caps = ns.filter((z) => z.cap).length; if (ns.length > 4 && caps < ns.length / 5) out.push("замало написів на екрані"); if (caps > ns.length * .75) out.push("написи майже в кожній сцені — перевантаження");
+    const lastS = ns[ns.length - 1]; if (lastS && L.dur - lastS.t0 > 4.5) out.push("остання сцена задовга — фінал провисає");
+    return out.slice(0, 25); }
+  async function aiReview(L, hint = "") { if (!L?.scenes?.length) return null; timeline(L);
+    const strip = L.scenes.map((z, i) => [z, i]).filter(([z]) => !z.ad).map(([{ t0, t1, hitT, seed, dir, ...z }, i]) => ({ n: i, d: +(t1 - t0).toFixed(1), ...z, props: (z.props || []).map(({ at, ...p }) => p), hud: z.hud ? (({ at, ...h }) => ({ ...h, y: +(h.y / H).toFixed(2) }))(z.hud) : undefined, cap: z.cap ? (({ at, ...c }) => c)(z.cap) : undefined }));
+    let imgs = []; try { imgs = contactSheets(L); } catch (e) {}
+    const auto = autoChecks(L);
+    const r = await sample.json(`ПЕРЕВІРКА ПЕРШОГО ВАРІАНТА РОЛИКА (${Math.round(L.dur)} с).
+Слова озвучки з номерами:
+${numbered(L)}
+${hint}
+${SPEC}
+План (n — номер сцени на кадрах, d — тривалість, с):
+${JSON.stringify({ mood: L.mood, scenes: strip })}
+Автоматичні зауваження: ${auto.length ? auto.map((q) => "— " + q).join("\n") : "немає"}
+${imgs.length ? `Контакт-аркуші: ${imgs.length} зображ., на кожному кадрі — номер сцени й час.` : ""}
+Знайди проблеми й виправ. Відповідай тільки JSON:
+{"issues":["коротко, що було не так"],"mood":"…","fix":[{повна нова сцена у форматі плану, з полем a — сцена з таким самим a замінюється; новий a — додається}],"drop":[a сцен, які прибрати]}
+Якщо все добре — {"issues":[],"fix":[],"drop":[]}.`, { cache: false, sys: ["director", "critic"], kb: ["style", "edit", "camera", "hook", "general"], images: imgs, max: 6000 });
+    const fix = Array.isArray(r?.fix) ? r.fix.filter((z) => Number.isInteger(z?.a) && z.a >= 0 && z.a < L.words.length) : [], drop = new Set(Array.isArray(r?.drop) ? r.drop.filter(Number.isInteger) : []);
+    if (!fix.length && !drop.size) return { issues: r?.issues || [], n: 0 };
+    const back = (z) => ({ ...z, hud: z.hud ? { ...z.hud, y: z.hud.y != null ? z.hud.y : undefined } : z.hud });
+    const cur = L.scenes.filter((z) => !z.ad).map(({ t0, t1, hitT, seed, dir, ...z }) => ({ ...z, props: (z.props || []).map(({ at, ...p }) => p), hud: z.hud ? (({ at, ...h }) => ({ ...h, y: +(h.y / H).toFixed(2) }))(z.hud) : null, cap: z.cap ? (({ at, ...c }) => c)(z.cap) : null }));
+    const by = new Map(cur.map((z) => [z.a, z])); drop.forEach((a) => { if (a !== 0) by.delete(a); }); fix.forEach((z) => by.set(z.a, back(z)));
+    const next = [...by.values()].sort((p, q) => p.a - q.a); if (next.length < Math.max(2, cur.length * .5)) return { issues: r?.issues || [], n: 0 };
+    const keep = { scenes: L.scenes, mood: L.mood };
+    try { L.scenes = normPlan({ scenes: next }, L); if (MOODS[r?.mood]) L.mood = r.mood; } catch (e) { Object.assign(L, keep); return { issues: [], n: 0 }; }
+    L._review = { issues: (r?.issues || []).slice(0, 12).map(String), n: fix.length + drop.size }; return L._review; }
   async function aiText(topic, sec, silent) { const want = Math.round(sec * (silent ? 1.6 : 2.4));
     const r = await sample.json(`Напиши ${silent ? "текст для анімаційного Reels БЕЗ голосу — він іде на екрані субтитрами, короткі речення по 4–9 слів" : "текст для озвучки за кадром — жива розмовна українська, як людина говорить другу"} на тему: «${topic}».
 Формат: вертикальне кіно-анімаційне відео (герой-чоловічок, сцени змінюються кожні 2–4 с) ≈ ${sec} с. Мета — вірусність: людина має додивитися до кінця й захотіти переслати. Перше речення — сильний гачок-питання або несподіваний факт (до 10 слів, без розгону); одразу відкрий петлю, яку закриєш лише у фіналі; кожні 5–7 с — нова міні-інтрига чи поворот; далі історія героя з поворотом (але/тому), конкретні числа й образи, які легко показати; фінал — сильне коротке ствердження (НЕ питання і не заклик подумати), яке замикає петлю з початком.
@@ -1430,8 +1477,10 @@ ${SPEC}
           let a0 = -1; for (let i = 0; i + 2 < ws.length; i++) if (ws[i] === mw[0] && ws[i + 1] === mw[1] && ws[i + 2] === mw[2]) { a0 = i; break; }
           if (a0 >= 0) { const a1 = Math.min(ws.length - 1, a0 + mw.length - 1); L.adRange = [a0, a1]; adHint = `Слова ${a0}–${a1} — рекламна вставка: її покаже окрема анімація телефона, тож сцен із a від ${a0} до ${a1} НЕ став. Сцена зі слова ${a1 + 1} — сильне повернення в історію (інший план, рух камери, емоція). Сцена перед словом ${a0} — герой у кадрі (на ній він дістане телефон).`; } }
         stage("Режисую сцени…"); await aiPlan(L, adHint || ""); if (L.adRange && L.ad !== "none") await inlineAd(L, src.adParts); ensureAd(L); if (OPT.mood !== "auto" && OPT.music) L.mood = OPT.mood; timeline(L);
+        // автоперевірка: AI-редактор дивиться кадри першого варіанта і виправляє (один прохід; якщо не вдалося — лишаємо перший варіант)
+        if (!L._auto) { stage("Перевіряю й покращую відео…"); try { await aiReview(L, adHint || ""); ensureAd(L); if (OPT.mood !== "auto" && OPT.music) L.mood = OPT.mood; timeline(L); } catch (e) { if (/limit|login/.test(e?.message || e?.code || "")) {} console.warn("review", e); } }
         stage("Пишу музику й звуки…"); L.aud = await soundtrack(L); });
-      track("ready", { v: `${L.scenes.length}sc/${Math.round(L.dur)}s/${L.mood}${L._auto ? "/auto" : ""}` }); screenEdit(L._auto ? `AI-режисер не відповів (${L._planErr || "помилка"}) — сцени розставлено автоматично. Можна натиснути «Інший варіант»` : "Тапни ▶, щоб подивитись. Правки — у вкладках під кнопкою «Зберегти»");
+      track("ready", { v: `${L.scenes.length}sc/${Math.round(L.dur)}s/${L.mood}${L._auto ? "/auto" : ""}` }); screenEdit(L._auto ? `AI-режисер не відповів (${L._planErr || "помилка"}) — сцени розставлено автоматично. Можна натиснути «Інший варіант»` : (L._review?.n ? `✓ AI-редактор перевірив і покращив відео (${L._review.n} правок). ` : "") + "Тапни ▶, щоб подивитись. Правки — у вкладках під кнопкою «Зберегти»");
     } catch (e) { console.error(e); const m = e?.message || e?.code || String(e); track("fail", { v: `${STAGE}|${String(m).slice(0, 40)}` });
       const msg = TTS_ERR[m] || (m === "nowords" ? "Не почув слів — спробуй ще раз" : m === "limit" ? "Ліміт на сьогодні вичерпано" : m === "login" ? "Увійди в акаунт" : `Не вийшло зібрати анімацію (етап: ${STAGE}; ${String(m).slice(0, 60)}). Спробуй ще раз або скинь цей текст Claude`);
       say(msg); L = null; screenContent(msg); if (m === "no_clone_quota") window.yvFeatureSheet?.("clone"); } }
@@ -1495,7 +1544,7 @@ ${SPEC}
 ${wish ? `Людина просить: «${wish}». Зроби саме це, решту залиш.` : "Зроби інший, сильніший варіант цієї сцени (інша локація або план, інша дія героя)."}
 ${RULES}
 ${SPEC}
-Відповідай тільки JSON: {"scene":{"a":${sc.a},…}}`, { cache: false, kb: ["style", "edit", "story", "camera", "general"], max: 2500 });
+Відповідай тільки JSON: {"scene":{"a":${sc.a},…}}`, { cache: false, sys: ["director"], kb: ["style", "edit", "story", "camera", "general"], max: 2500 });
     const sc2 = r?.scene || r?.scenes?.[0]; if (!sc2) throw new Error("plan_empty"); sc2.a = sc.a; const n = normPlan({ scenes: [{ ...sc2, a: 0 }] }, L)[0]; n.a = sc.a; L.scenes[i] = n; }
   let AUD_DIRTY = false;
   async function freshAudio() { if (!AUD_DIRTY) return; AUD_DIRTY = false; L.aud = await soundtrack(L); }
