@@ -1120,10 +1120,10 @@ body.pub .fmts{margin-top:14px}body.pub .fmt .fs,body.pub .fmt .fopen,body.pub .
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="YuVi DEV">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>window.YV_DEV=true;window.YV_BUILD="02.11 02:57";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
+<script>window.YV_DEV=true;window.YV_BUILD="02.11 03:03";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="server.js?v=227661df"></script>
+<script src="server.js?v=638196a2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.min.js"></script>
 <script>
@@ -3923,6 +3923,8 @@ async function openKB(O={}){
   const dev=async()=>{ const D=window.DEVQ||(window.DEVQ={run:false,stop:false,mins:10,cur:""}); let LIST=[], BIB=null;
     box.innerHTML=`<div class="dvcard"><h4 style="margin:0 0 4px">🧠 Біблія режисера</h4><p class="note" id="dvbs" style="margin:0 0 8px">…</p>
         <div class="row"><button class="chip ink" type="button" id="dvlearn">Навчити режисера</button><button class="chip" type="button" id="dvbv">Переглянути</button></div><div id="dvbp"></div></div>
+      <div class="dvcard"><h4 style="margin:0 0 4px">📊 Назви й превʼю</h4><p class="note" id="dvps" style="margin:0 0 8px">…</p>
+        <div class="row"><button class="chip ink" type="button" id="dvan">Аналітика</button><button class="chip" type="button" id="dvpl">Навчити упаковку</button><button class="chip" type="button" id="dvpf">Доповнити старі</button></div></div>
       <h4>Додати відео</h4><p class="note" style="margin:0 0 8px">Посилання YouTube — кожне з нового рядка, хоч 100 за раз. Черга зберігається на сервері: можна закрити й продовжити пізніше.</p>
       <textarea class="cpd" id="dvl" rows="5" placeholder="https://www.youtube.com/watch?v=…&#10;https://youtube.com/shorts/…"></textarea>
       <div class="chips" style="justify-content:flex-start;margin:8px 0"><label class="chip">🎬 Свої відео<input type="file" id="dvf" accept="video/*" multiple class="sr"></label><span class="note" id="dvfn" style="margin:0"></span></div>
@@ -3937,7 +3939,10 @@ async function openKB(O={}){
       $b("#dvqs").innerHTML=D.run?`🔄 Розбираю${D.cur?`: <b>${esc(D.cur.slice(0,50))}</b>`:"…"} · у черзі ${q} · не закривай цю вкладку`:`У черзі: <b>${q}</b> · розібрано: <b>${ok.length}</b>${e?` · помилок: <b>${e}</b>`:""}`;
       $b("#dvrun").textContent=D.run?"■ Зупинити":"▶ Розбирати чергу"; $b("#dvretry").hidden=!e;
       $b("#dvbs").innerHTML=`${BIB?.body?`Містить ${Math.round(BIB.body.length/100)/10} тис. знаків знань · оновлено ${new Date(BIB.updated_at).toLocaleString("uk-UA")}`:"Ще порожня — режисер працює за базовими правилами."}<br>Нових розборів, яких режисер ще не вивчив: <b>${nl}</b>. Ці знання непомітно для людей використовуються в кожному відео.`;
-      $b("#dvlearn").disabled=!nl||D.learn; };
+      $b("#dvlearn").disabled=!nl||D.learn;
+      const pk=LIST.filter(r=>r.pack), wv=pk.filter(r=>r.stats&&r.stats.views!=null).length, pnl=pk.filter(r=>!r.pack_learned).length, miss=LIST.filter(r=>!r.pack&&r.spec&&/youtu/.test(r.url)).length;
+      $b("#dvps").innerHTML=`У базі: <b>${pk.length}</b> відео з розбором назви й превʼю${wv?` (з цифрами переглядів: ${wv})`:""}.${miss?` Без розбору: ${miss}.`:""} Не вивчено: <b>${pnl}</b>. Ці знання використовуються, коли AI пише теми, назви й описи до відео.`;
+      $b("#dvpl").disabled=!pnl||D.plearn; $b("#dvpf").hidden=!miss; $b("#dvan").disabled=!pk.length; };
     const draw=()=>{ const done=LIST.filter(r=>r.status!=="queue");
       $b("#dvlist").innerHTML=done.length?done.slice(0,60).map(r=>`<div class="kbi ${r.status==="error"?"pending":"confirmed"}"><small>${new Date(r.created_at).toLocaleString("uk-UA")} · ${r.status==="error"?"❌ "+esc(ERR[r.err]||r.err||"помилка"):r.learned?"🧠 вивчено":"нове"}${r.status==="sent"?" · передано Claude":""}</small><b>${esc(r.title||r.url)}</b><p class="note" style="margin:2px 0;word-break:break-all">${esc(r.url)}</p>
         <div class="kbact">${r.spec?`<button class="chip" type="button" data-dvv="${r.id}">Переглянути</button><button class="chip" type="button" data-dvc="${r.id}">Скопіювати</button>`:""}<button class="chip" type="button" data-dvx="${r.id}">✕</button></div><pre class="dvsp" hidden style="white-space:pre-wrap;font-size:13px;max-height:50vh;overflow:auto"></pre></div>`).join("")+(done.length>60?`<p class="note">…і ще ${done.length-60} (усі — у «⬇ .md»)</p>`:""):`<p class="status">Розборів ще немає.</p>`;
@@ -3975,6 +3980,62 @@ async function openKB(O={}){
     $b("#dvbv").onclick=()=>{ const bp=$b("#dvbp"); if(bp.innerHTML){ bp.innerHTML=""; return; }
       bp.innerHTML=`<textarea class="cpd" id="dvbt" rows="14" style="margin-top:8px;font-size:13px">${esc(BIB?.body||"")}</textarea><div class="row"><button class="chip ink" type="button" id="dvbsave">Зберегти правки</button></div><p class="note">Стара версія зберігається в історії на сервері.</p>`;
       $b("#dvbsave").onclick=async()=>{ try{ await SRV.bibleSet($b("#dvbt").value.trim()); toast("Збережено"); await load(); }catch(e){ toast("Не вдалося"); } }; };
+    // ---- 📊 аналітика назв і превʼю ----
+    const score=(r)=>{ const st=r.stats||{}; return st.outlier!=null?+st.outlier:st.ratio!=null?+st.ratio:(+r.pack?.ctr_guess||0)/10; };
+    const pct=(a,f)=>a.length?Math.round(a.filter(f).length/a.length*100):0, avg=(a,f)=>a.length?Math.round(a.reduce((q,r)=>q+(+f(r)||0),0)/a.length*10)/10:0;
+    const med=(v)=>{ v=v.filter(x=>x!=null&&isFinite(x)).sort((p,q)=>p-q); return v.length?v[Math.floor(v.length/2)]:null; };
+    const dist=(a,f)=>{ const m={}; a.forEach(r=>{ const k=f(r); if(k) m[k]=(m[k]||0)+1; }); return Object.entries(m).sort((p,q)=>q[1]-p[1]); };
+    const HOOK={question:"питання",number:"число",what_if:"що, якби",secret:"таємниця",warning:"попередження",challenge:"челендж",story:"історія",how_to:"як зробити",comparison:"порівняння",list:"список",shock:"шок",other:"інше"};
+    const fmtN=(n)=>n==null?"—":n>=1e6?(Math.round(n/1e5)/10)+" млн":n>=1e3?Math.round(n/1e3)+" тис.":String(n);
+    const metrics=(a)=>({ n:a.length, views:med(a.map(r=>r.stats?.views)), outl:med(a.map(r=>r.stats?.outlier)), tw:avg(a,r=>r.pack.title?.words), num:pct(a,r=>r.pack.title?.has_number), q:pct(a,r=>r.pack.title?.has_question), gap:avg(a,r=>r.pack.title?.curiosity_gap),
+      ttx:pct(a,r=>+r.pack.thumb?.text_words>0), tww:avg(a,r=>r.pack.thumb?.text_words), face:pct(a,r=>+r.pack.thumb?.faces>0||+r.pack.thumb?.characters>0), con:avg(a,r=>r.pack.thumb?.contrast), arr:pct(a,r=>r.pack.thumb?.arrows_circles), rd:avg(a,r=>r.pack.thumb?.readable_small) });
+    const colorsOf=(a)=>{ const m={}; a.forEach(r=>(r.pack.thumb?.colors||[]).forEach(c=>{ const h=String(c).match(/^#?([0-9a-f]{6})$/i)?.[1]; if(!h) return; const q=[0,2,4].map(i=>Math.round(parseInt(h.slice(i,i+2),16)/51)*51); const k="#"+q.map(v=>v.toString(16).padStart(2,"0")).join(""); m[k]=(m[k]||0)+1; })); return Object.entries(m).sort((p,q)=>q[1]-p[1]).slice(0,10); };
+    const packSummary=(a)=>{ const srt=[...a].sort((p,q)=>score(q)-score(p)), k=Math.max(1,Math.round(a.length/4)), top=srt.slice(0,k), rest=srt.slice(k), T=metrics(top), R=metrics(rest), A=metrics(a);
+      const rows=[["Слів у назві","tw"],["Назв із числом, %","num"],["Назв-питань, %","q"],["Інтрига назви (0–10)","gap"],["Превʼю з текстом, %","ttx"],["Слів на превʼю","tww"],["З персонажем/обличчям, %","face"],["Контраст (0–10)","con"],["Стрілки/кола, %","arr"],["Читається дрібно (0–10)","rd"]];
+      return { top, rest, A, T, R, rows, hooks:dist(a,r=>r.pack.title?.hook), hooksTop:dist(top,r=>r.pack.title?.hook), emo:dist(a,r=>r.pack.title?.emotion), style:dist(a,r=>r.pack.thumb?.style), colors:colorsOf(top.length>=3?top:a) }; };
+    const analytics=()=>{ const a=LIST.filter(r=>r.pack); if(!a.length) return; const S=packSummary(a), hasSt=a.some(r=>r.stats?.views!=null);
+      const bars=(d,tot)=>d.slice(0,8).map(([k,v])=>`<div style="display:flex;align-items:center;gap:8px;margin:3px 0"><span style="width:110px;flex:none">${esc(HOOK[k]||k)}</span><span style="height:10px;border-radius:5px;background:#ffd84d;width:${Math.max(4,Math.round(v/tot*180))}px"></span><small>${Math.round(v/tot*100)}%</small></div>`).join("");
+      box.innerHTML=`<button class="chip" type="button" id="dvback">‹ Назад</button>
+        <h4>📊 База назв і превʼю · ${a.length} відео</h4>
+        <p class="note">${hasSt?`Медіана переглядів: <b>${fmtN(S.A.views)}</b>${S.A.outl!=null?` · медіана «у скільки разів більше за середнє відео каналу»: <b>×${S.A.outl}</b>`:""}. «Топ» — 25% відео з найкращим результатом відносно свого каналу.`:"Цифр переглядів ще немає (додай секрет YOUTUBE_API_KEY) — «топ» визначено за оцінкою AI."}</p>
+        <div class="dvcard"><b>Топ-25% проти решти</b><table style="width:100%;font-size:14px;margin-top:6px;border-collapse:collapse"><tr><th style="text-align:left"></th><th>Топ (${S.T.n})</th><th>Решта (${S.R.n})</th></tr>${S.rows.map(([n,k])=>{ const t=S.T[k], r=S.R[k], up=S.R.n&&t>r*1.15, dn=S.R.n&&t<r*.85; return `<tr style="border-top:1px solid rgba(255,255,255,.08)"><td style="padding:5px 0">${n}</td><td style="text-align:center;font-weight:700;color:${up?"#7be38f":dn?"#ff8a7a":"inherit"}">${t}</td><td style="text-align:center;opacity:.75">${S.R.n?r:"—"}</td></tr>`; }).join("")}</table></div>
+        <div class="dvcard"><b>Типи гачків у назвах</b>${bars(S.hooks,a.length)}${S.hooksTop.length&&S.R.n?`<p class="note" style="margin:6px 0 0">У топі найчастіше: <b>${S.hooksTop.slice(0,3).map(([k])=>esc(HOOK[k]||k)).join(", ")}</b></p>`:""}</div>
+        <div class="dvcard"><b>Емоції назв</b>${bars(S.emo,a.length)}</div>
+        <div class="dvcard"><b>Стиль превʼю</b>${bars(S.style,a.length)}<p class="note" style="margin:8px 0 4px">Кольори ${S.top.length>=3?"топ-превʼю":"превʼю"}:</p><div style="display:flex;gap:6px;flex-wrap:wrap">${S.colors.map(([c,v])=>`<span title="${c}" style="width:34px;height:34px;border-radius:8px;background:${c};border:1px solid rgba(255,255,255,.2)"></span>`).join("")}</div></div>
+        <h4>Усі відео (від найуспішніших)</h4><div id="dvgrid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px"></div>`;
+      $b("#dvback").onclick=()=>dev();
+      const srt=[...a].sort((p,q)=>score(q)-score(p));
+      $b("#dvgrid").innerHTML=srt.map(r=>{ const st=r.stats||{}; return `<button type="button" class="dvt" data-pk="${r.id}" style="text-align:left;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:0;overflow:hidden;color:inherit">
+        <img src="${esc(r.thumb||"")}" alt="" loading="lazy" referrerpolicy="no-referrer" style="width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:#222">
+        <div style="padding:6px 8px;font-size:12px"><b style="display:block;font-size:13px;line-height:1.25">${esc((r.yt_title||r.title).slice(0,80))}</b>${st.views!=null?`${fmtN(st.views)} перегл.${st.outlier!=null?` · ×${st.outlier}`:""}`:`оцінка ${r.pack.ctr_guess??"?"}/10`} · ${esc(HOOK[r.pack.title?.hook]||"")}</div></button>`; }).join("");
+      $b("#dvgrid").querySelectorAll("[data-pk]").forEach(b=>b.onclick=()=>{ const r=a.find(x=>x.id===b.dataset.pk), P=r.pack, t=P.title||{}, th=P.thumb||{};
+        openSheet(`<div class="pshead"><h3>${esc(r.yt_title||r.title)}</h3></div><img src="${esc(r.thumb)}" alt="" referrerpolicy="no-referrer" style="width:100%;border-radius:12px"><p class="note">${esc(r.channel||"")} · <a href="${esc(r.url)}" target="_blank" rel="noopener">відкрити</a>${r.stats?.views!=null?` · ${fmtN(r.stats.views)} переглядів · ${fmtN(r.stats.subs)} підписників${r.stats.outlier!=null?` · ×${r.stats.outlier} до середнього`:""}`:""}</p>
+          <h4>Назва</h4><p><b>Формула:</b> ${esc(t.formula||"—")}<br><b>Гачок:</b> ${esc(HOOK[t.hook]||t.hook||"—")} · <b>емоція:</b> ${esc(t.emotion||"—")} · <b>інтрига:</b> ${t.curiosity_gap??"—"}/10<br><b>Обіцянка:</b> ${esc(t.promise||"—")}<br>${esc(t.why||"")}</p>
+          <h4>Превʼю</h4><p><b>Стиль:</b> ${esc(th.style||"—")} · <b>головне:</b> ${esc(th.subject||"—")} · <b>емоція:</b> ${esc(th.emotion||"—")}<br><b>Текст:</b> ${esc(th.text||"немає")}${th.text_pos&&th.text_pos!=="немає"?` (${esc(th.text_pos)})`:""}<br><b>Фокус:</b> ${esc(th.focal||"—")} · <b>контраст:</b> ${th.contrast??"—"}/10<br><b>Звʼязок із назвою:</b> ${esc(th.link||"—")}<br>${esc(th.why||"")}</p>
+          <div style="display:flex;gap:6px">${(th.colors||[]).map(c=>`<span style="width:30px;height:30px;border-radius:8px;background:${esc(c)}"></span>`).join("")}</div>
+          <h4>Шаблони для нас</h4><ul>${(P.templates?.title||[]).map(q=>`<li>${esc(q)}</li>`).join("")}</ul><p class="note">${esc(P.templates?.thumb||"")}</p>`,"plat"); }); };
+    $b("#dvan").onclick=analytics;
+    // доповнити старі розбори назвою й превʼю (без повторного перегляду відео)
+    $b("#dvpf").onclick=async()=>{ const todo=LIST.filter(r=>!r.pack&&r.spec&&/youtu/.test(r.url)), btn=$b("#dvpf"); btn.disabled=true; let ok=0;
+      for(const [k,r] of todo.entries()){ btn.textContent=`Доповнюю… ${k+1}/${todo.length}`; try{ await SRV.packOnly(r.id,r.url); ok++; }catch(e){ if(String(e?.message)==="busy"){ toast("Gemini на ліміті — продовжиш пізніше"); break; } } await new Promise(q=>setTimeout(q,3000)); }
+      toast(`Доповнено: ${ok}`); if(alive()) await load(); };
+    // навчання упаковки: зведена статистика + розбори партіями по 15 → «Біблія упаковки» на сервері
+    $b("#dvpl").onclick=async()=>{ if(D.plearn) return; const all=LIST.filter(r=>r.pack), todo=all.filter(r=>!r.pack_learned).reverse(); if(!todo.length) return; D.plearn=true; const btn=$b("#dvpl"); btn.disabled=true;
+      const S=packSummary(all), sum=`ЗВЕДЕНА СТАТИСТИКА БАЗИ (${all.length} відео; топ = 25% найкращих відносно свого каналу):
+${S.rows.map(([n,k])=>`${n}: топ ${S.T[k]} / решта ${S.R.n?S.R[k]:"—"}`).join("\n")}
+Гачки (усі): ${S.hooks.map(([k,v])=>`${k} ${v}`).join(", ")}
+Гачки (топ): ${S.hooksTop.map(([k,v])=>`${k} ${v}`).join(", ")}
+Емоції: ${S.emo.map(([k,v])=>`${k} ${v}`).join(", ")}
+Кольори топ-превʼю: ${S.colors.map(([c])=>c).join(" ")}`;
+      try{ for(let k=0;k<todo.length;k+=15){ const part=todo.slice(k,k+15); btn.textContent=`Вчу… ${Math.min(k+15,todo.length)}/${todo.length}`;
+          await SRV.packMerge(`${sum}
+
+НОВІ РОЗБОРИ НАЗВ І ПРЕВʼЮ (${part.length}):
+${part.map((r,n)=>JSON.stringify({ n:n+1, title:r.yt_title||r.title, stats:r.stats?{views:r.stats.views,subs:r.stats.subs,ratio:r.stats.ratio,outlier:r.stats.outlier,vpd:r.stats.vpd,dur:r.stats.dur}:null, ...r.pack })).join("\n")}`);
+          await SRV.packLearned(part.map(r=>r.id)); part.forEach(r=>r.pack_learned=true); }
+        toast("Упаковку вивчено ✓"); }
+      catch(e){ toast(e?.code==="rate_limited"?"Ліміт AI на сьогодні":"Не вдалося — спробуй ще раз (вивчене збережено)"); }
+      D.plearn=false; btn.textContent="Навчити упаковку"; if(alive()) await load(); };
     // для Claude — лише те, що треба кодити: «чого бракує рушію» і план з нових розборів + розділ «ЧЕКАЄ В РУШІЇ» з Біблії
     const gaps=(t)=>{ const m=String(t||"").match(/#+\s*1[23]\.[\s\S]*$/); return m?m[0].trim():""; };
     $b("#dvcp").onclick=async()=>{ const nw=LIST.filter(r=>r.spec&&r.status==="new"); const wait=(BIB?.body||"").match(/#*\s*ЧЕКАЄ В РУШІЇ[\s\S]*$/i)?.[0]||"";
