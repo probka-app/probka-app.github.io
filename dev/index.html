@@ -1121,7 +1121,7 @@ body.pub .fmts{margin-top:14px}body.pub .fmt .fs,body.pub .fmt .fopen,body.pub .
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="YuVi DEV">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>window.YV_DEV=true;window.YV_BUILD="02.11 15:18";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
+<script>window.YV_DEV=true;window.YV_BUILD="02.11 15:39";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="server.js?v=e036b5db"></script>
@@ -4854,18 +4854,25 @@ async function loadUIF(){ if(!window.SRV?.uiFlags) { applyUIF(); return; } const
       const pk=(.018+near*.03)*Math.min(1,dv/8+.4); g.gain.setValueAtTime(.0001,t0); g.gain.exponentialRampToValueAtTime(pk,t0+dur*.35); g.gain.exponentialRampToValueAtTime(.0001,t0+dur);
       o.connect(lp); o2.connect(lp); lp.connect(g); if(pn){ pn.pan.setValueAtTime((Math.random()-.5)*1.4,t0); pn.pan.linearRampToValueAtTime((Math.random()-.5)*1.4,t0+dur); g.connect(pn).connect(AC.destination); try{ pn.connect(verb()); }catch(e){} } else g.connect(AC.destination);
       o.start(t0); o2.start(t0); o.stop(t0+dur+.05); o2.stop(t0+dur+.05); } }catch(e){} }
-  function tick(){ const j=p<55?3+Math.random()*13:p<80?1+Math.random()*7:p<92?Math.random()*2.5:Math.random()*.6;
-    if(Math.random()<.22){ timer=setTimeout(tick,700+Math.random()*900); return; }   // пауза — «думає»
-    p=Math.min(96,p+j); draw(j>4); timer=setTimeout(tick,250+Math.random()*650); }
+  // прогрес за часом: скільки цей самий вид роботи (і кожен його етап) тривав раніше — так відсотки й таймер ідуть як насправді
+  let key="text", ORD={}, run=[], stIdx=-1, stT0=0; try{ ORD=JSON.parse(localStorage.getItem("yvBusyOrd")||"{}")||{}; }catch(e){ ORD={}; }
+  const nstage=t=>String(t||"").replace(/[\s.…]+$/,"").replace(/\d+([.,]\d+)?/g,"#").replace(/\s+/g," ").trim().slice(0,40);
+  function est(){ const now=Date.now(), o=ORD[key];
+    if(o&&o.length&&stIdx>=0){ const tot=o.reduce((q,x)=>q+x.d,0)||1, before=o.slice(0,stIdx).reduce((q,x)=>q+x.d,0), d=o[stIdx].d||1, inS=(now-stT0)/1000, u=inS/d, part=u<1?u*.97:.97+.03*(1-Math.exp(-(u-1))), after=o.slice(stIdx+1).reduce((q,x)=>q+x.d,0);
+      return { r:(before+d*part)/tot, left:Math.max(0,d-inS)+after }; }
+    const T=EST[key]||EST[kind]||15, el2=(now-t0)/1000; return { r:el2/T, left:T-el2 }; }
+  function tick(){ if(real) return; const e=est(), v=e.r<=1?94*e.r:94+5*(1-Math.exp(-(e.r-1)*1.6)), nv=Math.max(p,Math.min(99,v));
+    if(nv-p>=.6||nv>=99){ const dv=nv-p; p=nv; draw(dv>3); } endAt=Date.now()+Math.max(0,e.left)*1000; timer=setTimeout(tick,220+Math.random()*260); }
   // етап роботи друкується по літері, а три крапки з'являються по черзі й зникають — і знову
   let typT=null, dotT=null, dotN=0, curLine="";
   function line(t){ t=String(t||"").replace(/[\s.\u2026]+$/,""); if(!el||t===curLine) return; curLine=t; const ti=el.querySelector(".ti"); if(!ti.querySelector(".tx")) ti.innerHTML='<span class="tx"></span><span class="dt"><i>.</i><i>.</i><i>.</i></span>';
     const tx=ti.querySelector(".tx"); clearInterval(typT); let k=0; tx.textContent=""; typT=setInterval(()=>{ k++; tx.textContent=t.slice(0,k); if(k>=t.length) clearInterval(typT); },38);
     if(!dotT){ dotT=setInterval(()=>{ if(!el) return; dotN=(dotN+1)%4; el.querySelectorAll(".ti .dt i").forEach((d,i)=>d.classList.toggle("on",i<dotN)); },380); } }
   function msgs(){ const L=KIND[kind].m; let i=0; line(L[0]); msgT=setInterval(()=>{ i=Math.min(i+1,L.length-1); line(L[i]); },2800); }
-  function begin(k){ mount(); kind=KIND[k]?k:"text"; p=0; hidden=false; real=false; t0=Date.now(); endAt=t0+(EST[kind]||15)*1000; lastSec=-1; clearInterval(cdT); cd(); cdT=setInterval(cd,250); curLine=""; draw(); el.classList.add("on"); el.querySelector(".bg").classList.remove("v");
+  function begin(k){ mount(); kind=KIND[k]?k:"text"; const lb=Date.now()-last.at<2500&&last.t?nstage(last.t.replace(/[^\p{L}\p{N}\s]/gu,"")):""; key=kind+(lb?"|"+lb:""); p=0; hidden=false; real=false; t0=Date.now(); run=[{n:"_start",t:t0}]; stIdx=ORD[key]?.length?0:-1; stT0=t0; endAt=t0+(EST[key]||EST[kind]||15)*1000; lastSec=-1; clearInterval(cdT); cd(); cdT=setInterval(cd,250); curLine=""; draw(); el.classList.add("on"); el.querySelector(".bg").classList.remove("v");
     clearTimeout(timer); clearInterval(msgT); clearTimeout(bgT); msgs(); if(kind!=="save"){ timer=setTimeout(tick,180); bgT=setTimeout(()=>el.querySelector(".bg").classList.add("v"),9000); } }
-  function finish(){ clearTimeout(timer); clearInterval(msgT); clearTimeout(bgT); clearInterval(cdT); if(t0){ const took=(Date.now()-t0)/1000; if(took>1.5&&took<600){ EST[kind]=Math.round(((EST[kind]||took)*.6+took*.4)*10)/10; try{ localStorage.setItem("yvBusyEst",JSON.stringify(EST)); }catch(e){} } t0=0; } if(el) el.querySelector(".eta").textContent=""; p=100; draw(true); try{ if(sndOn()&&!hidden){ ac(); const t=AC.currentTime+.02; bell(784,t,.045,1.2); bell(1174.7,t+.08,.035,1.4); } }catch(e){} setTimeout(()=>{ el.classList.remove("on"); clearInterval(dotT); dotT=null; clearInterval(typT); },420); }
+  function finish(){ clearTimeout(timer); clearInterval(msgT); clearTimeout(bgT); clearInterval(cdT); if(t0){ const now=Date.now(), took=(now-t0)/1000; if(took>1.5&&took<900){ const m=(o,v)=>Math.round(((o??v)*.5+v*.5)*10)/10; EST[key]=m(EST[key],took); EST[kind]=m(EST[kind],took); try{ localStorage.setItem("yvBusyEst",JSON.stringify(EST)); }catch(e){}
+      if(run.length>1){ const old=ORD[key]||[], nw=run.map((q,i)=>{ const d=((run[i+1]?.t||now)-q.t)/1000, o=old.find(x=>x.n===q.n); return { n:q.n, d:Math.max(.3,Math.round((o?o.d*.5+d*.5:d)*10)/10) }; }); ORD[key]=nw; const ks=Object.keys(ORD); if(ks.length>40) delete ORD[ks[0]]; try{ localStorage.setItem("yvBusyOrd",JSON.stringify(ORD)); }catch(e){} } } t0=0; } if(el) el.querySelector(".eta").textContent=""; p=100; draw(true); try{ if(sndOn()&&!hidden){ ac(); const t=AC.currentTime+.02; bell(784,t,.045,1.2); bell(1174.7,t+.08,.035,1.4); } }catch(e){} setTimeout(()=>{ el.classList.remove("on"); clearInterval(dotT); dotT=null; clearInterval(typT); },420); }
   window.yvBusy={
     start(k){ if(endT){ clearTimeout(endT); endT=null; n++; return; } if(n++===0) begin(k); },
     end(){ n=Math.max(0,n-1); if(n) return; endT=setTimeout(()=>{ endT=null; if(!n) finish(); },450); },   // коротка пауза — щоб серія картинок ішла одним завантаженням
@@ -4873,7 +4880,8 @@ async function loadUIF(){ if(!window.SRV?.uiFlags) { applyUIF(); return; } const
     // справжній прогрес (0…1) і підпис, напр. «Залишилось ≈ 40 с» — без «продовжити у фоні»
     progress(v,note){ if(!el||!el.classList.contains("on")) return; real=true; clearTimeout(timer); timer=null; clearTimeout(bgT); clearInterval(msgT); el.querySelector(".bg").classList.remove("v");
       const nv=Math.max(p,Math.min(99,(+v||0)*100)), dv=nv-p; p=nv; draw(dv>4); if(v>.04){ const el2=(Date.now()-t0)/1000, left=el2*(1-v)/v, want=Date.now()+left*1000; endAt=endAt?endAt*.7+want*.3:want; } if(note!=null) line(note); },
-    stage(t){ if(!el||!el.classList.contains("on")) return; clearInterval(msgT); line(t); }
+    stage(t){ if(!el||!el.classList.contains("on")) return; clearInterval(msgT); line(t); const n=nstage(t); if(!n||run[run.length-1]?.n===n) return; const now=Date.now(); run.push({n,t:now});
+      const o=ORD[key]; if(o?.length){ const i=o.findIndex((x,j)=>j>stIdx&&x.n===n); if(i>=0){ stIdx=i; stT0=now; } } }
   };
 })();
 /* ===== «Скоро»: функції, які ще не підключені, людям показуються як «скоро» (власник користується як завжди) ===== */
