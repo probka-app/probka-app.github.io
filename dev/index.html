@@ -1120,7 +1120,7 @@ body.pub .fmts{margin-top:14px}body.pub .fmt .fs,body.pub .fmt .fopen,body.pub .
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="YuVi DEV">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>window.YV_DEV=true;window.YV_BUILD="02.11 03:33";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
+<script>window.YV_DEV=true;window.YV_BUILD="02.11 03:37";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="server.js?v=638196a2"></script>
@@ -3967,8 +3967,8 @@ async function openKB(O={}){
       if(!links.length&&!files.length){ toast(bad.length?"Це не схоже на посилання YouTube":"Встав посилання або додай відео"); return; }
       const btn=$b("#dvadd"); btn.disabled=true; btn.textContent="Додаю…";
       try{ const paths=[]; for(const f of files){ paths.push(await SRV.upload("spec/"+Date.now()+"-"+f.name.replace(/[^\w.-]+/g,"_"),f)); }
-        await SRV.devQueue([...links,...paths],D.mins); files=[]; $b("#dvl").value=bad.join("\n"); $b("#dvfn").textContent=""; toast(`У черзі +${links.length+paths.length}${bad.length?` · ${bad.length} посилань не YouTube — лишив у полі`:""}`); await load(); run(); }
-      catch(e){ toast(e?.message==="too_big"?"Файл завеликий":"Не вдалося додати"); } btn.disabled=false; btn.textContent="Додати в чергу"; };
+        await Promise.race([SRV.devQueue([...links,...paths],D.mins), new Promise((_,no)=>setTimeout(()=>no(new Error("timeout")),20000))]); files=[]; $b("#dvl").value=bad.join("\n"); $b("#dvfn").textContent=""; toast(`У черзі +${links.length+paths.length}${bad.length?` · ${bad.length} посилань не YouTube — лишив у полі`:""}`); await load(); run(); }
+      catch(e){ const m=String(e?.message||e?.code||e); console.error("devQueue",e); toast(m==="too_big"?"Файл завеликий":m==="timeout"?"Сервер не відповів за 20 с — онови сторінку й спробуй ще раз":/check constraint|dev_specs_status|column|relation|does not exist/i.test(m)?"Не виконано крок 85 чи 86 у Supabase":"Не вдалося додати: "+m.slice(0,80)); } btn.disabled=false; btn.textContent="Додати в чергу"; };
     // навчання режисера: нові розбори партіями по 3 зливаються в Біблію на сервері (там же й лежить — на сайті її не видно людям)
     $b("#dvlearn").onclick=async()=>{ if(D.learn) return; const todo=LIST.filter(r=>r.spec&&!r.learned&&r.status!=="error"&&r.status!=="queue").reverse(); if(!todo.length) return; D.learn=true; stats(); const cp=await caps(), btn=$b("#dvlearn");
       try{ for(let k=0;k<todo.length;k+=3){ const part=todo.slice(k,k+3); btn.textContent=`Вчу… ${Math.min(k+3,todo.length)}/${todo.length}`;
