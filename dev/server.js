@@ -293,6 +293,25 @@
   SRV.studioGrant = async (email, tools) => rpc("studio_grant", { p_email: email, p_tools: tools });
   SRV.studioRevoke = async (id) => rpc("studio_revoke", { p_user: id });
   SRV.cineLeft = async () => rpc("cine_left");
+  // «Мої відео»: готові ролики в приватному сховищі media/<uid>/cine (кожен бачить лише свої), список — index.json
+  const CINE = () => { const u = uid(); if (!u) throw new Error("login"); return `${u}/cine`; };
+  SRV.cineList = async () => { const dir = CINE(), st = sb.storage.from("media"); let list = [];
+    try { const { data } = await withTimeout(st.download(`${dir}/index.json`), 12000); if (data) list = JSON.parse(await data.text()); } catch (e) {}
+    if (!Array.isArray(list)) list = []; if (!list.length) return [];
+    const paths = list.flatMap((v) => [`${dir}/${v.id}.jpg`]); let urls = {};
+    try { const { data } = await st.createSignedUrls(paths, 3600); (data || []).forEach((q) => { if (q?.signedUrl) urls[q.path] = q.signedUrl; }); } catch (e) {}
+    return list.map((v) => ({ ...v, thumb: urls[`${dir}/${v.id}.jpg`] || "" })); };
+  const cineIndex = async (fn) => { const dir = CINE(), st = sb.storage.from("media"); let list = [];
+    try { const { data } = await st.download(`${dir}/index.json`); if (data) list = JSON.parse(await data.text()); } catch (e) {} if (!Array.isArray(list)) list = [];
+    list = fn(list); await st.upload(`${dir}/index.json`, new Blob([JSON.stringify(list)], { type: "application/json" }), { upsert: true, cacheControl: "0", contentType: "application/json" }); return list; };
+  SRV.cineSave = async (meta, video, thumb) => { const dir = CINE(), st = sb.storage.from("media"), id = meta.id;
+    const up = async (path, blob) => { const { error } = await st.upload(path, blob, { upsert: true, contentType: blob.type || "application/octet-stream" }); if (error) throw new Error(/exceed|too large|413|size|maximum/i.test(error.message || "") ? "too_big" : (error.message || "upload_failed")); };
+    if (thumb) { try { await up(`${dir}/${id}.jpg`, thumb); } catch (e) {} }
+    await up(`${dir}/${id}.${meta.ext}`, video);
+    await cineIndex((l) => [{ ...meta, size: video.size, created: Date.now() }, ...l.filter((v) => v.id !== id)].slice(0, 200)); return true; };
+  SRV.cineGet = async (v) => { const { data, error } = await sb.storage.from("media").download(`${CINE()}/${v.id}.${v.ext}`); if (error || !data) throw new Error("download_failed"); return data; };
+  SRV.cineDel = async (v) => { const dir = CINE(); try { await sb.storage.from("media").remove([`${dir}/${v.id}.${v.ext}`, `${dir}/${v.id}.jpg`]); } catch (e) {} await cineIndex((l) => l.filter((q) => q.id !== v.id)); return true; };
+  SRV.cineRename = async (v, title) => cineIndex((l) => l.map((q) => q.id === v.id ? { ...q, title: String(title).slice(0, 80) } : q));
   SRV.cineTake = async (key, secs) => rpc("cine_take", { p_key: key, p_secs: Math.max(1, Math.ceil(+secs || 1)) });
   SRV.features = async () => rpc("my_features");
   SRV.soundUse = async (secs) => rpc("sound_use", { p_secs: Math.max(1, Math.ceil(+secs || 1)) });

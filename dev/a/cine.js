@@ -1524,6 +1524,11 @@ ${imgs.length ? `Контакт-аркуші: ${imgs.length} зображ., на
 #yvcn .cf{padding:8px 14px 12px;display:grid;gap:8px;border-top:1px solid rgba(255,255,255,.08)}
 #yvcn .btn{width:100%;padding:13px;border-radius:15px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.07);color:#f5f5f7;font-weight:700;font-size:15px;font-family:inherit;cursor:pointer;display:flex;gap:7px;align-items:center;justify-content:center}
 #yvcn .btn.main{background:#f5f5f7;color:#0b0b0d;border-color:transparent}#yvcn .btn:disabled{opacity:.45}#yvcn .btn.rec{background:#ff453a;border-color:transparent;color:#fff}
+#yvcn .pjl{display:grid;gap:8px}#yvcn .pj{display:flex;align-items:center;gap:11px;padding:8px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09)}
+#yvcn .pj .pth{width:54px;height:96px;flex:none;border-radius:10px;background:#1c1c22 center/cover no-repeat;border:0;padding:0;cursor:pointer;position:relative}#yvcn .pj .pth:after{content:"▶";position:absolute;inset:auto 0 4px;text-align:center;font-size:12px;color:#fff;text-shadow:0 1px 3px #000}
+#yvcn .pj .pi{flex:1;min-width:0}#yvcn .pj .pi b{display:block;font-size:14.5px;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}#yvcn .pj .pi span{display:block;font-size:12px;color:#a1a1aa;margin-top:3px}
+#yvcn .pj .pa{display:flex;flex-direction:column;gap:6px}#yvcn .pj .pa button{width:44px;height:40px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);color:#f5f5f7;font-size:17px;cursor:pointer}#yvcn .pj .pa button.warn{background:#ff453a;border-color:transparent;font-size:11px;font-weight:800}
+#yvcn .pjempty{padding:28px 12px;text-align:center;color:#a1a1aa;font-size:14px;border:1.5px dashed rgba(255,255,255,.14);border-radius:16px}#yvcn .pjv{width:100%;max-height:62vh;border-radius:14px;background:#000;display:block;margin:0 auto 10px}
 #yvcn .row{display:flex;gap:8px}#yvcn .row .btn:first-child{flex:1}#yvcn .btn.sq{width:52px;flex:none;padding:0;font-size:20px}
 #yvcn .sec{margin-top:16px}#yvcn .sec h4{margin:0 0 8px;font-size:13.5px;color:#d4d4d8;font-weight:800}
 #yvcn .chips{display:flex;flex-wrap:wrap;gap:6px}#yvcn .chip{padding:7px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:#e4e4e7;font-weight:600;font-size:13px;font-family:inherit;cursor:pointer}#yvcn .chip[aria-pressed=true]{background:#f5f5f7;color:#0b0b0d}
@@ -1646,9 +1651,36 @@ ${imgs.length ? `Контакт-аркуші: ${imgs.length} зображ., на
   // реклама вибирається щоразу явно (кнопка «Написати текст» активна лише після вибору)
   let AD_PICK = null;
   const STEPS = (n) => `<div class="steps">${["Тема", "Текст і голос", "Персонажі", "Відео"].map((q, i) => i + 1 === n ? `<b>${i + 1} ${q}</b>` : `<span>${i + 1} ${q}</span>`).join("")}</div>`;
+  /* ---------- «Мої відео»: готові ролики з файлами (сховище media/<uid>/cine) ---------- */
+  const fmtDate = (ms) => { try { return new Date(ms).toLocaleDateString("uk-UA", { day: "numeric", month: "short" }) + ", " + new Date(ms).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" }); } catch (e) { return ""; } };
+  const fmtDur = (s) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
+  const fmtMB = (b) => b ? (b / 1048576).toFixed(b > 1e7 ? 0 : 1) + " МБ" : "";
+  async function screenProjects(msg) { stopPlay(); const d = shell(), B = $(d, ".cb"), F = $(d, ".cf"); F.innerHTML = "";
+    B.innerHTML = `${msg ? `<div class="msg">${escH(msg)}</div>` : ""}<div class="scr"><button class="btn main" type="button" id="cnew" style="margin:6px 0 14px">＋ Створити відео</button>
+      <div class="sec"><h4>Мої відео</h4><div class="pjl" id="cpl"><p class="cnt">Завантажую…</p></div></div></div>`;
+    $(B, "#cnew").onclick = () => { track("proj_new"); screenTopic(); };
+    let list = []; try { list = await SRV.cineList(); } catch (e) { if (!UI.root?.isConnected) return; $(B, "#cpl").innerHTML = `<p class="cnt">Не вдалося завантажити список. Перевір інтернет і відкрий ще раз.</p>`; return; }
+    if (!UI.root?.isConnected || !$(B, "#cpl")) return; const box = $(B, "#cpl");
+    if (!list.length) { box.innerHTML = `<div class="pjempty">Тут з'являтимуться твої готові відео — з файлами, які можна скачати будь-коли.<br><br>Натисни «Створити відео», щоб зробити перше.</div>`; return; }
+    box.innerHTML = list.map((v, i) => `<div class="pj" data-i="${i}"><button class="pth" type="button" data-play="${i}" aria-label="Переглянути" style="background-image:url('${escH(v.thumb || "")}')"></button>
+      <div class="pi"><b>${escH(v.title || "Відео")}</b><span>${escH(fmtDate(v.created))} · ${fmtDur(v.dur || 0)}${v.size ? " · " + fmtMB(v.size) : ""}</span>${v.fmtN ? `<span>${escH(v.fmtN)}</span>` : ""}</div>
+      <div class="pa"><button type="button" data-dl="${i}" aria-label="Скачати">⬇</button><button type="button" data-del="${i}" aria-label="Видалити">🗑</button></div></div>`).join("");
+    const getFile = async (v, b) => { const old = b?.textContent; if (b) { b.disabled = true; b.textContent = "…"; } try { const bl = await SRV.cineGet(v); return new File([bl], `${(v.title || "video").replace(/[^\p{L}\p{N}]+/gu, "-").slice(0, 40) || "video"}.${v.ext}`, { type: bl.type || (v.ext === "mp4" ? "video/mp4" : "video/" + v.ext) }); } catch (e) { say("Не вдалося завантажити файл"); return null; } finally { if (b?.isConnected) { b.disabled = false; b.textContent = old; } } };
+    box.querySelectorAll("[data-dl]").forEach((b) => b.onclick = async () => { const f = await getFile(list[+b.dataset.dl], b); if (f && await saveFile(f)) { track("proj_dl"); say("✓ Збережено"); } });
+    box.querySelectorAll("[data-play]").forEach((b) => b.onclick = async () => { const v = list[+b.dataset.play], f = await getFile(v, null); if (!f || !UI.root?.isConnected) return; const u = URL.createObjectURL(f);
+      const P = panel(v.title || "Відео", `<video class="pjv" src="${u}" controls autoplay playsinline></video><button class="btn main" type="button" id="cpsv">⬇ Зберегти на телефон</button>`);
+      P.querySelector("[data-pclose]").onclick = () => { URL.revokeObjectURL(u); P.remove(); }; P.querySelector("#cpsv").onclick = async (e) => { if (await saveFile(f)) e.currentTarget.textContent = "✓ Збережено"; }; });
+    box.querySelectorAll("[data-del]").forEach((b) => b.onclick = async () => { if (!b.classList.contains("warn")) { b.classList.add("warn"); b.textContent = "Так?"; setTimeout(() => { if (b.isConnected) { b.classList.remove("warn"); b.textContent = "🗑"; } }, 3000); return; }
+      b.disabled = true; try { await SRV.cineDel(list[+b.dataset.del]); track("proj_del"); screenProjects("Відео видалено"); } catch (e) { b.disabled = false; say("Не вдалося видалити"); } }); }
+  // після збереження — копія в «Мої відео» (файл + обкладинка + назва)
+  async function cloudSave(f) { if (!window.SRV?.cineSave || !SRV.session || !L) return null;
+    let thumb = null; try { const c = document.createElement("canvas"); c.width = 360; c.height = 640; const x = c.getContext("2d"), s0 = L.scenes.find((z) => !z.ad) || L.scenes[0], t = Math.min(L.dur - .1, (s0?.t0 || 0) + 1.2); drawFrame(x, L, t, 360, 640); thumb = await new Promise((r) => c.toBlob(r, "image/jpeg", .82)); } catch (e) {}
+    const ext = (f.name.split(".").pop() || "mp4").toLowerCase(), title = String(L.topic || (L.words || []).slice(0, 8).map((w) => w.w).join(" ") || "Відео").trim().slice(0, 80);
+    try { await SRV.cineSave({ id: String(L.key || "v" + Date.now().toString(36)).replace(/[^a-z0-9_-]/gi, ""), ext, title, dur: Math.round(L.dur), fmt: L.fmt, fmtN: FMTS[L.fmt]?.n || "" }, f, thumb); track("proj_save"); return "ok"; }
+    catch (e) { console.warn("cloudSave", e); return e?.message === "too_big" ? "too_big" : "err"; } }
   function screenTopic(msg) { stopPlay(); const d = shell(), B = $(d, ".cb"), F = $(d, ".cf");
     const list = () => (TOPICS[TCAT] || []).map((t) => `<button type="button" class="tpc" data-tp="${escH(t)}" aria-pressed="${DRAFT.topic === t}">${escH(t)}</button>`).join("");
-    B.innerHTML = `${msg ? `<div class="msg">${escH(msg)}</div>` : ""}<div class="scr">${STEPS(1)}
+    B.innerHTML = `${msg ? `<div class="msg">${escH(msg)}</div>` : ""}<div class="scr">${window.SRV?.session ? `<button class="btn" type="button" id="cmyv" style="margin:4px 0 10px;padding:9px">📁 Мої відео</button>` : ""}${STEPS(1)}
       <div class="sec"><h4>1 · Тема — це твій хук</h4><div class="chips" id="ccats">${Object.keys(TOPICS).map((k) => `<button class="chip" type="button" data-cat="${escH(k)}" aria-pressed="${k === TCAT}">${escH(k)}</button>`).join("")}</div>
         <div class="tpl" id="ctpl">${list()}</div><button class="btn" type="button" id="cmore" style="margin-top:8px">✨ Підібрати ще теми</button>
         <input class="tx" id="ctopic" style="margin-top:10px" placeholder="Або своя тема: напр. чому ми боїмося починати" value="${escH(Object.values(TOPICS).flat().includes(DRAFT.topic) ? "" : DRAFT.topic)}"></div>
@@ -1656,7 +1688,7 @@ ${imgs.length ? `Контакт-аркуші: ${imgs.length} зображ., на
       <div class="sec"><h4>3 · Реклама</h4><p class="cnt" style="margin:-4px 0 8px">AI органічно вплете її в саму історію — без окремих роликів. За кожного, хто прийде за твоїм посиланням, отримуєш половину його першої оплати.</p>
         <div class="chips">${[["bio", "Посилання в шапці"], ["comment", "Слово в коментарях"], ["none", "Без реклами"]].map(([k, n]) => `<button class="chip" type="button" data-adp="${k}" aria-pressed="${AD_PICK === k}">${n}</button>`).join("")}</div>
         <input class="tx" id="cadw" style="margin-top:8px${AD_PICK === "comment" ? "" : ";display:none"}" maxlength="14" placeholder="Слово для коментарів" value="${escH(OPT.adWord || "АНІМАЦІЯ")}"><div id="cadhint">${AD_PICK === "comment" ? DM_HINT : ""}</div></div></div>`;
-    F.innerHTML = `<button class="btn main" type="button" id="cnext">✨ Написати текст</button>`;
+    F.innerHTML = `<button class="btn main" type="button" id="cnext">✨ Написати текст</button>`; { const mv = $(B, "#cmyv"); if (mv) mv.onclick = () => screenProjects(); }
     const nb = $(F, "#cnext"), upd = () => { const ok = !!(DRAFT.topic.trim() && AD_PICK); nb.disabled = !ok; nb.textContent = !DRAFT.topic.trim() ? "Вибери тему" : !AD_PICK ? "Вибери рекламу або «Без реклами»" : "✨ Написати текст"; };
     const bind = () => B.querySelectorAll("[data-tp]").forEach((b) => b.onclick = () => { DRAFT.topic = b.dataset.tp; saveDraft(); $(B, "#ctopic").value = ""; B.querySelectorAll("[data-tp]").forEach((o) => o.setAttribute("aria-pressed", o === b)); track("topic_pick", { v: TCAT }); upd(); });
     bind();
@@ -2157,7 +2189,8 @@ ${SPEC}
       try { const t0 = performance.now(); const r = await E().busyRun("save", () => exportVideo((p) => { const el = (performance.now() - t0) / 1000, left = p > .04 ? el * (1 - p) / p : null;
           window.yvBusy?.progress?.(p, p < .97 ? "Збираю кадри й звук" : "Майже готово…"); void el; void left; }));
         const name = `yuvi-kino-${Date.now()}.${r.ext}`, f = new File([r.blob], name, { type: r.blob.type });
-        track("export", { v: `${Math.round(L.dur)}s` }); setTimeout(() => donePanel(f), 500); } catch (q) { console.error(q); say(q?.message === "noenc" ? "Цей браузер не вміє зберігати відео — спробуй Chrome або Safari 17+" : "Не вдалося зберегти"); }
+        track("export", { v: `${Math.round(L.dur)}s` }); setTimeout(() => donePanel(f), 500);
+        cloudSave(f).then((r) => { if (r === "ok") say("✓ Відео також збережено в «Мої відео»"); else if (r === "too_big") say("Файл завеликий для «Моїх відео» — збережи його на телефон"); else if (r) say("Не вдалося додати в «Мої відео» — збережи файл на телефон"); }); } catch (q) { console.error(q); say(q?.message === "noenc" ? "Цей браузер не вміє зберігати відео — спробуй Chrome або Safari 17+" : "Не вдалося зберегти"); }
       b.disabled = false; b.textContent = lbl; }; }
   // короткий опис можливостей рушія — для розбору відео «для коду» (що вже є, щоб AI писав лише про прогалини)
   function caps() { const k = (o) => Object.keys(o).join(", ");
@@ -2177,5 +2210,5 @@ ${SPEC}
       "Реклама: реальний телефон у руці з кадрами інтерфейсу, виліт телефона до глядача.",
       "НЕМАЄ: імпорту відео/фото у кадр, 3D, ліпсінку, кількох персонажів, що взаємодіють руками, складної анімації тіла (біг, стрибки), частинок окрім простих."
     ].join("\n"); }
-  window.YVCine = { adStudio: () => adStudio(), open(o = {}) { if (o.text) { DRAFT.text = String(o.text); DRAFT.topic = String(o.topic || ""); saveDraft(); return screenContent(); } screenTopic(); }, close, _t: { caps, loadHand, DEMOPLAN, placeAd, removeAd, ensureAd, adPoint, loadAd, soundtrack, normPlan, aiPlan, set: (l) => { L = l; }, L: () => L, screenEdit, exportVideo, loadFont, drawFrame, timeline, PLACES, POSE, HOOD, figure, loadIcons, sceneAt } };
+  window.YVCine = { adStudio: () => adStudio(), open(o = {}) { if (o.text) { DRAFT.text = String(o.text); DRAFT.topic = String(o.topic || ""); saveDraft(); return screenContent(); } if (window.SRV?.session && SRV.cineList) screenProjects(); else screenTopic(); }, close, _t: { caps, loadHand, DEMOPLAN, placeAd, removeAd, ensureAd, adPoint, loadAd, soundtrack, normPlan, aiPlan, set: (l) => { L = l; }, L: () => L, screenEdit, exportVideo, loadFont, drawFrame, timeline, PLACES, POSE, HOOD, figure, loadIcons, sceneAt } };
 })();
