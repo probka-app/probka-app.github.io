@@ -1474,7 +1474,7 @@ ${imgs.length ? `Контакт-аркуші: ${imgs.length} зображ., на
 Обсяг — ${want}–${want + 8} слів (не менше ${want}: текст має звучати трохи довше за ${sec} с — озвучку потім точно підженемо під довжину відео). Без хештегів, емодзі, ремарок і заголовків.
 ${silent ? "" : prm("script_rules").body + "\n"}Перед відповіддю перевір: хук до 12 слів і конкретний; петля з початку закрита у фіналі; немає жодного забороненого звороту; обсяг у межах. Відповідай тільки JSON {"text":"…"}`;
     // якщо з базою знань не вийшло (довгий контекст, збій) — ще раз коротше, без неї
-    await prmLoad(); let err; for (const o of [{ kbFmt: "tall", kb: ["hook", "script", "story", "general"], max: 3000 }, { max: 2500 }]) { try { const r = await sample.json(ask, { cache: false, ...o }); const t = String(r?.text || (typeof r === "string" ? r : "")).trim(); if (t.split(/\s+/).length >= 12) return t; err = new Error("empty"); } catch (e) { err = e; if (/limit|login|no_key/.test(e?.code || e?.message || "")) throw e; } }
+    await prmLoad(); let err; for (const o of [{ sys: ["writer"], kbFmt: "tall", kb: ["hook", "script", "story", "general"], max: 3000 }, { sys: ["writer"], max: 2500 }, { max: 2500 }]) { try { const r = await sample.json(ask, { cache: false, ...o }); const t = String(r?.text || (typeof r === "string" ? r : "")).trim(); if (t.split(/\s+/).length >= 12) return t; err = new Error("empty"); } catch (e) { err = e; if (/limit|login|no_key/.test(e?.code || e?.message || "")) throw e; } }
     throw err; }
 
   /* ---------- голос і слова ---------- */
@@ -1725,7 +1725,7 @@ ${prm("topic_rules").body}
       for (const f of tries) { try { arr = pick(await E().busyRun("text", f)); if (arr.length >= 3) break; } catch (e) { err = e; console.warn("topics", e); if (/limit|login/.test(e?.code || e?.message || "")) break; } }
       if (btn.isConnected) { btn.disabled = false; btn.textContent = lbl; }
       // редактор: з 12 чернеток лишаємо 6 найсильніших (не вийшло — беремо перші 6, як раніше)
-      if (arr.length > 6) { try { const r = await E().busyRun("text", () => sample.json(`${prm("topic_pick").body}\nКатегорія: «${cat}».\nТЕМИ:\n${arr.map((q, i) => `${i + 1}. ${q}`).join("\n")}\nВідповідай тільки JSON: {"best":[номери 6 найсильніших тем від найкращої]}`, { cache: false, max: 300 }));
+      if (arr.length > 6) { try { const r = await E().busyRun("text", () => sample.json(`${prm("topic_pick").body}\nКатегорія: «${cat}».\nТЕМИ:\n${arr.map((q, i) => `${i + 1}. ${q}`).join("\n")}\nВідповідай тільки JSON: {"best":[номери 6 найсильніших тем від найкращої]}`, { cache: false, max: 300, sys: ["writer"] }));
           const ids = (Array.isArray(r?.best) ? r.best : []).map((n) => +n - 1).filter((n, i, A) => Number.isInteger(n) && n >= 0 && n < arr.length && A.indexOf(n) === i);
           if (ids.length >= 3) arr = [...ids.map((n) => arr[n]), ...arr.filter((_, i) => !ids.includes(i))]; } catch (e) { console.warn("topic pick", e); } }
       if (arr.length >= 3) { TOPICS[cat] = arr.slice(0, 6); saveTopics(); if (TCAT === cat && $(B, "#ctpl")) { $(B, "#ctpl").innerHTML = list(); bind(); } track("topic_more", { v: prmV("topic_rules", "topic_pick") }); }
