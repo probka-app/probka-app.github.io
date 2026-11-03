@@ -1467,10 +1467,11 @@ ${imgs.length ? `Контакт-аркуші: ${imgs.length} зображ., на
     const keep = { scenes: L.scenes, mood: L.mood };
     try { L.scenes = normPlan({ scenes: next }, L); if (MOODS[r?.mood]) L.mood = r.mood; } catch (e) { Object.assign(L, keep); return { issues: [], n: 0 }; }
     L._review = { issues: (r?.issues || []).slice(0, 12).map(String), n: fix.length + drop.size }; return L._review; }
-  async function aiText(topic, sec, silent, scn) { const S = SCRIPTS[scn], want = Math.round(sec * (silent ? 1.6 : FIT.wps * FIT.long));
+  async function aiText(topic, sec, silent) { const want = Math.round(sec * (silent ? 1.6 : FIT.wps * FIT.long));
     const ask = `Напиши ${silent ? "текст для анімаційного Reels БЕЗ голосу — він іде на екрані субтитрами, короткі речення по 4–9 слів" : "текст для озвучки за кадром — жива розмовна українська, як людина говорить другу"} на тему: «${topic}».
 Формат: вертикальне кіно-анімаційне відео (герой-чоловічок, сцени змінюються кожні 2–4 с) ≈ ${sec} с. Мета — вірусність: людина має додивитися до кінця й захотіти переслати. Перше речення — сильний гачок-питання або несподіваний факт (до 10 слів, без розгону); одразу відкрий петлю, яку закриєш лише у фіналі; кожні 5–7 с — нова міні-інтрига чи поворот; далі історія героя з поворотом (але/тому), конкретні числа й образи, які легко показати; фінал — коротка конкретна картинка чи дія (НЕ питання, не мораль і не заклик подумати), яка замикає петлю з початком.
-${S ? `СТРУКТУРА СЦЕНАРІЮ «${S.n}» — дотримуйся саме її, по черзі: ${S.p}. Не підписуй частини — текст суцільний, живий.\n` : ""}Обсяг — ${want}–${want + 8} слів (не менше ${want}: текст має звучати трохи довше за ${sec} с — озвучку потім точно підженемо під довжину відео). Без хештегів, емодзі, ремарок і заголовків.
+Форму обери сам під тему (історія, експеримент «що буде, якщо…», міф і правда, до і після — що найкраще підходить), але не називай її і не підписуй частини: глядач має відчувати живу розповідь, а не шаблон.
+Обсяг — ${want}–${want + 8} слів (не менше ${want}: текст має звучати трохи довше за ${sec} с — озвучку потім точно підженемо під довжину відео). Без хештегів, емодзі, ремарок і заголовків.
 ${silent ? "" : prm("script_rules").body + "\n"}Перед відповіддю перевір: хук до 12 слів і конкретний; петля з початку закрита у фіналі; немає жодного забороненого звороту; обсяг у межах. Відповідай тільки JSON {"text":"…"}`;
     // якщо з базою знань не вийшло (довгий контекст, збій) — ще раз коротше, без неї
     await prmLoad(); let err; for (const o of [{ kbFmt: "tall", kb: ["hook", "script", "story", "general"], max: 3000 }, { max: 2500 }]) { try { const r = await sample.json(ask, { cache: false, ...o }); const t = String(r?.text || (typeof r === "string" ? r : "")).trim(); if (t.split(/\s+/).length >= 12) return t; err = new Error("empty"); } catch (e) { err = e; if (/limit|login|no_key/.test(e?.code || e?.message || "")) throw e; } }
@@ -1533,7 +1534,7 @@ ${silent ? "" : prm("script_rules").body + "\n"}Перед відповіддю 
 #yvcn .btn{width:100%;padding:13px;border-radius:15px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.07);color:#f5f5f7;font-weight:700;font-size:15px;font-family:inherit;cursor:pointer;display:flex;gap:7px;align-items:center;justify-content:center}
 #yvcn .btn.main{background:#f5f5f7;color:#0b0b0d;border-color:transparent}#yvcn .btn:disabled{opacity:.45}#yvcn .btn.rec{background:#ff453a;border-color:transparent;color:#fff}
 #yvcn .txtp{max-height:30vh;overflow-y:auto;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);font-size:14px;line-height:1.5;white-space:pre-wrap;color:#e4e4e7}
-#yvcn .scst{margin:10px 0 0;padding:10px 12px 10px 30px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);font-size:13.5px;color:#d4d4d8;line-height:1.5}#yvcn .scst li{margin:2px 0}
+
 #yvcn .pjl{display:grid;gap:8px}#yvcn .pj{display:flex;align-items:center;gap:11px;padding:8px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09)}
 #yvcn .pj .pth{width:54px;height:96px;flex:none;border-radius:10px;background:#1c1c22 center/cover no-repeat;border:0;padding:0;cursor:pointer;position:relative}#yvcn .pj .pth:after{content:"▶";position:absolute;inset:auto 0 4px;text-align:center;font-size:12px;color:#fff;text-shadow:0 1px 3px #000}
 #yvcn .pj .pi{flex:1;min-width:0}#yvcn .pj .pi b{display:block;font-size:14.5px;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}#yvcn .pj .pi span{display:block;font-size:12px;color:#a1a1aa;margin-top:3px}
@@ -1664,7 +1665,7 @@ ${silent ? "" : prm("script_rules").body + "\n"}Перед відповіддю 
   let TOPEN = false;
   // реклама вибирається щоразу явно (кнопка «Написати текст» активна лише після вибору)
   let AD_PICK = null;
-  const STEPS = (n) => `<div class="steps">${["Тема", "Сценарій", "Голос", "Герої", "Відео"].map((q, i) => i + 1 === n ? `<b>${i + 1} ${q}</b>` : `<span>${i + 1} ${q}</span>`).join("")}</div>`;
+  const STEPS = (n) => `<div class="steps">${["Тема", "Текст", "Голос", "Герої", "Відео"].map((q, i) => i + 1 === n ? `<b>${i + 1} ${q}</b>` : `<span>${i + 1} ${q}</span>`).join("")}</div>`;
   /* ---------- «Мої відео»: готові ролики з файлами (сховище media/<uid>/cine) ---------- */
   const fmtDate = (ms) => { try { return new Date(ms).toLocaleDateString("uk-UA", { day: "numeric", month: "short" }) + ", " + new Date(ms).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" }); } catch (e) { return ""; } };
   const fmtDur = (s) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
@@ -1764,40 +1765,29 @@ ${prm("topic_rules").body}
   const prm = (k) => PRMDB[k] || PRM[k];
   const prmV = (...ks) => ks.map((k) => `${k}@${prm(k).v}`).join(",");
   /* ---------- крок 2: довжина, реклама, сценарій і текст ---------- */
-  const SCRIPTS = {
-    loop: { n: "Петля і наростання", b: ["Хук до 12 слів — несподіване про тебе", "Обіцянка: найважливіше — наприкінці", "Перша зміна — «уже зараз… а далі»", "Друга — сильніша, з побуту", "Третя — найсильніша, закриває обіцянку", "Удар — два-три слова", "Короткий заклик"], p: "як еталонний рілс «Світ у 2027»: хук до 12 слів на «ти» → відкрита петля (обіцянка, що найважливіше прозвучить наприкінці) → три блоки, кожен сильніший за попередній, кожен через побут глядача, між блоками короткий місток (не нумерація) → третій блок закриває петлю → ударна фраза з двох-трьох слів окремим реченням → короткий заклик" },
-    story: { n: "Історія героя", b: ["Гачок — несподіваний момент з історії", "Хто герой і чого він хоче", "Перешкода або помилка", "Поворот — що він зробив інакше", "Результат з конкретними числами", "Фінал — картинка, що закриває гачок"], p: "історія одного героя: гачок з середини історії → хто він і чого хоче → перешкода/помилка → поворот (що зробив інакше) → результат із конкретними числами → фінал: конкретна картинка чи дія, що закриває гачок з початку (без моралі)" },
-    whatif: { n: "Що буде, якщо…", b: ["Питання-гачок «що буде, якщо…»", "День 1 — перші відчуття", "Тиждень — перші зміни", "Місяць — несподіваний ефект", "Підсумок — що змінилось назавжди"], p: "експеримент у часі: питання «що буде, якщо…» → день 1 → тиждень → місяць (несподіваний ефект) → підсумок; кожен етап — конкретна зміна, яку легко показати" },
-    myth: { n: "Міф і правда", b: ["Поширений міф, у який вірять усі", "Чому люди в нього вірять", "Як насправді (факт або число)", "Що через це втрачають", "Що робити замість цього"], p: "руйнування міфу: поширений міф → чому в нього вірять → як насправді (факт/число) → що через це втрачають → що робити замість цього" },
-    list: { n: "3 кроки / поради", b: ["Гачок — обіцянка результату", "Крок 1 — найпростіший", "Крок 2 — найнеочевидніший", "Крок 3 — той, що дає результат", "Підсумок і що буде, якщо почати сьогодні"], p: "три дії як історія: гачок-обіцянка результату → що зробив першим (проста дія) → найнеочевидніше (поворот) → що дало результат (з числом) → фінал-картинка; кроки НЕ називай словами «крок перший / другий» — глядач бачить їх діями" },
-    before: { n: "До і після", b: ["Як було — болюче й знайомо", "Момент, коли все змінилось", "Що саме зробив інакше", "Як стало — конкретно й видимо", "Як повторити глядачу"], p: "до/після: як було (болюче й знайомо) → момент зміни → що саме зробив інакше → як стало (конкретно, з числами) → як повторити" },
-    voice: { n: "Внутрішній голос", b: ["Внутрішній голос шепоче відмовку", "Герой вагається", "Ціна, якщо послухатись", "Вибір — діяти попри страх", "Що стало після цього вибору"], p: "діалог із внутрішнім голосом: голос шепоче відмовку → герой вагається → ціна, якщо послухатись → вибір діяти попри страх → що стало після вибору" },
-    fact: { n: "Факт, що дивує", b: ["Несподіваний факт або число", "Чому так відбувається", "Як це стосується тебе", "Приклад з життя", "Висновок, який хочеться переслати"], p: "дивний факт: несподіваний факт/число → чому так → як це стосується глядача → приклад із життя → висновок, який хочеться переслати" } };
-  const scnOf = () => SCRIPTS[DRAFT.scn] ? DRAFT.scn : /^що буде/i.test(DRAFT.topic || "") ? "whatif" : "loop";
-  function screenScript(msg) { stopPlay(); stopPrevA(); const d = shell(), B = $(d, ".cb"), F = $(d, ".cf"); if (!AD_PICK) AD_PICK = OPT.ad || "none"; let scn = scnOf();
+  // вибір шаблону сценарію прибрано (рішення власника 03.11.2026): шаблони ставили рамки й давали текст «як урок» — тепер одна система правил навички
+  function screenScript(msg) { stopPlay(); stopPrevA(); const d = shell(), B = $(d, ".cb"), F = $(d, ".cf"); if (!AD_PICK) AD_PICK = OPT.ad || "none";
     const ADS = [["none", "Без реклами"], ["bio", "Посилання в шапці профілю"], ["comment", `Слово «${escH(String(OPT.adWord || "АНІМАЦІЯ").toUpperCase())}» в коментарях`]];
-    const struct = () => `<ol class="scst">${SCRIPTS[scn].b.map((q) => `<li>${escH(q)}</li>`).join("")}</ol>`;
     B.innerHTML = `${msg ? `<div class="msg">${escH(msg)}</div>` : ""}<div class="scr">${STEPS(2)}
       <div class="sec"><div class="tpcur"><b>${escH(DRAFT.topic || "Своя тема")}</b><button class="chip" type="button" id="ctpch">Змінити</button></div></div>
       <div class="sec"><h4>Довжина відео</h4><div class="chips">${[20, 30, 45, 60, 90].map((q) => `<button class="chip" type="button" data-sec="${q}" aria-pressed="${OPT.sec === q}">${q} с</button>`).join("")}</div></div>
       <div class="sec"><h4>Реклама</h4><div class="vopt">${ADS.map(([k, n]) => `<button type="button" data-adp="${k}" aria-pressed="${AD_PICK === k}"><b>${n}</b></button>`).join("")}</div>
         <div id="cadhint">${AD_PICK === "comment" ? DM_HINT : ""}</div></div>
-      <div class="sec"><h4>Сценарій</h4><div class="chips">${Object.entries(SCRIPTS).map(([k, v]) => `<button class="chip" type="button" data-scn="${k}" aria-pressed="${scn === k}">${escH(v.n)}</button>`).join("")}</div><div id="cscst">${struct()}</div></div>
+
       <div class="sec"><button class="btn main" type="button" id="cwr">✨ ${DRAFT.text ? "Написати інший варіант" : "Написати текст"}</button>
         <textarea id="ctext" rows="11" style="margin-top:10px" placeholder="Або напиши свій текст тут — його можна редагувати">${escH(DRAFT.text)}</textarea><p class="cnt" id="ccnt"></p></div></div>`;
     F.innerHTML = `<div class="row"><button class="btn main" type="button" id="cgo">Далі — голос</button><button class="btn sq" type="button" id="cprev" aria-label="Назад">‹</button></div>`;
-    const ta = $(B, "#ctext"), cnt = $(B, "#ccnt"), keyNow = () => [DRAFT.topic, OPT.sec, AD_PICK, OPT.adWord, scn].join("|");
+    const ta = $(B, "#ctext"), cnt = $(B, "#ccnt"), keyNow = () => [DRAFT.topic, OPT.sec, AD_PICK, OPT.adWord].join("|");
     const est = () => { DRAFT.text = ta.value; saveDraft(); const n = (ta.value.match(/\S+/g) || []).length, f = fitEst(n, OPT.sec); cnt.textContent = n ? `${n} слів · після озвучки ≈ ${fmt(f.dur)} (ціль ${OPT.sec} с)${f.dur > OPT.sec * 1.08 ? " — задовго, скороти" : f.dur < OPT.sec * .85 ? " — закоротко, можна додати" : ""}${DRAFT.gk && DRAFT.gk !== keyNow() && DRAFT.gk.split("|")[2] !== AD_PICK ? " · реклама змінилась — напиши текст заново" : ""}` : `Ціль ≈ ${OPT.sec} с`; };
     ta.oninput = est; est();
     B.querySelectorAll("[data-sec]").forEach((b) => b.onclick = () => { OPT.sec = +b.dataset.sec; saveOpt(); B.querySelectorAll("[data-sec]").forEach((o) => o.setAttribute("aria-pressed", o === b)); est(); });
     B.querySelectorAll("[data-adp]").forEach((b) => b.onclick = () => { AD_PICK = b.dataset.adp; OPT.ad = AD_PICK; saveOpt(); B.querySelectorAll("[data-adp]").forEach((o) => o.setAttribute("aria-pressed", o === b)); $(B, "#cadhint").innerHTML = AD_PICK === "comment" ? DM_HINT : ""; est(); });
-    B.querySelectorAll("[data-scn]").forEach((b) => b.onclick = () => { scn = DRAFT.scn = b.dataset.scn; saveDraft(); B.querySelectorAll("[data-scn]").forEach((o) => o.setAttribute("aria-pressed", o === b)); $(B, "#cscst").innerHTML = struct(); track("scn_pick", { v: scn }); });
     $(B, "#ctpch").onclick = () => screenTopic(); $(F, "#cprev").onclick = () => screenTopic();
     $(B, "#cwr").onclick = async (ev) => { const btn = ev.currentTarget; OPT.ad = AD_PICK; saveOpt(); const topic = DRAFT.topic || ta.value.trim().slice(0, 300); if (!topic) return screenTopic("Напиши або обери тему");
       try { const adOn = AD_PICK && AD_PICK !== "none", adSec = adOn ? (OPT.sec <= 30 ? 11 : 17) + 3 : 0;
-        let t = await E().busyRun("text", () => aiText(topic, Math.max(12, OPT.sec - adSec), OPT.voice === "none", scn)); if (!t) throw new Error("empty"); DRAFT.adMid = ""; DRAFT.adParts = null;
+        let t = await E().busyRun("text", () => aiText(topic, Math.max(12, OPT.sec - adSec), OPT.voice === "none")); if (!t) throw new Error("empty"); DRAFT.adMid = ""; DRAFT.adParts = null;
         let wv = false; if (adOn) { try { const w = await E().busyRun("text", () => adWeave2(t, AD_PICK, OPT.adWord)); t = w.text; DRAFT.adMid = w.mid; DRAFT.adParts = w.parts; wv = true; } catch (e) { console.warn("ad weave", e); } }
-        ta.value = t; DRAFT.gk = keyNow(); est(); btn.textContent = "✨ Написати інший варіант"; track("ai_text", { v: scn }); if (adOn && !wv) say("Текст готовий, але рекламу вплести не вийшло — натисни «Написати інший варіант»"); }
+        ta.value = t; DRAFT.gk = keyNow(); est(); btn.textContent = "✨ Написати інший варіант"; track("ai_text", { v: prmV("script_rules") }); if (adOn && !wv) say("Текст готовий, але рекламу вплести не вийшло — натисни «Написати інший варіант»"); }
       catch (e) { console.warn("cine text", e); const c = String((e?.code === "server" && e?.message) || e?.code || e?.message || "err"); track("ai_text_err", { v: c.slice(0, 30) }); say(/limit/.test(c) ? "Ліміт на сьогодні вичерпано" : /login/.test(c) ? "Увійди, щоб написати текст" : /network/.test(c) ? "Немає зв'язку — перевір інтернет і натисни ще раз" : /no_credit/.test(c) ? "Текст зараз недоступний: на рахунку Anthropic закінчились кошти (no_credit)" : /bad_model/.test(c) ? `Модель недоступна — перевір секрет AI_MODEL (${c})` : /bad_key/.test(c) ? "Ключ Anthropic не підходить (bad_key)" : `Не вийшло написати текст — натисни ще раз (${c})`); } };
     $(F, "#cgo").onclick = () => { OPT.ad = AD_PICK; saveOpt(); if ((ta.value.match(/\S+/g) || []).length < 4) { say("Спершу потрібен текст — натисни «Написати текст» або напиши свій"); return; } DRAFT.text = ta.value; saveDraft(); screenContent(); }; }
   let PENDING = null;
