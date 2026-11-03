@@ -2378,5 +2378,5 @@ ${SPEC}
       "Реклама: реальний телефон у руці з кадрами інтерфейсу, виліт телефона до глядача.",
       "НЕМАЄ: імпорту відео/фото у кадр, 3D, ліпсінку, кількох персонажів, що взаємодіють руками, складної анімації тіла (біг, стрибки), частинок окрім простих."
     ].join("\n"); }
-  window.YVCine = { adStudio: () => adStudio(), open(o = {}) { if (o.text) { DRAFT.text = String(o.text); DRAFT.topic = String(o.topic || ""); saveDraft(); return screenContent(); } if (window.SRV?.session && SRV.cineList) screenProjects(); else screenTopic(); }, close, _t: { caps, loadHand, DEMOPLAN, placeAd, removeAd, ensureAd, adPoint, loadAd, soundtrack, normPlan, aiPlan, set: (l) => { L = l; }, L: () => L, screenEdit, screenPlan, exportVideo, loadFont, drawFrame, timeline, PLACES, POSE, HOOD, figure, loadIcons, sceneAt } };
+  window.YVCine = { adStudio: () => adStudio(), open(o = {}) { if (o.text) { DRAFT.text = String(o.text); DRAFT.topic = String(o.topic || ""); saveDraft(); return screenContent(); } if (window.SRV?.session && SRV.cineList) screenProjects(); else screenTopic(); }, close, _t: { caps, loadHand, DEMOPLAN, placeAd, removeAd, ensureAd, adPoint, loadAd, soundtrack, normPlan, aiPlan, set: (l) => { L = l; }, L: () => L, screenEdit, screenPlan, exportVideo, fitTo, loadFont, drawFrame, timeline, PLACES, POSE, HOOD, figure, loadIcons, sceneAt } };
 })();
