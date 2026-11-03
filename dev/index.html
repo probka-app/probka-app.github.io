@@ -4943,14 +4943,59 @@ async function loadSoon(){ const c=document.getElementById("sooncard"); if(!c) r
   if(!L.length){ c.dataset.has=""; c.hidden=true; return; } const x=L[0]; c.dataset.has="1"; c.querySelector("#soont").textContent=x.title+(L.length>1?` і ще ${L.length-1}`:""); c.querySelector("#soond").textContent=x.descr||""; applyUIF(); }
 document.getElementById("sooncard")?.addEventListener("click",()=>{ try{ uiSnd("tap"); }catch(e){} openIdeas(); });
 
-/* ===== Озвучка твоїм голосом — окремий інструмент ===== */
+/* ===== Озвучка твоїм голосом — окремий інструмент (+ підгонка під час: вирізання пауз і пришвидшення) ===== */
+/* Підгонка робиться в браузері з уже готової озвучки: зміна часу чи перемикачів НЕ озвучує заново і не списує хвилини. */
+const VFIT_DUR=[0,15,30,45,60,90], VFIT_MAX=1.5;
+function vfitLoad(){ let o={}; try{ o=JSON.parse(localStorage.getItem("yvVoiceFit")||"{}")||{}; }catch(e){} return {dur:Number.isFinite(+o.dur)?+o.dur:30,cut:o.cut!==false,fast:o.fast!==false}; }
+function vfitSave(F){ try{ localStorage.setItem("yvVoiceFit",JSON.stringify(F)); }catch(e){} }
+function vfitWords(t){ return (String(t||"").trim().match(/[\p{L}\p{N}’'ʼ-]+/gu)||[]).length; }
+function vfitEst(t){ return vfitWords(t)/2.4; }   // ≈2.4 слова/с — звичайний темп AI-голосу
+function vfitRun(raw,F){ const sr=raw.sampleRate; let d=monoOf(raw); const orig=d.length/sr;
+  if(F.cut) d=cutPauses(d,sr); const cut=d.length/sr; let rate=1, need=1;
+  if(F.dur>0){ need=cut/F.dur; if(F.fast&&need>1.02){ rate=Math.min(need,VFIT_MAX); d=wsola(d,sr,rate); } }
+  let b; try{ b=new AudioBuffer({length:d.length,numberOfChannels:1,sampleRate:sr}); }catch(e){ b=ac().createBuffer(1,d.length,sr); } b.copyToChannel(d,0);
+  return {buf:b,orig,cut,rate,need,final:d.length/sr}; }
+function vfitText(R,F){ const p=[`Озвучка ${R.orig.toFixed(1)} с`]; if(F.cut&&R.orig-R.cut>.15) p.push(`без пауз ${R.cut.toFixed(1)} с`); if(R.rate>1) p.push(`швидкість ×${R.rate.toFixed(2)}`); p.push(`разом ${R.final.toFixed(1)} с`);
+  let s=p.join(" → ");
+  if(F.dur>0){ const diff=R.final-F.dur;
+    if(diff>.5){ s+=!F.fast&&R.need>1.02?`. Довше за ${F.dur} с — увімкни «Пришвидшити».`:`. Навіть з ×${VFIT_MAX} довше за ${F.dur} с на ${diff.toFixed(1)} с — скороти текст приблизно на ${Math.max(1,Math.ceil(diff*2.4*VFIT_MAX))} сл.`; }
+    else if(diff<-1.5) s+=`. Коротше за ${F.dur} с на ${(-diff).toFixed(1)} с — можна додати ще ~${Math.floor(-diff*2.4)} сл.`;
+    else s+=` ✓ влазить у ${F.dur} с`; }
+  return s; }
+function vfitSaveFile(blob,name){ const file=new File([blob],name,{type:blob.type}), mobile=/iPhone|iPad|Android/i.test(navigator.userAgent);
+  if(mobile&&navigator.canShare?.({files:[file]})){ toast("У меню вибери «Зберегти у Файли» або потрібну програму"); navigator.share({files:[file]}).catch(e=>{ if(e?.name!=="AbortError") vfitLink(blob,name); }); return; }
+  if(typeof downloads!=="undefined"&&downloads){ save(name,blob); return; }
+  vfitLink(blob,name); }
+function vfitLink(blob,name){ const url=URL.createObjectURL(blob), l=document.createElement("a"); l.href=url; l.download=name; document.body.appendChild(l); l.click(); l.remove(); setTimeout(()=>URL.revokeObjectURL(url),60000); toast("Аудіо збережено"); }
 function openVoiceTool(){ try{ uiSnd("tap"); }catch(e){} let txt=""; try{ txt=localStorage.getItem("yvVoiceTxt")||""; }catch(e){}
-  openSheet(`<div class="pshead"><h3>Озвучка твоїм голосом</h3></div><p class="hint" style="display:block">Напиши або встав текст — і отримай озвучку твоїм голосом або одним з голосів студії. Готове аудіо можна зберегти й додати до будь-якого відео.</p>
-    <textarea id="vtt" class="cpd" rows="5" maxlength="5000" placeholder="Текст для озвучки…">${esc(txt)}</textarea><div id="vtb" style="margin-top:12px"></div><div id="vtres"></div>`,"plat");
-  const ta=BS.querySelector("#vtt"), res=BS.querySelector("#vtres"); ta.oninput=()=>{ try{ localStorage.setItem("yvVoiceTxt",ta.value); }catch(e){} };
-  voicePicker(BS.querySelector("#vtb"),{getText:()=>ta.value,onAudio:async(buf,name,type)=>{ const blob=new Blob([buf],{type:type||"audio/mpeg"}), url=URL.createObjectURL(blob), ext=/wav/.test(type||"")?"wav":"mp3";
-    res.innerHTML=`<div class="vtr"><audio src="${url}" controls></audio><button class="big" type="button" id="vtsave">Зберегти аудіо</button></div>`;
-    res.querySelector("#vtsave").onclick=()=>{ const n=`озвучка_${new Date().toISOString().slice(0,10)}.${ext}`; if(typeof downloads!=="undefined"&&downloads) sendSheet(blob,n,""); else { const l=document.createElement("a"); l.href=url; l.download=n; document.body.appendChild(l); l.click(); l.remove(); } }; }}); }
+  const F=vfitLoad(); let RAW=null, RAWN="", OUTURL="";
+  openSheet(`<div class="pshead"><h3>Озвучка твоїм голосом</h3></div><p class="hint" style="display:block">Напиши або встав текст, вибери тривалість — і отримай озвучку твоїм голосом або одним з голосів студії, підігнану під потрібний час. Готове аудіо можна зберегти на телефон.</p>
+    <textarea id="vtt" class="cpd" rows="5" maxlength="5000" placeholder="Текст для озвучки…">${esc(txt)}</textarea><p class="tnote" id="vtest"></p>
+    <p class="pslbl" style="margin-top:12px">Тривалість</p>
+    <div class="chips" id="vtdur">${VFIT_DUR.map(s=>`<button class="chip" type="button" data-vd="${s}" aria-pressed="${F.dur===s}">${s?s+" с":"Без підгонки"}</button>`).join("")}</div><label class="tnote" style="display:flex;align-items:center;gap:8px;margin-top:8px">або своя: <input id="vtown" type="number" inputmode="numeric" min="3" max="600" placeholder="—" style="width:72px;height:34px;padding:4px 8px;border-radius:10px;border:1px solid currentColor;background:transparent;color:inherit;font:inherit" value="${VFIT_DUR.includes(F.dur)?"":F.dur}"> с</label>
+    <div class="chips" style="margin-top:8px"><button class="chip" type="button" id="vtcut" aria-pressed="${F.cut}">Прибрати паузи</button><button class="chip" type="button" id="vtfast" aria-pressed="${F.fast}">Пришвидшити, якщо довше</button></div>
+    <div id="vtb" style="margin-top:12px"></div><div id="vtres"></div>`,"plat");
+  const ta=BS.querySelector("#vtt"), res=BS.querySelector("#vtres"), est=BS.querySelector("#vtest"), own=BS.querySelector("#vtown");
+  const showEst=()=>{ const w=vfitWords(ta.value); est.textContent=w?`≈ ${Math.round(vfitEst(ta.value))} с звичайним темпом · ${w} сл.${F.dur>0?` · на ${F.dur} с вистачить ~${Math.round(F.dur*2.4)} сл. (з пришвидшенням до ~${Math.round(F.dur*2.4*VFIT_MAX)})`:""}`:""; };
+  const render=async()=>{ if(!RAW) return; res.innerHTML=`<p class="status">Підганяю під тривалість…</p>`; await new Promise(r=>setTimeout(r,30));
+    let R; try{ R=vfitRun(RAW,F); }catch(x){ res.innerHTML=`<p class="status err">Не вдалося обробити аудіо. Спробуй «Без підгонки».</p>`; return; }
+    const blob=new Blob([wav(R.buf)],{type:"audio/wav"}); if(OUTURL) URL.revokeObjectURL(OUTURL); OUTURL=URL.createObjectURL(blob);
+    const name=`озвучка_${F.dur>0?F.dur+"с_":""}${new Date().toISOString().slice(0,10)}.wav`;
+    res.innerHTML=`<div class="vtr"><p class="status" id="vtinfo"></p><audio src="${OUTURL}" controls playsinline></audio><button class="big" type="button" id="vtsave">Зберегти аудіо на телефон</button><p class="tnote">Зміна тривалості чи перемикачів не озвучує заново і не витрачає хвилини.</p></div>`;
+    res.querySelector("#vtinfo").textContent=vfitText(R,F);
+    res.querySelector("#vtsave").onclick=()=>{ try{ uiSnd("tap"); }catch(e){} vfitSaveFile(blob,name); }; };
+  const setDur=s=>{ F.dur=s; vfitSave(F); BS.querySelectorAll("[data-vd]").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.vd===s)); showEst(); render(); };
+  BS.querySelectorAll("[data-vd]").forEach(b=>b.onclick=()=>{ own.value=""; setDur(+b.dataset.vd); });
+  own.onchange=()=>{ const v=Math.round(+own.value); if(v>=3&&v<=600) setDur(v); else { own.value=""; toast("Від 3 до 600 секунд"); } };
+  const tog=(id,k)=>{ const b=BS.querySelector(id); b.onclick=()=>{ F[k]=!F[k]; vfitSave(F); b.setAttribute("aria-pressed",F[k]); render(); }; };
+  tog("#vtcut","cut"); tog("#vtfast","fast");
+  ta.oninput=()=>{ try{ localStorage.setItem("yvVoiceTxt",ta.value); }catch(e){} showEst(); }; showEst();
+  voicePicker(BS.querySelector("#vtb"),{getText:()=>ta.value,onAudio:async(buf,name,type)=>{
+    try{ RAW=await decodeBuf(buf); RAWN=name; }catch(x){ // не вдалось розкодувати — віддаємо як є, без підгонки
+      RAW=null; const blob=new Blob([buf],{type:type||"audio/mpeg"}), url=URL.createObjectURL(blob), ext=/wav/.test(type||"")?"wav":"mp3";
+      res.innerHTML=`<div class="vtr"><p class="status err">Підгонка тут недоступна — ось озвучка без змін.</p><audio src="${url}" controls playsinline></audio><button class="big" type="button" id="vtsave">Зберегти аудіо на телефон</button></div>`;
+      res.querySelector("#vtsave").onclick=()=>vfitSaveFile(blob,`озвучка_${new Date().toISOString().slice(0,10)}.${ext}`); return; }
+    await render(); }}); }
 document.getElementById("voicefmt")?.addEventListener("click",openVoiceTool);
 try{ applyUIF(); }catch(e){}
 setTimeout(()=>{ loadUIF(); loadSoon(); },400);
