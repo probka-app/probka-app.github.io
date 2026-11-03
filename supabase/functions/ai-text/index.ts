@@ -1,6 +1,6 @@
 // ai-text — один файл для вставки в редактор Supabase (Edge Functions -> Via Editor)
 // Генерація тексту для конструктора на сайті (теми, хуки, сценарій, сцени, підписи) через Claude.
-// POST { prompt, sys?: ["director"|"critic"|"packaging"|"writer"|"bible_merge"|"pack_merge"|"writer_merge"] (приховані промти студії), json?: boolean, max?: number, kb?: boolean, kbm?: string[] (папки бази знань), kbf?: "wide"|"tall" (формат), images?: [{ data: base64, mime }] }  — images: до 3 скрінів-прикладів (стиль субтитрів тощо)  (Authorization: Bearer <токен користувача>)
+// POST { prompt, raw?: true (лише промт із запиту — Лабораторія), sys?: ["director"|"critic"|"packaging"|"writer"|"bible_merge"|"pack_merge"|"writer_merge"] (приховані промти студії), json?: boolean, max?: number, kb?: boolean, kbm?: string[] (папки бази знань), kbf?: "wide"|"tall" (формат), images?: [{ data: base64, mime }] }  — images: до 3 скрінів-прикладів (стиль субтитрів тощо)  (Authorization: Bearer <токен користувача>)
 // -> { text }
 // Секрети: ANTHROPIC_API_KEY (обов'язково), AI_MODEL (необов'язково, за замовчуванням claude-haiku-5-5).
 // Ліміт на людину на день — налаштування ai_daily_limit (спільний зі stats-extract).
@@ -203,6 +203,9 @@ Deno.serve(handler(async (req) => {
   let prompt = String(body.prompt ?? "").slice(0, merge ? 300000 : sys.length ? 40000 : 12000);
   if (prompt.trim().length < 3) throw new HttpError(400, "empty_prompt");
   const wantJson = body.json === true;
+  // raw: true — «чистий» режим Лабораторії: лише промт із запиту, без загальної інструкції сайту, без прихованого промту,
+  // без Біблії (<key>_learned) і без бази знань — як у чаті Claude. Модель береться з рядка ai_prompts першого ключа sys.
+  const raw = body.raw === true && !merge;
   const max = Math.min(merge ? 7000 : sys.length ? 8000 : 4000, Math.max(200, Number(body.max) || 2500));
   // тексти прихованих промтів: заміна з таблиці (якщо власник її задав) + знання з розборів (<key>_learned)
   let sysText = "", sysModel = "";
@@ -213,6 +216,7 @@ Deno.serve(handler(async (req) => {
     if (merge) { const { data: cur } = await admin().from("ai_prompts").select("body").eq("key", target).maybeSingle(); prompt = `ПОТОЧНА БІБЛІЯ:\n${cur?.body || "(ще порожня)"}\n\n${prompt}`; }
     sysText = sys.map((k) => (by[k]?.body?.trim() || BUILTIN[k]) + (!merge && by[k + "_learned"]?.body?.trim() ? `\n\n${k === "writer" ? "БІБЛІЯ СЦЕНАРИСТА — ПРИЙОМИ З РОЗБОРІВ УСПІШНИХ ВІДЕО (бери ті, що пасують до теми)" : "БІБЛІЯ РЕЖИСЕРА — ЗНАННЯ З РОЗБОРІВ УСПІШНИХ ВІДЕО (застосовуй їх)"}:\n${by[k + "_learned"].body.trim()}` : "")).join("\n\n");
     sysModel = by[sys[0]]?.model?.trim() || "";
+    if (raw) sysText = "";
   }
   const imgs = (Array.isArray(body.images) ? body.images : []).slice(0, 3)
     .filter((m: { data?: string; mime?: string }) => typeof m?.data === "string" && m.data.length < 2_000_000 && /^image\/(jpeg|png|webp|gif)$/.test(String(m.mime)))
@@ -228,7 +232,8 @@ Deno.serve(handler(async (req) => {
   const mods = (Array.isArray(body.kbm) ? body.kbm : []).filter((m: unknown) => typeof m === "string" && /^[a-z_-]{2,24}$/.test(m)).slice(0, 8);
   // kbf: "wide" — YouTube 16:9, "tall" — Reels: беремо знання цього формату й загальні
   const fmt = body.kbf === "wide" || body.kbf === "tall" ? body.kbf : null;
-  if (mods.length) {
+  if (raw) { /* без бази знань */ }
+  else if (mods.length) {
     let r1 = await admin().rpc("kb_modules", { p_modules: mods, p_limit: 80, p_fmt: fmt });
     if (r1.error) r1 = await admin().rpc("kb_modules", { p_modules: mods, p_limit: 80 }); // якщо міграцію 0038 ще не застосовано
     if (!r1.error) kb = String(r1.data ?? "").slice(0, 9000);
@@ -242,8 +247,8 @@ Deno.serve(handler(async (req) => {
       body: JSON.stringify({
         model,
         max_tokens: max,
-      system: [{ type: "text", text: SYSTEM + (sysText ? `\n\n${sysText}` : "") + (kb ? (sys.includes("writer") ? `\n\nБАЗА ЗНАНЬ СТУДІЇ — довідник прийомів. Бери з неї те, що пасує до цієї теми й формату; правила із запиту й сценариста вище мають пріоритет. Приклади — орієнтир стилю, не копіюй їх дослівно.\n${kb}` : `\n\nБАЗА ЗНАНЬ СТУДІЇ — основа твоєї роботи. Роби саме за цими правилами, прийомами й прикладами; не вигадуй прийомів, стилів і рішень, яких тут немає. Приклади — орієнтир стилю, не копіюй їх дослівно. Якщо для чогось правила немає — обирай найпростіше рішення, що не суперечить базі.\n${kb}`) : ""), ...(kb || sysText ? { cache_control: { type: "ephemeral" } } : {}) },
-        ...(wantJson && jsonHint ? [{ type: "text", text: "Відповідай ТІЛЬКИ валідним JSON, без markdown, без ``` і без пояснень." }] : [])],
+      ...(raw ? {} : { system: [{ type: "text", text: SYSTEM + (sysText ? `\n\n${sysText}` : "") + (kb ? (sys.includes("writer") ? `\n\nБАЗА ЗНАНЬ СТУДІЇ — довідник прийомів. Бери з неї те, що пасує до цієї теми й формату; правила із запиту й сценариста вище мають пріоритет. Приклади — орієнтир стилю, не копіюй їх дослівно.\n${kb}` : `\n\nБАЗА ЗНАНЬ СТУДІЇ — основа твоєї роботи. Роби саме за цими правилами, прийомами й прикладами; не вигадуй прийомів, стилів і рішень, яких тут немає. Приклади — орієнтир стилю, не копіюй їх дослівно. Якщо для чогось правила немає — обирай найпростіше рішення, що не суперечить базі.\n${kb}`) : ""), ...(kb || sysText ? { cache_control: { type: "ephemeral" } } : {}) },
+        ...(wantJson && jsonHint ? [{ type: "text", text: "Відповідай ТІЛЬКИ валідним JSON, без markdown, без ``` і без пояснень." }] : [])] }),
         messages: [{ role: "user", content: imgs.length ? [...imgs, { type: "text", text: prompt }] : prompt }],
       }),
     });

@@ -20,14 +20,36 @@
   async function tplLoad() { try { const r = await window.SRV?.bibleGet?.("ad_templates"); const a = r?.body ? JSON.parse(r.body) : null; if (Array.isArray(a)) { TPL = a; LS.set("yvLabAdTpl", TPL); } } catch (e) {} return TPL; }
   async function tplSave() { LS.set("yvLabAdTpl", TPL); try { await window.SRV?.bibleSet?.(JSON.stringify(TPL), "ad_templates"); return true; } catch (e) { return false; } }
   const PARTNER = "за кожного, хто прийде за моїм посиланням, я отримую половину його першої оплати";
-  function adBrief() { if (S.ad === "none") return "\nРеклама: немає — рекламної вставки не пиши, поле ad залиш порожнім рядком.";
-    const w = (S.adWord || "Анімація").trim(), cta = S.ad === "comment" ? `попроси написати слово «${w}» в коментарях (саме це слово, дослівно, з великої літери) — тоді надішлеш посилання й людина спробує безкоштовно` : "скажи, що посилання — в шапці профілю, і спробувати можна безкоштовно";
-    const t = TPL.find((x) => x.id === S.adTpl);
-    return t ? `\nРЕКЛАМНА ВСТАВКА — ШАБЛОН ВЛАСНИКА. Встав цей фрагмент ДОСЛІВНО, без змін: «${t.text}». Місток перед ним і повернення в історію після нього напиши під цю історію (по 1 короткому реченню). Встав приблизно на 50–60% тексту, на найцікавішому місці. У полі ad — дослівно місток + шаблон + повернення.`
-      : `\nРЕКЛАМНА ВСТАВКА ПРО СТУДІЮ — органічна частина цієї історії, а не «а зараз реклама». Встав її приблизно на 50–60% тексту, на найцікавішому місці.
-Будова: місток із самої історії (герой вирішує показати / зняти / пояснити саме це) → у студії за кілька хвилин нейромережа робить про це анімаційне відео — таке, як глядач дивиться зараз → ${PARTNER} (цю умову передай точно: саме половину і саме першої оплати) → ${cta} → коротке повернення в історію, яке не розкриває фінал.
-Кожного разу пиши вставку новими словами під цю історію: без заготовок, без «і тут я розумію», без «а тепер — що було далі», без «реклама», «до речі», назв сервісів і обіцянок заробітку. Вставка — 30–45 слів, вона входить у загальний обсяг тексту.
-У JSON додай поле "ad": дослівний фрагмент voiceover від містка до повернення включно (щоб програма його знайшла).`; }
+  const AD_SEC = 12; // рекламна вставка додається до довжини історії, а не відбирає в неї слова
+  const totalSec = () => S.sec + (S.res?.ad ? AD_SEC : 0);
+  // фразу партнерки й заклик вставляє програма дослівно — модель пише лише місток, речення про студію і повернення
+  function adFixed() { const w = (S.adWord || "Анімація").trim();
+    const t = TPL.find((x) => x.id === S.adTpl); if (t) return { tpl: true, lines: [t.text] };
+    return { tpl: false, lines: [PARTNER.charAt(0).toUpperCase() + PARTNER.slice(1) + ".", S.ad === "comment" ? `Напиши в коментарях «${w}» — надішлю посилання, спробуєш безкоштовно.` : "Посилання — у шапці профілю, спробувати можна безкоштовно."] }; }
+  const P_AD = `Ти — сценарист вірусних 2D-анімованих Reels. Тобі дають ГОТОВИЙ текст озвучки (фрази пронумеровані) — його не змінюй. Треба органічно вбудувати в нього коротку рекламну вставку про анімаційну студію автора.
+
+Що написати (лише три речення, кожне до 12 слів, жива розмовна українська, на «ти»):
+1. bridge — місток із самої історії: автор вирішує показати саме те, про що щойно йшлося. Продовжує думку попередньої фрази, а не починає нову тему.
+2. studio — що цю анімацію, яку глядач зараз дивиться, за кілька хвилин зробила нейромережа в студії. Без назви сервісу, без «реклама», «до речі», без обіцянок заробітку і без вигаданих відгуків.
+3. back — коротке повернення в історію, яке підігріває цікавість до наступної фрази і не розкриває фінал. Не «а тепер — що було далі», не «і тут я розумію».
+
+Після studio програма сама вставить дослівно: {FIXED}
+Тож bridge і studio мають логічно вести до цих речень, а back — природно звучати після них.
+
+after — номер фрази, ПІСЛЯ якої вставити: між смисловими блоками, приблизно на 45–60% тексту, ніколи не всередині думки і не в останніх трьох фразах.
+Для кожного з трьох речень дай scene: одна дія чоловічка або предмета, намальованих лініями, яку видно за 2–4 секунди, без тексту на екрані.
+
+Відповідь — тег <result> і в ньому лише JSON:
+<result>{"after": 0, "bridge": "", "bridge_scene": "", "studio": "", "studio_scene": "", "back": "", "back_scene": ""}</result>`;
+  async function addAd(r) { const fx = adFixed(), L = r.lines;
+    const user = `<story>\n${L.map((l, i) => `${i + 1}. ${l.text}`).join("\n")}\n</story>` + (fx.tpl ? `\n\nШаблон власника вставиться ЗАМІСТЬ речення studio, тож поле studio залиш порожнім рядком.` : "");
+    const a = await askJson(P_AD.replace("{FIXED}", fx.lines.map((x) => `«${x}»`).join(" ")), user, 1500, (x) => x && x.bridge && x.back && Number.isFinite(+x.after));
+    const n = L.length, at = Math.min(Math.max(+a.after, Math.round(n * .4)), n - 3), sc = (t) => ({ t: "", text: t, scene: "", ad: true });
+    const ins = [{ ...sc(a.bridge), scene: a.bridge_scene || "" }, ...(fx.tpl ? [] : [{ ...sc(a.studio), scene: a.studio_scene || "" }]), ...fx.lines.map((t) => ({ ...sc(t), scene: "чоловічок показує на телефон: на екрані — ця сама анімація" })), { ...sc(a.back), scene: a.back_scene || "" }].filter((l) => String(l.text || "").trim());
+    r.lines = [...L.slice(0, at), ...ins, ...L.slice(at)]; r.voiceover = r.lines.map((l) => l.text).join(" ");
+    r.ad = ins.map((l) => l.text).join(" ");
+    r.caption = String(r.caption || "").trim() + (/реклам/i.test(r.caption || "") ? "" : " #реклама");
+    return r; }
   const words = (t) => (String(t || "").match(/[\p{L}\p{N}’'ʼ-]+/gu) || []).length;
 
   // ---- відповідь моделі: <thinking>…</thinking><result>{…}</result> ----
@@ -40,7 +62,7 @@
   async function ask(system, user, max) {
     if (typeof sample !== "function") throw new Error("no_ai");
     // стала частина промта + змінна; «сценарист» на сервері = сильніша модель; бази знань тут немає навмисно
-    const r = await sample(`${system}\n\n${user}\n\nРоздумів не виводь і тег <thinking> не пиши: подумай про себе й одразу дай тег <result> з повним JSON.`, { cache: false, sys: ["writer"], max });
+    const r = await sample(`${system}\n\n${user}\n\nРоздумів не виводь і тег <thinking> не пиши: подумай про себе й одразу дай тег <result> з повним JSON.`, { cache: false, sys: ["writer"], raw: true, max });
     return String(r?.text || ""); }
   const errText = (e) => { const c = e?.code || e?.message || String(e); return c === "login" ? "Увійди в акаунт." : c === "rate_limited" || c === "limit" ? "Ліміт AI на сьогодні." : c === "busy" ? "Сервіс AI перевантажений — спробуй за хвилину." : c === "no_key" ? "На сервері немає ключа AI." : c === "bad_json" ? "Модель відповіла не за форматом (можливо, обрізалось) — натисни ще раз." : `Не вийшло (${String(c).slice(0, 60)}) — натисни ще раз або скинь цей текст Claude.`; };
   // дві спроби: якщо відповідь не розібралась — ще раз, без роздумів
@@ -115,17 +137,18 @@
     const wMin = Math.round(S.sec * 2.8), wMax = wMin + 10;
     const anyTopic = /20\d\d|майбутн|змін/i.test(topic) ? "" : `\nТема може бути будь-якою. Ця тема не про майбутнє: НЕ прив'язуй її до двадцять сьомого року і не вигадуй прогнозів (правило промту «пов'яжи тему з 2027 роком» і розділ про тенденції та прогнози тут не діють). Будова — та сама: хук → відкрита петля → три блоки з наростанням через побут → фінал із закликом. Поле claims — лише для тверджень про факти, якщо вони є; інакше порожній масив. Поле note — порожнє, якщо нічого не змінено.`;
     const moodNote = anyTopic + `\nОбсяг тексту: ${wMin}–${wMax} слів — це замість правила «тривалість × 2,3–2,5»: голос студії читає швидше, тож текст має звучати трохи довше за ${S.sec} с (потім стиснемо паузи під точну довжину). word_count теж рахуй під цей обсяг.` + (S.mood === "тривожний" ? "" : `\nНастрій ролика: ${MOODS[S.mood]}. Усе, що в правилах сказано про тривожний настрій і тривогу, застосовуй до цього настрою; фінал — з закликом діяти.`);
-    const user = `<user_input>\nДата: ${new Date().toISOString().slice(0, 10)}\nТема: ${topic}\nНіша автора: ${S.niche.trim()}\nТривалість: ${S.sec} с\nКінцівка: ${S.ending.trim()}\n</user_input>${moodNote}${adBrief()}`;
+    const user = `<user_input>\nДата: ${new Date().toISOString().slice(0, 10)}\nТема: ${topic}\nНіша автора: ${S.niche.trim()}\nТривалість: ${S.sec} с\nКінцівка: ${S.ending.trim()}\n</user_input>${moodNote}`;
     try { const r = await askJson(P_SCRIPT, user, 8000, (x) => x && (x.status === "error" || x.voiceover || Array.isArray(x.lines)));
       if (r.status === "error") { st.className = "st err"; st.textContent = r.note || "Модель відмовилась від теми."; b.disabled = false; return; }
       if (!r.voiceover && Array.isArray(r.lines)) r.voiceover = r.lines.map((l) => l.text).join(" ");
-      if (S.ad !== "none") { const a = String(r.ad || "").trim(); r.ad = a && r.voiceover.includes(a.slice(0, 40)) ? a : ""; } else r.ad = "";
+      r.ad = ""; if (!Array.isArray(r.lines) || !r.lines.length) r.lines = sentences(r.voiceover).map((t) => ({ t: "", text: t, scene: "" }));
+      if (S.ad !== "none") { st.textContent = "Історія готова, вбудовую рекламну вставку…"; try { await addAd(r); } catch (e) { console.warn("lab ad", e); say("Вставку не вийшло додати — текст без реклами, натисни ще раз"); } }
       S.res = r; S.voice = null; S.board = null; save(); st.textContent = `✓ Готово за ${Math.round((Date.now() - t0) / 1000)} с`; track("text_ok", { v: V.script, s: S.sec, ad: S.ad + (S.adTpl ? ":tpl" : "") });
       ["#ltext", "#lvoice", "#lboard"].forEach((q) => $(B, q).hidden = false); $(B, "#lvideo").hidden = true; drawText(); drawVoice(); drawBoard(); }
     catch (e) { console.warn("lab text", e); st.className = "st err"; st.textContent = errText(e); track("text_fail", { v: String(e?.code || e?.message || e).slice(0, 40) }); }
     b.disabled = false; if (S.res) b.textContent = "✨ Інший варіант"; }
 
-  function drawText() { const B = UI.root, C = $(B, "#ltext"), r = S.res, n = words(r.voiceover), want = [Math.round(S.sec * 2.8), Math.round(S.sec * 2.8) + 10];
+  function drawText() { const B = UI.root, C = $(B, "#ltext"), r = S.res, n = words(r.voiceover), want = [Math.round(totalSec() * 2.8), Math.round(totalSec() * 2.8) + 10];
     C.innerHTML = `<h4><i>2</i>Текст для озвучки</h4>
       <p class="hint">${n} слів (ціль ${want[0]}–${want[1]})${r.note ? " · " + esc(r.note) : ""}. Можна правити — озвучиться саме те, що в полі.</p>
       <textarea id="lvo">${esc(r.voiceover)}</textarea>
@@ -143,11 +166,11 @@
     C.querySelectorAll("[data-rate]").forEach((b) => b.onclick = () => { const log = LS.get("yvLabRates", []); log.push({ at: new Date().toISOString(), v: V.script, topic: S.topic, sec: S.sec, mood: S.mood, rate: b.dataset.rate, text: S.res.voiceover }); LS.set("yvLabRates", log.slice(-100)); track("rate", { v: V.script, r: b.dataset.rate }); say(b.dataset.rate === "up" ? "Записав як вдалий ✓" : "Записав як невдалий"); }); }
 
   function drawVoice() { const B = UI.root, C = $(B, "#lvoice");
-    C.innerHTML = `<h4><i>3</i>Озвучка рівно під ${S.sec} с</h4><p class="hint">Спершу стискаються паузи; якщо й так не влазить — увесь запис рівномірно пришвидшується (тембр не змінюється). Тон «Звичайно» звучить природніше за «Енергійно».</p><div id="lvp"></div><div id="lvres"></div>`;
+    C.innerHTML = `<h4><i>3</i>Озвучка рівно під ${totalSec()} с</h4><p class="hint">Спершу стискаються паузи; якщо й так не влазить — увесь запис рівномірно пришвидшується (тембр не змінюється). Тон «Звичайно» звучить природніше за «Енергійно».</p><div id="lvp"></div><div id="lvres"></div>`;
     if (typeof voicePicker !== "function") { $(C, "#lvp").innerHTML = `<p class="st err">Вибір голосу недоступний на цій сторінці.</p>`; return; }
-    voicePicker($(C, "#lvp"), { getText: () => S.res?.voiceover || "", onAudio: async (buf) => { const out = $(C, "#lvres"); out.innerHTML = `<p class="st">Підганяю під ${S.sec} с…</p>`;
+    voicePicker($(C, "#lvp"), { getText: () => S.res?.voiceover || "", onAudio: async (buf) => { const out = $(C, "#lvres"); out.innerHTML = `<p class="st">Підганяю під ${totalSec()} с…</p>`;
       try { const T = window.YVCine?._t, E = window.YVTalk?._t; if (!T?.fitTo || !E) throw new Error("no_engine");
-        const y0 = await E.decode(buf), r = T.fitTo(y0, S.sec), SR = E.SR; S.voice = { y: r.y, dur: r.y.length / SR, rate: r.rate, mode: r.mode, over: r.over, tail: r.tail };
+        const y0 = await E.decode(buf), r = T.fitTo(y0, totalSec()), SR = E.SR; S.voice = { y: r.y, dur: r.y.length / SR, rate: r.rate, mode: r.mode, over: r.over, tail: r.tail };
         const ab = new AudioBuffer({ length: r.y.length, numberOfChannels: 1, sampleRate: SR }); ab.copyToChannel(r.y, 0);
         const blob = new Blob([wav(ab)], { type: "audio/wav" }), url = URL.createObjectURL(blob);
         out.innerHTML = `<p class="st">${r.over ? `Задовгий текст: навіть з ×1.45 виходить ${S.voice.dur.toFixed(1)} с — скороти.` : `✓ ${S.voice.dur.toFixed(1)} с${r.mode === "cut" ? " · паузи стиснуто" : r.mode === "fast" ? ` · паузи стиснуто, весь запис пришвидшено ×${r.rate.toFixed(2)}` : ""}${r.tail > .5 ? ` · голос закінчується на ${(S.voice.dur - r.tail).toFixed(1)} с — текст закороткий, натисни «Інший варіант» або допиши` : ""}`}</p><audio controls playsinline src="${url}"></audio>`;
@@ -163,7 +186,7 @@
   const adNote = (c) => { const a = String(S.res?.ad || "").trim(); if (!a) return ""; const k = a.slice(0, 30); return c.text.includes(k) || c.text.includes(a.slice(-30)) ? `\n\nУ цій частині є рекламна вставка про студію: «${a}». Для її фраз покажи героя з телефоном: на екрані телефона — студія, де за кілька хвилин збирається анімаційне відео (те саме, що глядач дивиться); слово для коментарів чи «шапка профілю» — написом на екрані телефона. Повернення в історію — сильний кадр (крупний план або різка зміна плану).` : ""; };
   const boardUser = (c, style, first) => `<user_input>\nТривалість озвучки, с: ${c.dur}\nТекст озвучки:\n${c.text}\n</user_input>` + adNote(c) + (c.n > 1 ? `\n\nЦе частина ${c.i + 1} з ${c.n} одного ролика (у ролику вона починається з ${c.t0} с). Тайминг рахуй від 0 до ${c.dur} с цієї частини — програма сама зсуне його.` + (c.i === 0 ? " Перша частина: тут хук ролика, і саме тут визнач concept і style для всього ролика." : ` Не перша частина: хук на початку не потрібен. Стиль ролика вже визначено — використовуй саме його (палітра, герой, повторювані предмети), не змінюй: ${JSON.stringify(style)}${first ? `\nПерша сцена ролика: ${first}` : ""}`) + (c.i === c.n - 1 ? " Остання частина: останній кадр повторює образ першої сцени ролика в новому стані." : " Не остання частина: фінальне правило «останній кадр = перший» тут не застосовуй; наприкінці — рехук, що веде далі.") : "");
   async function makeBoard() { const B = UI.root, C = $(B, "#lboard"), st = $(C, "#lst3"), b = $(C, "#lmk"); const text = (S.res?.voiceover || "").trim(); if (words(text) < 5) { st.className = "st err"; st.textContent = "Спершу потрібен текст."; return; }
-    const dur = S.voice?.dur ? +((S.voice.dur - (S.voice.tail || 0))).toFixed(1) : S.sec, parts = chunks(text, dur); b.disabled = true; st.className = "st"; const t0 = Date.now();
+    const dur = S.voice?.dur ? +((S.voice.dur - (S.voice.tail || 0))).toFixed(1) : totalSec(), parts = chunks(text, dur); b.disabled = true; st.className = "st"; const t0 = Date.now();
     const okB = (x) => x && (x.status === "error" || (Array.isArray(x.scenes) && x.scenes.length));
     try { st.textContent = `Розкладаю на сцени під ${dur} с: частина 1 з ${parts.length}…`;
       const r1 = await askJson(P_BOARD, boardUser(parts[0], null, ""), 8000, okB); if (r1.status === "error") { st.className = "st err"; st.textContent = r1.note || "Не вийшло."; b.disabled = false; return; }
@@ -176,7 +199,7 @@
     catch (e) { console.warn("lab board", e); st.className = "st err"; st.textContent = errText(e); b.disabled = false; } }
 
   function drawBoard() { const B = UI.root, C = $(B, "#lboard"), r = S.board;
-    C.innerHTML = `<h4><i>4</i>Розкадровка</h4><p class="hint">Під справжню довжину озвучки${S.voice?.dur ? ` (${S.voice.dur.toFixed(1)} с)` : ` (поки ${S.sec} с — озвуч, щоб точніше)`}. Кожне ключове слово — предмет у кадрі, текст лише всередині сцени.</p>
+    C.innerHTML = `<h4><i>4</i>Розкадровка</h4><p class="hint">Під справжню довжину озвучки${S.voice?.dur ? ` (${S.voice.dur.toFixed(1)} с)` : ` (поки ${totalSec()} с — озвуч, щоб точніше)`}. Кожне ключове слово — предмет у кадрі, текст лише всередині сцени.</p>
       <button class="btn ${r ? "" : "main"}" type="button" id="lmk">${r ? "↻ Розкласти ще раз" : "🎬 Розкласти на сцени"}</button><p class="st" id="lst3"></p>
       ${r ? `<p><b>${esc(r.concept || "")}</b></p>
         ${r.style?.palette ? `<div class="pal">${r.style.palette.map((h) => `<i style="background:${esc(h)}" title="${esc(h)}"></i>`).join("")}</div>` : ""}
