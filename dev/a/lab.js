@@ -44,9 +44,9 @@
 #yvlab .hint{margin:0;color:#a1a1aa;font-size:13px}
 #yvlab input.tx,#yvlab textarea{width:100%;box-sizing:border-box;padding:11px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:#f5f5f7;font:inherit}
 #yvlab textarea{min-height:150px;resize:vertical;line-height:1.55}
-#yvlab .chips{display:flex;flex-wrap:wrap;gap:6px}#yvlab .chip{padding:7px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:#e4e4e7;font:600 13px inherit;cursor:pointer}
+#yvlab .chips{display:flex;flex-wrap:wrap;gap:6px}#yvlab .chip{padding:7px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:#e4e4e7;font-family:inherit;font-size:13px;font-weight:600;line-height:1.3;cursor:pointer}
 #yvlab .chip[aria-pressed="true"]{background:#f5f5f7;color:#0b0b0d;border-color:transparent}
-#yvlab .btn{width:100%;padding:13px;border-radius:14px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.07);color:#f5f5f7;font:700 15px inherit;cursor:pointer}
+#yvlab .btn{width:100%;padding:13px;border-radius:14px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.07);color:#f5f5f7;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer}
 #yvlab .btn.main{background:#f5f5f7;color:#0b0b0d;border-color:transparent}#yvlab .btn:disabled{opacity:.5}
 #yvlab .row{display:flex;gap:8px}#yvlab .row .btn{flex:1}
 #yvlab .st{margin:0;font-size:13px;color:#a1a1aa}#yvlab .st.err{color:#ff8a80}
