@@ -1063,6 +1063,7 @@ ${L.wantCore ? `core — одне речення до 16 слів тим сам�
 Теперішній час від першої особи («дістаю», «роблю») — щоб не було роду. Заборонено: назви сервісів, «реклама», «до речі», «спершу», «поки», «зараз покажу», «і тут я розумію», «буде пізно», «що було далі», двокрапка перед розкриттям. Жива розмовна українська, без емодзі. Відповідай тільки JSON {"in":"…",${L.wantCore ? '"core":"…",' : ""}"out":"…"}`, { cache: false, max: 400, kb: ["adlead", "story", "hook"] }), new Promise((_, j) => setTimeout(() => j(new Error("timeout")), 18000))]);
       const ok = (v, n) => { v = String(v || "").replace(/\s+/g, " ").trim(); return v && v.split(" ").length <= n && !/реклам|yuvi/i.test(v) ? v : ""; };
       const i = ok(r?.in, 20), o = ok(r?.out, 10); if (i) br.in = L.core || /телефон/i.test(i) ? i : i.replace(/[.!…]*$/, ". Тож дістаю телефон."); if (o) br.out = o;
+      if (i || o) br._ai = true;
       if (L.wantCore) { const c = ok(r?.core, 20); if (c && /студі/i.test(c) && /хвилин/i.test(c)) br.core = c; } } catch (e) { console.warn("ad bridge", e); }
     return br; }
   // пришвидшення голосу без зміни висоти (WSOLA)
@@ -1909,11 +1910,13 @@ ${prm("topic_rules").body}
     const k = Math.max(2, Math.min(ss.length - 2, Math.round(ss.length * .55))), before = ss.slice(0, k).join(" "), after = ss.slice(k).join(" ");
     const core0 = OPT.sec <= 30 ? "Таке відео нейромережа робить за кілька хвилин." : "Відкриваю студію — і за кілька хвилин нейромережа робить таке відео.";
     const br = await adBridge({ words: (before + " " + after).split(/\s+/).map((w) => ({ w })), topic: DRAFT.topic, core: core0, wantCore: true }, before.split(/\s+/).length);
+    // AI не дав місточків → не підставляємо загальну заготовку («І тут я розумію… буде пізно» / «А тепер — що було далі»): вона однакова в кожному відео й звучить як ШІ
+    if (!br._ai) { br.in = "Тож роблю про це відео."; br.out = ""; }
     const W = wordCase(word), cta = kind === "comment" ? `Напиши «${W}» в коментарях — надішлю посилання, спробуєш безкоштовно.` : "Спробувати безкоштовно — посилання в шапці профілю.";
     // перше речення вставки — своїми словами під цю історію (якщо AI не дав — стара фраза); фраза про партнерку — без змін, як просив власник
     const PARTNER = "А за кожного, хто прийде за моїм посиланням, отримую половину його першої оплати.";
     const core = (br.core || (OPT.sec <= 30 ? "Таке відео нейромережа робить за кілька хвилин." : "Відкриваю студію — і за кілька хвилин нейромережа робить таке відео.")) + (OPT.sec <= 30 ? "" : " " + PARTNER);
-    const mid = [br.in, core, cta, br.out].join(" ");
+    const mid = [br.in, core, cta, br.out].filter(Boolean).join(" ");
     return { text: `${before}\n\n${mid}\n\n${after}`, mid, parts: { in: br.in, core, cta, out: br.out } }; } // хвіст AD.outro («автори заробляють тисячі доларів») прибрано: ламав фінал і обіцяв заробіток
   // стиснути довгі паузи (озвучка часто читає повільно й з паузами)
   function squeeze(buf, keep = .1, min = .16) { const SR = E().SR, hop = Math.round(SR * .01), n = Math.floor(buf.length / hop); let mx = 0; const en = new Float32Array(n);
