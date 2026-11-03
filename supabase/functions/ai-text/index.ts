@@ -1,6 +1,6 @@
 // ai-text — один файл для вставки в редактор Supabase (Edge Functions -> Via Editor)
 // Генерація тексту для конструктора на сайті (теми, хуки, сценарій, сцени, підписи) через Claude.
-// POST { prompt, sys?: ["director"|"critic"|"packaging"|"writer"|"bible_merge"|"pack_merge"] (приховані промти студії), json?: boolean, max?: number, kb?: boolean, kbm?: string[] (папки бази знань), kbf?: "wide"|"tall" (формат), images?: [{ data: base64, mime }] }  — images: до 3 скрінів-прикладів (стиль субтитрів тощо)  (Authorization: Bearer <токен користувача>)
+// POST { prompt, sys?: ["director"|"critic"|"packaging"|"writer"|"bible_merge"|"pack_merge"|"writer_merge"] (приховані промти студії), json?: boolean, max?: number, kb?: boolean, kbm?: string[] (папки бази знань), kbf?: "wide"|"tall" (формат), images?: [{ data: base64, mime }] }  — images: до 3 скрінів-прикладів (стиль субтитрів тощо)  (Authorization: Bearer <токен користувача>)
 // -> { text }
 // Секрети: ANTHROPIC_API_KEY (обов'язково), AI_MODEL (необов'язково, за замовчуванням claude-haiku-5-5).
 // Ліміт на людину на день — налаштування ai_daily_limit (спільний зі stats-extract).
@@ -162,6 +162,17 @@ const BUILTIN: Record<string, string> = {
 — Не озвучуй структуру тексту і не підсумовуй мораллю наприкінці.
 — Перед відповіддю перечитай текст уголос подумки: якщо фраза звучить як реклама, підручник чи переклад — перепиши її простіше.`,
 
+  writer_merge: `ТИ — ГОЛОВНИЙ РЕДАКТОР СЦЕНАРІЇВ АНІМАЦІЙНОЇ СТУДІЇ. Ти ведеш «Біблію сценариста» — прихований довідник, за яким AI пише тексти озвучки для коротких вертикальних 2D-анімаційних відео українською. Тобі дають поточну Біблію і нові розбори успішних відео: їхній формат, сценарій і подачу, дослівну озвучку.
+Онови Біблію: додай нові прийоми, уточни наявні, прибери повтори й суперечності. Пиши конкретно, як інструкцію для сценариста:
+— формули хуків (з [змінними]) і 2–3 приклади живих перших фраз, перекладених і адаптованих українською;
+— як відкривається й закривається петля; повороти; містки між блоками; ударні короткі фрази; фінали без моралі;
+— темп: слів за секунду, довжина речень, де паузи;
+— живі розмовні звороти й інтонації, які роблять текст людським; і окремо — звороти, що звучать штучно;
+— підводки до реклами й повернення в історію.
+Прийоми з розборів формату wide (довгі горизонтальні відео) бери лише якщо вони працюють у коротких вертикальних; нумеровані «кроки», вступи й «у цьому відео» не переноси.
+Не згадуй каналів, авторів і реальних людей; не копіюй чужі тексти дослівно — лише прийоми та адаптовані приклади.
+Обсяг — до 10 000 символів. Відповідай ТІЛЬКИ повним текстом нової Біблії (markdown), без вступу.`,
+
   packaging: `ТИ — СПЕЦІАЛІСТ З УПАКОВКИ КОРОТКИХ ВІДЕО (назви, описи, текст на обкладинці) для Reels, TikTok і YouTube Shorts.
 Мета — щоб людина зупинила гортання, натиснула й переслала. Правила:
 — Назва / перший рядок опису: до 8–10 слів, одна чітка обіцянка або інтрига; відкрита петля (цікавість без відповіді); конкретика: числа, терміни, суми, вік.
@@ -177,7 +188,7 @@ const BUILTIN: Record<string, string> = {
 Обсяг — до 10 000 символів. Відповідай ТІЛЬКИ повним текстом нової Біблії (markdown), без вступу.`,
 };
 // який рядок ai_prompts оновлює кожен «злиттєвий» ключ
-const MERGE_TO: Record<string, string> = { bible_merge: "director_learned", pack_merge: "packaging_learned" };
+const MERGE_TO: Record<string, string> = { bible_merge: "director_learned", pack_merge: "packaging_learned", writer_merge: "writer_learned" };
 
 Deno.serve(handler(async (req) => {
   if (req.method !== "POST") throw new HttpError(405, "method_not_allowed");
@@ -200,7 +211,7 @@ Deno.serve(handler(async (req) => {
     const { data: rows } = await admin().from("ai_prompts").select("key,body,model").in("key", keys);
     const by: Record<string, { body: string; model: string }> = {}; (rows ?? []).forEach((r: { key: string; body: string; model: string }) => { by[r.key] = r; });
     if (merge) { const { data: cur } = await admin().from("ai_prompts").select("body").eq("key", target).maybeSingle(); prompt = `ПОТОЧНА БІБЛІЯ:\n${cur?.body || "(ще порожня)"}\n\n${prompt}`; }
-    sysText = sys.map((k) => (by[k]?.body?.trim() || BUILTIN[k]) + (!merge && by[k + "_learned"]?.body?.trim() ? `\n\nБІБЛІЯ РЕЖИСЕРА — ЗНАННЯ З РОЗБОРІВ УСПІШНИХ ВІДЕО (застосовуй їх):\n${by[k + "_learned"].body.trim()}` : "")).join("\n\n");
+    sysText = sys.map((k) => (by[k]?.body?.trim() || BUILTIN[k]) + (!merge && by[k + "_learned"]?.body?.trim() ? `\n\n${k === "writer" ? "БІБЛІЯ СЦЕНАРИСТА — ПРИЙОМИ З РОЗБОРІВ УСПІШНИХ ВІДЕО (бери ті, що пасують до теми)" : "БІБЛІЯ РЕЖИСЕРА — ЗНАННЯ З РОЗБОРІВ УСПІШНИХ ВІДЕО (застосовуй їх)"}:\n${by[k + "_learned"].body.trim()}` : "")).join("\n\n");
     sysModel = by[sys[0]]?.model?.trim() || "";
   }
   const imgs = (Array.isArray(body.images) ? body.images : []).slice(0, 3)

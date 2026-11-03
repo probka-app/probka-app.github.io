@@ -2,7 +2,8 @@
 // Технічний розбір відео-прикладу «для коду»: Gemini дивиться відео (посилання YouTube або файл зі сховища) і пише детальне ТЗ.
 // Секрети: GEMINI_API_KEY; необовʼязково YOUTUBE_API_KEY (перегляди, лайки, підписники — для аналітики назв і превʼю).
 // POST { packOnly?: true (лише назва й превʼю), url?: string (YouTube), path?: string (media/<uid>/...), mins?: number, caps?: string, id?: uuid (рядок черги dev_specs) } -> { id, title, spec }
-// Лише власник. Секрети: GEMINI_API_KEY (обов'язково), VIDEO_SPEC_MODEL (необов'язково, за замовчуванням gemini-2.5-flash).
+// Лише власник. Секрети: GEMINI_API_KEY (обов'язково), VIDEO_SPEC_MODEL (необов'язково, за замовчуванням gemini-2.5-flash), VIDEO_SPEC_RES (необов'язково: MEDIA_RESOLUTION_LOW | MEDIUM | HIGH).
+// Розбір містить розділи 14 (озвучка дослівно) і 15 (картки для бази знань у JSON) — сайт сам кладе картки в базу «на перевірку».
 
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.45.4";
 
@@ -65,6 +66,7 @@ const PROMPT = (caps: string) => `Ти — технічний аналітик 2
 
 ## 0. Коротко
 Назва стилю, одним абзацом — у чому його сила.
+Окремим рядком рівно так: ФОРМАТ: tall (вертикальне 9:16) або wide (горизонтальне 16:9) · ТРИВАЛІСТЬ: N с · ТИП: reels|shorts|youtube-long.
 ## 1. Таймлайн сцен
 Таблиця: таймкод | тривалість | що в кадрі | план (загальний/середній/крупний/обличчя) | рух камери (тип, швидкість, звідки куди) | перехід у сцену.
 ## 2. Персонажі
@@ -92,7 +94,13 @@ const PROMPT = (caps: string) => `Ти — технічний аналітик 2
 ${caps || "(не передано)"}
 Порівняй і випиши, чого бракує, щоб відтворити це відео: кожен пункт — назва, опис, пріоритет (високий/середній/низький), складність.
 ## 13. План реалізації
-Нумерований список задач для програміста в порядку користі: що додати в рушій, з параметрами за замовчуванням.`;
+Нумерований список задач для програміста в порядку користі: що додати в рушій, з параметрами за замовчуванням.
+## 14. Озвучка дослівно
+Увесь текст диктора дослівно, мовою оригіналу, фраза за фразою з таймкодами («0:03 — …»). Потім одним рядком: слів усього, слів за секунду, середня довжина речення в словах. Якщо голосу немає — так і напиши і дай текст із екрана.
+## 15. Картки для бази знань
+Лише прийоми, які можна перенести в короткі вертикальні 2D-анімаційні відео іншої теми (без назв каналів, брендів і реальних людей; сюжет не переказуй). 8–20 карток. Відповідь цього розділу — один блок \`\`\`json з таким вмістом:
+{"fmt":"tall|wide","cards":[{"module":"hook|script|story|adlead|board|edit|camera|sound|color|title|niche","kind":"rule|element|example","title":"коротка назва прийому до 10 слів","body":"роби так: конкретне правило для нашого відео","how":"приклад із цього відео: дослівна фраза або що в кадрі й на якій секунді","why":"чому це тримає увагу — одне речення","confidence":0.0}]}
+confidence — наскільки ти впевнений, що прийом справді працює саме тут (0–1). Прийоми, що мають сенс лише в довгому горизонтальному відео, познач fmt "wide".`;
 
 // ---- назва й превʼю: метадані YouTube + аналіз обкладинки (окремий швидкий запит, JSON для бази аналітики) ----
 const ytId = (u: string) => u.match(/(?:v=|shorts\/|youtu\.be\/)([\w-]{11})/)?.[1] ?? "";
@@ -176,13 +184,15 @@ Deno.serve(handler(async (req) => {
   } else throw new HttpError(400, "no_video");
 
   const model = env("VIDEO_SPEC_MODEL", "gemini-2.5-flash");
+  // якість перегляду відео: LOW — дешево (за замовчуванням), MEDIUM/HIGH — краще читає дрібний текст і деталі, але дорожче (секрет VIDEO_SPEC_RES)
+  const RES = ["MEDIA_RESOLUTION_LOW", "MEDIA_RESOLUTION_MEDIUM", "MEDIA_RESOLUTION_HIGH"].includes(env("VIDEO_SPEC_RES")) ? env("VIDEO_SPEC_RES") : "MEDIA_RESOLUTION_LOW";
   const packP = url ? packOf(key, url).catch((e) => { console.error("pack", e); return null; }) : Promise.resolve(null);
   // кілька спроб: якщо Gemini відхилив запит (400), пробуємо простіший варіант — без обрізки за часом і без додаткових налаштувань
   const yt = !!url;
   const vpart = (cut: boolean) => ({ file_data: yt ? { file_uri: fileUri } : { file_uri: fileUri, mime_type: mime }, ...(cut ? { video_metadata: { start_offset: "0s", end_offset: `${mins * 60}s` } } : {}) });
   const tries = [
-    { parts: [vpart(true), { text: PROMPT(caps) }], cfg: { maxOutputTokens: 24000, temperature: 0.3, mediaResolution: "MEDIA_RESOLUTION_LOW", thinkingConfig: { thinkingBudget: 1024 } } },
-    { parts: [vpart(false), { text: PROMPT(caps) }], cfg: { maxOutputTokens: 24000, temperature: 0.3, mediaResolution: "MEDIA_RESOLUTION_LOW" } },
+    { parts: [vpart(true), { text: PROMPT(caps) }], cfg: { maxOutputTokens: 24000, temperature: 0.3, mediaResolution: RES, thinkingConfig: { thinkingBudget: 1024 } } },
+    { parts: [vpart(false), { text: PROMPT(caps) }], cfg: { maxOutputTokens: 24000, temperature: 0.3, mediaResolution: RES } },
     { parts: [vpart(false), { text: PROMPT(caps) }], cfg: { maxOutputTokens: 16000, temperature: 0.3 } },
   ];
   let r: Response | null = null, j: any = {}, emsg = "";

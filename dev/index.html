@@ -3924,7 +3924,9 @@ async function openKB(O={}){
   // 🔧 Розбір для коду: черга відео на сервері → Gemini пише детальний технічний розбір → «Біблія режисера» (прихований промт генератора) + задачі для Claude
   const dev=async()=>{ const D=window.DEVQ||(window.DEVQ={run:false,stop:false,mins:10,cur:""}); let LIST=[], BIB=null;
     box.innerHTML=`<div class="dvcard"><h4 style="margin:0 0 4px">🧠 Біблія режисера</h4><p class="note" id="dvbs" style="margin:0 0 8px">…</p>
-        <div class="row"><button class="chip ink" type="button" id="dvlearn">Навчити режисера</button><button class="chip" type="button" id="dvbv">Переглянути</button></div><div id="dvbp"></div></div>
+        <div class="row"><button class="chip ink" type="button" id="dvlearn">Навчити режисера</button><button class="chip" type="button" id="dvbv">Переглянути</button></div><div id="dvbp"></div>
+        <p class="note" style="margin-top:10px">Сценарист вчиться окремо — на хуках, петлях і дослівній озвучці з розборів. Нові розбори додають картки в базу знань «на перевірку».</p>
+        <div class="row"><button class="chip ink" type="button" id="dvwlearn">Навчити сценариста на всіх розборах</button><button class="chip" type="button" id="dvcards">Картки з усіх розборів</button></div><p class="note" id="dvwst"></p></div>
       <div class="dvcard"><h4 style="margin:0 0 4px">📊 Назви й превʼю</h4><p class="note" id="dvps" style="margin:0 0 8px">…</p>
         <div class="row"><button class="chip ink" type="button" id="dvan">Аналітика</button><button class="chip" type="button" id="dvpl">Навчити упаковку</button><button class="chip" type="button" id="dvpf">Доповнити старі</button></div></div>
       <h4>Додати відео</h4><p class="note" style="margin:0 0 8px">Посилання YouTube — кожне з нового рядка, хоч 100 за раз. Черга зберігається на сервері: можна закрити й продовжити пізніше.</p>
@@ -3957,11 +3959,24 @@ async function openKB(O={}){
     await load();
     $b("#dvf").onchange=e=>{ files=[...files,...e.target.files].slice(0,20); e.target.value=""; $b("#dvfn").textContent=files.map(f=>"🎬 "+f.name).join(" · "); };
     box.querySelectorAll("[data-dvm]").forEach(b=>b.onclick=()=>{ D.mins=+b.dataset.dvm; box.querySelectorAll("[data-dvm]").forEach(o=>o.classList.toggle("ink",o===b)); });
+    // ---- етап 5: картки для бази й «Біблія сценариста» з розборів ----
+    const secOf=(spec,nums)=>{ const parts=String(spec||"").split(/\n(?=#{1,3}\s*\d+(?:\.\d+)?\.?\s)/); return parts.filter(x=>nums.some(n=>new RegExp(`^#{1,3}\\s*${n}\\.?\\s`).test(x.trim()))).join("\n").slice(0,20000); };
+    const fmtOf=(spec)=>{ const m=String(spec||"").match(/ФОРМАТ:\s*(tall|wide)/i); return m?m[1].toLowerCase():""; };
+    const cardsOf=(spec)=>{ const m=String(spec||"").match(/```json\s*([\s\S]*?)```/g); if(!m) return null; for(const b of m.reverse()){ try{ const j=JSON.parse(b.replace(/```json|```/g,"").trim()); if(Array.isArray(j?.cards)) return j; }catch(e){} } return null; };
+    const normW=(t)=>new Set(String(t||"").toLowerCase().replace(/[^\p{L}\p{N}\s]/gu," ").split(/\s+/).filter(w=>w.length>2));
+    const same=(a,b)=>{ const A=normW(a),B=normW(b); if(!A.size||!B.size) return false; let n=0; A.forEach(w=>{ if(B.has(w)) n++; }); return n/Math.min(A.size,B.size)>=.6; };
+    let KBC=null; const kbCache=async()=>{ if(!KBC){ try{ KBC=await SRV.kbList(); }catch(e){ KBC=[]; } } return KBC; };
+    async function saveCards(j,src){ if(!j?.cards?.length) return 0; const have=await kbCache(), fmt=j.fmt==="wide"||j.fmt==="tall"?j.fmt:"all", out=[];
+      for(const c of j.cards.slice(0,25)){ if(!c?.title||!c?.body) continue; if(+c.confidence>=0&&+c.confidence<.5) continue; const module=KBN[c.module]?c.module:"general";
+        if([...have,...out].some(x=>(x.module||"general")===module&&same(x.title,c.title))) continue;
+        out.push({module,fmt,kind:KB_KIND[c.kind]?c.kind:"element",title:String(c.title).slice(0,200),body:String(c.body).slice(0,1500),why:String(c.why||"").slice(0,400),how:String(c.how||"").slice(0,600),src:String(src||"").slice(0,300)}); }
+      if(out.length){ await SRV.kbAdd(out,"pending"); have.push(...out); } return out.length; }
     // черга: беремо найстаріші «queue» по одному; між відео пауза, щоб не впертися в ліміт Gemini
     const run=async()=>{ if(D.run) return; D.run=true; D.stop=false; stats(); const cp=await caps(); let fails=0;
       while(!D.stop){ let rows=[]; try{ rows=(await SRV.devSpecs()).filter(r=>r.status==="queue").reverse(); }catch(e){ break; } const it=rows[0]; if(!it) break; D.cur=it.url;
         { const all=await SRV.devSpecs().catch(()=>[]), k=vid(it.url); if(all.some(r=>r.id!==it.id&&vid(r.url)===k&&(r.spec||(r.status==="queue"&&r.created_at<it.created_at)))){ await SRV.devSpecDel(it.id).catch(()=>{}); continue; } } if(alive()){ LIST=rows.length?LIST.map(r=>r):LIST; stats(); }
-        try{ await SRV.videoSpec({ id:it.id, mins:it.mins||D.mins, caps:cp, ...(/^https?:/.test(it.url)?{url:it.url}:{path:it.url}) }); fails=0; }
+        try{ const vr=await SRV.videoSpec({ id:it.id, mins:it.mins||D.mins, caps:cp, ...(/^https?:/.test(it.url)?{url:it.url}:{path:it.url}) }); fails=0;
+          try{ const n=await saveCards(cardsOf(vr?.spec),it.url); if(n) toast(`+${n} карток у базу знань на перевірку`); }catch(e){ console.warn("spec cards",e); } }
         catch(e){ const m=String(e?.message||e?.code||e); if(m==="busy"){ fails++; if(fails>=3){ toast("Gemini на ліміті — продовжиш пізніше"); break; } await new Promise(r=>setTimeout(r,60000)); continue; } await SRV.devSpecErr(it.id,m); }
         if(alive()) await load(); await new Promise(r=>setTimeout(r,4000)); }
       D.run=false; D.cur=""; if(alive()) await load(); };
@@ -3980,10 +3995,24 @@ async function openKB(O={}){
     $b("#dvlearn").onclick=async()=>{ if(D.learn) return; const todo=LIST.filter(r=>r.spec&&!r.learned&&r.status!=="error"&&r.status!=="queue").reverse(); if(!todo.length) return; D.learn=true; stats(); const cp=await caps(), btn=$b("#dvlearn");
       try{ for(let k=0;k<todo.length;k+=3){ const part=todo.slice(k,k+3); btn.textContent=`Вчу… ${Math.min(k+3,todo.length)}/${todo.length}`;
           await SRV.bibleMerge(`МОЖЛИВОСТІ РУШІЯ (лише їх можна використовувати в правилах):\n${cp}\n\nНОВІ РОЗБОРИ (${part.length}):\n\n${part.map((r,n)=>`### Розбір ${n+1}\n${r.spec.slice(0,60000)}`).join("\n\n---\n\n")}`);
+          try{ await SRV.writerMerge(writerAsk(part)); }catch(e){ console.warn("writer merge",e); }
           await SRV.devLearned(part.map(r=>r.id)); part.forEach(r=>r.learned=true); if(alive()) stats(); }
-        toast("Режисер вивчив нові розбори ✓"); }
+        toast("Режисер і сценарист вивчили нові розбори ✓"); }
       catch(e){ toast(e?.code==="rate_limited"?"Ліміт AI на сьогодні":e?.message==="forbidden"?"Лише власник":"Не вдалося — спробуй ще раз (вивчене збережено)"); }
       D.learn=false; btn.textContent="Навчити режисера"; if(alive()) await load(); };
+    const writerAsk=(part)=>`НОВІ РОЗБОРИ (${part.length}) — формат, сценарій і подача, дослівна озвучка:\n\n${part.map((r,n)=>`### Розбір ${n+1}${fmtOf(r.spec)?` · формат ${fmtOf(r.spec)}`:""}\n${secOf(r.spec,["0","7","10","14"])||r.spec.slice(0,15000)}`).join("\n\n---\n\n")}`;
+    $b("#dvwlearn").onclick=async e=>{ const btn=e.currentTarget, st=$b("#dvwst"); if(btn.disabled) return; const all=LIST.filter(r=>r.spec&&r.status!=="error"&&r.status!=="queue").reverse(); if(!all.length){ st.textContent="Ще немає розборів."; return; } btn.disabled=true;
+      try{ for(let k=0;k<all.length;k+=4){ const part=all.slice(k,k+4); st.textContent=`Сценарист вчиться… ${Math.min(k+4,all.length)} з ${all.length}`; await SRV.writerMerge(writerAsk(part)); } st.textContent=`✓ Сценарист вивчив ${all.length} розборів. Знання використовуються в кожному тексті.`; }
+      catch(x){ st.textContent=x?.code==="rate_limited"?"Ліміт AI на сьогодні — продовж завтра":x?.message==="forbidden"?"Лише власник":"Не вдалося — онови функцію ai-text у Supabase (крок з інструкції) і спробуй ще раз"; }
+      btn.disabled=false; };
+    $b("#dvcards").onclick=async e=>{ const btn=e.currentTarget, st=$b("#dvwst"); if(btn.disabled) return; let done={}; try{ done=JSON.parse(localStorage.getItem("yvSpecCards")||"{}")||{}; }catch(x){}
+      const todo=LIST.filter(r=>r.spec&&r.status!=="error"&&!done[r.id]); if(!todo.length){ st.textContent="Картки з усіх розборів уже витягнуто."; return; } btn.disabled=true; let added=0;
+      try{ for(let i=0;i<todo.length;i++){ const r=todo[i]; st.textContent=`Картки… ${i+1} з ${todo.length} · додано ${added}`; let j=cardsOf(r.spec);
+          if(!j) j=await sample.json(`З технічного розбору відео нижче витягни 8–15 прийомів, які можна перенести в короткі вертикальні 2D-анімаційні відео іншої теми (без назв каналів, брендів і реальних людей; сюжет не переказуй).\nВідповідай тільки JSON: {"fmt":"tall|wide","cards":[{"module":"hook|script|story|adlead|board|edit|camera|sound|color|title|niche","kind":"rule|element|example","title":"до 10 слів","body":"роби так: конкретне правило","how":"приклад із відео: дослівна фраза або що в кадрі","why":"чому працює — одне речення","confidence":0.0}]}\nРОЗБІР:\n${r.spec.slice(0,30000)}`,{cache:false,max:3000});
+          added+=await saveCards(j,r.url); done[r.id]=1; try{ localStorage.setItem("yvSpecCards",JSON.stringify(done)); }catch(x){} }
+        st.textContent=`✓ Додано ${added} карток на перевірку — вони у вкладці бази знань.`; }
+      catch(x){ st.textContent=x?.code==="rate_limited"?`Ліміт AI на сьогодні (додано ${added}) — продовж завтра`:`Зупинилось (додано ${added}) — натисни ще раз, продовжить з того місця`; }
+      btn.disabled=false; };
     $b("#dvbv").onclick=()=>{ const bp=$b("#dvbp"); if(bp.innerHTML){ bp.innerHTML=""; return; }
       bp.innerHTML=`<textarea class="cpd" id="dvbt" rows="14" style="margin-top:8px;font-size:13px">${esc(BIB?.body||"")}</textarea><div class="row"><button class="chip ink" type="button" id="dvbsave">Зберегти правки</button></div><p class="note">Стара версія зберігається в історії на сервері.</p>`;
       $b("#dvbsave").onclick=async()=>{ try{ await SRV.bibleSet($b("#dvbt").value.trim()); toast("Збережено"); await load(); }catch(e){ toast("Не вдалося"); } }; };

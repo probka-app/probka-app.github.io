@@ -265,6 +265,7 @@
   SRV.bibleSet = async (body, k = "director_learned") => { const { data: old } = await sb.from("ai_prompts").select("body").eq("key", k).maybeSingle(); if (old?.body) await sb.from("ai_prompt_versions").insert({ key: k, body: old.body, note: "manual edit" }); const { error } = await sb.from("ai_prompts").upsert({ key: k, body, updated_at: new Date().toISOString() }); if (error) throw new Error(error.message); };
   SRV.bibleMerge = async (prompt) => aiTextRaw(prompt, { sys: ["bible_merge"], max: 7000 }, false);
   SRV.packMerge = async (prompt) => aiTextRaw(prompt, { sys: ["pack_merge"], max: 7000 }, false);
+  SRV.writerMerge = async (prompt) => aiTextRaw(prompt, { sys: ["writer_merge"], max: 7000 }, false);
   SRV.packOnly = async (id, url) => call("video-spec", { id, url, packOnly: true });
   SRV.packLearned = async (ids) => { const { error } = await sb.from("dev_specs").update({ pack_learned: true }).in("id", ids); if (error) throw new Error(error.message); };
   SRV.devSpecs = async () => { const { data, error } = await sb.from("dev_specs").select("id,url,title,spec,status,err,mins,learned,created_at,yt_id,yt_title,channel,thumb,stats,pack,pack_learned").order("created_at", { ascending: false }).limit(500); if (error) throw new Error(error.message); return data || []; };
