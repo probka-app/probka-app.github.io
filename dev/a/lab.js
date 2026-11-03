@@ -26,8 +26,13 @@
   async function ask(system, user, max) {
     if (typeof sample !== "function") throw new Error("no_ai");
     // стала частина промта + змінна; «сценарист» на сервері = сильніша модель; бази знань тут немає навмисно
-    const r = await sample(`${system}\n\n${user}`, { cache: false, sys: ["writer"], max });
+    const r = await sample(`${system}\n\n${user}\n\nРоздуми в <thinking> — коротко, до 120 слів; головне — повний <result>.`, { cache: false, sys: ["writer"], max });
     return String(r?.text || ""); }
+  const errText = (e) => { const c = e?.code || e?.message || String(e); return c === "login" ? "Увійди в акаунт." : c === "rate_limited" || c === "limit" ? "Ліміт AI на сьогодні." : c === "busy" ? "Сервіс AI перевантажений — спробуй за хвилину." : c === "no_key" ? "На сервері немає ключа AI." : c === "bad_json" ? "Модель відповіла не за форматом (можливо, обрізалось) — натисни ще раз." : `Не вийшло (${String(c).slice(0, 60)}) — натисни ще раз або скинь цей текст Claude.`; };
+  // дві спроби: якщо відповідь не розібралась — ще раз, без роздумів
+  async function askJson(system, user, max, ok) { let raw = await ask(system, user, max), r = parseResult(raw);
+    if (!ok(r)) { console.warn("lab: retry, raw tail:", raw.slice(-300)); raw = await ask(system, user + "\n\nНе пиши <thinking>: одразу тег <result> з повним JSON.", max); r = parseResult(raw); }
+    if (!ok(r)) { const e = new Error("bad_json"); e.raw = raw.slice(0, 400); throw e; } return r; }
 
   // ---- UI ----
   const CSS = `#yvlab{position:fixed;inset:0;z-index:9000;background:#0b0b0d;color:#f5f5f7;display:flex;flex-direction:column;font:15px/1.5 var(--pfont,system-ui,-apple-system,sans-serif);padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
@@ -83,13 +88,13 @@
     b.disabled = true; st.className = "st"; st.textContent = "Пишу текст… 20–60 с"; const t0 = Date.now();
     const moodNote = S.mood === "тривожний" ? "" : `\nНастрій ролика: ${MOODS[S.mood]}. Усе, що в правилах сказано про тривожний настрій і тривогу, застосовуй до цього настрою; фінал — з закликом діяти.`;
     const user = `<user_input>\nДата: ${new Date().toISOString().slice(0, 10)}\nТема: ${topic}\nНіша автора: ${S.niche.trim()}\nТривалість: ${S.sec} с\nКінцівка: ${S.ending.trim()}${moodNote}\n</user_input>`;
-    try { const raw = await ask(P_SCRIPT, user, 4000); const r = parseResult(raw);
-      if (!r) throw new Error("bad_json"); if (r.status === "error") { st.className = "st err"; st.textContent = r.note || "Модель відмовилась від теми."; b.disabled = false; return; }
+    try { const r = await askJson(P_SCRIPT, user, 8000, (x) => x && (x.status === "error" || x.voiceover || Array.isArray(x.lines)));
+      if (r.status === "error") { st.className = "st err"; st.textContent = r.note || "Модель відмовилась від теми."; b.disabled = false; return; }
       if (!r.voiceover && Array.isArray(r.lines)) r.voiceover = r.lines.map((l) => l.text).join(" ");
       S.res = r; S.voice = null; S.board = null; save(); st.textContent = `✓ Готово за ${Math.round((Date.now() - t0) / 1000)} с`; track("text_ok", { v: V.script, s: S.sec });
       ["#ltext", "#lvoice", "#lboard"].forEach((q) => $(B, q).hidden = false); $(B, "#lvideo").hidden = true; drawText(); drawVoice(); drawBoard(); }
-    catch (e) { console.warn("lab text", e); st.className = "st err"; st.textContent = e?.code === "login" ? "Увійди в акаунт." : e?.code === "rate_limited" ? "Ліміт AI на сьогодні." : "Не вийшло — натисни ще раз."; track("text_fail", { v: String(e?.code || e?.message || e).slice(0, 40) }); }
-    b.disabled = false; b.textContent = "✨ Інший варіант"; }
+    catch (e) { console.warn("lab text", e); st.className = "st err"; st.textContent = errText(e); track("text_fail", { v: String(e?.code || e?.message || e).slice(0, 40) }); }
+    b.disabled = false; if (S.res) b.textContent = "✨ Інший варіант"; }
 
   function drawText() { const B = UI.root, C = $(B, "#ltext"), r = S.res, n = words(r.voiceover), want = [Math.round(S.sec * 2.3), Math.round(S.sec * 2.5)];
     C.innerHTML = `<h4><i>2</i>Текст для озвучки</h4>
@@ -117,10 +122,10 @@
 
   async function makeBoard() { const B = UI.root, C = $(B, "#lboard"), st = $(C, "#lst3"), b = $(C, "#lmk"); const text = (S.res?.voiceover || "").trim(); if (words(text) < 5) { st.className = "st err"; st.textContent = "Спершу потрібен текст."; return; }
     const dur = S.voice?.dur ? +S.voice.dur.toFixed(1) : S.sec; b.disabled = true; st.className = "st"; st.textContent = `Розкладаю на сцени під ${dur} с… 40–120 с`; const t0 = Date.now();
-    try { const raw = await ask(P_BOARD, `<user_input>\nТривалість озвучки, с: ${dur}\nТекст озвучки:\n${text}\n</user_input>`, 8000); const r = parseResult(raw);
-      if (!r || !Array.isArray(r.scenes)) throw new Error("bad_json"); if (r.status === "error") { st.className = "st err"; st.textContent = r.note || "Не вийшло."; b.disabled = false; return; }
+    try { const r = await askJson(P_BOARD, `<user_input>\nТривалість озвучки, с: ${dur}\nТекст озвучки:\n${text}\n</user_input>`, 8000, (x) => x && (x.status === "error" || (Array.isArray(x.scenes) && x.scenes.length)));
+      if (r.status === "error") { st.className = "st err"; st.textContent = r.note || "Не вийшло."; b.disabled = false; return; }
       S.board = r; save(); track("board_ok", { v: V.board, n: r.scenes.length, s: Math.round((Date.now() - t0) / 1000) }); drawBoard(); $(B, "#lvideo").hidden = false; drawVideo(); }
-    catch (e) { console.warn("lab board", e); st.className = "st err"; st.textContent = e?.code === "rate_limited" ? "Ліміт AI на сьогодні." : "Не вийшло — натисни ще раз."; b.disabled = false; } }
+    catch (e) { console.warn("lab board", e); st.className = "st err"; st.textContent = errText(e); b.disabled = false; } }
 
   function drawBoard() { const B = UI.root, C = $(B, "#lboard"), r = S.board;
     C.innerHTML = `<h4><i>4</i>Розкадровка</h4><p class="hint">Під справжню довжину озвучки${S.voice?.dur ? ` (${S.voice.dur.toFixed(1)} с)` : ` (поки ${S.sec} с — озвуч, щоб точніше)`}. Кожне ключове слово — предмет у кадрі, текст лише всередині сцени.</p>
