@@ -46,7 +46,7 @@
     try {
       r = await fetch(`${FN}/ai-text`, { method: "POST", signal: opts?.signal,
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${SRV.session.access_token}`, apikey: CFG.key },
-        body: JSON.stringify({ prompt, json: !!asJson, max: opts?.max, kb: !!opts?.kb, ...(Array.isArray(opts?.kb) ? { kbm: opts.kb } : {}), ...(opts?.kbFmt ? { kbf: opts.kbFmt } : {}), ...(Array.isArray(opts?.sys) ? { sys: opts.sys } : {}), ...(Array.isArray(opts?.images) && opts.images.length ? { images: opts.images } : {}) }) });
+        body: JSON.stringify({ prompt, json: !!asJson, max: opts?.max, kb: !!opts?.kb, ...(Array.isArray(opts?.kb) ? { kbm: opts.kb } : {}), ...(opts?.kbFmt ? { kbf: opts.kbFmt } : {}), ...(Array.isArray(opts?.sys) ? { sys: opts.sys } : {}), ...(opts?.raw ? { raw: true } : {}), ...(Array.isArray(opts?.images) && opts.images.length ? { images: opts.images } : {}) }) });
     } catch (e) { if (e?.name === "AbortError") throw { code: "cancelled" }; throw { code: "network" }; }
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw { code: { limit: "rate_limited", busy: "busy", no_key: "no_key" }[j.error] || "server", message: j.error };
