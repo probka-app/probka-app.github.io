@@ -86,7 +86,8 @@
 
   async function writeText() { const B = UI.root, st = $(B, "#lst1"), b = $(B, "#lwrite"); const topic = S.topic.trim(); if (topic.length < 3) { st.className = "st err"; st.textContent = "Напиши тему."; return; }
     b.disabled = true; st.className = "st"; st.textContent = "Пишу текст… 20–60 с"; const t0 = Date.now();
-    const moodNote = S.mood === "тривожний" ? "" : `\nНастрій ролика: ${MOODS[S.mood]}. Усе, що в правилах сказано про тривожний настрій і тривогу, застосовуй до цього настрою; фінал — з закликом діяти.`;
+    const wMin = Math.round(S.sec * 2.8), wMax = wMin + 10;
+    const moodNote = `\nОбсяг тексту: ${wMin}–${wMax} слів — це замість правила «тривалість × 2,3–2,5»: голос студії читає швидше, тож текст має звучати трохи довше за ${S.sec} с (потім стиснемо паузи під точну довжину). word_count теж рахуй під цей обсяг.` + (S.mood === "тривожний" ? "" : `\nНастрій ролика: ${MOODS[S.mood]}. Усе, що в правилах сказано про тривожний настрій і тривогу, застосовуй до цього настрою; фінал — з закликом діяти.`);
     const user = `<user_input>\nДата: ${new Date().toISOString().slice(0, 10)}\nТема: ${topic}\nНіша автора: ${S.niche.trim()}\nТривалість: ${S.sec} с\nКінцівка: ${S.ending.trim()}${moodNote}\n</user_input>`;
     try { const r = await askJson(P_SCRIPT, user, 8000, (x) => x && (x.status === "error" || x.voiceover || Array.isArray(x.lines)));
       if (r.status === "error") { st.className = "st err"; st.textContent = r.note || "Модель відмовилась від теми."; b.disabled = false; return; }
@@ -96,7 +97,7 @@
     catch (e) { console.warn("lab text", e); st.className = "st err"; st.textContent = errText(e); track("text_fail", { v: String(e?.code || e?.message || e).slice(0, 40) }); }
     b.disabled = false; if (S.res) b.textContent = "✨ Інший варіант"; }
 
-  function drawText() { const B = UI.root, C = $(B, "#ltext"), r = S.res, n = words(r.voiceover), want = [Math.round(S.sec * 2.3), Math.round(S.sec * 2.5)];
+  function drawText() { const B = UI.root, C = $(B, "#ltext"), r = S.res, n = words(r.voiceover), want = [Math.round(S.sec * 2.8), Math.round(S.sec * 2.8) + 10];
     C.innerHTML = `<h4><i>2</i>Текст для озвучки</h4>
       <p class="hint">${n} слів (ціль ${want[0]}–${want[1]})${r.note ? " · " + esc(r.note) : ""}. Можна правити — озвучиться саме те, що в полі.</p>
       <textarea id="lvo">${esc(r.voiceover)}</textarea>
@@ -109,22 +110,35 @@
     C.querySelectorAll("[data-rate]").forEach((b) => b.onclick = () => { const log = LS.get("yvLabRates", []); log.push({ at: new Date().toISOString(), v: V.script, topic: S.topic, sec: S.sec, mood: S.mood, rate: b.dataset.rate, text: S.res.voiceover }); LS.set("yvLabRates", log.slice(-100)); track("rate", { v: V.script, r: b.dataset.rate }); say(b.dataset.rate === "up" ? "Записав як вдалий ✓" : "Записав як невдалий"); }); }
 
   function drawVoice() { const B = UI.root, C = $(B, "#lvoice");
-    C.innerHTML = `<h4><i>3</i>Озвучка рівно під ${S.sec} с</h4><p class="hint">Голос і тон — як у студії. Паузи стискаються або трохи подовжуються, за потреби — пришвидшення без зміни тембру.</p><div id="lvp"></div><div id="lvres"></div>`;
+    C.innerHTML = `<h4><i>3</i>Озвучка рівно під ${S.sec} с</h4><p class="hint">Спершу стискаються паузи; якщо й так не влазить — увесь запис рівномірно пришвидшується (тембр не змінюється). Тон «Звичайно» звучить природніше за «Енергійно».</p><div id="lvp"></div><div id="lvres"></div>`;
     if (typeof voicePicker !== "function") { $(C, "#lvp").innerHTML = `<p class="st err">Вибір голосу недоступний на цій сторінці.</p>`; return; }
     voicePicker($(C, "#lvp"), { getText: () => S.res?.voiceover || "", onAudio: async (buf) => { const out = $(C, "#lvres"); out.innerHTML = `<p class="st">Підганяю під ${S.sec} с…</p>`;
       try { const T = window.YVCine?._t, E = window.YVTalk?._t; if (!T?.fitTo || !E) throw new Error("no_engine");
         const y0 = await E.decode(buf), r = T.fitTo(y0, S.sec), SR = E.SR; S.voice = { y: r.y, dur: r.y.length / SR, rate: r.rate, mode: r.mode, over: r.over, tail: r.tail };
         const ab = new AudioBuffer({ length: r.y.length, numberOfChannels: 1, sampleRate: SR }); ab.copyToChannel(r.y, 0);
         const blob = new Blob([wav(ab)], { type: "audio/wav" }), url = URL.createObjectURL(blob);
-        out.innerHTML = `<p class="st">${r.over ? `Задовгий текст: навіть з ×1.45 виходить ${S.voice.dur.toFixed(1)} с — скороти.` : `✓ ${S.voice.dur.toFixed(1)} с${r.mode === "cut" ? " · паузи стиснуто" : r.rate > 1.01 ? ` · ×${r.rate.toFixed(2)}` : r.mode === "slow" ? " · паузи подовжено" : ""}${r.tail > 1 ? ` · наприкінці ${r.tail.toFixed(1)} с тиші` : ""}`}</p><audio controls playsinline src="${url}"></audio>`;
+        out.innerHTML = `<p class="st">${r.over ? `Задовгий текст: навіть з ×1.45 виходить ${S.voice.dur.toFixed(1)} с — скороти.` : `✓ ${S.voice.dur.toFixed(1)} с${r.mode === "cut" ? " · паузи стиснуто" : r.mode === "fast" ? ` · паузи стиснуто, весь запис пришвидшено ×${r.rate.toFixed(2)}` : ""}${r.tail > .5 ? ` · голос закінчується на ${(S.voice.dur - r.tail).toFixed(1)} с — текст закороткий, натисни «Інший варіант» або допиши` : ""}`}</p><audio controls playsinline src="${url}"></audio>`;
         track("voice_ok", { v: `${S.sec}/${r.mode}/${r.rate.toFixed(2)}` }); }
       catch (e) { console.warn("lab voice", e); out.innerHTML = `<p class="st err">Не вдалося підігнати озвучку.</p>`; } } }); }
 
+  const sentences = (t) => String(t).replace(/\s+/g, " ").trim().match(/[^.!?…]+[.!?…]+["»]?|[^.!?…]+$/g)?.map((q) => q.trim()).filter(Boolean) || [];
+  function chunks(text, dur) { const ss = sentences(text), total = words(text) || 1, out = []; let cur = [], cw = 0;
+    const target = Math.max(30, Math.round(total / Math.max(1, Math.round(dur / 20)))); // ≈ 20 с озвучки на частину
+    ss.forEach((q) => { const w = words(q); if (cw && cw + w > target * 1.25) { out.push(cur); cur = []; cw = 0; } cur.push(q); cw += w; }); if (cur.length) out.push(cur);
+    if (out.length > 1 && words(out[out.length - 1].join(" ")) < target * .4) { const last = out.pop(); out[out.length - 1].push(...last); }
+    let t = 0; return out.map((c, i) => { const tx = c.join(" "), d = +(dur * words(tx) / total).toFixed(1), o = { i, n: out.length, text: tx, t0: +t.toFixed(1), dur: d }; t += d; return o; }); }
+  const boardUser = (c, style, first) => `<user_input>\nТривалість озвучки, с: ${c.dur}\nТекст озвучки:\n${c.text}\n</user_input>` + (c.n > 1 ? `\n\nЦе частина ${c.i + 1} з ${c.n} одного ролика (у ролику вона починається з ${c.t0} с). Тайминг рахуй від 0 до ${c.dur} с цієї частини — програма сама зсуне його.` + (c.i === 0 ? " Перша частина: тут хук ролика, і саме тут визнач concept і style для всього ролика." : ` Не перша частина: хук на початку не потрібен. Стиль ролика вже визначено — використовуй саме його (палітра, герой, повторювані предмети), не змінюй: ${JSON.stringify(style)}${first ? `\nПерша сцена ролика: ${first}` : ""}`) + (c.i === c.n - 1 ? " Остання частина: останній кадр повторює образ першої сцени ролика в новому стані." : " Не остання частина: фінальне правило «останній кадр = перший» тут не застосовуй; наприкінці — рехук, що веде далі.") : "");
   async function makeBoard() { const B = UI.root, C = $(B, "#lboard"), st = $(C, "#lst3"), b = $(C, "#lmk"); const text = (S.res?.voiceover || "").trim(); if (words(text) < 5) { st.className = "st err"; st.textContent = "Спершу потрібен текст."; return; }
-    const dur = S.voice?.dur ? +S.voice.dur.toFixed(1) : S.sec; b.disabled = true; st.className = "st"; st.textContent = `Розкладаю на сцени під ${dur} с… 40–120 с`; const t0 = Date.now();
-    try { const r = await askJson(P_BOARD, `<user_input>\nТривалість озвучки, с: ${dur}\nТекст озвучки:\n${text}\n</user_input>`, 8000, (x) => x && (x.status === "error" || (Array.isArray(x.scenes) && x.scenes.length)));
-      if (r.status === "error") { st.className = "st err"; st.textContent = r.note || "Не вийшло."; b.disabled = false; return; }
-      S.board = r; save(); track("board_ok", { v: V.board, n: r.scenes.length, s: Math.round((Date.now() - t0) / 1000) }); drawBoard(); $(B, "#lvideo").hidden = false; drawVideo(); }
+    const dur = S.voice?.dur ? +((S.voice.dur - (S.voice.tail || 0))).toFixed(1) : S.sec, parts = chunks(text, dur); b.disabled = true; st.className = "st"; const t0 = Date.now();
+    const okB = (x) => x && (x.status === "error" || (Array.isArray(x.scenes) && x.scenes.length));
+    try { st.textContent = `Розкладаю на сцени під ${dur} с: частина 1 з ${parts.length}…`;
+      const r1 = await askJson(P_BOARD, boardUser(parts[0], null, ""), 8000, okB); if (r1.status === "error") { st.className = "st err"; st.textContent = r1.note || "Не вийшло."; b.disabled = false; return; }
+      const style = r1.style || {}, first = r1.scenes[0]?.action || "";
+      let done = 1; const rest = parts.length > 1 ? await Promise.all(parts.slice(1).map((c) => askJson(P_BOARD, boardUser(c, style, first), 8000, okB).then((r) => { done++; st.textContent = `Розкладаю на сцени: готово ${done} з ${parts.length}…`; return r; }))) : [];
+      const all = [r1, ...rest]; const scenes = []; all.forEach((r, k) => { const off = parts[k].t0; (r.scenes || []).forEach((z) => scenes.push({ ...z, t_start: +(off + (+z.t_start || 0)).toFixed(1), t_end: +(off + (+z.t_end || 0)).toFixed(1) })); });
+      scenes.forEach((z, i) => { z.id = i + 1; if (i && Math.abs(z.t_start - scenes[i - 1].t_end) < .6) z.t_start = scenes[i - 1].t_end; }); const vdur = S.voice?.dur ? +S.voice.dur.toFixed(1) : dur; if (scenes.length) scenes[scenes.length - 1].t_end = vdur;
+      S.board = { status: "ok", note: all.map((r) => r.note).filter(Boolean).join(" · "), concept: r1.concept || "", style, duration: vdur, scenes }; save();
+      track("board_ok", { v: V.board, n: scenes.length, p: parts.length, s: Math.round((Date.now() - t0) / 1000) }); drawBoard(); $(B, "#lvideo").hidden = false; drawVideo(); }
     catch (e) { console.warn("lab board", e); st.className = "st err"; st.textContent = errText(e); b.disabled = false; } }
 
   function drawBoard() { const B = UI.root, C = $(B, "#lboard"), r = S.board;

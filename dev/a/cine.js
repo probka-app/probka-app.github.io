@@ -1939,12 +1939,12 @@ ${prm("topic_rules").body}
     return out; }
   function shrinkTo(y, M, floor, T) { const SR = E().SR, fl = floor * SR, L = M.P.map(([a, b]) => b - a), ex = L.reduce((t, l) => t + Math.max(0, l - fl), 0), cur = M.s1 - M.s0, need = cur - T;
     const k = ex > 0 ? clamp(need / ex, 0, 1) : 0; return setPauses(y, M, L.map((l) => l > fl ? l - (l - fl) * k : l)); }
+  // Алгоритм власника: 1) довша за ціль → спершу стискаємо паузи (пропорційно, не коротше 0,15 с); 2) не влазить і після цього → пришвидшуємо ВЕСЬ запис рівномірно (до ×1.45, тембр не змінюється);
+  // коротша → нічого не розтягуємо: голос звучить природно, а решта — тиша в кінці (і підказка дописати текст).
   function fitTo(y, target) { const SR = E().SR, T = Math.round(target * SR), M = pauseMap(y), cur = M.s1 - M.s0; let out, rate = 1, mode = "exact";
-    if (cur > T) { out = shrinkTo(y, M, .2, T); mode = "cut";
-      if (out.length > T * 1.003) { const r1 = Math.min(1.3, out.length / T); out = tstretch(out, r1); rate = r1; mode = "fast"; }
-      if (out.length > T * 1.003) { const y2 = shrinkTo(y, M, .1, T), r2 = Math.min(FIT.max, y2.length / T); out = r2 > 1.01 ? tstretch(y2, r2) : y2; rate = r2; } }
-    else { const L = M.P.map(([a, b]) => b - a), add = T - cur, cap = L.map((l) => Math.min(.4 * SR, l * .8)), capT = cap.reduce((t, c) => t + c, 0), k = capT > 0 ? Math.min(1, add / capT) : 0;
-      out = setPauses(y, M, L.map((l, i) => l + cap[i] * k)); mode = add > SR * .15 ? "slow" : "exact"; }
+    if (cur > T * 1.003) { out = shrinkTo(y, M, .15, T); mode = "cut";
+      if (out.length > T * 1.003) { rate = Math.min(FIT.max, out.length / T); out = tstretch(out, rate); mode = "fast"; } }
+    else { out = setPauses(y, M, M.P.map(([a, b]) => b - a)); mode = T - out.length > SR * .3 ? "short" : "exact"; }
     const over = out.length > T * 1.01, tail = Math.max(0, (T - out.length) / SR); if (out.length < T) { const z = new Float32Array(T); z.set(out); out = z; }
     return { y: out, rate, mode, over, tail }; }
   async function voiceFit(text, voice, target) { const SR = E().SR, parts = []; let cur = ""; sentences(text).forEach((q) => { if ((cur + " " + q).length > 2200 && cur) { parts.push(cur); cur = ""; } cur += (cur ? " " : "") + q; }); if (cur) parts.push(cur);
@@ -1978,7 +1978,7 @@ ${prm("topic_rules").body}
     $(B, "#ctxch").onclick = () => { try { VPA.a?.pause(); } catch (e) {} stopPrevA(); screenScript(); }; est();
     const doVoice = async () => { const t = ta.value.trim(); if ((t.match(/\S+/g) || []).length < 4) { say("Спершу потрібен текст"); return false; } if (!DRAFT.vid) { say(v === "clone" ? "Спершу створи свій голос" : "Вибери голос"); return false; }
       try { const r = await E().busyRun("voice", () => voiceFit(t, voiceOf(), OPT.sec)); r.key = kOf(); VOICED = r;
-        st(r.over ? `Озвучено, але текст задовгий: навіть з прискоренням ×${FIT.max} виходить ${fmt(r.dur)} замість ${OPT.sec} с. Скороти текст і переозвуч.` : `✓ Озвучено рівно під відео · ${fmt(r.dur)}${r.mode === "cut" ? " · паузи стиснуто" : r.rate > 1.01 ? ` · паузи стиснуто й пришвидшено ×${r.rate.toFixed(2)}` : r.mode === "slow" ? " · паузи трохи подовжено" : ""}${r.tail > 1 ? ` · текст закороткий: наприкінці ${r.tail.toFixed(1)} с без голосу — можна дописати речення` : ""}. Послухай — якщо щось не так, зміни текст і переозвуч.`); mark(); track("voice_ok"); return true; }
+        st(r.over ? `Озвучено, але текст задовгий: навіть з прискоренням ×${FIT.max} виходить ${fmt(r.dur)} замість ${OPT.sec} с. Скороти текст і переозвуч.` : `✓ Озвучено рівно під відео · ${fmt(r.dur)}${r.mode === "cut" ? " · паузи стиснуто" : r.rate > 1.01 ? ` · паузи стиснуто й весь запис пришвидшено ×${r.rate.toFixed(2)}` : ""}${r.tail > 1 ? ` · текст закороткий: наприкінці ${r.tail.toFixed(1)} с без голосу — можна дописати речення` : ""}. Послухай — якщо щось не так, зміни текст і переозвуч.`); mark(); track("voice_ok"); return true; }
       catch (e) { console.warn(e); say(TTS_ERR[e?.message] || "Не вийшло озвучити. Спробуй ще раз"); if (e?.message === "no_clone_quota") window.yvFeatureSheet?.("clone"); return false; } };
     if (tts) { $(B, "#cvo").onclick = async () => { if (await doVoice()) $(B, "#cvp").click(); };
       $(B, "#cvp").onclick = (e) => { const b = e.currentTarget; if (PAC) { stopPrevA(); b.textContent = "▶ Прослухати"; return; } if (!fresh()) return; b.textContent = "■ Стоп"; playBuf(VOICED.buf, () => { b.textContent = "▶ Прослухати"; }); }; }
