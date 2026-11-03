@@ -1369,6 +1369,7 @@ fx — ефекти сцени (масив, до 3): confetti — конфеті
 ${words}
 ${extra}
 ${L.pet && BREED[L.pet] ? `У героя є тварина: ${BREED[L.pet].dog ? "собака" : "кіт"} — ${BREED[L.pet].n} (who:"${BREED[L.pet].dog ? "dog" : "cat"}", breed:"${L.pet}"). Додавай її в сцени, де доречно (вдома, на прогулянці, у смішних і теплих моментах), — завжди цю саму.\n` : ""}${L.places?.length ? `Локації: використовуй ТІЛЬКИ ці — ${L.places.join(", ")} (і space для абстрактних пояснень).\n` : ""}${RULES}
+${prm("board_rules").body}
 ${SPEC}
 ${a0 === 0 ? variety(L).text + "\n" : variety(L).text.split("\n").slice(1, 2).join("") + "\n"}${a0 === 0 ? `Визнач mood музики: ${Object.entries(MOODS).map(([k, v]) => `${k} (${v.n})`).join(", ")}.\n` : ""}ФРАЗИ ОЗВУЧКИ (номери слів):
 ${PH.map((f, k) => `Ф${k + 1} [${f.a}–${f.b}]: «${f.text}»`).join("\n")}
@@ -1466,9 +1467,10 @@ ${imgs.length ? `Контакт-аркуші: ${imgs.length} зображ., на
   async function aiText(topic, sec, silent, scn) { const S = SCRIPTS[scn], want = Math.round(sec * (silent ? 1.6 : FIT.wps * FIT.long));
     const ask = `Напиши ${silent ? "текст для анімаційного Reels БЕЗ голосу — він іде на екрані субтитрами, короткі речення по 4–9 слів" : "текст для озвучки за кадром — жива розмовна українська, як людина говорить другу"} на тему: «${topic}».
 Формат: вертикальне кіно-анімаційне відео (герой-чоловічок, сцени змінюються кожні 2–4 с) ≈ ${sec} с. Мета — вірусність: людина має додивитися до кінця й захотіти переслати. Перше речення — сильний гачок-питання або несподіваний факт (до 10 слів, без розгону); одразу відкрий петлю, яку закриєш лише у фіналі; кожні 5–7 с — нова міні-інтрига чи поворот; далі історія героя з поворотом (але/тому), конкретні числа й образи, які легко показати; фінал — сильне коротке ствердження (НЕ питання і не заклик подумати), яке замикає петлю з початком.
-${S ? `СТРУКТУРА СЦЕНАРІЮ «${S.n}» — дотримуйся саме її, по черзі: ${S.p}. Не підписуй частини — текст суцільний, живий.\n` : ""}Обсяг — ${want}–${want + 8} слів (не менше ${want}: текст має звучати трохи довше за ${sec} с — озвучку потім точно підженемо під довжину відео). Без хештегів, емодзі, ремарок і заголовків. Відповідай тільки JSON {"text":"…"}`;
+${S ? `СТРУКТУРА СЦЕНАРІЮ «${S.n}» — дотримуйся саме її, по черзі: ${S.p}. Не підписуй частини — текст суцільний, живий.\n` : ""}Обсяг — ${want}–${want + 8} слів (не менше ${want}: текст має звучати трохи довше за ${sec} с — озвучку потім точно підженемо під довжину відео). Без хештегів, емодзі, ремарок і заголовків.
+${silent ? "" : prm("script_rules").body + "\n"}Перед відповіддю перевір: хук до 12 слів і конкретний; петля з початку закрита у фіналі; немає жодного забороненого звороту; обсяг у межах. Відповідай тільки JSON {"text":"…"}`;
     // якщо з базою знань не вийшло (довгий контекст, збій) — ще раз коротше, без неї
-    let err; for (const o of [{ kbFmt: "tall", kb: ["hook", "script", "story", "general"], max: 3000 }, { max: 2500 }]) { try { const r = await sample.json(ask, { cache: false, ...o }); const t = String(r?.text || (typeof r === "string" ? r : "")).trim(); if (t.split(/\s+/).length >= 12) return t; err = new Error("empty"); } catch (e) { err = e; if (/limit|login|no_key/.test(e?.code || e?.message || "")) throw e; } }
+    await prmLoad(); let err; for (const o of [{ kbFmt: "tall", kb: ["hook", "script", "story", "general"], max: 3000 }, { max: 2500 }]) { try { const r = await sample.json(ask, { cache: false, ...o }); const t = String(r?.text || (typeof r === "string" ? r : "")).trim(); if (t.split(/\s+/).length >= 12) return t; err = new Error("empty"); } catch (e) { err = e; if (/limit|login|no_key/.test(e?.code || e?.message || "")) throw e; } }
     throw err; }
 
   /* ---------- голос і слова ---------- */
@@ -1704,8 +1706,10 @@ ${S ? `СТРУКТУРА СЦЕНАРІЮ «${S.n}» — дотримуйся �
     $(B, "#ctopic").oninput = (e) => { const v = e.target.value.trim(); DRAFT.topic = v; B.querySelectorAll("[data-tp]").forEach((o) => o.setAttribute("aria-pressed", o.dataset.tp === v)); saveDraft(); upd(); };
     B.querySelectorAll("[data-cat]").forEach((b) => b.onclick = () => { TCAT = b.dataset.cat; B.querySelectorAll("[data-cat]").forEach((o) => o.setAttribute("aria-pressed", o === b)); $(B, "#ctpl").innerHTML = list(); bind(); });
     $(B, "#cmore").onclick = async (ev) => { const btn = ev.currentTarget, cat = TCAT, old = TOPICS[cat] || [], lbl = btn.textContent; btn.disabled = true; btn.textContent = "…";
-      const ask = `Придумай 6 нових тем для коротких вертикальних анімаційних відео (Reels/TikTok), які мають шанс стати вірусними. Категорія: «${cat}». Аудиторія — широка, українською.
+      await prmLoad();
+      const ask = `Придумай 12 нових тем для коротких вертикальних анімаційних відео (Reels/TikTok), які мають шанс стати вірусними. Категорія: «${cat}». Аудиторія — широка, українською.
 Кожна тема — одне конкретне речення до 11 слів із вбудованою інтригою (питання «що буде, якщо…», «чому…», несподіваний факт, конкретні числа). Тема — це хук: перша фраза відео, яка зупиняє скрол. Без кліше і НЕ повторюй ці: ${old.join(" | ")}.
+${prm("topic_rules").body}
 Відповідай тільки JSON: {"topics":["…","…"]}`;
       // приймаємо будь-яку форму відповіді: масив, {topics:[…]}, {будь-що:[…]}, об'єкти з текстом, або просто рядки
       const strs = (a) => a.map((q) => typeof q === "string" ? q : q && typeof q === "object" ? Object.values(q).find((v) => typeof v === "string") || "" : String(q ?? ""));
@@ -1716,10 +1720,42 @@ ${S ? `СТРУКТУРА СЦЕНАРІЮ «${S.n}» — дотримуйся �
         async () => (await sample(ask.replace(/Відповідай тільки JSON[^\n]*/, "Відповідай лише списком: кожна тема з нового рядка, без нумерації й пояснень."), { cache: false, max: 1200 }))?.text || ""];
       for (const f of tries) { try { arr = pick(await E().busyRun("text", f)); if (arr.length >= 3) break; } catch (e) { err = e; console.warn("topics", e); if (/limit|login/.test(e?.code || e?.message || "")) break; } }
       if (btn.isConnected) { btn.disabled = false; btn.textContent = lbl; }
-      if (arr.length >= 3) { TOPICS[cat] = arr.slice(0, 6); saveTopics(); if (TCAT === cat && $(B, "#ctpl")) { $(B, "#ctpl").innerHTML = list(); bind(); } track("topic_more"); }
+      // редактор: з 12 чернеток лишаємо 6 найсильніших (не вийшло — беремо перші 6, як раніше)
+      if (arr.length > 6) { try { const r = await E().busyRun("text", () => sample.json(`${prm("topic_pick").body}\nКатегорія: «${cat}».\nТЕМИ:\n${arr.map((q, i) => `${i + 1}. ${q}`).join("\n")}\nВідповідай тільки JSON: {"best":[номери 6 найсильніших тем від найкращої]}`, { cache: false, max: 300 }));
+          const ids = (Array.isArray(r?.best) ? r.best : []).map((n) => +n - 1).filter((n, i, A) => Number.isInteger(n) && n >= 0 && n < arr.length && A.indexOf(n) === i);
+          if (ids.length >= 3) arr = [...ids.map((n) => arr[n]), ...arr.filter((_, i) => !ids.includes(i))]; } catch (e) { console.warn("topic pick", e); } }
+      if (arr.length >= 3) { TOPICS[cat] = arr.slice(0, 6); saveTopics(); if (TCAT === cat && $(B, "#ctpl")) { $(B, "#ctpl").innerHTML = list(); bind(); } track("topic_more", { v: prmV("topic_rules", "topic_pick") }); }
       else say(/limit/.test(err?.code || err?.message || "") ? "На сьогодні нові теми закінчились — спробуй завтра або напиши свою" : /login/.test(err?.code || "") ? "Увійди, щоб отримати нові теми" : `Не вийшло оновити теми. Спробуй ще раз${err ? ` (${String((err.code === "server" && err.message) || err.code || err.message || "").slice(0, 40)})` : ""}`); };
     nb.onclick = () => { if (nb.disabled) return; saveDraft(); screenScript(); };
     upd(); track("open"); }
+  /* ---------- промти з навичок власника (reels-script / промт сценарію v1.2, розкадровка v1.3) ----------
+     Версія пишеться в аналітику (track ... {v}), щоб потім порівнювати, яка версія дає кращі результати.
+     Якщо в ai_prompts є ключ з такою назвою — береться текст звідти (власник може правити без коду); інакше — копія нижче. */
+  const PRM = {
+    script_rules: { v: "1.2", body: `ЖИВА МОВА: як друг розповідає за кавою, звертання на «ти». Речення до 12 слів — довгі губляться на слух і їх важко показати однією сценою.
+ЗАБОРОНЕНІ ЗВОРОТИ (видають ШІ): «у сучасному світі», «давайте розберемося», «не секрет, що», «варто зазначити», «революція», «уявіть собі», «у цьому відео ми», «по-перше / по-друге». Без русизмів і калькових конструкцій.
+ПЕТЛЯ: у перших 2–3 реченнях пообіцяй найважливіше на кінець («третє зачепить саме тебе») і закрий цю обіцянку лише у фіналі — так дивляться до кінця.
+НАРОСТАННЯ: кожен наступний блок сильніший за попередній; між блоками — короткий місток («Але це ще дрібниці.»), а не нумерація.
+ПОБУТ: кожну думку покажи через те, що людина відчуває у звичайному житті (робота, гроші, телефон, діти) — абстракції не малюються й не запам'ятовуються.
+ФАКТИ: не вигадуй досліджень, цитат реальних людей, точних цифр і дат; прогноз — лише з маркером припущення («кажуть», «цілком можливо»). Без фінансових і медичних порад.
+ДЛЯ ОЗВУЧКИ: числа й роки пиши словами, як їх вимовляють («двадцять сьомий»); без емодзі, хештегів, дужок і ремарок — синтезатор прочитає все дослівно.
+УДАР: перед фіналом можна одне коротке речення з двох-трьох слів окремим рядком («Без тебе.») — пауза б'є найсильніше.` },
+    topic_rules: { v: "1.0", body: `Добра тема — це вже хук: одне конкретне речення до 11 слів, звернене до глядача або про побутову ситуацію, з інтригою, яку хочеться закрити (що буде, якщо…; чому…; несподіваний факт; конкретна зміна в житті).
+Погано: загальні слова («технології змінюють життя»), кліше, клікбейт без змісту, теми, які не покажеш простими сценами.` },
+    topic_pick: { v: "1.0", body: `Ти — суворий редактор вірусних Reels. Оціни кожну тему 0–10: зупинить скрол за 2 секунди (конкретика, «ти», інтрига) · легко показати простою 2D-анімацією · не кліше й не повтор інших тем. Виріж слабкі (нижче 6).` },
+    board_rules: { v: "1.3", body: `ПРАВИЛА УТРИМАННЯ (з розкадровки v1.3):
+— кожне ключове слово фрази (іменник, дія, число, рік) видно в кадрі предметом чи дією — глядач без звуку розуміє зміст;
+— явище, що повторюється (програма, банк, гроші, телефон), щоразу малюй тим самим предметом;
+— відкрита петля: якщо текст обіцяє щось на потім («третя зміна…»), покажи це заздалегідь (закриті двері, лічильник 1/3, табличка) і відкрий саме тоді, коли про це звучить;
+— рехук: на межі смислових блоків у сцені вже з'являється предмет наступного блоку;
+— «уже зараз… а потім»: той самий предмет у двох станах (поруч або трансформація);
+— коротка ударна фраза (2–3 слова) — найпростіший кадр, cam still, без нових предметів: контраст із темпом б'є найсильніше;
+— остання сцена повторює образ першої, але в новому стані — ролик хочеться переглянути.` },
+  };
+  const PRMDB = {}; let PRMP = null;
+  function prmLoad() { if (PRMP) return PRMP; PRMP = (async () => { if (!window.SRV?.bibleGet || !SRV.session) return; await Promise.all(Object.keys(PRM).map(async (k) => { try { const r = await SRV.bibleGet(k); if (r?.body && r.body.trim().length > 40) PRMDB[k] = { v: "db:" + String(r.updated_at || "").slice(0, 10), body: r.body.trim() }; } catch (e) {} })); })(); return PRMP; }
+  const prm = (k) => PRMDB[k] || PRM[k];
+  const prmV = (...ks) => ks.map((k) => `${k}@${prm(k).v}`).join(",");
   /* ---------- крок 2: довжина, реклама, сценарій і текст ---------- */
   const SCRIPTS = {
     story: { n: "Історія героя", b: ["Гачок — несподіваний момент з історії", "Хто герой і чого він хоче", "Перешкода або помилка", "Поворот — що він зробив інакше", "Результат з конкретними числами", "Висновок одним сильним реченням"], p: "історія одного героя: гачок з середини історії → хто він і чого хоче → перешкода/помилка → поворот (що зробив інакше) → результат із конкретними числами → висновок одним сильним реченням" },
@@ -1931,7 +1967,7 @@ ${S ? `СТРУКТУРА СЦЕНАРІЮ «${S.n}» — дотримуйся �
       try { const adOn = OPT.ad && OPT.ad !== "none", adSec = adOn ? (OPT.sec <= 30 ? 11 : 17) + 3 : 0;
         let t = await E().busyRun("text", () => aiText(topic, Math.max(12, OPT.sec - adSec), v === "none")); if (!t) throw new Error("empty"); DRAFT.adMid = "";
         if (OPT.ad && OPT.ad !== "none") { const w = await E().busyRun("text", () => adWeave2(t, OPT.ad, OPT.adWord)); t = w.text; DRAFT.adMid = w.mid; DRAFT.adParts = w.parts; }
-        ta.value = t; est(); $(B, "#cwr").textContent = "✨ Інший варіант"; track("ai_text"); }
+        ta.value = t; est(); $(B, "#cwr").textContent = "✨ Інший варіант"; track("ai_text", { v: prmV("script_rules") }); }
       catch (e) { console.warn("cine text", e); say(e?.message === "limit" ? "Ліміт на сьогодні вичерпано" : "Не вийшло написати текст — натисни ще раз"); } };
     $(B, "#ctxch").onclick = () => { try { VPA.a?.pause(); } catch (e) {} stopPrevA(); screenScript(); }; est();
     const doVoice = async () => { const t = ta.value.trim(); if ((t.match(/\S+/g) || []).length < 4) { say("Спершу потрібен текст"); return false; } if (!DRAFT.vid) { say(v === "clone" ? "Спершу створи свій голос" : "Вибери голос"); return false; }
@@ -1970,10 +2006,10 @@ ${S ? `СТРУКТУРА СЦЕНАРІЮ «${S.n}» — дотримуйся �
         let adHint = ""; if (L.ad !== "none" && src.adMid) { const nz = (q) => String(q).toLowerCase().replace(/[^\p{L}\p{N}]/gu, ""), mw = src.adMid.split(/\s+/).filter(Boolean).map(nz), ws = L.words.map((w) => nz(w.w));
           let a0 = -1; for (let i = 0; i + 2 < ws.length; i++) if (ws[i] === mw[0] && ws[i + 1] === mw[1] && ws[i + 2] === mw[2]) { a0 = i; break; }
           if (a0 >= 0) { const a1 = Math.min(ws.length - 1, a0 + mw.length - 1); L.adRange = [a0, a1]; adHint = `Слова ${a0}–${a1} — рекламна вставка: її покаже окрема анімація телефона, тож сцен із a від ${a0} до ${a1} НЕ став. Сцена зі слова ${a1 + 1} — сильне повернення в історію (інший план, рух камери, емоція). Сцена перед словом ${a0} — герой у кадрі (на ній він дістане телефон).`; } }
-        stage("Режисую сцени…"); await aiPlan(L, adHint || ""); if (L.adRange && L.ad !== "none") await inlineAd(L, src.adParts); ensureAd(L); if (OPT.mood !== "auto" && OPT.music) L.mood = OPT.mood; timeline(L);
+        stage("Режисую сцени…"); await prmLoad(); await aiPlan(L, adHint || ""); if (L.adRange && L.ad !== "none") await inlineAd(L, src.adParts); ensureAd(L); if (OPT.mood !== "auto" && OPT.music) L.mood = OPT.mood; timeline(L);
         // швидкий шлях: одна відповідь режисера → одразу сторінка сценарію; музика пишеться у фоні, поки людина читає сценарій
       });
-      track("ready", { v: `${L.scenes.length}sc/${Math.round(L.dur)}s/${L.mood}${L._auto ? "/auto" : ""}` }); prefetchAud(); screenPlan(L._auto ? `Режисер не відповів (${L._planErr || "помилка"}) — сцени розставлено автоматично.` : ""); return;
+      track("ready", { v: `${L.scenes.length}sc/${Math.round(L.dur)}s/${L.mood}${L._auto ? "/auto" : ""}`, p: prmV("board_rules") }); prefetchAud(); screenPlan(L._auto ? `Режисер не відповів (${L._planErr || "помилка"}) — сцени розставлено автоматично.` : ""); return;
     } catch (e) { console.error(e); const m = e?.message || e?.code || String(e); track("fail", { v: `${STAGE}|${String(m).slice(0, 40)}` });
       const msg = TTS_ERR[m] || (m === "nowords" ? "Не почув слів — спробуй ще раз" : m === "limit" ? "Ліміт на сьогодні вичерпано" : m === "login" ? "Увійди в акаунт" : `Не вийшло зібрати анімацію (етап: ${STAGE}; ${String(m).slice(0, 60)}). Спробуй ще раз або скинь цей текст Claude`);
       say(msg); L = null; screenContent(msg); if (m === "no_clone_quota") window.yvFeatureSheet?.("clone"); } }
@@ -2036,6 +2072,7 @@ ${S ? `СТРУКТУРА СЦЕНАРІЮ «${S.n}» — дотримуйся �
 Попередня сцена: ${JSON.stringify(strip(L.scenes[i - 1]))}. Наступна: ${JSON.stringify(strip(L.scenes[i + 1]))}. Поточна: ${JSON.stringify(strip(sc))}.
 ${wish ? `Людина просить: «${wish}». Зроби саме це, решту залиш.` : "Зроби інший, сильніший варіант цієї сцени (інша локація або план, інша дія героя)."}
 ${RULES}
+${prm("board_rules").body}
 ${SPEC}
 Відповідай тільки JSON: {"scene":{"a":${sc.a},…}}`, { cache: false, sys: ["director"], kb: ["style", "edit", "story", "camera", "general"], max: 2500 });
     const sc2 = r?.scene || r?.scenes?.[0]; if (!sc2) throw new Error("plan_empty"); sc2.a = sc.a; const n = normPlan({ scenes: [{ ...sc2, a: 0 }] }, L)[0]; n.a = sc.a; L.scenes[i] = n; }
