@@ -12,8 +12,22 @@
   const track = (st, m) => { try { window.yvTrack?.("lab", st, m); } catch (e) {} };
   const LS = { get(k, d) { try { const v = JSON.parse(localStorage.getItem(k) || "null"); return v ?? d; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
   const MOODS = { "тривожний": "тривожний (як у промті)", "теплий": "теплий, зворушливий", "смішний": "легкий, смішний", "мотивуючий": "мотивуючий", "загадковий": "загадковий" };
-  const S = Object.assign({ topic: "", sec: 60, mood: "тривожний", niche: "", ending: "", res: null, voice: null, board: null }, LS.get("yvLab", {}));
-  const save = () => LS.set("yvLab", { topic: S.topic, sec: S.sec, mood: S.mood, niche: S.niche, ending: S.ending, res: S.res, board: S.board });
+  const S = Object.assign({ topic: "", sec: 60, mood: "тривожний", niche: "", ending: "", ad: "comment", adWord: "Анімація", adTpl: "", res: null, voice: null, board: null }, LS.get("yvLab", {}));
+  const save = () => LS.set("yvLab", { topic: S.topic, sec: S.sec, mood: S.mood, niche: S.niche, ending: S.ending, ad: S.ad, adWord: S.adWord, adTpl: S.adTpl, res: S.res, board: S.board });
+  // ---- рекламна вставка про студію: органічно під історію; вдала вставка → шаблон (ai_prompts «ad_templates», запасно — браузер) ----
+  const ADS = { none: "Без реклами", bio: "Посилання в шапці", comment: "Слово в коментарях" };
+  let TPL = LS.get("yvLabAdTpl", []);
+  async function tplLoad() { try { const r = await window.SRV?.bibleGet?.("ad_templates"); const a = r?.body ? JSON.parse(r.body) : null; if (Array.isArray(a)) { TPL = a; LS.set("yvLabAdTpl", TPL); } } catch (e) {} return TPL; }
+  async function tplSave() { LS.set("yvLabAdTpl", TPL); try { await window.SRV?.bibleSet?.(JSON.stringify(TPL), "ad_templates"); return true; } catch (e) { return false; } }
+  const PARTNER = "за кожного, хто прийде за моїм посиланням, я отримую половину його першої оплати";
+  function adBrief() { if (S.ad === "none") return "\nРеклама: немає — рекламної вставки не пиши, поле ad залиш порожнім рядком.";
+    const w = (S.adWord || "Анімація").trim(), cta = S.ad === "comment" ? `попроси написати слово «${w}» в коментарях (саме це слово, дослівно, з великої літери) — тоді надішлеш посилання й людина спробує безкоштовно` : "скажи, що посилання — в шапці профілю, і спробувати можна безкоштовно";
+    const t = TPL.find((x) => x.id === S.adTpl);
+    return t ? `\nРЕКЛАМНА ВСТАВКА — ШАБЛОН ВЛАСНИКА. Встав цей фрагмент ДОСЛІВНО, без змін: «${t.text}». Місток перед ним і повернення в історію після нього напиши під цю історію (по 1 короткому реченню). Встав приблизно на 50–60% тексту, на найцікавішому місці. У полі ad — дослівно місток + шаблон + повернення.`
+      : `\nРЕКЛАМНА ВСТАВКА ПРО СТУДІЮ — органічна частина цієї історії, а не «а зараз реклама». Встав її приблизно на 50–60% тексту, на найцікавішому місці.
+Будова: місток із самої історії (герой вирішує показати / зняти / пояснити саме це) → у студії за кілька хвилин нейромережа робить про це анімаційне відео — таке, як глядач дивиться зараз → ${PARTNER} (цю умову передай точно: саме половину і саме першої оплати) → ${cta} → коротке повернення в історію, яке не розкриває фінал.
+Кожного разу пиши вставку новими словами під цю історію: без заготовок, без «і тут я розумію», без «а тепер — що було далі», без «реклама», «до речі», назв сервісів і обіцянок заробітку. Вставка — 30–45 слів, вона входить у загальний обсяг тексту.
+У JSON додай поле "ad": дослівний фрагмент voiceover від містка до повернення включно (щоб програма його знайшла).`; }
   const words = (t) => (String(t || "").match(/[\p{L}\p{N}’'ʼ-]+/gu) || []).length;
 
   // ---- відповідь моделі: <thinking>…</thinking><result>{…}</result> ----
@@ -26,7 +40,7 @@
   async function ask(system, user, max) {
     if (typeof sample !== "function") throw new Error("no_ai");
     // стала частина промта + змінна; «сценарист» на сервері = сильніша модель; бази знань тут немає навмисно
-    const r = await sample(`${system}\n\n${user}\n\nРоздуми в <thinking> — коротко, до 120 слів; головне — повний <result>.`, { cache: false, sys: ["writer"], max });
+    const r = await sample(`${system}\n\n${user}\n\nРоздумів не виводь і тег <thinking> не пиши: подумай про себе й одразу дай тег <result> з повним JSON.`, { cache: false, sys: ["writer"], max });
     return String(r?.text || ""); }
   const errText = (e) => { const c = e?.code || e?.message || String(e); return c === "login" ? "Увійди в акаунт." : c === "rate_limited" || c === "limit" ? "Ліміт AI на сьогодні." : c === "busy" ? "Сервіс AI перевантажений — спробуй за хвилину." : c === "no_key" ? "На сервері немає ключа AI." : c === "bad_json" ? "Модель відповіла не за форматом (можливо, обрізалось) — натисни ще раз." : `Не вийшло (${String(c).slice(0, 60)}) — натисни ще раз або скинь цей текст Claude.`; };
   // дві спроби: якщо відповідь не розібралась — ще раз, без роздумів
@@ -71,6 +85,9 @@
         <div class="chips" id="lmood">${Object.keys(MOODS).map((k) => `<button class="chip" type="button" data-mood="${k}" aria-pressed="${S.mood === k}">${k}</button>`).join("")}</div>
         <input class="tx" id="lniche" placeholder="Ніша автора (необов'язково), напр.: 2D-анімація" value="${esc(S.niche)}">
         <input class="tx" id="lend" placeholder="Кінцівка (необов'язково), напр.: підпишись, щоб не пропустити" value="${esc(S.ending)}">
+        <div class="chips" id="lad">${Object.entries(ADS).map(([k, n]) => `<button class="chip" type="button" data-ad="${k}" aria-pressed="${S.ad === k}">${n}</button>`).join("")}</div>
+        <input class="tx" id="ladw" placeholder="Слово для коментарів" value="${esc(S.adWord)}"${S.ad === "comment" ? "" : " hidden"}>
+        <div id="ltpl"></div>
         <button class="btn main" type="button" id="lwrite">✨ Написати текст</button><p class="st" id="lst1"></p></div>
       <div class="card" id="ltext"${S.res ? "" : " hidden"}></div>
       <div class="card" id="lvoice"${S.res ? "" : " hidden"}></div>
@@ -82,17 +99,28 @@
     B.querySelectorAll("[data-sec]").forEach((b) => b.onclick = () => { S.sec = +b.dataset.sec; save(); B.querySelectorAll("[data-sec]").forEach((o) => o.setAttribute("aria-pressed", o === b)); });
     B.querySelectorAll("[data-mood]").forEach((b) => b.onclick = () => { S.mood = b.dataset.mood; save(); B.querySelectorAll("[data-mood]").forEach((o) => o.setAttribute("aria-pressed", o === b)); });
     $(B, "#lwrite").onclick = writeText;
+    B.querySelectorAll("[data-ad]").forEach((b) => b.onclick = () => { S.ad = b.dataset.ad; save(); B.querySelectorAll("[data-ad]").forEach((o) => o.setAttribute("aria-pressed", o === b)); $(B, "#ladw").hidden = S.ad !== "comment"; drawTpl(); });
+    $(B, "#ladw").oninput = (e) => { S.adWord = e.target.value.trim() || "Анімація"; save(); };
+    drawTpl(); tplLoad().then(drawTpl);
     if (S.res) drawText(); if (S.res) drawVoice(); if (S.res) drawBoard(); if (S.board) drawVideo(); }
 
+  function drawTpl() { const box = UI.root && $(UI.root, "#ltpl"); if (!box) return; if (S.ad === "none" || !TPL.length) { box.innerHTML = ""; return; }
+    if (S.adTpl && !TPL.some((t) => t.id === S.adTpl)) S.adTpl = "";
+    box.innerHTML = `<p class="hint" style="margin:2px 0 6px">Рекламна вставка:</p><div class="chips">${[`<button class="chip" type="button" data-tpl="" aria-pressed="${!S.adTpl}">✨ AI під історію</button>`, ...TPL.map((t, i) => `<button class="chip" type="button" data-tpl="${esc(t.id)}" aria-pressed="${S.adTpl === t.id}">⭐ Шаблон ${i + 1}</button>`)].join("")}</div>
+      ${S.adTpl ? `<p class="hint" style="margin-top:6px">«${esc(TPL.find((t) => t.id === S.adTpl)?.text || "")}»</p><button class="chip" type="button" id="ltpldel">Видалити цей шаблон</button>` : ""}`;
+    box.querySelectorAll("[data-tpl]").forEach((b) => b.onclick = () => { S.adTpl = b.dataset.tpl; save(); drawTpl(); });
+    const d = $(box, "#ltpldel"); if (d) d.onclick = async () => { TPL = TPL.filter((t) => t.id !== S.adTpl); S.adTpl = ""; save(); await tplSave(); drawTpl(); say("Шаблон видалено"); }; }
   async function writeText() { const B = UI.root, st = $(B, "#lst1"), b = $(B, "#lwrite"); const topic = S.topic.trim(); if (topic.length < 3) { st.className = "st err"; st.textContent = "Напиши тему."; return; }
     b.disabled = true; st.className = "st"; st.textContent = "Пишу текст… 20–60 с"; const t0 = Date.now();
     const wMin = Math.round(S.sec * 2.8), wMax = wMin + 10;
-    const moodNote = `\nОбсяг тексту: ${wMin}–${wMax} слів — це замість правила «тривалість × 2,3–2,5»: голос студії читає швидше, тож текст має звучати трохи довше за ${S.sec} с (потім стиснемо паузи під точну довжину). word_count теж рахуй під цей обсяг.` + (S.mood === "тривожний" ? "" : `\nНастрій ролика: ${MOODS[S.mood]}. Усе, що в правилах сказано про тривожний настрій і тривогу, застосовуй до цього настрою; фінал — з закликом діяти.`);
-    const user = `<user_input>\nДата: ${new Date().toISOString().slice(0, 10)}\nТема: ${topic}\nНіша автора: ${S.niche.trim()}\nТривалість: ${S.sec} с\nКінцівка: ${S.ending.trim()}${moodNote}\n</user_input>`;
+    const anyTopic = /20\d\d|майбутн|змін/i.test(topic) ? "" : `\nТема може бути будь-якою. Ця тема не про майбутнє: НЕ прив'язуй її до двадцять сьомого року і не вигадуй прогнозів (правило промту «пов'яжи тему з 2027 роком» і розділ про тенденції та прогнози тут не діють). Будова — та сама: хук → відкрита петля → три блоки з наростанням через побут → фінал із закликом. Поле claims — лише для тверджень про факти, якщо вони є; інакше порожній масив. Поле note — порожнє, якщо нічого не змінено.`;
+    const moodNote = anyTopic + `\nОбсяг тексту: ${wMin}–${wMax} слів — це замість правила «тривалість × 2,3–2,5»: голос студії читає швидше, тож текст має звучати трохи довше за ${S.sec} с (потім стиснемо паузи під точну довжину). word_count теж рахуй під цей обсяг.` + (S.mood === "тривожний" ? "" : `\nНастрій ролика: ${MOODS[S.mood]}. Усе, що в правилах сказано про тривожний настрій і тривогу, застосовуй до цього настрою; фінал — з закликом діяти.`);
+    const user = `<user_input>\nДата: ${new Date().toISOString().slice(0, 10)}\nТема: ${topic}\nНіша автора: ${S.niche.trim()}\nТривалість: ${S.sec} с\nКінцівка: ${S.ending.trim()}\n</user_input>${moodNote}${adBrief()}`;
     try { const r = await askJson(P_SCRIPT, user, 8000, (x) => x && (x.status === "error" || x.voiceover || Array.isArray(x.lines)));
       if (r.status === "error") { st.className = "st err"; st.textContent = r.note || "Модель відмовилась від теми."; b.disabled = false; return; }
       if (!r.voiceover && Array.isArray(r.lines)) r.voiceover = r.lines.map((l) => l.text).join(" ");
-      S.res = r; S.voice = null; S.board = null; save(); st.textContent = `✓ Готово за ${Math.round((Date.now() - t0) / 1000)} с`; track("text_ok", { v: V.script, s: S.sec });
+      if (S.ad !== "none") { const a = String(r.ad || "").trim(); r.ad = a && r.voiceover.includes(a.slice(0, 40)) ? a : ""; } else r.ad = "";
+      S.res = r; S.voice = null; S.board = null; save(); st.textContent = `✓ Готово за ${Math.round((Date.now() - t0) / 1000)} с`; track("text_ok", { v: V.script, s: S.sec, ad: S.ad + (S.adTpl ? ":tpl" : "") });
       ["#ltext", "#lvoice", "#lboard"].forEach((q) => $(B, q).hidden = false); $(B, "#lvideo").hidden = true; drawText(); drawVoice(); drawBoard(); }
     catch (e) { console.warn("lab text", e); st.className = "st err"; st.textContent = errText(e); track("text_fail", { v: String(e?.code || e?.message || e).slice(0, 40) }); }
     b.disabled = false; if (S.res) b.textContent = "✨ Інший варіант"; }
@@ -104,9 +132,14 @@
       <details><summary class="hint">Фрази й сцени (${(r.lines || []).length}) · твердження про майбутнє (${(r.claims || []).length})</summary>
         <div>${(r.lines || []).map((l) => `<div class="ln"><span class="t">${esc(l.t)}</span><div>${esc(l.text)}<span>${esc(l.scene)}</span></div></div>`).join("")}</div>
         ${(r.claims || []).length ? `<p class="hint">${r.claims.map((c) => `${c.type === "прогноз" ? "🔮" : "📈"} ${esc(c.text)}`).join("<br>")}</p>` : ""}</details>
+      ${r.ad ? `<div style="border-left:3px solid #4cc3b0;padding:6px 10px;background:rgba(76,195,176,.08);border-radius:8px"><p class="hint" style="margin:0 0 4px">Рекламна вставка</p><div>${esc(r.ad)}</div>
+        <button class="chip" type="button" id="ltplsave" style="margin-top:8px">⭐ Зберегти вставку як шаблон</button></div>` : S.ad !== "none" ? `<p class="hint">Рекламну вставку модель не позначила — перевір текст або натисни «Інший варіант».</p>` : ""}
       ${r.caption ? `<p class="hint">Підпис: ${esc(r.caption)}</p>` : ""}
       <div class="row"><button class="btn" type="button" data-rate="up">👍 Як у чаті</button><button class="btn" type="button" data-rate="down">👎 Гірше</button></div>`;
     $(C, "#lvo").oninput = (e) => { S.res.voiceover = e.target.value; S.voice = null; save(); };
+    const ts = $(C, "#ltplsave"); if (ts) ts.onclick = async () => { const text = String(S.res.ad || "").trim(); if (!text) return; if (TPL.some((t) => t.text === text)) { say("Такий шаблон уже є"); return; }
+      TPL.push({ id: "t" + Date.now().toString(36), text, kind: S.ad, word: S.adWord, at: new Date().toISOString().slice(0, 10) }); const ok = await tplSave(); drawTpl();
+      say(ok ? "Шаблон збережено ✓ — його можна вибрати в картці «Тема»" : "Шаблон збережено в цьому браузері (на сервер не вдалося)"); ts.textContent = "✓ Збережено"; track("ad_tpl_save"); };
     C.querySelectorAll("[data-rate]").forEach((b) => b.onclick = () => { const log = LS.get("yvLabRates", []); log.push({ at: new Date().toISOString(), v: V.script, topic: S.topic, sec: S.sec, mood: S.mood, rate: b.dataset.rate, text: S.res.voiceover }); LS.set("yvLabRates", log.slice(-100)); track("rate", { v: V.script, r: b.dataset.rate }); say(b.dataset.rate === "up" ? "Записав як вдалий ✓" : "Записав як невдалий"); }); }
 
   function drawVoice() { const B = UI.root, C = $(B, "#lvoice");
@@ -127,7 +160,8 @@
     ss.forEach((q) => { const w = words(q); if (cw && cw + w > target * 1.25) { out.push(cur); cur = []; cw = 0; } cur.push(q); cw += w; }); if (cur.length) out.push(cur);
     if (out.length > 1 && words(out[out.length - 1].join(" ")) < target * .4) { const last = out.pop(); out[out.length - 1].push(...last); }
     let t = 0; return out.map((c, i) => { const tx = c.join(" "), d = +(dur * words(tx) / total).toFixed(1), o = { i, n: out.length, text: tx, t0: +t.toFixed(1), dur: d }; t += d; return o; }); }
-  const boardUser = (c, style, first) => `<user_input>\nТривалість озвучки, с: ${c.dur}\nТекст озвучки:\n${c.text}\n</user_input>` + (c.n > 1 ? `\n\nЦе частина ${c.i + 1} з ${c.n} одного ролика (у ролику вона починається з ${c.t0} с). Тайминг рахуй від 0 до ${c.dur} с цієї частини — програма сама зсуне його.` + (c.i === 0 ? " Перша частина: тут хук ролика, і саме тут визнач concept і style для всього ролика." : ` Не перша частина: хук на початку не потрібен. Стиль ролика вже визначено — використовуй саме його (палітра, герой, повторювані предмети), не змінюй: ${JSON.stringify(style)}${first ? `\nПерша сцена ролика: ${first}` : ""}`) + (c.i === c.n - 1 ? " Остання частина: останній кадр повторює образ першої сцени ролика в новому стані." : " Не остання частина: фінальне правило «останній кадр = перший» тут не застосовуй; наприкінці — рехук, що веде далі.") : "");
+  const adNote = (c) => { const a = String(S.res?.ad || "").trim(); if (!a) return ""; const k = a.slice(0, 30); return c.text.includes(k) || c.text.includes(a.slice(-30)) ? `\n\nУ цій частині є рекламна вставка про студію: «${a}». Для її фраз покажи героя з телефоном: на екрані телефона — студія, де за кілька хвилин збирається анімаційне відео (те саме, що глядач дивиться); слово для коментарів чи «шапка профілю» — написом на екрані телефона. Повернення в історію — сильний кадр (крупний план або різка зміна плану).` : ""; };
+  const boardUser = (c, style, first) => `<user_input>\nТривалість озвучки, с: ${c.dur}\nТекст озвучки:\n${c.text}\n</user_input>` + adNote(c) + (c.n > 1 ? `\n\nЦе частина ${c.i + 1} з ${c.n} одного ролика (у ролику вона починається з ${c.t0} с). Тайминг рахуй від 0 до ${c.dur} с цієї частини — програма сама зсуне його.` + (c.i === 0 ? " Перша частина: тут хук ролика, і саме тут визнач concept і style для всього ролика." : ` Не перша частина: хук на початку не потрібен. Стиль ролика вже визначено — використовуй саме його (палітра, герой, повторювані предмети), не змінюй: ${JSON.stringify(style)}${first ? `\nПерша сцена ролика: ${first}` : ""}`) + (c.i === c.n - 1 ? " Остання частина: останній кадр повторює образ першої сцени ролика в новому стані." : " Не остання частина: фінальне правило «останній кадр = перший» тут не застосовуй; наприкінці — рехук, що веде далі.") : "");
   async function makeBoard() { const B = UI.root, C = $(B, "#lboard"), st = $(C, "#lst3"), b = $(C, "#lmk"); const text = (S.res?.voiceover || "").trim(); if (words(text) < 5) { st.className = "st err"; st.textContent = "Спершу потрібен текст."; return; }
     const dur = S.voice?.dur ? +((S.voice.dur - (S.voice.tail || 0))).toFixed(1) : S.sec, parts = chunks(text, dur); b.disabled = true; st.className = "st"; const t0 = Date.now();
     const okB = (x) => x && (x.status === "error" || (Array.isArray(x.scenes) && x.scenes.length));
