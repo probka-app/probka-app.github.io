@@ -10,3 +10,6 @@ self.addEventListener("fetch", e => {
       .catch(() => caches.match("/").then(m => m || new Response("<meta charset=utf-8><p style='font:16px sans-serif;padding:24px'>Немає інтернету. Перевір з'єднання і спробуй ще раз.</p>", { headers: { "Content-Type": "text/html; charset=utf-8" } }))));
   }
 });
+// сповіщення «Відео готове» — тап відкриває YuVi
+self.addEventListener("notificationclick", e => { e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(l => { const c = l.find(x => new URL(x.url).origin === location.origin); return c ? c.focus() : self.clients.openWindow("/"); })); });
