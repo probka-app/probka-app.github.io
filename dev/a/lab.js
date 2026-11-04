@@ -62,7 +62,9 @@ after — номер фрази, ПІСЛЯ якої вставити: між с
   async function ask(system, user, max) {
     if (typeof sample !== "function") throw new Error("no_ai");
     // стала частина промта + змінна; «сценарист» на сервері = сильніша модель; бази знань тут немає навмисно
-    const r = await sample(`${system}\n\n${user}\n\nРоздумів не виводь і тег <thinking> не пиши: подумай про себе й одразу дай тег <result> з повним JSON.`, { cache: false, sys: ["writer"], raw: true, max });
+    const req = () => sample(`${system}\n\n${user}\n\nРоздумів не виводь і тег <thinking> не пиши: подумай про себе й одразу дай тег <result> з повним JSON.`, { cache: false, sys: ["writer"], raw: true, max });
+    // обрив з'єднання (довга відповідь сильної моделі впирається в ліміт часу сервера ≈150 с, або слабкий мобільний зв'язок) — ще одна спроба
+    let r; try { r = await req(); } catch (e) { if ((e?.code || e?.message) !== "network") throw e; console.warn("lab: network, retry"); r = await req(); }
     return String(r?.text || ""); }
   const errText = (e) => { const c = e?.code || e?.message || String(e); return c === "login" ? "Увійди в акаунт." : c === "rate_limited" || c === "limit" ? "Ліміт AI на сьогодні." : c === "busy" ? "Сервіс AI перевантажений — спробуй за хвилину." : c === "no_key" ? "На сервері немає ключа AI." : c === "bad_json" ? "Модель відповіла не за форматом (можливо, обрізалось) — натисни ще раз." : `Не вийшло (${String(c).slice(0, 60)}) — натисни ще раз або скинь цей текст Claude.`; };
   // дві спроби: якщо відповідь не розібралась — ще раз, без роздумів
@@ -312,19 +314,21 @@ ${NORMS}
 
   const sentences = (t) => String(t).replace(/\s+/g, " ").trim().match(/[^.!?…]+[.!?…]+["»]?|[^.!?…]+$/g)?.map((q) => q.trim()).filter(Boolean) || [];
   function chunks(text, dur) { const ss = sentences(text), total = words(text) || 1, out = []; let cur = [], cw = 0;
-    const target = Math.max(30, Math.round(total / Math.max(1, Math.round(dur / 20)))); // ≈ 20 с озвучки на частину
+    const target = Math.max(18, Math.round(total / Math.max(1, Math.round(dur / 8)))); // ≈ 8 с озвучки на частину: відповідь сильної моделі вкладається в ліміт часу сервера
     ss.forEach((q) => { const w = words(q); if (cw && cw + w > target * 1.25) { out.push(cur); cur = []; cw = 0; } cur.push(q); cw += w; }); if (cur.length) out.push(cur);
     if (out.length > 1 && words(out[out.length - 1].join(" ")) < target * .4) { const last = out.pop(); out[out.length - 1].push(...last); }
     let t = 0; return out.map((c, i) => { const tx = c.join(" "), d = +(dur * words(tx) / total).toFixed(1), o = { i, n: out.length, text: tx, t0: +t.toFixed(1), dur: d }; t += d; return o; }); }
   const adNote = (c) => { const a = String(S.res?.ad || "").trim(); if (!a) return ""; const k = a.slice(0, 30); return c.text.includes(k) || c.text.includes(a.slice(-30)) ? `\n\nУ цій частині є рекламна вставка про конструктор відео: «${a}». Для її фраз покажи героя з телефоном: на екрані телефона — конструктор, де за кілька хвилин збирається анімаційне відео (те саме, що глядач дивиться), далі — сповіщення про оплату за відео (без сум); слово для коментарів чи «шапка профілю» — написом на екрані телефона. Повернення в історію — сильний кадр (крупний план або різка зміна плану).` : ""; };
   const boardUser = (c, style, first) => `<user_input>\nТривалість озвучки, с: ${c.dur}\nТекст озвучки:\n${c.text}\n</user_input>` + adNote(c) + mapNote(c) + (c.n > 1 ? `\n\nЦе частина ${c.i + 1} з ${c.n} одного ролика (у ролику вона починається з ${c.t0} с). Тайминг рахуй від 0 до ${c.dur} с цієї частини — програма сама зсуне його.` + (c.i === 0 ? " Перша частина: тут хук ролика, і саме тут визнач concept і style для всього ролика." : ` Не перша частина: хук на початку не потрібен. Стиль ролика вже визначено — використовуй саме його (палітра, герой, повторювані предмети), не змінюй: ${JSON.stringify(style)}${first ? `\nПерша сцена ролика: ${first}` : ""}`) + (c.i === c.n - 1 ? " Остання частина: останній кадр повторює образ першої сцени ролика в новому стані." : " Не остання частина: фінальне правило «останній кадр = перший» тут не застосовуй; наприкінці — рехук, що веде далі.") : "");
+  // не більше n запитів одночасно (порядок результатів зберігається)
+  async function poolMap(arr, n, f) { const out = new Array(arr.length); let i = 0; await Promise.all(Array.from({ length: Math.min(n, arr.length) }, async () => { while (i < arr.length) { const k = i++; out[k] = await f(arr[k], k); } })); return out; }
   async function makeBoard() { const B = UI.root, C = $(B, "#lboard"), st = $(C, "#lst3"), b = $(C, "#lmk"); const text = (S.res?.voiceover || "").trim(); if (words(text) < 5) { st.className = "st err"; st.textContent = "Спершу потрібен текст."; return; }
     const dur = S.voice?.dur ? +((S.voice.dur - (S.voice.tail || 0))).toFixed(1) : totalSec(), parts = chunks(text, dur); b.disabled = true; st.className = "st"; const t0 = Date.now();
     const okB = (x) => x && (x.status === "error" || (Array.isArray(x.scenes) && x.scenes.length));
     try { st.textContent = `Розкладаю на сцени під ${dur} с: частина 1 з ${parts.length}…`;
-      const r1 = await askJson(P_BOARD, boardUser(parts[0], null, ""), 8000, okB); if (r1.status === "error") { st.className = "st err"; st.textContent = r1.note || "Не вийшло."; b.disabled = false; return; }
+      const r1 = await askJson(P_BOARD, boardUser(parts[0], null, ""), 6000, okB); if (r1.status === "error") { st.className = "st err"; st.textContent = r1.note || "Не вийшло."; b.disabled = false; return; }
       const style = r1.style || {}, first = r1.scenes[0]?.action || "";
-      let done = 1; const rest = parts.length > 1 ? await Promise.all(parts.slice(1).map((c) => askJson(P_BOARD, boardUser(c, style, first), 8000, okB).then((r) => { done++; st.textContent = `Розкладаю на сцени: готово ${done} з ${parts.length}…`; return r; }))) : [];
+      let done = 1; const rest = parts.length > 1 ? await poolMap(parts.slice(1), 4, (c) => askJson(P_BOARD, boardUser(c, style, first), 6000, okB).then((r) => { done++; st.textContent = `Розкладаю на сцени: готово ${done} з ${parts.length}…`; return r; })) : [];
       const all = [r1, ...rest]; const scenes = []; all.forEach((r, k) => { const off = parts[k].t0; (r.scenes || []).forEach((z) => scenes.push({ ...z, t_start: +(off + (+z.t_start || 0)).toFixed(1), t_end: +(off + (+z.t_end || 0)).toFixed(1) })); });
       scenes.forEach((z, i) => { z.id = i + 1; if (i && Math.abs(z.t_start - scenes[i - 1].t_end) < .6) z.t_start = scenes[i - 1].t_end; }); const vdur = S.voice?.dur ? +S.voice.dur.toFixed(1) : dur; if (scenes.length) scenes[scenes.length - 1].t_end = vdur;
       S.board = { status: "ok", note: all.map((r) => r.note).filter(Boolean).join(" · "), concept: r1.concept || "", style, duration: vdur, scenes }; save();
