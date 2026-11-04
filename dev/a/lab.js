@@ -307,7 +307,7 @@ ${NORMS}
         const ab = new AudioBuffer({ length: r.y.length, numberOfChannels: 1, sampleRate: SR }); ab.copyToChannel(r.y, 0);
         const blob = new Blob([wav(ab)], { type: "audio/wav" }), url = URL.createObjectURL(blob);
         out.innerHTML = `<p class="st">${r.over ? `Задовгий текст: навіть з ×1.45 виходить ${S.voice.dur.toFixed(1)} с — скороти.` : `✓ ${S.voice.dur.toFixed(1)} с${r.mode === "cut" ? " · паузи стиснуто" : r.mode === "fast" ? ` · паузи стиснуто, весь запис пришвидшено ×${r.rate.toFixed(2)}` : ""}${r.tail > .5 ? ` · голос закінчується на ${(S.voice.dur - r.tail).toFixed(1)} с — текст закороткий, натисни «Інший варіант» або допиши` : ""}`}</p><audio controls playsinline src="${url}"></audio>`;
-        track("voice_ok", { v: `${S.sec}/${r.mode}/${r.rate.toFixed(2)}` }); }
+        track("voice_ok", { v: `${S.sec}/${r.mode}/${r.rate.toFixed(2)}` }); if (S.board) drawVideo(); }
       catch (e) { console.warn("lab voice", e); out.innerHTML = `<p class="st err">Не вдалося підігнати озвучку.</p>`; } } }); }
 
   const sentences = (t) => String(t).replace(/\s+/g, " ").trim().match(/[^.!?…]+[.!?…]+["»]?|[^.!?…]+$/g)?.map((q) => q.trim()).filter(Boolean) || [];
@@ -345,10 +345,14 @@ ${NORMS}
 
   function boardText() { const r = S.board, s = r.style || {}; return [`Стиль: плоский кольоровий 2D. Прості фігури з м'якими тінями, текст тільки на предметах у кадрі.`, s.palette ? `Палітра: ${s.palette.join(" · ")}` : "", s.hero ? `Герой: ${s.hero}` : "", ...(s.recurring || []).map((x) => `${x.name}: ${x.look}`), `Формат: 9:16, ${r.duration || S.sec} с, ${r.scenes.length} сцен.`, "",
     ...r.scenes.map((z, i) => `${i + 1}. ${(+z.t_start).toFixed(1)}–${(+z.t_end).toFixed(1)} «${z.vo}» — ${z.action}${z.text_in_scene ? ` У світі: «${z.text_in_scene}».` : ""}${z.camera ? ` Камера: ${z.camera}.` : ""}${z.sfx ? ` Звук: ${z.sfx}.` : ""}`)].filter((q) => q !== null).join("\n"); }
-  function drawVideo() { const B = UI.root, C = $(B, "#lvideo");
-    C.innerHTML = `<h4><i>5</i>Відео</h4><p class="soon">Рушій стилів (етап Л2) — у роботі. Поки що: скопіюй розкадровку й надішли в чат Claude з навичкою vizavi-motion разом з озвучкою.</p>
-      <button class="btn main" type="button" id="lcopy">📋 Скопіювати для vizavi-motion</button>`;
-    $(C, "#lcopy").onclick = async (e) => { const t = boardText(); try { await navigator.clipboard.writeText(t); e.currentTarget.textContent = "✓ Скопійовано"; } catch (x) { const ta = document.createElement("textarea"); ta.value = t; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); e.currentTarget.textContent = "✓ Скопійовано"; } catch (y) { say("Не вдалося скопіювати"); } ta.remove(); } }; }
+  // крок «Відео» — рушій імпровізованої анімації (a/stage.js, вантажиться на вимогу)
+  const copyBoard = async (e) => { const t = boardText(), b = e.currentTarget; try { await navigator.clipboard.writeText(t); b.textContent = "✓ Скопійовано"; } catch (x) { const ta = document.createElement("textarea"); ta.value = t; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); b.textContent = "✓ Скопійовано"; } catch (y) { say("Не вдалося скопіювати"); } ta.remove(); } };
+  const stageApi = { board: () => S.board, voice: () => (S.voice?.y ? S.voice : null), motifs: () => (S.map?.motifs || []).map((m) => `${m.name} — ${m.arc}`).join("; "), askJson, track, errText, copy: copyBoard };
+  async function drawVideo() { const B = UI.root, C = B && $(B, "#lvideo"); if (!C || !S.board) return;
+    if (!window.YVStage) { C.innerHTML = `<h4><i>5</i>Відео</h4><p class="st">Завантажую рушій анімації…</p>`;
+      try { await new Promise((ok, no) => { const sc = document.createElement("script"); sc.src = "a/stage.js?v=" + (window.YV_BUILD || Date.now()); sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); }); }
+      catch (e) { C.innerHTML = `<h4><i>5</i>Відео</h4><p class="st err">Не вдалося завантажити рушій. Онови сторінку.</p>`; return; } }
+    window.YVStage.card(C, stageApi); }
 
   window.YVLab = { open() { track("open"); render(); }, close, _t: { parseResult, words } };
 })();
