@@ -2230,7 +2230,7 @@ ${SPEC}
   // перевірка ліміту перед збереженням: true — можна зберігати
   async function canSave() { if (isOwner()) return true; if (!window.SRV?.session) { try { SRV.login("Щоб зберегти відео, увійди або зареєструйся."); } catch (e) {} return false; }
     try { const r = await SRV.cineTake(L.key, Math.ceil(L.dur - (L.adK != null ? adDur(L) : 0))); if (r?.ok) { if (r.spent) say(`Списано ${r.spent} с · залишилось ${r.left} с`); return true; } L._need = r?.need; return "buy"; }
-    catch (e) { if (/cine_take|does not exist|function/.test(e?.message || "")) { console.warn("cine_take not deployed", e); return true; } say("Не вдалося перевірити ліміт. Спробуй ще раз"); return false; } }
+    catch (e) { if (/cine_take|does not exist|function/.test(e?.message || "")) { console.warn("cine_take not deployed", e); say("Збереження тимчасово недоступне. Спробуй пізніше"); return false; } say("Не вдалося перевірити ліміт. Спробуй ще раз"); return false; } }
 
   // ===== Покадровий сценарій → «Отримати готове відео» → збірка у фоні + сповіщення =====
   const BG = { busy: false, p: 0, f: null, url: "", err: "", L: null };

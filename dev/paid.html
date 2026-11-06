@@ -5,5 +5,5 @@ svg{width:84px;height:84px}circle{fill:#d7f0cb;stroke:#2f8a1f;stroke-width:5}pat
 p{color:var(--m)}a{color:var(--t)}</style></head><body><div>
 <svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="52"/><path d="M36 62 L54 80 L86 42"/></svg>
 <h2>Оплату прийнято</h2><p>Зараз оновимо твій кабінет…</p><p><a href="./" target="_top">Повернутися на сайт</a></p></div>
-<script>try{ if(window.top!==window) window.top.postMessage({probka:"paid"},"*"); else setTimeout(()=>location.replace("./?paid=1"),1500); }catch(e){}</script>
+<script>try{ if(window.top!==window) window.top.postMessage({probka:"paid"},location.origin); else setTimeout(()=>location.replace("./?paid=1"),1500); }catch(e){}</script>
 </body></html>
