@@ -1121,10 +1121,10 @@ body.pub .fmts{margin-top:14px}body.pub .fmt .fs,body.pub .fmt .fopen,body.pub .
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="YuVi">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>window.YV_DEV=false;window.YV_BUILD="02.11 16:07";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
+<script>window.YV_DEV=false;window.YV_BUILD="06.11 21:30";(function(){try{if(/[?&]logout/.test(location.search)){Object.keys(localStorage).forEach(function(k){if(/^sb-|^rilsWallet$/.test(k))localStorage.removeItem(k)});location.replace(location.pathname)}}catch(e){}})();</script>
 <script>window.PROBKA_CONFIG={url:"https://zgkrtlpgozqjrmxbksld.supabase.co",key:"sb_publishable_LN1adXgbzo154fccPDcMpA_f5L9-rlm",imageGen:true};</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="server.js?v=e036b5db"></script>
+<script src="server.js?v=1beacb9b"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.min.js"></script>
 <script>
@@ -3533,7 +3533,7 @@ const FEAT={ clone:{n:"Озвучка голосом людини",d:"AI озв�
              sound:{n:"Студійний звук",d:"Нарізка пауз і слів-паразитів, монтаж, покращення до студійного звучання, тембр і звучання голосу.",solo:"sound_solo",addon:"sound_addon"} };
 let FEATC=null, FEATT=0;
 async function featInfo(force){ if(!window.SRV?.session) return null; if(!force&&FEATC&&Date.now()-FEATT<30000) return FEATC; try{ FEATC=await SRV.features(); FEATT=Date.now(); }catch(e){ FEATC=null; } return FEATC; }
-window.yvFeatOk=async(f)=>{ try{ if(uiOwner()) return true; }catch(e){} const i=await featInfo(); if(!i) return !window.SRV?.features; /* сервер ще без міграції — не блокуємо */ return !!i.owner||(i[f]?.left||0)>0; };
+window.yvFeatOk=async(f)=>{ try{ if(uiOwner()) return true; }catch(e){} const i=await featInfo(); if(!i) return false; /* B8: немає відповіді сервера — не пропускаємо */ return !!i.owner||(i[f]?.left||0)>0; };
 window.yvSoundUse=async(secs)=>{ try{ if(uiOwner()) return true; }catch(e){} if(!window.SRV?.soundUse) return true; try{ const r=await SRV.soundUse(secs); FEATT=0; return !!r?.ok; }catch(e){ return /sound_use|does not exist|function/.test(e?.message||""); } };
 window.yvFeatureSheet=async(f,onDone,hideEl)=>{ const F=FEAT[f]; if(!F) return; if(window.SRV&&!SRV.session){ SRV.login(`Щоб підключити «${F.n}», увійди або зареєструйся.`); return; }
   const i=await featInfo(true), P=i?.prices||{voice_solo:29900,voice_addon:19900,sound_solo:39900,sound_addon:24900,voice_solo_sec:900,voice_addon_sec:1500,sound_solo_sec:3600,sound_addon_sec:3600}, main=!!i?.main;
@@ -4791,7 +4791,7 @@ async function admIdeas(box){ let a=[]; try{ a=window.SRV?await SRV.adminIdeas()
 /* ===== Що бачать люди (вмикає власник) ===== */
 const UIF_DEF={ui_own:true,ui_voice:true,ui_marker:true,ui_free:true,ui_test:false,ui_library:true,ui_analytics:false,ui_rating:false,ui_how:true,ui_ideas:true,ui_soon:true,ui_wip_own:true,ui_wip_voice:true,ui_wip_pay:true};
 const UIF=Object.assign({},UIF_DEF,(()=>{ try{ return JSON.parse(localStorage.getItem("yvUIF"))||{}; }catch(e){ return {}; } })());
-const uiOwner=()=>!!(window.SRV?SRV.isOwner:true);
+const uiOwner=()=>window.SRV?!!SRV.isOwner:!!window.YV_DEMO;
 function uiOn(k){ return UIF[k]!==false||uiOwner(); }
 function uiOwnHid(k){ return UIF[k]===false&&uiOwner()?`<em class="uihid">приховано</em>`:""; }
 const UI_NAMES={ui_free:"Безкоштовні інструменти",ui_own:"«Збери своє відео»",ui_voice:"«Озвучка твоїм голосом»",ui_marker:"Готові формати («Рілс маркером»)",ui_test:"Тестовий інструмент (перевірка оплати)",ui_soon:"Картка «Скоро в YuVi»",ui_library:"Меню: Бібліотека відео",ui_analytics:"Меню: Аналітика",ui_rating:"Меню: Рейтинг",ui_how:"Меню: Як це працює",ui_ideas:"Меню й картка: Ідеї та голосування",ui_wip_own:"Позначка «Скоро»: «Збери своє відео» (людям поки не відкривається)",ui_wip_voice:"Позначка «Скоро»: «Озвучка твоїм голосом»",ui_wip_pay:"Оплата: «скоро» замість оплати (поки банк не підключив)"};

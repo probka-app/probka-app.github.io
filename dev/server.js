@@ -18,6 +18,29 @@
   const ls = { get: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} } };
   const kop = (v) => (v || 0) / 100;
 
+  // B7: розбір повідомлень від вікна оплати. Приймаємо лише сторінку банку (origin з url, який повернув pay-create)
+  // і наш власний paid.html; переходимо лише на https-адреси банку. Чисті функції — перевіряються тестами.
+  const PAY_LINK_HOSTS = /(^|\.)(monobank\.ua|mbnk\.biz|mbnk\.app)$/i;
+  function safePayLink(v, payOrigin) {
+    if (typeof v !== "string" || v.length > 2048) return null;
+    let u; try { u = new URL(v); } catch (x) { return null; }
+    if (u.protocol !== "https:") return null;
+    let bankHost = ""; try { bankHost = new URL(payOrigin).hostname; } catch (x) {}
+    return (bankHost && u.hostname === bankHost) || PAY_LINK_HOSTS.test(u.hostname) ? u.href : null;
+  }
+  function payMsgAction(e, payOrigin, selfOrigin) {
+    if (!e || typeof e.origin !== "string") return null;
+    const fromBank = !!payOrigin && e.origin === payOrigin, fromSelf = !!selfOrigin && e.origin === selfOrigin;
+    if (!fromBank && !fromSelf) return null;
+    let d = e.data; if (typeof d === "string") { try { d = JSON.parse(d); } catch (x) { return null; } }
+    if (!d || typeof d !== "object") return null;
+    if (fromSelf && d.probka === "paid") return { t: "check" };
+    if (!fromBank) return null;
+    if (d.message === "close-button") return { t: "close" };
+    if (d.message === "monopay-link") { const u = safePayLink(d.value, payOrigin); return u ? { t: "nav", url: u } : null; }
+    return null;
+  }
+
   // --- партнерський код з посилання ?ref=ABC123 ---
   const qs = new URLSearchParams(location.search);
   if (qs.get("ref")) ls.set("probkaRef", qs.get("ref").toUpperCase());
@@ -83,6 +106,7 @@
 
   // --- стан ---
   const SRV = { me: null, session: null };
+  SRV._t = { payMsgAction, safePayLink }; // для автотестів B7
   window.SRV = SRV;
 
   async function rpc(name, args) { const { data, error } = await Promise.race([sb.rpc(name, args), new Promise((_, no) => setTimeout(() => no(new Error("timeout")), 25000))]); if (error) throw new Error(error.message); return data; }
@@ -532,7 +556,7 @@
         if (m) return mockSheet(decodeURIComponent(m[1]), kop(j.amount_kop) || price);
         ls.set("probkaAfter", test ? "paidtest" : "paid");
         payFrame(j.url, j.payment_id);
-      } catch (x) { b.disabled = false; b.textContent = `Оплатити ${money(price)}`; err.textContent = x?.message === "need_subscription" ? "Пакети — це докупівля понад ліміт. Спершу оформи підписку." : "Не вдалося відкрити оплату. Спробуй ще раз."; console.warn(x); }
+      } catch (x) { b.disabled = false; b.textContent = `Оплатити ${money(price)}`; err.textContent = x?.message === "need_subscription" ? "Пакети — це докупівля понад ліміт. Спершу оформи підписку." : x?.message === "payments_closed" ? "Оплата відкриється найближчим часом." : "Не вдалося відкрити оплату. Спробуй ще раз."; console.warn(x); }
     };
     BS.querySelector("#pbal")?.addEventListener("click", async (e) => {
       const b = e.currentTarget; b.disabled = true;
@@ -559,8 +583,10 @@
     document.body.appendChild(ov);
     let done = false, timer = 0;
     const close = () => { done = true; clearInterval(timer); removeEventListener("message", onMsg); ov.remove(); };
-    const onMsg = (e) => { let d = e.data; try { if (typeof d === "string") d = JSON.parse(d); } catch (x) { return; }
-      if (d?.message === "close-button") close(); else if (d?.message === "monopay-link" && d.value) location.href = d.value; else if (d?.probka === "paid") check(); };
+    const payOrigin = (() => { try { return new URL(url).origin; } catch (x) { return ""; } })();
+    const onMsg = (e) => { const a = payMsgAction(e, payOrigin, location.origin);
+      if (!a) { if (e?.data && e.origin !== location.origin) console.warn("pay: ignored message from", e.origin); return; }
+      if (a.t === "close") close(); else if (a.t === "nav") location.href = a.url; else if (a.t === "check") check(); };
     addEventListener("message", onMsg);
     ov.querySelector(".bsx").onclick = close;
     const check = async () => {
@@ -622,7 +648,7 @@
   const onAuth = async (_ev, session) => {
     const was = !!SRV._authSeen && !!SRV._prevSession; SRV._prevSession = session; SRV._authSeen = true; SRV.session = session;
     // поки свіжі дані акаунта вантажаться — показуємо останні відомі (пошта, нік, власник), щоб не було «Гість»
-    if (session && !SRV.me) { try { const c = JSON.parse(localStorage.getItem("yvMe") || "null"); if (c && c.uid === session.user.id) { SRV.me = c.me; SRV.isOwner = !!c.owner; window.applyUIF?.(); window.renderTop?.(); window.renderBal?.(); } } catch (x) {} }
+    if (session && !SRV.me) { try { const c = JSON.parse(localStorage.getItem("yvMe") || "null"); if (c && c.uid === session.user.id) { SRV.me = c.me; /* B8: роль власника — лише з is_owner від сервера */ window.applyUIF?.(); window.renderTop?.(); window.renderBal?.(); } } catch (x) {} }
     if (!document.documentElement.classList.contains("gate")) logOpen(); else { const mo = new MutationObserver(() => { if (!document.documentElement.classList.contains("gate")) { mo.disconnect(); logOpen(); } }); mo.observe(document.documentElement, { attributes: true }); }
     if (_ev === "PASSWORD_RECOVERY") setTimeout(() => newPassSheet(), 300);
     await SRV.refresh();
