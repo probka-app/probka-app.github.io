@@ -54,13 +54,15 @@ class HttpError extends Error {
 // Перехоплюється КОЖЕН вихідний запит: окрім бази Supabase і явно безкоштовних адрес, будь-який хост вимагає резерву
 // (новий провайдер не обійде шлюз). Кожна спроба/повтор/запасний провайдер резервує окрему одиницю. Помилка шлюзу → відмова.
 const PAID_SVC = "video_spec";
-const FREE_HOSTS = new Set<string>(["www.youtube.com", "www.googleapis.com", "i.ytimg.com"]);
+const FREE_HOSTS = new Set<string>(["i.ytimg.com"]);  // обкладинки; YouTube oEmbed і Data API — лише точні шляхи нижче
 const _rawFetch: typeof fetch = globalThis.fetch.bind(globalThis);
 const supaHost = (): string => { try { return new URL(env("SUPABASE_URL")).hostname; } catch { return ""; } };
 function isPaidRequest(u: URL): boolean {
   if (u.hostname === supaHost() || FREE_HOSTS.has(u.hostname)) return false;
+  if (u.hostname === "www.youtube.com" && u.pathname === "/oembed") return false;
+  if (u.hostname === "www.googleapis.com" && /^\/youtube\/v3\/(videos|channels)$/.test(u.pathname)) return false;
   // Gemini Files API (завантаження файлу й опитування стану) не тарифікується; тарифікуються generate*/predict/embed.
-  if (u.hostname === "generativelanguage.googleapis.com" && (u.pathname.startsWith("/upload/") || /^\/v1(beta)?\/files(\/|$)/.test(u.pathname))) return false;
+  if (u.hostname === "generativelanguage.googleapis.com" && (/^\/upload\/v1beta\/files$/.test(u.pathname) || /^\/v1beta\/files\/[A-Za-z0-9_-]+$/.test(u.pathname))) return false;
   return true;
 }
 async function paidRpc(fn: "paid_reserve" | "paid_check"): Promise<void> {

@@ -1,7 +1,7 @@
 // Офлайн-тест атомарного шлюзу для 8 платних функцій. Провайдери — заглушки (жодного справжнього платного виклику);
 // paid_reserve/paid_check виконуються в СПРАВЖНІЙ локальній PostgreSQL (база gate_test з міграцією 20261126_paid_gate.sql).
 const FN = Deno.args[0], FILE = Deno.args[1];
-const SVC: Record<string, string> = { tts: "tts", stt: "stt", "image-gen": "image_gen", "stats-extract": "stats_extract", "kb-chat": "kb_chat", "video-spec": "video_spec", "ai-text": "ai_text", "voice-clone": "voice_clone" };
+const SVC: Record<string, string> = { tts: "tts", stt: "stt", "image-gen": "image_gen", "stats-extract": "stats_extract", "kb-chat": "kb_chat", "video-spec": "video_spec", "ai-text": "ai_text", "voice-clone": "voice_clone", "voices-admin": "voices_admin" };
 const svc = SVC[FN];
 for (const [k, v] of Object.entries({ SUPABASE_URL: "http://sb.test", SUPABASE_ANON_KEY: "anon", SUPABASE_SERVICE_ROLE_KEY: "svc", ANTHROPIC_API_KEY: "d", ELEVENLABS_API_KEY: "d", GEMINI_API_KEY: "d", CF_ACCOUNT_ID: "acc", CF_AI_TOKEN: "d", YOUTUBE_API_KEY: "d", IMG_CHECK: "1" })) Deno.env.set(k, v);
 async function sql(q: string): Promise<string> {
@@ -19,17 +19,19 @@ function provider(u: URL, req: Request): Response {
   st.provider++;
   if (st.providerFail > 0) { st.providerFail--; return J({ error: "boom" }, 500); }
   if (u.host === "api.anthropic.com") return J({ content: [{ type: "text", text: FN === "stats-extract" ? '{"items":[]}' : FN === "image-gen" ? '{"ok":true}' : "відповідь" }], stop_reason: "end_turn", usage: {} });
-  if (u.host === "api.elevenlabs.io") return FN === "voice-clone" ? J({ voice_id: "v-new" }) : J({ audio_base64: B64, alignment: { characters: ["a"], character_start_times_seconds: [0], character_end_times_seconds: [1] } });
-  if (u.host === "api.cloudflare.com") return u.pathname.includes("whisper") ? J({ result: { text: "привіт", words: [{ word: "привіт", start: 0, end: 1 }] } }) : J({ result: { image: B64 } });
+  if (u.host === "api.elevenlabs.io") return FN === "voice-clone" || FN === "voices-admin" ? J({ voice_id: "v-new", voices: [] }) : J({ audio_base64: B64, alignment: { characters: ["a"], character_start_times_seconds: [0], character_end_times_seconds: [1] } });
+  if (u.host === "api.cloudflare.com") return u.pathname.includes("whisper") ? J({ result: { text: "привіт", segments: [{ text: "привіт", start: 0, end: 1, words: [{ word: "привіт", start: 0, end: 1 }] }] } }) : J({ result: { image: B64 } });
   if (u.host === "generativelanguage.googleapis.com") return J({ candidates: [{ content: { parts: [{ text: '{"words":[{"w":"привіт","s":0,"e":1}]}' }, { inlineData: { mimeType: "image/png", data: B64 } }] }, finishReason: "STOP" }] });
   return J({});
 }
 globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
   const req = new Request(input, init), u = new URL(req.url);
   if (u.host !== "sb.test") {
-    if (["www.youtube.com", "www.googleapis.com", "i.ytimg.com"].includes(u.host)) return J({ items: [] });
-    if (req.method === "DELETE" && u.host === "api.elevenlabs.io") return J({});
-    if (u.host === "generativelanguage.googleapis.com" && (u.pathname.startsWith("/upload/") || u.pathname.includes("/files"))) return u.pathname.startsWith("/upload/") && req.headers.get("x-goog-upload-command") === "start" ? new Response("{}", { headers: { "x-goog-upload-url": "https://generativelanguage.googleapis.com/upload/v1beta/files?upload_id=1" } }) : J({ file: { name: "files/1", uri: "u", state: "ACTIVE" } });
+    // НЕЗАЛЕЖНИЙ строгий перелік безкоштовних запитів (точні шляхи). Усе інше поза Supabase рахується як платне звернення,
+    // тож якщо код вважатиме безкоштовним щось ширше, рівність «звернення = резерви» порушиться і тест провалиться.
+    if (u.host === "i.ytimg.com" || (u.host === "www.youtube.com" && u.pathname === "/oembed") || (u.host === "www.googleapis.com" && /^\/youtube\/v3\/(videos|channels)$/.test(u.pathname))) return J({ items: [] });
+    if (req.method === "DELETE" && u.host === "api.elevenlabs.io" && /^\/v1\/voices\/[^/]+$/.test(u.pathname)) return J({});
+    if (u.host === "generativelanguage.googleapis.com" && (/^\/upload\/v1beta\/files$/.test(u.pathname) || /^\/v1beta\/files\/[A-Za-z0-9_-]+$/.test(u.pathname))) return u.pathname.startsWith("/upload/") && req.headers.get("x-goog-upload-command") === "start" ? new Response("{}", { headers: { "x-goog-upload-url": "https://generativelanguage.googleapis.com/upload/v1beta/files?upload_id=1" } }) : J({ file: { name: "files/1", uri: "u", state: "ACTIVE" } });
     return provider(u, req);
   }
   const tok = (req.headers.get("authorization") || "").replace("Bearer ", "");
@@ -56,6 +58,7 @@ const BODY: Record<string, Record<string, unknown>> = {
   "video-spec": { path: "00000000-0000-0000-0000-000000000001/1.mp4", mins: 1 },
   "ai-text": { prompt: "привіт світ", sys: ["director"] },
   "voice-clone": { consent: true, audio: "A".repeat(50000), mime: "audio/webm" },
+  "voices-admin": { action: "add", owner_id: "o1", voice_id: "s1", name: "Тест" },
 };
 const call = async (tok: string | null, body = BODY[FN]) => { const r = await handler(new Request("http://fn", { method: "POST", headers: { "content-type": "application/json", ...(tok ? { authorization: "Bearer " + tok } : {}) }, body: JSON.stringify(body) })); return { status: r.status, body: await r.json().catch(() => ({})) }; };
 const setKeys = async (en: number | null, max: number | null) => { await sql(`delete from public.settings where key like 'paid_${svc}_%'; delete from public.paid_usage where svc='${svc}'`);
@@ -76,7 +79,7 @@ reset(); await setKeys(1, null); r = await call("tok-owner"); check("увімк�
 reset(); await setKeys(1, 5); st.rpcDown = true; r = await call("tok-owner"); check("налаштування/шлюз недоступні → 503, 0 викликів", r.status === 503 && r.body.error === "policy_unavailable" && st.provider === 0, `${r.status} ${r.body.error}`);
 // 6. дозволено: кожен виклик провайдера зарезервовано
 reset(); await setKeys(1, 5); r = await call("tok-owner"); let u = await used();
-check("явно ввімкнено → виклики провайдера = резерви в БД", st.provider >= 1 && st.provider === u, `${r.status} ${JSON.stringify(r.body).slice(0,80)} · провайдер ${st.provider} · зарезервовано ${u}`);
+check("явно ввімкнено → 200 і виклики провайдера = резерви в БД", r.status === 200 && st.provider >= 1 && st.provider === u, `${r.status} ${JSON.stringify(r.body).slice(0,80)} · провайдер ${st.provider} · зарезервовано ${u}`);
 // 7. збій провайдера → повтори/запасний шлях теж резервують
 reset(); await setKeys(1, 50); st.providerFail = 2; r = await call("tok-owner"); u = await used();
 check("повтори/запасний провайдер після збою — кожна спроба резервується", st.provider === u, `${r.status} · провайдер ${st.provider} · зарезервовано ${u}`);

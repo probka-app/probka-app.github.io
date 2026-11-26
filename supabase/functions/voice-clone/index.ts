@@ -62,7 +62,7 @@ function isPaidRequest(u: URL, method = "GET"): boolean {
   // Видалення власного клону в ElevenLabs безкоштовне й має лишатися доступним (право користувача прибрати свій голос).
   if (method === "DELETE" && u.hostname === "api.elevenlabs.io" && /^\/v1\/voices\/[^/]+$/.test(u.pathname)) return false;
   // Gemini Files API (завантаження файлу й опитування стану) не тарифікується; тарифікуються generate*/predict/embed.
-  if (u.hostname === "generativelanguage.googleapis.com" && (u.pathname.startsWith("/upload/") || /^\/v1(beta)?\/files(\/|$)/.test(u.pathname))) return false;
+  if (u.hostname === "generativelanguage.googleapis.com" && (/^\/upload\/v1beta\/files$/.test(u.pathname) || /^\/v1beta\/files\/[A-Za-z0-9_-]+$/.test(u.pathname))) return false;
   return true;
 }
 async function paidRpc(fn: "paid_reserve" | "paid_check"): Promise<void> {
