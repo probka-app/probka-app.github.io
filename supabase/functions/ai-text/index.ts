@@ -187,12 +187,30 @@ const BUILTIN: Record<string, string> = {
 Спирайся на цифри: якщо прийом частіше трапляється в топ-відео — пиши це з часткою. Не згадуй реальних людей і назв каналів; не копіюй чужі назви дослівно — лише формули.
 Обсяг — до 10 000 символів. Відповідай ТІЛЬКИ повним текстом нової Біблії (markdown), без вступу.`,
 };
+// ---- Шлюз платних операцій (виправлення безпеки 2026-11-26, етап 2) ----
+// Платні виклики ВИМКНЕНІ за замовчуванням для всіх, включно з власником. Власник явно вмикає конкретну операцію в public.settings:
+//   paid_<svc>_enabled = 1  і  paid_<svc>_daily_max = N (платних звернень на добу для всіх користувачів разом).
+// Ключів немає, значення некоректні або налаштування не читаються → платну дію заборонено (fail-closed). Платного fallback немає.
+async function paidGate(svc: string, logService: string): Promise<void> {
+  const db = admin();
+  const { data, error } = await db.from("settings").select("key,value").in("key", [`paid_${svc}_enabled`, `paid_${svc}_daily_max`]);
+  if (error) throw new HttpError(503, "policy_unavailable");
+  const v: Record<string, number> = Object.fromEntries((data ?? []).map((r: { key: string; value: unknown }) => [r.key, Number(r.value)]));
+  if (v[`paid_${svc}_enabled`] !== 1) throw new HttpError(403, "paid_disabled");
+  const max = v[`paid_${svc}_daily_max`];
+  if (!Number.isFinite(max) || max <= 0) throw new HttpError(403, "paid_budget_missing");
+  const today = new Date().toISOString().slice(0, 10);
+  const { data: u, error: e2 } = await db.from("service_usage").select("calls,errors").eq("day", today).eq("service", logService).maybeSingle();
+  if (e2) throw new HttpError(503, "policy_unavailable");
+  if ((Number(u?.calls) || 0) + (Number(u?.errors) || 0) >= max) throw new HttpError(429, "paid_budget_exhausted");
+}
+
 // ---- Політика доступу до платного AI (виправлення безпеки 2026-11-26) ----
 // Сервер не довіряє ролям, прапорцям чи демо-режиму браузера: роль власника читається з profiles на сервері.
 // За замовчуванням платні виклики моделі дозволені лише власнику. Іншим користувачам — тільки якщо сервер явно
 // дозволив: settings.ai_public_enabled = 1 (окреме рішення власника), і тоді діє денний ліміт ai_take.
 // Приховані промти (sys), «чистий» режим (raw), злиття Біблій і зображення — лише власнику, завжди.
-// Відкат: розгорнути попередню версію v25 (ai-text.v25.deployed.ts, sha256 34a08bdf…).
+// Аварійний відкат — НЕ на вразливу v25, а на безпечну заглушку supabase/functions/_safe-stub (усе вимкнено).
 type AccessIn = { isOwner: boolean; publicEnabled: boolean; sys: number; raw: boolean; merge: boolean; images: number };
 function aiAccess(a: AccessIn): string | null {
   if (a.isOwner) return null;
@@ -222,6 +240,7 @@ Deno.serve(handler(async (req) => {
   const nImages = Array.isArray(body.images) ? body.images.length : 0;
   const denied = aiAccess({ isOwner, publicEnabled, sys: sys.length, raw: body.raw === true, merge, images: nImages });
   if (denied) throw new HttpError(403, denied);
+  await paidGate("ai_text", "claude"); // і для власника: лише після явного ввімкнення й бюджету
   let prompt = String(body.prompt ?? "").slice(0, merge ? 300000 : sys.length ? 40000 : 12000);
   if (prompt.trim().length < 3) throw new HttpError(400, "empty_prompt");
   const wantJson = body.json === true;
