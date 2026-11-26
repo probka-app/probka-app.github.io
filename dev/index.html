@@ -3182,7 +3182,7 @@ function openVideo(it,isNew){ let plat=PLATS.find(([p])=>it.stats?.[p])?.[0]||"i
     BS.querySelector("#vsave").onclick=()=>{ grab(); if(!it.title&&!Object.keys(it.stats).length){ BS.querySelector("#verr").textContent="Додай назву або хоча б одне число."; return; } if(!it.created) it.created=Date.now(); LIB.upsert(it); closeSheet(); if(!lib.hidden) renderLib(); toast("Збережено"); };
     BS.querySelector("#vdel")?.addEventListener("click",e=>{ const b=e.currentTarget; if(!b.dataset.c){ b.dataset.c=1; b.textContent="Точно видалити?"; return; } LIB.del(it.vid); closeSheet(); renderLib(); });
     BS.querySelector("#vshots").onchange=async e=>{ const files=[...e.target.files].slice(0,6); e.target.value=""; if(!files.length) return; const st=BS.querySelector("#vst");
-      if(!window.SRV){ st.textContent="Розпізнавання скріншотів працює на сайті probka-app.github.io після входу. Тут — впиши цифри вручну."; return; }
+      if(!window.SRV){ st.textContent="Розпізнавання скріншотів працює на сайті studio.yuvi.life після входу. Тут — впиши цифри вручну."; return; }
       if(!PROF.logged){ grab(); return SRV.login("Щоб розпізнати скріншоти, увійди або зареєструйся."); }
       grab(); st.textContent=`Розпізнаю ${files.length} ${files.length===1?"скріншот":"скріншоти"}…`;
       try{ const found=await SRV.extract(files); const ps=Object.keys(found);
@@ -3229,7 +3229,7 @@ async function renderAna(){ ana.querySelectorAll("[data-at]").forEach(b=>b.setAt
   document.getElementById("amlabel").textContent=`${MONTHS[anaM]} ${anaY}`; const now=new Date(); document.getElementById("amnext").disabled=anaY*12+anaM>=now.getFullYear()*12+now.getMonth();
   const body=document.getElementById("anabody"), days=monthDays(anaY,anaM), today=ymd(now), c1=cssVar("--s1")||"#2a78d6", c2=cssVar("--s2")||"#eb6834";
   if(anaTab==="money"){
-    if(!window.SRV||!PROF.logged){ body.innerHTML=`<p class="anote">${window.SRV?"Увійди, щоб бачити свій заробіток по днях.":"Графіки заробітку працюють на сайті probka-app.github.io після входу."}</p>${window.SRV?`<button class="drwlogin" type="button" id="alog" style="max-width:420px">Увійти</button>`:""}`; body.querySelector("#alog")?.addEventListener("click",()=>SRV.login("Увійди, щоб бачити аналітику заробітку.")); return; }
+    if(!window.SRV||!PROF.logged){ body.innerHTML=`<p class="anote">${window.SRV?"Увійди, щоб бачити свій заробіток по днях.":"Графіки заробітку працюють на сайті studio.yuvi.life після входу."}</p>${window.SRV?`<button class="drwlogin" type="button" id="alog" style="max-width:420px">Увійти</button>`:""}`; body.querySelector("#alog")?.addEventListener("click",()=>SRV.login("Увійди, щоб бачити аналітику заробітку.")); return; }
     body.innerHTML=`<p class="anote">Завантажую…</p>`;
     let rows=[]; try{ rows=await SRV.earnings(days[0],days[days.length-1]); }catch(e){ body.innerHTML=`<p class="anote">Не вдалося завантажити дані. Спробуй пізніше.</p>`; return; }
     const by=Object.fromEntries(rows.map(r=>[r.day,r])), fut=d=>d>today;
@@ -3256,7 +3256,7 @@ async function renderAna(){ ana.querySelectorAll("[data-at]").forEach(b=>b.setAt
       <label class="fl" for="aviews">Перегляди за цей день (${PLATS.find(x=>x[0]===anaPlat)[1]})</label><input id="aviews" type="number" inputmode="numeric" min="0"><div class="err" id="aerr"></div><button class="big" type="button" id="asave">Зберегти</button>`);
     BS.querySelector("#asave").onclick=()=>{ const d=BS.querySelector("#adate").value, v=BS.querySelector("#aviews").value; if(!d||v===""||+v<0) return BS.querySelector("#aerr").textContent="Вкажи день і кількість переглядів."; ACC.set(anaPlat,d,Math.round(+v)); closeSheet(); renderAna(); }; };
   body.querySelector("#ashots").onchange=async e=>{ const files=[...e.target.files].slice(0,6); e.target.value=""; if(!files.length) return; const st=body.querySelector("#ast");
-    if(!window.SRV){ st.textContent="Розпізнавання працює на сайті probka-app.github.io після входу. Тут — впиши перегляди вручну."; return; }
+    if(!window.SRV){ st.textContent="Розпізнавання працює на сайті studio.yuvi.life після входу. Тут — впиши перегляди вручну."; return; }
     if(!PROF.logged) return SRV.login("Щоб розпізнати скріншот, увійди або зареєструйся.");
     st.textContent="Розпізнаю скріншот…";
     try{ const acc=await SRV.extract(files,"account"); const ps=Object.keys(acc); let n=0;
