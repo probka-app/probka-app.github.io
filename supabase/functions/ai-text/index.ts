@@ -187,6 +187,20 @@ const BUILTIN: Record<string, string> = {
 Спирайся на цифри: якщо прийом частіше трапляється в топ-відео — пиши це з часткою. Не згадуй реальних людей і назв каналів; не копіюй чужі назви дослівно — лише формули.
 Обсяг — до 10 000 символів. Відповідай ТІЛЬКИ повним текстом нової Біблії (markdown), без вступу.`,
 };
+// ---- Політика доступу до платного AI (виправлення безпеки 2026-11-26) ----
+// Сервер не довіряє ролям, прапорцям чи демо-режиму браузера: роль власника читається з profiles на сервері.
+// За замовчуванням платні виклики моделі дозволені лише власнику. Іншим користувачам — тільки якщо сервер явно
+// дозволив: settings.ai_public_enabled = 1 (окреме рішення власника), і тоді діє денний ліміт ai_take.
+// Приховані промти (sys), «чистий» режим (raw), злиття Біблій і зображення — лише власнику, завжди.
+// Відкат: розгорнути попередню версію v25 (ai-text.v25.deployed.ts, sha256 34a08bdf…).
+type AccessIn = { isOwner: boolean; publicEnabled: boolean; sys: number; raw: boolean; merge: boolean; images: number };
+function aiAccess(a: AccessIn): string | null {
+  if (a.isOwner) return null;
+  if (a.merge || a.sys > 0 || a.raw || a.images > 0) return "owner_only";
+  if (!a.publicEnabled) return "ai_disabled";
+  return null;
+}
+
 // який рядок ai_prompts оновлює кожен «злиттєвий» ключ
 const MERGE_TO: Record<string, string> = { bible_merge: "director_learned", pack_merge: "packaging_learned", writer_merge: "writer_learned" };
 
@@ -199,7 +213,15 @@ Deno.serve(handler(async (req) => {
   // sys: ["director"] | ["director","critic"] | ["bible_merge"] — приховані промти студії
   const sys = (Array.isArray(body.sys) ? body.sys : []).filter((k: unknown) => typeof k === "string" && k in BUILTIN).slice(0, 3) as string[];
   const mk = sys.find((k) => k in MERGE_TO) ?? "", merge = !!mk, target = MERGE_TO[mk] ?? "";
-  if (merge) { const { data: pr } = await admin().from("profiles").select("is_owner").eq("id", userId).maybeSingle(); if (!pr?.is_owner) throw new HttpError(403, "forbidden"); }
+  // політика доступу — ДО будь-якого читання промтів, бази знань чи виклику моделі
+  const { data: pr, error: prErr } = await admin().from("profiles").select("is_owner").eq("id", userId).maybeSingle();
+  if (prErr) throw new HttpError(503, "policy_unavailable");
+  const isOwner = pr?.is_owner === true;
+  let publicEnabled = false;
+  if (!isOwner) { const { data: st } = await admin().from("settings").select("value").eq("key", "ai_public_enabled").maybeSingle(); publicEnabled = Number(st?.value) === 1; }
+  const nImages = Array.isArray(body.images) ? body.images.length : 0;
+  const denied = aiAccess({ isOwner, publicEnabled, sys: sys.length, raw: body.raw === true, merge, images: nImages });
+  if (denied) throw new HttpError(403, denied);
   let prompt = String(body.prompt ?? "").slice(0, merge ? 300000 : sys.length ? 40000 : 12000);
   if (prompt.trim().length < 3) throw new HttpError(400, "empty_prompt");
   const wantJson = body.json === true;
