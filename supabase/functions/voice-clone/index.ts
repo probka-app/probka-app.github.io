@@ -48,6 +48,45 @@ class HttpError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
 
+// ---- ШЛЮЗ ПЛАТНИХ ОПЕРАЦІЙ (Phase 02, 2026-11-26) ----
+// Усі платні звернення вимкнені за замовчуванням для ВСІХ, включно з власником. Увімкнення — лише в public.settings:
+// paid_<PAID_SVC>_enabled = 1 і paid_<PAID_SVC>_daily_max = N (спільний добовий ліміт, UTC). Атомарність — у SQL paid_reserve().
+// Перехоплюється КОЖЕН вихідний запит: окрім бази Supabase і явно безкоштовних адрес, будь-який хост вимагає резерву
+// (новий провайдер не обійде шлюз). Кожна спроба/повтор/запасний провайдер резервує окрему одиницю. Помилка шлюзу → відмова.
+const PAID_SVC = "voice_clone";
+const FREE_HOSTS = new Set<string>([]);
+const _rawFetch: typeof fetch = globalThis.fetch.bind(globalThis);
+const supaHost = (): string => { try { return new URL(env("SUPABASE_URL")).hostname; } catch { return ""; } };
+function isPaidRequest(u: URL, method = "GET"): boolean {
+  if (u.hostname === supaHost() || FREE_HOSTS.has(u.hostname)) return false;
+  // Видалення власного клону в ElevenLabs безкоштовне й має лишатися доступним (право користувача прибрати свій голос).
+  if (method === "DELETE" && u.hostname === "api.elevenlabs.io" && /^\/v1\/voices\/[^/]+$/.test(u.pathname)) return false;
+  // Gemini Files API (завантаження файлу й опитування стану) не тарифікується; тарифікуються generate*/predict/embed.
+  if (u.hostname === "generativelanguage.googleapis.com" && (u.pathname.startsWith("/upload/") || /^\/v1(beta)?\/files(\/|$)/.test(u.pathname))) return false;
+  return true;
+}
+async function paidRpc(fn: "paid_reserve" | "paid_check"): Promise<void> {
+  const base = env("SUPABASE_URL"), key = env("SUPABASE_SERVICE_ROLE_KEY");
+  if (!base || !key) throw new HttpError(503, "policy_unavailable");
+  let v: unknown = null;
+  try {
+    const r = await _rawFetch(`${base}/rest/v1/rpc/${fn}`, { method: "POST", headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" }, body: JSON.stringify({ p_svc: PAID_SVC }) });
+    if (!r.ok) throw new Error(String(r.status));
+    v = await r.json();
+  } catch { throw new HttpError(503, "policy_unavailable"); }
+  if (v === "ok") return;
+  if (v === "paid_budget_exhausted") throw new HttpError(429, v);
+  if (v === "paid_disabled" || v === "paid_budget_missing") throw new HttpError(403, v);
+  throw new HttpError(503, "policy_unavailable");
+}
+globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+  let u: URL;
+  try { u = new URL(input instanceof Request ? input.url : String(input)); } catch { throw new HttpError(503, "policy_unavailable"); }
+  const method = String(init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
+  if (isPaidRequest(u, method)) await paidRpc("paid_reserve");
+  return _rawFetch(input as Request, init);
+}) as typeof fetch;
+
 function handler(fn: (req: Request) => Promise<Response>) {
   return async (req: Request) => {
     if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -61,23 +100,6 @@ function handler(fn: (req: Request) => Promise<Response>) {
   };
 }
 
-// ---- Шлюз платних операцій (виправлення безпеки 2026-11-26, етап 2) ----
-// Платні виклики ВИМКНЕНІ за замовчуванням для всіх, включно з власником. Власник явно вмикає конкретну операцію в public.settings:
-//   paid_<svc>_enabled = 1  і  paid_<svc>_daily_max = N (платних звернень на добу для всіх користувачів разом).
-// Ключів немає, значення некоректні або налаштування не читаються → платну дію заборонено (fail-closed). Платного fallback немає.
-async function paidGate(svc: string, logService: string): Promise<void> {
-  const db = admin();
-  const { data, error } = await db.from("settings").select("key,value").in("key", [`paid_${svc}_enabled`, `paid_${svc}_daily_max`]);
-  if (error) throw new HttpError(503, "policy_unavailable");
-  const v: Record<string, number> = Object.fromEntries((data ?? []).map((r: { key: string; value: unknown }) => [r.key, Number(r.value)]));
-  if (v[`paid_${svc}_enabled`] !== 1) throw new HttpError(403, "paid_disabled");
-  const max = v[`paid_${svc}_daily_max`];
-  if (!Number.isFinite(max) || max <= 0) throw new HttpError(403, "paid_budget_missing");
-  const today = new Date().toISOString().slice(0, 10);
-  const { data: u, error: e2 } = await db.from("service_usage").select("calls,errors").eq("day", today).eq("service", logService).maybeSingle();
-  if (e2) throw new HttpError(503, "policy_unavailable");
-  if ((Number(u?.calls) || 0) + (Number(u?.errors) || 0) >= max) throw new HttpError(429, "paid_budget_exhausted");
-}
 
 // ---- сама функція ----
 Deno.serve(handler(async (req) => {
@@ -103,7 +125,7 @@ Deno.serve(handler(async (req) => {
   // Створення клону — платна дія ElevenLabs: лише власник (роль з бази, не з браузера) і лише після явного ввімкнення й бюджету.
   // Видалення власного клону вище лишається доступним усім (безкоштовне, право на видалення своїх даних).
   if (prof?.is_owner !== true) throw new HttpError(403, "owner_only");
-  await paidGate("voice_clone", "elevenlabs_clone");
+  await paidRpc("paid_check");
   if (body.consent !== true) throw new HttpError(400, "consent_required");
   const b64 = typeof body.audio === "string" ? body.audio : "";
   if (b64.length < 40_000) throw new HttpError(400, "too_short");      // ~20+ секунд запису
