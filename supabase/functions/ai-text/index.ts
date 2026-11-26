@@ -47,6 +47,42 @@ class HttpError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
 
+// ---- ШЛЮЗ ПЛАТНИХ ОПЕРАЦІЙ (Phase 02, 2026-11-26) ----
+// Усі платні звернення вимкнені за замовчуванням для ВСІХ, включно з власником. Увімкнення — лише в public.settings:
+// paid_<PAID_SVC>_enabled = 1 і paid_<PAID_SVC>_daily_max = N (спільний добовий ліміт, UTC). Атомарність — у SQL paid_reserve().
+// Перехоплюється КОЖЕН вихідний запит: окрім бази Supabase і явно безкоштовних адрес, будь-який хост вимагає резерву
+// (новий провайдер не обійде шлюз). Кожна спроба/повтор/запасний провайдер резервує окрему одиницю. Помилка шлюзу → відмова.
+const PAID_SVC = "ai_text";
+const FREE_HOSTS = new Set<string>([]);
+const _rawFetch: typeof fetch = globalThis.fetch.bind(globalThis);
+const supaHost = (): string => { try { return new URL(env("SUPABASE_URL")).hostname; } catch { return ""; } };
+function isPaidRequest(u: URL): boolean {
+  if (u.hostname === supaHost() || FREE_HOSTS.has(u.hostname)) return false;
+  // Gemini Files API (завантаження файлу й опитування стану) не тарифікується; тарифікуються generate*/predict/embed.
+  if (u.hostname === "generativelanguage.googleapis.com" && (/^\/upload\/v1beta\/files$/.test(u.pathname) || /^\/v1beta\/files\/[A-Za-z0-9_-]+$/.test(u.pathname))) return false;
+  return true;
+}
+async function paidRpc(fn: "paid_reserve" | "paid_check"): Promise<void> {
+  const base = env("SUPABASE_URL"), key = env("SUPABASE_SERVICE_ROLE_KEY");
+  if (!base || !key) throw new HttpError(503, "policy_unavailable");
+  let v: unknown = null;
+  try {
+    const r = await _rawFetch(`${base}/rest/v1/rpc/${fn}`, { method: "POST", headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" }, body: JSON.stringify({ p_svc: PAID_SVC }) });
+    if (!r.ok) throw new Error(String(r.status));
+    v = await r.json();
+  } catch { throw new HttpError(503, "policy_unavailable"); }
+  if (v === "ok") return;
+  if (v === "paid_budget_exhausted") throw new HttpError(429, v);
+  if (v === "paid_disabled" || v === "paid_budget_missing") throw new HttpError(403, v);
+  throw new HttpError(503, "policy_unavailable");
+}
+globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+  let u: URL;
+  try { u = new URL(input instanceof Request ? input.url : String(input)); } catch { throw new HttpError(503, "policy_unavailable"); }
+  if (isPaidRequest(u)) await paidRpc("paid_reserve");
+  return _rawFetch(input as Request, init);
+}) as typeof fetch;
+
 function handler(fn: (req: Request) => Promise<Response>) {
   return async (req: Request) => {
     if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -187,6 +223,21 @@ const BUILTIN: Record<string, string> = {
 Спирайся на цифри: якщо прийом частіше трапляється в топ-відео — пиши це з часткою. Не згадуй реальних людей і назв каналів; не копіюй чужі назви дослівно — лише формули.
 Обсяг — до 10 000 символів. Відповідай ТІЛЬКИ повним текстом нової Біблії (markdown), без вступу.`,
 };
+
+// ---- Політика доступу до платного AI (виправлення безпеки 2026-11-26) ----
+// Сервер не довіряє ролям, прапорцям чи демо-режиму браузера: роль власника читається з profiles на сервері.
+// За замовчуванням платні виклики моделі дозволені лише власнику. Іншим користувачам — тільки якщо сервер явно
+// дозволив: settings.ai_public_enabled = 1 (окреме рішення власника), і тоді діє денний ліміт ai_take.
+// Приховані промти (sys), «чистий» режим (raw), злиття Біблій і зображення — лише власнику, завжди.
+// Аварійний відкат — НЕ на вразливу v25, а на безпечну заглушку supabase/functions/_safe-stub (усе вимкнено).
+type AccessIn = { isOwner: boolean; publicEnabled: boolean; sys: number; raw: boolean; merge: boolean; images: number };
+function aiAccess(a: AccessIn): string | null {
+  if (a.isOwner) return null;
+  if (a.merge || a.sys > 0 || a.raw || a.images > 0) return "owner_only";
+  if (!a.publicEnabled) return "ai_disabled";
+  return null;
+}
+
 // який рядок ai_prompts оновлює кожен «злиттєвий» ключ
 const MERGE_TO: Record<string, string> = { bible_merge: "director_learned", pack_merge: "packaging_learned", writer_merge: "writer_learned" };
 
@@ -199,7 +250,16 @@ Deno.serve(handler(async (req) => {
   // sys: ["director"] | ["director","critic"] | ["bible_merge"] — приховані промти студії
   const sys = (Array.isArray(body.sys) ? body.sys : []).filter((k: unknown) => typeof k === "string" && k in BUILTIN).slice(0, 3) as string[];
   const mk = sys.find((k) => k in MERGE_TO) ?? "", merge = !!mk, target = MERGE_TO[mk] ?? "";
-  if (merge) { const { data: pr } = await admin().from("profiles").select("is_owner").eq("id", userId).maybeSingle(); if (!pr?.is_owner) throw new HttpError(403, "forbidden"); }
+  // політика доступу — ДО будь-якого читання промтів, бази знань чи виклику моделі
+  const { data: pr, error: prErr } = await admin().from("profiles").select("is_owner").eq("id", userId).maybeSingle();
+  if (prErr) throw new HttpError(503, "policy_unavailable");
+  const isOwner = pr?.is_owner === true;
+  let publicEnabled = false;
+  if (!isOwner) { const { data: st } = await admin().from("settings").select("value").eq("key", "ai_public_enabled").maybeSingle(); publicEnabled = Number(st?.value) === 1; }
+  const nImages = Array.isArray(body.images) ? body.images.length : 0;
+  const denied = aiAccess({ isOwner, publicEnabled, sys: sys.length, raw: body.raw === true, merge, images: nImages });
+  if (denied) throw new HttpError(403, denied);
+  await paidRpc("paid_check"); // і для власника: лише після явного ввімкнення й бюджету
   let prompt = String(body.prompt ?? "").slice(0, merge ? 300000 : sys.length ? 40000 : 12000);
   if (prompt.trim().length < 3) throw new HttpError(400, "empty_prompt");
   const wantJson = body.json === true;
